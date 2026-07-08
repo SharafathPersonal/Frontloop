@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { APP_VERSION } from '@/lib/config';
-import { Phone, MessageCircle } from 'lucide-react';
+import { Phone, MessageCircle, XCircle, CheckCircle, ArrowRight } from 'lucide-react';
 
 // ──────────────────────────────────────────────────────────────────
 // LANDING PAGE — True Attendly Broadcast
@@ -399,6 +399,74 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════
+          SECTION 3.5 — WASTE VS. WEALTH MATRIX
+      ══════════════════════════════════════════════════════════ */}
+      <section className="py-24 scroll-reveal-section bg-[#F5F1EA] border-t border-[#E8E3DA]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-2xl mx-auto text-center mb-16 gsap-reveal">
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-4">
+              Stop Wasting Money on Ghost Impressions.
+            </h2>
+            <p className="text-base leading-relaxed text-[#8B8378]">
+              Traditional ads eat your budget and get scrolled past. True Attendly Broadcast delivers your message straight to their hands with a 98% open rate. Pay only for what actually sends.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            
+            {/* Card 1 */}
+            <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-xl p-8 flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mb-6">
+                <XCircle size={24} />
+              </div>
+              <h3 className="lexend-subheading text-base font-semibold text-[#3E3B36] mb-2">Social Media Ads (Meta/IG)</h3>
+              <p className="text-lg font-bold text-[#C4A896] mb-4">~15% Viewability Rate</p>
+              <p className="text-sm text-[#8B8378] leading-relaxed">
+                High daily budgets, shrinking reach, and users swipe away in 0.5 seconds. You pay for impressions, not sales.
+              </p>
+            </div>
+
+            {/* Card 2 */}
+            <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-xl p-8 flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mb-6">
+                <XCircle size={24} />
+              </div>
+              <h3 className="lexend-subheading text-base font-semibold text-[#3E3B36] mb-2">Traditional Media</h3>
+              <p className="text-lg font-bold text-[#C4A896] mb-4">Dynamic Zero Tracking</p>
+              <p className="text-sm text-[#8B8378] leading-relaxed">
+                Extremely expensive to print and distribute. You have zero data on who read it, who ignored it, or if it hit the trash bin.
+              </p>
+            </div>
+
+            {/* Card 3 */}
+            <div className="gsap-reveal bg-[#3E3B36] border border-[#3E3B36] rounded-xl p-8 flex flex-col items-center text-center transform md:-translate-y-4 shadow-xl">
+              <div className="w-12 h-12 rounded-full bg-[#F5F1EA] text-[#3E3B36] flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(245,241,234,0.3)]">
+                <CheckCircle size={24} />
+              </div>
+              <h3 className="lexend-subheading text-base font-semibold text-[#F5F1EA] mb-2">True Attendly Broadcast</h3>
+              <p className="text-lg font-bold text-[#C4A896] mb-4">98% Guaranteed Read Rate</p>
+              <p className="text-sm text-[rgba(245,241,234,0.8)] leading-relaxed">
+                Delivered straight as a personal WhatsApp notification. Customers see it, open it, and read it instantly. Zero subscription fees—pay 1 credit only per successful send.
+              </p>
+            </div>
+
+          </div>
+
+          <div className="gsap-reveal flex justify-center">
+            <div className="inline-flex items-center gap-3 bg-white border border-[#E8E3DA] rounded-full px-5 py-2.5 shadow-sm">
+              <span className="flex h-2 w-2 relative flex-shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C4A896] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C4A896]"></span>
+              </span>
+              <p className="text-[10px] md:text-xs font-semibold tracking-wide text-[#3E3B36] uppercase text-left">
+                Retail Reality Check: A customer might ignore a billboard, but they NEVER leave a WhatsApp notification unread.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
           SECTION 4 — SERVICES & CONFIGURATIONS
       ══════════════════════════════════════════════════════════ */}
       <section
@@ -518,6 +586,90 @@ export default function LandingPage() {
             <div>
               <h3 className="lexend-subheading text-sm font-medium mb-3 text-[#3E3B36]">Zero-CLS Structural Skeletons</h3>
               <p className="text-sm leading-relaxed text-[#8B8378]">We guarantee absolute visual stability. From native route skeleton barriers to client-side React Error Boundaries (error.tsx) and real-time offline network listeners, every core operation is safeguarded.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 4.8 — ADVANCED CAPABILITIES (Pure CSS Mockups)
+      ══════════════════════════════════════════════════════════ */}
+      <section className="bg-white py-24 scroll-reveal-section">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="mb-16 gsap-reveal text-center max-w-2xl mx-auto">
+            <p className="uppercase tracking-[0.25em] text-[#C4A896] text-xs mb-3 font-medium">Platform Deep Dive</p>
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36]">Advanced Capabilities.</h2>
+          </div>
+          
+          <div className="space-y-24">
+            {/* Feature 1: Bulk Campaign Broadcasting */}
+            <div className="flex flex-col lg:flex-row items-center gap-12 gsap-reveal">
+              <div className="lg:w-1/2 space-y-4">
+                <h3 className="lexend-subheading text-xl font-medium text-[#3E3B36]">Bulk Campaign Broadcasting</h3>
+                <p className="text-sm leading-relaxed text-[#8B8378]">Broadcast Offers to 100k+ Opt-In Users instantly. Upload massive CSV or XLSX spreadsheets with zero processing lag. Set dynamic attributes like <code className="bg-[#F5F1EA] text-[#C4A896] px-1 rounded mx-0.5">{'{{1}}'}</code> and <code className="bg-[#F5F1EA] text-[#C4A896] px-1 rounded mx-0.5">{'{{2}}'}</code> to personalize each message.</p>
+              </div>
+              <div className="lg:w-1/2 w-full p-8 bg-[#F5F1EA] rounded-2xl flex items-center justify-center">
+                <div className="w-full max-w-md bg-[#FFFFFF] rounded-xl border border-[#E8E3DA] overflow-hidden shadow-sm">
+                  <div className="flex px-5 py-3 bg-[#F5F1EA]/50 border-b border-[#E8E3DA] text-[9px] text-[#8B8378] uppercase tracking-widest font-semibold">
+                    <div className="w-1/3">Customer Name</div><div className="w-1/3">Phone</div><div className="w-1/3 text-right">Tag</div>
+                  </div>
+                  <div className="flex px-5 py-4 border-b border-[#E8E3DA] text-xs text-[#3E3B36] items-center">
+                    <div className="w-1/3 font-medium truncate">Aliya K.</div><div className="w-1/3 font-mono text-[#8B8378] text-[11px]">919876543210</div><div className="w-1/3 text-right"><span className="px-2.5 py-1 bg-[#F5F1EA] border border-[#E8E3DA] rounded-full text-[9px] font-bold tracking-wider">VIP</span></div>
+                  </div>
+                  <div className="flex px-5 py-4 text-xs text-[#3E3B36] items-center">
+                    <div className="w-1/3 font-medium truncate">Rahul M.</div><div className="w-1/3 font-mono text-[#8B8378] text-[11px]">919876543211</div><div className="w-1/3 text-right"><span className="px-2.5 py-1 bg-[#F5F1EA] border border-[#E8E3DA] rounded-full text-[9px] font-bold tracking-wider">NEW</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 2: Built-in AI Message Polisher */}
+            <div className="flex flex-col lg:flex-row-reverse items-center gap-12 gsap-reveal">
+              <div className="lg:w-1/2 space-y-4">
+                <h3 className="lexend-subheading text-xl font-medium text-[#3E3B36]">Built-in AI Message Polisher</h3>
+                <p className="text-sm leading-relaxed text-[#8B8378]">Turn raw business notes into luxury customer copy. Input rough drafts and let our built-in AI optimize the spacing, tone, and templates to secure instant Meta-compliance and high engagement.</p>
+              </div>
+              <div className="lg:w-1/2 w-full p-8 bg-[#F5F1EA] rounded-2xl flex items-center justify-center">
+                <div className="w-full max-w-md flex flex-col sm:flex-row gap-3">
+                  <div className="w-full sm:w-1/2 p-4 bg-white rounded-xl border-2 border-dashed border-[#C4A896]/40 flex flex-col justify-center relative group hover:border-[#C4A896] transition-colors">
+                    <span className="absolute top-2 left-3 text-[8px] uppercase tracking-widest font-bold text-[#C4A896]">Raw Input</span>
+                    <p className="text-xs text-[#8B8378] font-mono leading-relaxed mt-4">hi sir we have new stock pls buy come to shop.</p>
+                  </div>
+                  <div className="hidden sm:flex items-center justify-center">
+                    <ArrowRight size={16} className="text-[#C4A896]" />
+                  </div>
+                  <div className="w-full sm:w-1/2 p-4 bg-[#FFFFFF] rounded-xl border border-[#C4A896] shadow-sm relative">
+                    <span className="absolute top-2 left-3 text-[8px] uppercase tracking-widest font-bold text-[#C4A896]">Polished</span>
+                    <p className="text-xs text-[#3E3B36] font-medium leading-relaxed mt-4">Hi <span className="text-[#C4A896]">{'{{1}}'}</span>! Exclusive new stock has just arrived at <span className="text-[#C4A896]">{'{{2}}'}</span>. Visit us today to secure yours before it&apos;s gone. ✨</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 3: Deep Real-Time Analytics Dashboard */}
+            <div className="flex flex-col lg:flex-row items-center gap-12 gsap-reveal">
+              <div className="lg:w-1/2 space-y-4">
+                <h3 className="lexend-subheading text-xl font-medium text-[#3E3B36]">Deep Real-Time Analytics Dashboard</h3>
+                <p className="text-sm leading-relaxed text-[#8B8378]">Track Sent, Delivered (Double-Tick), and Read (Blue-Tick) status logs in absolute real-time. Know exactly who read your campaign and optimize your retail marketing spend with high-performance charts.</p>
+              </div>
+              <div className="lg:w-1/2 w-full p-8 bg-[#F5F1EA] rounded-2xl flex items-center justify-center">
+                <div className="w-full max-w-md p-6 bg-white rounded-xl border border-[#E8E3DA] shadow-sm">
+                  <div className="flex items-end justify-between mb-3">
+                    <span className="lexend-subheading text-sm font-semibold text-[#3E3B36]">Read Rate</span>
+                    <span className="text-lg font-bold text-[#10B981]">85%</span>
+                  </div>
+                  <div className="w-full h-3 rounded-full overflow-hidden flex bg-[#F5F1EA]">
+                    <div className="bg-[#10B981] h-full" style={{ width: '85%' }} />
+                    <div className="bg-[#6366F1] h-full" style={{ width: '12%' }} />
+                    <div className="bg-[#F43F5E] h-full" style={{ width: '3%' }} />
+                  </div>
+                  <div className="flex justify-between mt-5 text-[9px] uppercase tracking-widest text-[#8B8378] font-medium">
+                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-[2px] bg-[#10B981]"></span>Read (85%)</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-[2px] bg-[#6366F1]"></span>Delivered (12%)</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-[2px] bg-[#F43F5E]"></span>Failed (3%)</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

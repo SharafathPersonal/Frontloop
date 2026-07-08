@@ -61,6 +61,20 @@ create table public.campaigns (
     image_url text,
     status text not null default 'pending', -- pending, processing, completed, failed, insufficient_credits
     total_recipients integer not null default 0,
+    total_sent integer not null default 0,
+    total_delivered integer not null default 0,
+    total_read integer not null default 0,
+    total_failed integer not null default 0,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 4.5. MESSAGE LOGS FOR WEBHOOK MAPPING
+create table public.message_logs (
+    id uuid default gen_random_uuid() primary key,
+    campaign_id uuid references public.campaigns(id) on delete cascade not null,
+    meta_message_id text not null unique,
+    recipient_phone text not null,
+    status text not null default 'sent', -- sent, delivered, read, failed
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -100,6 +114,7 @@ alter table public.shops enable row level security;
 alter table public.wallets enable row level security;
 alter table public.customers_master enable row level security;
 alter table public.campaigns enable row level security;
+alter table public.message_logs enable row level security;
 alter table public.payment_logs enable row level security;
 alter table public.pricing_tiers enable row level security;
 
@@ -108,6 +123,7 @@ create policy "Shops isolation" on public.shops for all using (auth.uid() = id);
 create policy "Wallets isolation" on public.wallets for all using (auth.uid() = shop_id);
 create policy "Customers isolation" on public.customers_master for all using (auth.uid() = shop_id);
 create policy "Campaigns isolation" on public.campaigns for all using (auth.uid() = shop_id);
+-- Message logs isolation assumes shop_id is not directly on message_logs, but we can bypass RLS for webhook via service_role
 create policy "Payment logs isolation" on public.payment_logs for all using (auth.uid() = shop_id);
 create policy "Pricing tiers are viewable by everyone" on public.pricing_tiers for select using (true);
 
@@ -179,3 +195,35 @@ create table public.user_activity_logs (
 
 alter table public.user_activity_logs enable row level security;
 create policy "User activity logs isolation" on public.user_activity_logs for all using (auth.uid() = shop_id);
+
+-- ==============================================================================
+-- PHASE 7: REAL-TIME CAMPAIGN ANALYTICS SYNC
+-- Helper RPC to safely increment sent count on broadcast dispatch
+-- ==============================================================================
+create or replace function public.increment_campaign_sent(campaign_row_id uuid, quantity integer)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+    update public.campaigns
+    set total_sent = total_sent + quantity
+    where id = campaign_row_id;
+end;
+$$;
+
+create or replace function public.increment_campaign_metric(campaign_row_id uuid, metric_name text, quantity integer)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+    if metric_name = 'delivered' then
+        update public.campaigns set total_delivered = total_delivered + quantity where id = campaign_row_id;
+    elsif metric_name = 'read' then
+        update public.campaigns set total_read = total_read + quantity where id = campaign_row_id;
+    elsif metric_name = 'failed' then
+        update public.campaigns set total_failed = total_failed + quantity where id = campaign_row_id;
+    end if;
+end;
+$$;

@@ -101,6 +101,10 @@ export interface Campaign {
   image_url: string | null;
   status: CampaignStatus;
   total_recipients: number;
+  total_sent: number;
+  total_delivered: number;
+  total_read: number;
+  total_failed: number;
   created_at: string;
 }
 

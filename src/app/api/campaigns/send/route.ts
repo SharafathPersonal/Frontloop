@@ -143,10 +143,26 @@ export async function POST(req: Request) {
         );
         
         if (response.status === 200) {
+          const responseData = await response.json();
+          const messageId = responseData.messages?.[0]?.id;
+          
           // Trigger atomic 1-credit deduction via RPC ONLY on success
           const { error: deductError } = await supabase.rpc('deduct_credits', { p_shop_id: user.id, p_amount: 1 });
           if (!deductError) {
             successCount++;
+            
+            // Log message for webhook status matching
+            if (messageId) {
+              await supabase.from('message_logs').insert({
+                campaign_id: campaign.id,
+                meta_message_id: messageId,
+                recipient_phone: formattedPhone,
+                status: 'sent'
+              });
+            }
+            
+            // Increment the tracking metric synchronously via atomic RPC to prevent race conditions
+            await supabase.rpc('increment_campaign_sent', { campaign_row_id: campaign.id, quantity: 1 });
           } else {
             failedCount++; // Deduct failed, treat as failed delivery
           }
@@ -165,7 +181,6 @@ export async function POST(req: Request) {
     // 7. Update Campaign Status
     await supabase.from('campaigns').update({
       status: successCount > 0 || failedCount === 0 ? 'completed' : 'failed',
-      total_recipients: successCount,
     }).eq('id', campaign.id);
 
     return NextResponse.json({ ok: true, data: { attempted: requiredCredits, successful: successCount, failed: failedCount } });

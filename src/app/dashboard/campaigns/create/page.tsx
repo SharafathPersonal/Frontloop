@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import type { CampaignFormValues, CreditCheckResult, Wallet } from '@/types/broadcast';
 import { Upload, X, CheckCircle, AlertTriangle, Send, FileText, Image as ImageIcon, Tag, ChevronDown, Wand2 } from 'lucide-react';
@@ -13,6 +14,7 @@ type CustomerTag = 'VIP' | 'Regular' | 'New';
 interface RecipientTag { value: CustomerTag; label: string; count: number; }
 
 export default function BroadcastPage() {
+  const router = useRouter();
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [shopName, setShopName] = useState('Your Shop');
   const [form, setForm] = useState<CampaignFormValues>({ title: '', message_body: '', image_url: '' });
@@ -160,7 +162,7 @@ export default function BroadcastPage() {
     }
 
     try {
-      const res = await fetch('/api/broadcast', {
+      const res = await fetch('/api/campaigns/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ campaign: { ...form, image_url: imageUrl }, targetTags: selectedTags, creditsRequired: recipientCount }),
@@ -218,9 +220,17 @@ export default function BroadcastPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
 
-      <div>
-        <h1 className="serif-headline text-2xl md:text-3xl text-[#3E3B36]">Campaign Creator</h1>
-        <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mt-1.5">Craft your broadcast and select your audience</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="serif-headline text-2xl md:text-3xl text-[#3E3B36]">Campaign Creator</h1>
+          <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mt-1.5">Craft your broadcast and select your audience</p>
+        </div>
+        <button
+          onClick={() => router.push('/dashboard/campaigns')}
+          className="border border-[#E8E3DA] hover:border-[#C4A896] hover:bg-[#F5F1EA] transition-all text-[#3E3B36] text-xs tracking-[0.15em] uppercase font-medium rounded-lg px-4 py-2 flex-shrink-0"
+        >
+          View All Campaigns
+        </button>
       </div>
 
       {/* Credit Guard Banner */}
