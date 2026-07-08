@@ -158,19 +158,19 @@ export default function MerchantLedgerPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-[9px] uppercase tracking-widest text-[#8E8B85] mb-0.5">City / Locality</p>
-                    <p className="text-sm">{shop.city || '—'}</p>
+                    <p className="text-sm">{shop.city || '-'}</p>
                   </div>
                   <div>
                     <p className="text-[9px] uppercase tracking-widest text-[#8E8B85] mb-0.5">District</p>
-                    <p className="text-sm">{shop.district || '—'}</p>
+                    <p className="text-sm">{shop.district || '-'}</p>
                   </div>
                   <div>
                     <p className="text-[9px] uppercase tracking-widest text-[#8E8B85] mb-0.5">State</p>
-                    <p className="text-sm">{shop.state || '—'}</p>
+                    <p className="text-sm">{shop.state || '-'}</p>
                   </div>
                   <div>
                     <p className="text-[9px] uppercase tracking-widest text-[#8E8B85] mb-0.5">Country</p>
-                    <p className="text-sm">{shop.country || '—'}</p>
+                    <p className="text-sm">{shop.country || '-'}</p>
                   </div>
                 </div>
                 <div className="mt-4 pt-4 border-t border-[#E8E3DA]">

@@ -40,7 +40,7 @@ export default function DashboardPage() {
   const totalDelivered = campaigns.filter(c => c.status === 'completed').reduce((s, c) => s + c.total_recipients, 0);
 
   const metrics = [
-    { label: 'Credits Remaining', value: wallet ? wallet.credits_remaining.toLocaleString() : '—', icon: <Zap size={16} strokeWidth={1.5} className="text-[#C4A896]" />, low: !!(wallet && wallet.credits_remaining < 50), href: '/dashboard/settings', action: 'Top Up' },
+    { label: 'Credits Remaining', value: wallet ? wallet.credits_remaining.toLocaleString() : '-', icon: <Zap size={16} strokeWidth={1.5} className="text-[#C4A896]" />, low: !!(wallet && wallet.credits_remaining < 50), href: '/dashboard/settings', action: 'Top Up' },
     { label: 'Campaigns Launched', value: campaigns.length.toString(), icon: <Radio size={16} strokeWidth={1.5} className="text-[#C4A896]" />, low: false, href: '/dashboard/broadcast', action: 'New Campaign' },
     { label: 'Messages Delivered', value: totalDelivered.toLocaleString(), icon: <Send size={16} strokeWidth={1.5} className="text-[#C4A896]" />, low: false, href: '/dashboard/history', action: 'View History' },
     { label: 'Total Contacts', value: totalContacts.toLocaleString(), icon: <Database size={16} strokeWidth={1.5} className="text-[#C4A896]" />, low: false, href: '/dashboard/customers', action: 'Manage Audience' },

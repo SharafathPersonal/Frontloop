@@ -122,7 +122,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div>
             <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase">Credit Balance</p>
             <p className="serif-headline text-lg text-[#3E3B36] leading-tight">
-              {wallet ? wallet.credits_remaining.toLocaleString() : '—'}
+              {wallet ? wallet.credits_remaining.toLocaleString() : '-'}
             </p>
           </div>
         </div>

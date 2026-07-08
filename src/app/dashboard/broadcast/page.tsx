@@ -240,7 +240,7 @@ export default function BroadcastPage() {
         <div className="border border-[#C4A896]/40 bg-[#F5F1EA] rounded-xl p-4 flex items-center gap-3">
           <CheckCircle size={16} className="text-[#C4A896]" strokeWidth={1.5} />
           <p className="text-xs text-[#3E3B36]">
-            Credit check passed — {creditCheck.creditsRequired} credits will be deducted. <span className="text-[#8B8378]">{creditCheck.creditsAvailable - creditCheck.creditsRequired} remaining after dispatch.</span>
+            Credit check passed - {creditCheck.creditsRequired} credits will be deducted. <span className="text-[#8B8378]">{creditCheck.creditsAvailable - creditCheck.creditsRequired} remaining after dispatch.</span>
           </p>
         </div>
       )}

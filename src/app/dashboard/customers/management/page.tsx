@@ -283,7 +283,7 @@ export default function AudienceManagementPage() {
               <tbody>
                 {dbCustomers.map((c, i) => (
                   <tr key={i} className="border-b border-[#E8E3DA]/60 last:border-0 hover:bg-[#F5F1EA]/30 transition-colors group">
-                    <td className="px-5 py-3 text-xs text-[#3E3B36]">{c.customer_name || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-[#3E3B36]">{c.customer_name || '-'}</td>
                     <td className="px-5 py-3 text-xs text-[#8B8378] font-mono">{c.whatsapp_number}</td>
                     <td className="px-5 py-3">
                       {c.tags?.map(t => (

@@ -261,7 +261,7 @@ export default function LandingPage() {
               {/* USP Bullets */}
               <div className="gsap-reveal space-y-2.5">
                 {[
-                  'Zero monthly subscriptions — pay only per message sent',
+                  'Zero monthly subscriptions - pay only per message sent',
                   'Real-time credit deduction with wallet transparency',
                   'CSV-based contact management for instant list loading',
                   'Anti-spam throttle engine protects your sender numbers',
@@ -550,7 +550,7 @@ export default function LandingPage() {
           <div className="gsap-reveal">
             <p className="text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.70)' }}>
               Join retail brands using Attendly Broadcast to stay connected, drive repeat purchases,
-              and build loyal communities — one WhatsApp message at a time.
+              and build loyal communities - one WhatsApp message at a time.
             </p>
           </div>
 

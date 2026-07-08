@@ -330,7 +330,7 @@ export default function SettingsPage() {
               Authorize your Meta Business account to enable WhatsApp Cloud API broadcasting. Your token is securely stored and never shared.
             </p>
             <button
-              onClick={() => alert('Meta Embedded Signup flow — integrate your Facebook App ID here.\n\nUse: window.FB.login() with scope: business_management,whatsapp_business_management')}
+              onClick={() => alert('Meta Embedded Signup flow - integrate your Facebook App ID here.\n\nUse: window.FB.login() with scope: business_management,whatsapp_business_management')}
               className="flex items-center gap-3 bg-[#1877F2] hover:bg-[#1565C0] text-white px-5 py-3 rounded-xl transition-colors font-medium text-sm"
             >
               <FacebookIcon size={16} />
@@ -347,7 +347,7 @@ export default function SettingsPage() {
             >
               <div className="text-left">
                 <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase">Manual Token Entry</p>
-                <p className="text-[10px] text-[#8B8378] mt-0.5 normal-case tracking-normal">Developer safety route — enter credentials directly</p>
+                <p className="text-[10px] text-[#8B8378] mt-0.5 normal-case tracking-normal">Developer safety route - enter credentials directly</p>
               </div>
               <ChevronDown size={14} className={`text-[#8B8378] transition-transform flex-shrink-0 ${manualProviderOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -502,8 +502,8 @@ export default function SettingsPage() {
         <div className="p-6">
           <div className="space-y-4">
             {[
-              { label: 'Workspace ID', value: shop?.id ?? '—' },
-              { label: 'Created', value: shop ? new Date(shop.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '—' },
+              { label: 'Workspace ID', value: shop?.id ?? '-' },
+              { label: 'Created', value: shop ? new Date(shop.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '-' },
             ].map((item) => (
               <div key={item.label} className="flex items-start justify-between py-3 border-b border-[#E8E3DA] last:border-0">
                 <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase">{item.label}</p>
