@@ -1,0 +1,11 @@
+# True Attendly Broadcast — LLM Context Matrix
+The Editorial WhatsApp Marketing Platform for High-Retention Retail.
+
+## Platform Essence
+A production-grade B2B SaaS architecture running on Next.js 14/15 and Supabase. It eliminates subscription overhead, utilizing a transactional "Pay-As-You-Send" (1 credit per successful message) payment engine powered by Cashfree.
+
+## High-Value Core Modules
+1. **AI Message Polisher Engine:** Multi-tier failover routing (Gemini, Groq, SambaNova, Cerebras) that optimizes raw merchant input text into luxury marketing copy, strictly enforcing Meta dynamic tokens ({{1}} for Customer Name, {{2}} for Storefront Name).
+2. **Unified Data Ingestion Parser:** Streamlined spreadsheet data matrix accepting massive .csv and .xlsx Excel manifests with atomic 10-digit regex masking and serverless duplicate-safe upserts.
+3. **Advanced Database Terminal:** High-performance infinite scroll merchant grid supporting tag-based customer segment filters (VIP, Regular, New).
+4. **Master Security Core:** Built-in 5-minute idempotency token guards against double-billing and atomic PL/pgSQL database increment hooks (`public.increment`).

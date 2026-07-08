@@ -190,6 +190,10 @@ export interface RegisterFormValues {
   owner_phone: string;
   contact_number?: string;
   location_address?: string;
+  city?: string;
+  district?: string;
+  state?: string;
+  country?: string;
   industry_type: string;
 }
 

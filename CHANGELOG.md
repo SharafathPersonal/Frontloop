@@ -454,4 +454,18 @@
 
 ---
 
+## 2026-07-08 — Phase 24: Legal Compliance & SEO Asset Generation
+
+### [COMPLIANCE] LLM Discovery File & Meta Legal Pages
+- **Module:** Public Assets / Routing
+- **Nature:** Generated `/public/llms-full.txt` and `/public/llms.txt` exposing platform architecture and capabilities directly to AI crawlers. Added strict Meta compliance legal structures (`/privacy` and `/terms`) built on `#F5F1EA` luxury-minimal layouts ensuring 100% adherence to WhatsApp API verification requirements.
+- **Files:** `/public/llms-full.txt`, `/public/llms.txt`, `src/app/privacy/page.tsx`, `src/app/terms/page.tsx`
+
+### [SEO] Root Layout Metadata Injection
+- **Module:** Layout
+- **Nature:** Refactored the core Next.js `metadata` object within `layout.tsx`. Expanded the title schema and injected targeted keywords for high-retention retail acquisition. Updated the `openGraph` object strictly to enforce locale structures and the custom dark logo for external social crawl previews.
+- **Files:** `src/app/layout.tsx`
+
+---
+
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*
