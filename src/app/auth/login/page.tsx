@@ -20,7 +20,7 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
       email: form.email,
       password: form.password,
     });
@@ -30,6 +30,18 @@ export default function LoginPage() {
     if (authError) {
       setError(authError.message);
       return;
+    }
+
+    if (data.user) {
+      await fetch('/api/auth/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shop_id: data.user.id,
+          account_email: data.user.email,
+          action_type: 'LOGIN'
+        })
+      });
     }
 
     router.push('/dashboard');

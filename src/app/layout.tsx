@@ -21,8 +21,14 @@ export const metadata: Metadata = {
     description: 'The Editorial WhatsApp Marketing Platform for High-Retention Retail.',
   },
   icons: {
-    icon: '/images/logo-dark.png',
-  },
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/images/logo-dark.png', type: 'image/png' }
+    ],
+    apple: [
+      { url: '/images/logo-dark.png', sizes: '180x180', type: 'image/png' }
+    ]
+  }
 };
 
 import { OfflineBanner } from '@/components/ui/OfflineBanner';

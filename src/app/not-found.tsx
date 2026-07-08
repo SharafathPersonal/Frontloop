@@ -1,25 +1,24 @@
+import React from 'react';
 import Link from 'next/link';
 
 export default function NotFound() {
   return (
-    <div className="bg-[#F5F1EA] px-6 flex flex-col items-center justify-center min-h-screen">
-      <div className="text-center flex flex-col items-center">
-        <p className="uppercase text-[10px] tracking-[0.25em] text-[#8B8378] font-medium">
-          ERROR CODE 404
-        </p>
-        <h1 className="serif-headline text-2xl text-[#3E3B36] font-normal tracking-tight mt-2">
-          This page has dissolved into whitespace.
+    <div className="min-h-screen bg-[#F5F1EA] text-[#3E3B36] flex flex-col items-center justify-center p-4">
+      <div className="text-center space-y-6">
+        <h1 className="serif-headline text-4xl md:text-5xl font-light tracking-tight text-[#2C2A26]">
+          404 — ROUTE UNCHARTED
         </h1>
-        <p className="text-sm text-[#8B8378] max-w-sm text-center mt-3 leading-relaxed">
-          The reference module or campaign tracking sheet you are hunting for does not exist on this subdomain canvas.
+        <p className="text-[#8B8378] text-sm md:text-base max-w-md mx-auto leading-relaxed">
+          The resource or destination workspace you are trying to fetch does not exist or has moved permanently.
         </p>
-        
-        <Link 
-          href="/dashboard"
-          className="bg-[#3E3B36] text-white uppercase text-xs tracking-[0.2em] py-4 px-8 mt-8 hover:bg-[#C4A896] transition-colors rounded-sm inline-block"
-        >
-          Return to Dashboard
-        </Link>
+        <div className="pt-4">
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center rounded-sm bg-[#3E3B36] text-[#F5F1EA] px-8 py-3 text-sm font-semibold tracking-widest uppercase hover:bg-black transition-colors"
+          >
+            Return Home
+          </Link>
+        </div>
       </div>
     </div>
   );

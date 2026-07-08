@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Activity, DollarSign, Users, ShieldAlert, Zap, Calendar, LayoutDashboard, Store, IndianRupee, Save, AlertTriangle, CheckCircle, MessageSquare, Star } from 'lucide-react';
+import { X, Activity, DollarSign, Users, ShieldAlert, Zap, Calendar, LayoutDashboard, Store, IndianRupee, Save, AlertTriangle, CheckCircle, MessageSquare, Star, Shield } from 'lucide-react';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 
 export default function AdminDashboard() {
@@ -18,7 +18,13 @@ export default function AdminDashboard() {
   const [hasMoreMerchants, setHasMoreMerchants] = useState(true);
   const [isLoadingMerchants, setIsLoadingMerchants] = useState(false);
   
-  const [activeView, setActiveView] = useState<'analytics' | 'merchants' | 'pricing' | 'feedbacks'>('analytics');
+  const [activeView, setActiveView] = useState<'analytics' | 'merchants' | 'pricing' | 'feedbacks' | 'logs'>('analytics');
+
+  // Logs State
+  const [logs, setLogs] = useState<any[]>([]);
+  const [logsPage, setLogsPage] = useState(1);
+  const [hasMoreLogs, setHasMoreLogs] = useState(true);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
   // Login State
   const [username, setUsername] = useState('');
@@ -41,6 +47,33 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const fetchLogs = async (page = 1) => {
+    setIsLoadingLogs(true);
+    try {
+      const res = await fetch(`/api/admin/logs?page=${page}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (page === 1) {
+          setLogs(json.logs || []);
+        } else {
+          setLogs(prev => [...prev, ...(json.logs || [])]);
+        }
+        setHasMoreLogs((json.logs || []).length === 50);
+        setLogsPage(page);
+      }
+    } catch (e) {
+      // Ignored
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated && activeView === 'logs' && logs.length === 0) {
+      fetchLogs(1);
+    }
+  }, [isAuthenticated, activeView]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -251,6 +284,13 @@ export default function AdminDashboard() {
           >
             <MessageSquare size={18} />
             Support Tickets
+          </button>
+          <button 
+            onClick={() => setActiveView('logs')}
+            className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium tracking-wide transition-colors ${activeView === 'logs' ? 'bg-[#F5F1EA] text-[#3E3B36]' : 'text-[#8E8B85] hover:text-[#3E3B36] hover:bg-[#F5F1EA]/50'}`}
+          >
+            <Shield size={18} />
+            Security & Audit
           </button>
         </nav>
         <div className="p-4 border-t border-[#E8E3DA]">
@@ -511,6 +551,57 @@ export default function AdminDashboard() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* VIEW 5: SECURITY & AUDIT LOGS */}
+        {activeView === 'logs' && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            <h2 className="text-xl font-bold uppercase tracking-widest border-b border-[#E8E3DA] pb-4">Security & Audit Logs</h2>
+            
+            <div className="bg-[#FFFFFF] border border-[#E8E3DA] overflow-x-auto shadow-sm">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#F5F1EA] text-[10px] uppercase tracking-widest text-[#8E8B85]">
+                    <th className="p-4 font-semibold">Account Email</th>
+                    <th className="p-4 font-semibold">Action Performed</th>
+                    <th className="p-4 font-semibold">Timestamp</th>
+                    <th className="p-4 font-semibold">Shop ID</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm divide-y divide-[#E8E3DA]">
+                  {logs.map((log, i) => (
+                    <tr key={log.id || i} className="hover:bg-[#FCFAFC] transition-colors">
+                      <td className="p-4 font-medium">{log.account_email}</td>
+                      <td className="p-4">
+                        <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-widest rounded-sm ${log.action_type === 'LOGIN' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                          {log.action_type}
+                        </span>
+                      </td>
+                      <td className="p-4 text-[10px] text-[#8E8B85] font-mono">
+                        {new Date(log.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      </td>
+                      <td className="p-4 text-[10px] text-[#8E8B85] font-mono max-w-[150px] truncate">{log.shop_id}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {logs.length === 0 && !isLoadingLogs && (
+                <div className="p-8 text-center text-[#8E8B85] text-sm tracking-widest uppercase">No activity logs found.</div>
+              )}
+            </div>
+
+            {hasMoreLogs && (
+              <div className="text-center pt-2">
+                <button 
+                  onClick={() => fetchLogs(logsPage + 1)}
+                  disabled={isLoadingLogs}
+                  className="bg-[#FFFFFF] border border-[#3E3B36] text-[#3E3B36] px-6 py-2 text-xs font-semibold uppercase tracking-widest hover:bg-[#3E3B36] hover:text-[#FFFFFF] transition-colors disabled:opacity-50"
+                >
+                  {isLoadingLogs ? 'Fetching Records...' : 'Load More Logs'}
+                </button>
+              </div>
+            )}
           </div>
         )}
 

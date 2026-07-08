@@ -468,4 +468,23 @@
 
 ---
 
+## 2026-07-08 — Phase 25: Master Infrastructure Logging & Resilience Upgrades
+
+### [ASSETS] Production Favicon Forcing Array
+- **Module:** Layout Assets
+- **Nature:** Refactored `/src/app/layout.tsx` metadata configuration to explicitly dictate multi-format `icons` array mapping (`/favicon.ico` + `/images/logo-dark.png`), forcibly overriding Vercel's legacy cache allocations.
+- **Files:** `src/app/layout.tsx`
+
+### [UI/UX] Luxury-Minimal Custom 404
+- **Module:** Routing Fallbacks
+- **Nature:** Generated `/src/app/not-found.tsx` to handle unchecked routing exceptions. Features a zero-CLS, centered `#F5F1EA` layout with explicit serif-header navigation recovery (`Return Home`).
+- **Files:** `src/app/not-found.tsx`
+
+### [SECURITY] Administrator Activity Logs & Real-Time Auditing
+- **Module:** Admin Ledger & Auth Routing
+- **Nature:** Added `public.user_activity_logs` into `supabase-schema.sql` utilizing absolute RLS lockdowns. Injected background POST hooks directly into `login` and `logout` flow execution blocks ensuring synchronous tracking of merchant interactions. Constructed a "Security & Audit Logs" table under the `/admin` view with 50-row paginated Infinite Scroll fetching directly via Service Role credentials.
+- **Files:** `supabase-schema.sql`, `src/app/api/auth/log/route.ts`, `src/app/auth/login/page.tsx`, `src/app/dashboard/layout.tsx`, `src/app/admin/page.tsx`, `src/app/api/admin/logs/route.ts`
+
+---
+
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*

@@ -165,3 +165,17 @@ create table public.shop_feedbacks (
 
 alter table public.shop_feedbacks enable row level security;
 create policy "Feedbacks isolation" on public.shop_feedbacks for all using (auth.uid() = shop_id);
+
+-- ==============================================================================
+-- PHASE 6: USER ACTIVITY LOGS
+-- ==============================================================================
+create table public.user_activity_logs (
+    id uuid default gen_random_uuid() primary key,
+    shop_id uuid references public.shops(id) on delete cascade not null,
+    account_email text not null,
+    action_type text not null, -- 'LOGIN' or 'LOGOUT'
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.user_activity_logs enable row level security;
+create policy "User activity logs isolation" on public.user_activity_logs for all using (auth.uid() = shop_id);

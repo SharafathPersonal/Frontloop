@@ -71,6 +71,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const handleSignOut = async () => {
     setIsLogoutConfirmOpen(false);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await fetch('/api/auth/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shop_id: user.id,
+          account_email: user.email,
+          action_type: 'LOGOUT'
+        })
+      });
+    }
     await supabase.auth.signOut();
     router.push('/');
     router.refresh();
