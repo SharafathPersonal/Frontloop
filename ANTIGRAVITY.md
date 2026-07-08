@@ -17,7 +17,7 @@
 
 ---
 
-## RULE 2 — Decoupled Isolation
+## RULE 2 —-- Decoupled Isolation
 
 **The entire workspace must remain strictly serverless and lightweight.**
 
