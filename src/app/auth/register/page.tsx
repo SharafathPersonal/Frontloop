@@ -31,6 +31,12 @@ export default function RegisterPage() {
     confirmPassword: '',
     shop_name: '',
     owner_phone: '',
+    contact_number: '',
+    location_address: '',
+    city: '',
+    district: '',
+    state: '',
+    country: '',
     industry_type: '',
   });
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +66,12 @@ export default function RegisterPage() {
         data: {
           shop_name: form.shop_name,
           owner_phone: form.owner_phone,
+          contact_number: form.contact_number,
+          location_address: form.location_address,
+          city: form.city,
+          district: form.district,
+          state: form.state,
+          country: form.country,
           industry_type: form.industry_type,
         }
       }
@@ -155,6 +167,62 @@ export default function RegisterPage() {
                 placeholder="+91 98765 43210"
                 disabled={loading}
               />
+            </div>
+
+            {/* Official Contact Number */}
+            <div>
+              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
+                Official Contact Number
+              </label>
+              <input
+                type="tel"
+                value={form.contact_number || ''}
+                onChange={(e) => setForm({ ...form, contact_number: e.target.value })}
+                className="input-editorial disabled:opacity-50"
+                placeholder="Voice / Landline (Optional)"
+                disabled={loading}
+              />
+            </div>
+
+            {/* Geographical Location */}
+            <div className="space-y-4">
+              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
+                Physical Store Location
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  value={form.city || ''}
+                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  className="input-editorial disabled:opacity-50"
+                  placeholder="City / Locality"
+                  disabled={loading}
+                />
+                <input
+                  type="text"
+                  value={form.district || ''}
+                  onChange={(e) => setForm({ ...form, district: e.target.value })}
+                  className="input-editorial disabled:opacity-50"
+                  placeholder="District"
+                  disabled={loading}
+                />
+                <input
+                  type="text"
+                  value={form.state || ''}
+                  onChange={(e) => setForm({ ...form, state: e.target.value })}
+                  className="input-editorial disabled:opacity-50"
+                  placeholder="State"
+                  disabled={loading}
+                />
+                <input
+                  type="text"
+                  value={form.country || ''}
+                  onChange={(e) => setForm({ ...form, country: e.target.value })}
+                  className="input-editorial disabled:opacity-50"
+                  placeholder="Country"
+                  disabled={loading}
+                />
+              </div>
             </div>
 
             {/* Divider */}

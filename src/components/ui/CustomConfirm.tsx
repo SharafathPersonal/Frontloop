@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 
 interface CustomConfirmProps {
@@ -9,6 +9,7 @@ interface CustomConfirmProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
+  requireInput?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -19,9 +20,12 @@ export default function CustomConfirm({
   message,
   confirmText = 'CONFIRM',
   cancelText = 'CANCEL',
+  requireInput,
   onConfirm,
   onCancel,
 }: CustomConfirmProps) {
+  const [inputValue, setInputValue] = useState('');
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -56,6 +60,21 @@ export default function CustomConfirm({
         <p className="text-sm text-[#8B8378] leading-relaxed mt-2 font-sans">
           {message}
         </p>
+
+        {requireInput && (
+          <div className="mt-6">
+            <p className="text-[10px] tracking-[0.1em] uppercase text-[#3E3B36] font-semibold mb-2">
+              Type "{requireInput}" to confirm
+            </p>
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder={requireInput}
+              className="w-full bg-[#F5F1EA] border border-[#E8E3DA] px-4 py-3 text-sm focus:outline-none focus:border-[#C4A896] transition-colors rounded-sm"
+            />
+          </div>
+        )}
         
         <div className="flex items-center justify-end gap-3 mt-8">
           <button 
@@ -66,7 +85,8 @@ export default function CustomConfirm({
           </button>
           <button 
             onClick={onConfirm}
-            className="bg-[#3E3B36] text-[#FFFFFF] text-[10px] tracking-[0.2em] uppercase py-3 px-6 rounded-lg hover:bg-[#C4A896] transition-colors font-medium"
+            disabled={requireInput ? inputValue !== requireInput : false}
+            className="bg-[#3E3B36] text-[#FFFFFF] text-[10px] tracking-[0.2em] uppercase py-3 px-6 rounded-lg hover:bg-[#C4A896] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {confirmText}
           </button>

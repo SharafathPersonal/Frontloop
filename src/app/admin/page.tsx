@@ -2,13 +2,24 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Plus, X, Activity, DollarSign, Users, ShieldAlert, Zap, Calendar, TrendingUp } from 'lucide-react';
+import { X, Activity, DollarSign, Users, ShieldAlert, Zap, Calendar, LayoutDashboard, Store, IndianRupee, Save, AlertTriangle, CheckCircle, MessageSquare, Star } from 'lucide-react';
+import CustomConfirm from '@/components/ui/CustomConfirm';
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [data, setData] = useState<{shops: any[], campaigns: any[], payments: any[]}>({ shops: [], campaigns: [], payments: [] });
+  const [data, setData] = useState<{metrics: any, pricing: any[], feedbacks: any[]}>({ metrics: {}, pricing: [], feedbacks: [] });
   
+  const [merchants, setMerchants] = useState<any[]>([]);
+  const [merchantsSearch, setMerchantsSearch] = useState('');
+  const [merchantsSort, setMerchantsSort] = useState('date');
+  const [merchantsPage, setMerchantsPage] = useState(1);
+  const [hasMoreMerchants, setHasMoreMerchants] = useState(true);
+  const [isLoadingMerchants, setIsLoadingMerchants] = useState(false);
+  
+  const [activeView, setActiveView] = useState<'analytics' | 'merchants' | 'pricing' | 'feedbacks'>('analytics');
+
   // Login State
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -17,8 +28,15 @@ export default function AdminDashboard() {
   // Modals State
   const [infusionShop, setInfusionShop] = useState<any | null>(null);
   const [infusionAmount, setInfusionAmount] = useState<number | ''>('');
-  
-  const [auditShop, setAuditShop] = useState<any | null>(null);
+
+  // Pricing State
+  const [pricingTiers, setPricingTiers] = useState<any[]>([]);
+  const [isSavingPricing, setIsSavingPricing] = useState(false);
+  const [pricingStatusMsg, setPricingStatusMsg] = useState('');
+  const [pricingConfirmOpen, setPricingConfirmOpen] = useState(false);
+
+  // Ticket Modal State
+  const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -33,7 +51,11 @@ export default function AdminDashboard() {
       } else if (res.ok) {
         const json = await res.json();
         setData(json);
+        if (json.pricing) {
+          setPricingTiers(json.pricing);
+        }
         setIsAuthenticated(true);
+        fetchMerchants(1, true);
       }
     } catch (e) {
       console.error(e);
@@ -41,6 +63,36 @@ export default function AdminDashboard() {
       setIsLoading(false);
     }
   };
+
+  const fetchMerchants = async (page = 1, reset = false) => {
+    setIsLoadingMerchants(true);
+    try {
+      const res = await fetch(`/api/admin/merchants?page=${page}&search=${encodeURIComponent(merchantsSearch)}&sort=${merchantsSort}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (reset) {
+          setMerchants(json.shops || []);
+        } else {
+          setMerchants(prev => [...prev, ...(json.shops || [])]);
+        }
+        setHasMoreMerchants((json.shops || []).length === 50);
+        setMerchantsPage(page);
+      }
+    } finally {
+      setIsLoadingMerchants(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const delay = setTimeout(() => {
+        fetchMerchants(1, true);
+      }, 300);
+      return () => clearTimeout(delay);
+    }
+  }, [merchantsSearch, merchantsSort]);
+
+  // Removed loadAuditShop as we now route to the dynamic page
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,13 +127,41 @@ export default function AdminDashboard() {
       if (res.ok) {
         setInfusionShop(null);
         setInfusionAmount('');
-        fetchData(); // Refresh data
+        fetchMerchants(1, true); // Refresh data
       } else {
         alert('Failed to infuse credits');
       }
     } catch (e) {
       alert('Error infusing credits');
     }
+  };
+
+  const handleSavePricing = async () => {
+    setPricingConfirmOpen(false);
+    setIsSavingPricing(true);
+    setPricingStatusMsg('');
+    try {
+      const res = await fetch('/api/admin/pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pricing_tiers: pricingTiers })
+      });
+      if (res.ok) {
+        setPricingStatusMsg('SUCCESS: Global pricing engine synchronized.');
+        fetchData();
+      } else {
+        setPricingStatusMsg('ERROR: Failed to save tier configs.');
+      }
+    } catch (err) {
+      setPricingStatusMsg('ERROR: Network or sync failure.');
+    } finally {
+      setIsSavingPricing(false);
+      setTimeout(() => setPricingStatusMsg(''), 4000);
+    }
+  };
+
+  const updateTier = (id: number, field: 'amount_inr' | 'credit_count', value: number) => {
+    setPricingTiers(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
   };
 
   if (isLoading) {
@@ -130,277 +210,402 @@ export default function AdminDashboard() {
   }
 
   // --- Calculations for Analytics ---
-  const totalShops = data.shops.length;
-  const totalTokens = data.shops.reduce((sum, shop) => sum + (shop.wallets?.credits_remaining || 0), 0);
-  const globalMessages = data.campaigns.length;
-
-  // Monthly Activity Ledger
-  // Group campaigns and payments by YYYY-MM
-  const monthlyLedger: Record<string, { campaigns: number; payments: number; paymentTotal: number }> = {};
-  
-  data.campaigns.forEach(c => {
-    const month = new Date(c.created_at).toISOString().slice(0, 7);
-    if (!monthlyLedger[month]) monthlyLedger[month] = { campaigns: 0, payments: 0, paymentTotal: 0 };
-    monthlyLedger[month].campaigns += 1;
-  });
-  data.payments.forEach(p => {
-    const month = new Date(p.created_at).toISOString().slice(0, 7);
-    if (!monthlyLedger[month]) monthlyLedger[month] = { campaigns: 0, payments: 0, paymentTotal: 0 };
-    monthlyLedger[month].payments += 1;
-    monthlyLedger[month].paymentTotal += parseFloat(p.amount);
-  });
-  
-  const ledgerEntries = Object.entries(monthlyLedger).sort((a, b) => b[0].localeCompare(a[0]));
+  const totalShops = data.metrics?.totalShops || 0;
+  const totalTokens = data.metrics?.totalTokens || 0;
+  const globalMessages = data.metrics?.globalMessages || 0;
+  const totalRevenue = data.metrics?.totalRevenue || 0;
 
   return (
-    <div className="min-h-screen bg-[#F5F1EA] text-[#3E3B36] pb-24">
-      {/* Header */}
-      <header className="bg-[#FFFFFF] border-b border-[#E8E3DA] sticky top-0 z-10 px-8 py-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-[#F5F1EA] text-[#3E3B36] flex">
+      {/* Sidebar Navigation */}
+      <aside className="w-64 bg-[#FFFFFF] border-r border-[#E8E3DA] flex flex-col hidden md:flex sticky top-0 h-screen">
+        <div className="p-6 border-b border-[#E8E3DA] flex items-center gap-3">
           <ShieldAlert size={24} className="text-[#3E3B36]" />
-          <h1 className="text-xl font-bold tracking-widest uppercase">Master Admin Base</h1>
+          <h1 className="text-sm font-bold tracking-widest uppercase">Master Base</h1>
         </div>
-        <button 
-          onClick={async () => {
-            // Need a quick logout endpoint or just clear cookie via JS if possible. 
-            // Since HTTPOnly, let's just reload to a non-existent logout route or clear UI.
-            // A simple hack: window.location.href = '/' might not clear cookie.
-            document.cookie = "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-            window.location.reload();
-          }} 
-          className="text-xs uppercase tracking-wider font-semibold hover:text-black transition-colors"
-        >
-          Terminate Link
-        </button>
-      </header>
+        <nav className="flex-1 p-4 space-y-2">
+          <button 
+            onClick={() => setActiveView('analytics')}
+            className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium tracking-wide transition-colors ${activeView === 'analytics' ? 'bg-[#F5F1EA] text-[#3E3B36]' : 'text-[#8E8B85] hover:text-[#3E3B36] hover:bg-[#F5F1EA]/50'}`}
+          >
+            <LayoutDashboard size={18} />
+            Analytics
+          </button>
+          <button 
+            onClick={() => setActiveView('merchants')}
+            className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium tracking-wide transition-colors ${activeView === 'merchants' ? 'bg-[#F5F1EA] text-[#3E3B36]' : 'text-[#8E8B85] hover:text-[#3E3B36] hover:bg-[#F5F1EA]/50'}`}
+          >
+            <Store size={18} />
+            Merchants
+          </button>
+          <button 
+            onClick={() => setActiveView('pricing')}
+            className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium tracking-wide transition-colors ${activeView === 'pricing' ? 'bg-[#F5F1EA] text-[#3E3B36]' : 'text-[#8E8B85] hover:text-[#3E3B36] hover:bg-[#F5F1EA]/50'}`}
+          >
+            <IndianRupee size={18} />
+            Pricing Engine
+          </button>
+          <button 
+            onClick={() => setActiveView('feedbacks')}
+            className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium tracking-wide transition-colors ${activeView === 'feedbacks' ? 'bg-[#F5F1EA] text-[#3E3B36]' : 'text-[#8E8B85] hover:text-[#3E3B36] hover:bg-[#F5F1EA]/50'}`}
+          >
+            <MessageSquare size={18} />
+            Support Tickets
+          </button>
+        </nav>
+        <div className="p-4 border-t border-[#E8E3DA]">
+          <button 
+            onClick={() => {
+              document.cookie = "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+              window.location.reload();
+            }} 
+            className="w-full text-center text-[10px] uppercase tracking-wider font-semibold hover:text-black transition-colors"
+          >
+            Terminate Link
+          </button>
+        </div>
+      </aside>
 
-      <main className="max-w-7xl mx-auto px-6 py-10 space-y-12">
-        {/* Step 2: Global Analytics Metrics */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-[#FFFFFF] p-8 border border-[#E8E3DA] shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Users size={120} />
-            </div>
-            <p className="text-xs font-bold text-[#8E8B85] uppercase tracking-widest mb-2">Total Operational Shops</p>
-            <p className="text-5xl font-light tracking-tight">{totalShops}</p>
-          </div>
-          <div className="bg-[#FFFFFF] p-8 border border-[#E8E3DA] shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Zap size={120} />
-            </div>
-            <p className="text-xs font-bold text-[#8E8B85] uppercase tracking-widest mb-2">Tokens Circulating</p>
-            <p className="text-5xl font-light tracking-tight">{totalTokens.toLocaleString()}</p>
-          </div>
-          <div className="bg-[#FFFFFF] p-8 border border-[#E8E3DA] shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Activity size={120} />
-            </div>
-            <p className="text-xs font-bold text-[#8E8B85] uppercase tracking-widest mb-2">Global Message Traffic</p>
-            <p className="text-5xl font-light tracking-tight">{globalMessages.toLocaleString()}</p>
-          </div>
-        </section>
-
-        {/* Step 3: Merchant Management System */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold uppercase tracking-widest">Merchant Management Matrix</h2>
-          </div>
-          <div className="bg-[#FFFFFF] border border-[#E8E3DA] overflow-x-auto shadow-sm">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-[#F5F1EA] text-[10px] uppercase tracking-widest text-[#8E8B85]">
-                  <th className="p-5 font-semibold">Shop Entity</th>
-                  <th className="p-5 font-semibold">Industry</th>
-                  <th className="p-5 font-semibold">Date Joined</th>
-                  <th className="p-5 font-semibold">Token Balance</th>
-                  <th className="p-5 font-semibold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm divide-y divide-[#E8E3DA]">
-                {data.shops.map(shop => {
-                  const credits = shop.wallets?.credits_remaining || 0;
-                  const shopCampaigns = data.campaigns.filter(c => c.shop_id === shop.id);
-                  const isHighVolume = shopCampaigns.length > 20 || shopCampaigns.reduce((sum, c) => sum + c.total_recipients, 0) > 5000;
-                  const isLowCredits = credits < 10;
-                  
-                  return (
-                    <tr 
-                      key={shop.id} 
-                      className="hover:bg-[#FCFAFC] transition-colors group cursor-pointer"
-                      onClick={() => setAuditShop(shop)}
-                    >
-                      <td className="p-5">
-                        <div className="font-semibold text-base mb-1">{shop.shop_name}</div>
-                        <div className="text-xs text-[#8E8B85] font-mono">{shop.owner_phone}</div>
-                      </td>
-                      <td className="p-5">
-                        <span className="bg-[#F5F1EA] px-3 py-1 text-xs font-medium uppercase tracking-wider">{shop.industry_type}</span>
-                      </td>
-                      <td className="p-5 text-[#8E8B85] whitespace-nowrap">
-                        {new Date(shop.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                      </td>
-                      <td className="p-5">
-                        <div className="flex items-center gap-3">
-                          <span className={`text-lg font-medium ${isLowCredits ? 'text-red-700 font-bold' : ''}`}>
-                            {credits.toLocaleString()}
-                          </span>
-                          {isLowCredits && <span className="bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest">Low Credits Alert</span>}
-                          {!isLowCredits && isHighVolume && <span className="bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest">High Vol Sender</span>}
-                        </div>
-                      </td>
-                      <td className="p-5 text-right">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setInfusionShop(shop);
-                          }}
-                          className="bg-[#3E3B36] text-[#F5F1EA] px-4 py-2 text-xs uppercase tracking-widest font-semibold hover:bg-black transition-colors"
-                        >
-                          Manage Credits
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* Step 4: Monthly Activity Ledger */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold uppercase tracking-widest">Chronological Monthly Ledger</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {ledgerEntries.map(([month, stats]) => (
-              <div key={month} className="bg-[#FFFFFF] border border-[#E8E3DA] p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-4 text-[#8E8B85]">
-                  <Calendar size={16} />
-                  <span className="text-xs font-bold uppercase tracking-widest">{month}</span>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-widest text-[#8E8B85] mb-1">Campaigns Fired</p>
-                    <p className="text-xl font-medium">{stats.campaigns}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-widest text-[#8E8B85] mb-1">Infusion Events</p>
-                    <p className="text-xl font-medium">{stats.payments}</p>
-                  </div>
-                </div>
+      <main className="flex-1 max-w-6xl p-6 md:p-10">
+        
+        {/* VIEW 1: MASTER DASHBOARD ANALYTICS */}
+        {activeView === 'analytics' && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            <h2 className="text-xl font-bold uppercase tracking-widest border-b border-[#E8E3DA] pb-4">Master Analytics</h2>
+            
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-[#FFFFFF] p-6 border border-[#E8E3DA] shadow-sm relative overflow-hidden group">
+                <p className="text-[10px] font-bold text-[#8E8B85] uppercase tracking-widest mb-2">Total Shops</p>
+                <p className="text-3xl font-light tracking-tight">{totalShops}</p>
+                <Users className="absolute top-6 right-6 opacity-10" size={48} />
               </div>
-            ))}
-            {ledgerEntries.length === 0 && (
-              <div className="col-span-full bg-[#FFFFFF] p-10 text-center border border-[#E8E3DA] text-sm text-[#8E8B85] uppercase tracking-widest">
-                No historical data recorded.
+              <div className="bg-[#FFFFFF] p-6 border border-[#E8E3DA] shadow-sm relative overflow-hidden group">
+                <p className="text-[10px] font-bold text-[#8E8B85] uppercase tracking-widest mb-2">Tokens in Circulation</p>
+                <p className="text-3xl font-light tracking-tight">{totalTokens.toLocaleString()}</p>
+                <Zap className="absolute top-6 right-6 opacity-10" size={48} />
+              </div>
+              <div className="bg-[#FFFFFF] p-6 border border-[#E8E3DA] shadow-sm relative overflow-hidden group">
+                <p className="text-[10px] font-bold text-[#8E8B85] uppercase tracking-widest mb-2">Global Messages</p>
+                <p className="text-3xl font-light tracking-tight">{globalMessages.toLocaleString()}</p>
+                <Activity className="absolute top-6 right-6 opacity-10" size={48} />
+              </div>
+              <div className="bg-[#3E3B36] text-[#F5F1EA] p-6 border border-[#3E3B36] shadow-sm relative overflow-hidden group">
+                <p className="text-[10px] font-bold text-[#F5F1EA]/50 uppercase tracking-widest mb-2">Gross Revenue (INR)</p>
+                <p className="text-3xl font-light tracking-tight">₹{totalRevenue.toLocaleString()}</p>
+                <DollarSign className="absolute top-6 right-6 opacity-10" size={48} />
+              </div>
+            </section>
+
+            <section className="bg-[#FFFFFF] border border-[#E8E3DA] p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <AlertTriangle size={16} className="text-[#8E8B85]" />
+                <h3 className="text-xs font-bold uppercase tracking-widest text-[#3E3B36]">System Status Alert Log</h3>
+              </div>
+              <div className="bg-[#F5F1EA] p-4 text-xs font-mono text-[#8E8B85] max-h-48 overflow-y-auto space-y-2">
+                <p className="text-[#3E3B36]">[SYSTEM] Operational frameworks active. No critical faults detected.</p>
+                {merchants.filter(s => !s.meta_access_token).map(s => (
+                  <p key={s.id}>[WARN] Shop <span className="font-semibold">{s.shop_name}</span> lacks Meta configuration.</p>
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* VIEW 2: MERCHANTS & INLINE CONTROLS */}
+        {activeView === 'merchants' && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            <h2 className="text-xl font-bold uppercase tracking-widest border-b border-[#E8E3DA] pb-4">Merchant Matrix</h2>
+            
+            {/* OMNI-SEARCH & SORT BAR */}
+            <div className="flex flex-col sm:flex-row gap-4 items-center bg-[#FFFFFF] p-4 border border-[#E8E3DA] shadow-sm">
+              <input 
+                type="text" 
+                placeholder="Search by name or email..." 
+                value={merchantsSearch}
+                onChange={e => setMerchantsSearch(e.target.value)}
+                className="flex-1 bg-[#F5F1EA] px-4 py-2 text-sm text-[#3E3B36] border-none focus:outline-none focus:ring-1 focus:ring-[#3E3B36] transition-all w-full"
+              />
+              <select 
+                value={merchantsSort} 
+                onChange={e => setMerchantsSort(e.target.value)}
+                className="bg-[#F5F1EA] px-4 py-2 text-sm text-[#3E3B36] border-none focus:outline-none focus:ring-1 focus:ring-[#3E3B36] transition-all w-full sm:w-auto uppercase tracking-wider text-xs font-medium"
+              >
+                <option value="date">Newest First</option>
+                <option value="az">Name: A-Z</option>
+                <option value="za">Name: Z-A</option>
+              </select>
+            </div>
+
+            <div className="bg-[#FFFFFF] border border-[#E8E3DA] overflow-x-auto shadow-sm">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#F5F1EA] text-[10px] uppercase tracking-widest text-[#8E8B85]">
+                    <th className="p-4 font-semibold">Shop Entity</th>
+                    <th className="p-4 font-semibold">Contact / Location</th>
+                    <th className="p-4 font-semibold">Industry</th>
+                    <th className="p-4 font-semibold">Token Balance</th>
+                    <th className="p-4 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm divide-y divide-[#E8E3DA]">
+                  {merchants.map(shop => {
+                    const credits = shop.wallets?.credits_remaining || 0;
+                    const isLowCredits = credits < 10;
+                    return (
+                      <tr 
+                        key={shop.id} 
+                        className="hover:bg-[#FCFAFC] transition-colors group cursor-pointer"
+                        onClick={() => router.push(`/admin/merchants/${shop.id}`)}
+                      >
+                        <td className="p-4">
+                          <div className="font-semibold text-sm mb-0.5">{shop.shop_name}</div>
+                          <div className="text-[10px] text-[#8E8B85] font-mono">{shop.owner_phone}</div>
+                        </td>
+                        <td className="p-4">
+                          <div className="text-[10px] text-[#8E8B85] truncate max-w-[150px]">{shop.contact_number || 'N/A'}</div>
+                          <div className="text-[10px] text-[#8E8B85] truncate max-w-[150px]">{shop.location_address || 'N/A'}</div>
+                        </td>
+                        <td className="p-4">
+                          <span className="bg-[#F5F1EA] px-2 py-1 text-[10px] font-medium uppercase tracking-wider">{shop.industry_type}</span>
+                        </td>
+                        <td className="p-4 font-medium">{credits.toLocaleString()}</td>
+                        <td className="p-4">
+                          {isLowCredits ? (
+                            <span className="text-red-600 text-[10px] font-bold uppercase tracking-widest">Low Alert</span>
+                          ) : (
+                            <span className="text-green-700 text-[10px] font-bold uppercase tracking-widest">Active</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {merchants.length === 0 && !isLoadingMerchants && (
+                <div className="p-8 text-center text-[#8E8B85] text-sm tracking-widest uppercase">No merchants found.</div>
+              )}
+            </div>
+
+            {hasMoreMerchants && (
+              <div className="text-center pt-2">
+                <button 
+                  onClick={() => fetchMerchants(merchantsPage + 1)}
+                  disabled={isLoadingMerchants}
+                  className="bg-[#FFFFFF] border border-[#3E3B36] text-[#3E3B36] px-6 py-2 text-xs font-semibold uppercase tracking-widest hover:bg-[#3E3B36] hover:text-[#FFFFFF] transition-colors disabled:opacity-50"
+                >
+                  {isLoadingMerchants ? 'Loading...' : 'Load More Merchants'}
+                </button>
               </div>
             )}
           </div>
-        </section>
+        )}
+
+        {/* VIEW 3: GLOBAL PRICING ENGINE */}
+        {activeView === 'pricing' && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            <div className="flex items-center justify-between border-b border-[#E8E3DA] pb-4">
+              <h2 className="text-xl font-bold uppercase tracking-widest">Global Pricing Engine</h2>
+              <button 
+                onClick={() => setPricingConfirmOpen(true)}
+                disabled={isSavingPricing}
+                className="bg-[#3E3B36] text-[#F5F1EA] flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-widest font-semibold hover:bg-black transition-colors disabled:opacity-50"
+              >
+                <Save size={14} /> {isSavingPricing ? 'Syncing...' : 'Save Changes'}
+              </button>
+            </div>
+            
+            {pricingStatusMsg && (
+              <div className={`p-4 border text-sm font-medium ${pricingStatusMsg.startsWith('ERROR') ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
+                {pricingStatusMsg}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {pricingTiers.map(tier => (
+                <div key={tier.id} className="bg-[#FFFFFF] border border-[#E8E3DA] p-6 shadow-sm flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <span className="bg-[#F5F1EA] px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-[#8E8B85]">Tier {tier.id}</span>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest text-[#8E8B85] mb-1">Amount (INR)</label>
+                    <div className="relative">
+                      <IndianRupee size={14} className="absolute left-3 top-3 text-[#8E8B85]" />
+                      <input 
+                        type="number"
+                        value={tier.amount_inr}
+                        onChange={(e) => updateTier(tier.id, 'amount_inr', Number(e.target.value))}
+                        className="w-full bg-[#F5F1EA] border-none text-[#3E3B36] pl-9 pr-3 py-2 text-lg focus:outline-none focus:ring-1 focus:ring-[#3E3B36] transition-all font-medium"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest text-[#8E8B85] mb-1">Credits Awarded</label>
+                    <input 
+                      type="number"
+                      value={tier.credit_count}
+                      onChange={(e) => updateTier(tier.id, 'credit_count', Number(e.target.value))}
+                      className="w-full bg-[#F5F1EA] border-none text-[#3E3B36] px-3 py-2 text-lg focus:outline-none focus:ring-1 focus:ring-[#3E3B36] transition-all font-medium"
+                    />
+                  </div>
+                  <div className="mt-auto pt-4 border-t border-[#E8E3DA]">
+                    <p className="text-xs text-[#8E8B85] text-right">Effective Rate: <span className="font-semibold text-[#3E3B36]">₹{(tier.amount_inr / tier.credit_count).toFixed(2)}/msg</span></p>
+                  </div>
+                </div>
+              ))}
+              {pricingTiers.length === 0 && (
+                <div className="col-span-full p-8 text-center text-[#8E8B85] text-sm uppercase tracking-widest border border-dashed border-[#E8E3DA]">
+                  No pricing tiers configured. Ensure public.pricing_tiers is populated.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 4: SUPPORT TICKETS & FEEDBACK */}
+        {activeView === 'feedbacks' && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            <h2 className="text-xl font-bold uppercase tracking-widest border-b border-[#E8E3DA] pb-4">Support & Feedback Ledger</h2>
+            
+            <div className="space-y-4">
+              {data.feedbacks?.length === 0 && (
+                <div className="bg-[#FFFFFF] p-8 border border-[#E8E3DA] text-center text-[#8E8B85] text-sm tracking-widest uppercase">
+                  No support tickets found in the matrix.
+                </div>
+              )}
+              {data.feedbacks?.map((ticket: any) => (
+                <div 
+                  key={ticket.id} 
+                  onClick={() => setSelectedTicket(ticket)}
+                  className="bg-[#FFFFFF] p-6 border border-[#E8E3DA] shadow-sm flex flex-col md:flex-row gap-6 cursor-pointer hover:border-[#3E3B36] transition-colors"
+                >
+                  {/* Meta / Identity */}
+                  <div className="md:w-1/3 flex flex-col gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-[#F5F1EA] px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-[#3E3B36]">{ticket.category}</span>
+                      <div className="flex items-center gap-0.5 ml-auto">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star 
+                            key={star}
+                            size={12} 
+                            className={star <= ticket.rating ? "text-[#C4A896] fill-current" : "text-[#E8E3DA]"} 
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-[#3E3B36]">{ticket.shop?.shop_name || 'Unknown Shop'}</p>
+                      <p className="text-[10px] font-mono text-[#8E8B85] mt-1">{ticket.shop?.owner_phone || 'No phone'}</p>
+                    </div>
+                    <p className="text-[10px] tracking-widest uppercase text-[#8E8B85]">
+                      {new Date(ticket.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                  
+                  {/* Message Block */}
+                  <div className="md:w-2/3 border-t md:border-t-0 md:border-l border-[#E8E3DA] pt-4 md:pt-0 md:pl-6 flex flex-col">
+                    <p className="text-xs text-[#8E8B85] tracking-[0.1em] uppercase mb-2">Message Body</p>
+                    <div className="bg-[#F5F1EA] p-4 text-sm text-[#3E3B36] font-sans leading-relaxed rounded-md h-full whitespace-pre-wrap">
+                      {ticket.message}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </main>
 
-      {/* Credit Infusion Modal */}
-      {infusionShop && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#FFFFFF] w-full max-w-md border border-[#E8E3DA] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-[#F5F1EA] p-6 border-b border-[#E8E3DA] flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold uppercase tracking-widest">Credit Infusion</h3>
-                <p className="text-xs text-[#8E8B85] mt-1">Target: {infusionShop.shop_name}</p>
+      {/* Modals */}
+      <CustomConfirm
+        isOpen={pricingConfirmOpen}
+        title="Confirm Pricing Sync"
+        message="Are you sure you want to synchronize the global pricing engine? This will immediately affect the recharge rates for all merchants on the platform."
+        confirmText="YES, SYNCHRONIZE"
+        cancelText="NO, CANCEL"
+        onConfirm={handleSavePricing}
+        onCancel={() => setPricingConfirmOpen(false)}
+      />
+
+      {/* TICKET DETAILS MODAL */}
+      {selectedTicket && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#3E3B36]/60 backdrop-blur-sm">
+          <div className="bg-[#FFFFFF] w-full max-w-2xl rounded-sm shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-[#E8E3DA] flex items-center justify-between bg-[#F5F1EA]">
+              <div className="flex items-center gap-3">
+                <Store size={20} className="text-[#3E3B36]" />
+                <h3 className="text-lg font-bold tracking-widest uppercase text-[#3E3B36]">Shop Identity Ledger</h3>
               </div>
-              <button onClick={() => setInfusionShop(null)} className="text-[#8E8B85] hover:text-black transition-colors">
+              <button 
+                onClick={() => setSelectedTicket(null)}
+                className="text-[#8E8B85] hover:text-[#3E3B36] transition-colors"
+              >
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleInfusion} className="p-8">
-              <label className="block text-xs font-medium text-[#3E3B36] tracking-wider uppercase mb-3">Amount to Inject</label>
-              <input 
-                type="number"
-                min="1"
-                value={infusionAmount}
-                onChange={e => setInfusionAmount(parseInt(e.target.value) || '')}
-                className="w-full bg-[#F5F1EA] text-2xl font-light text-[#3E3B36] p-4 text-center focus:outline-none focus:ring-1 focus:ring-[#3E3B36] transition-all mb-8"
-                required
-                autoFocus
-                placeholder="0"
-              />
-              <button type="submit" className="w-full bg-[#3E3B36] text-[#F5F1EA] uppercase tracking-widest text-sm font-semibold py-4 hover:bg-black transition-colors">
-                Confirm Infusion
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Audit Slideout Panel */}
-      {auditShop && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-sm">
-          <div className="w-full max-w-2xl bg-[#FFFFFF] border-l border-[#E8E3DA] shadow-2xl h-full flex flex-col animate-in slide-in-from-right duration-300">
             
-            {/* Slideout Header */}
-            <div className="p-8 border-b border-[#E8E3DA] flex items-start justify-between bg-[#F5F1EA]">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[#8E8B85] mb-2 block">Comprehensive Audit</span>
-                <h2 className="text-2xl font-semibold tracking-tight mb-1">{auditShop.shop_name}</h2>
-                <p className="text-sm font-mono text-[#8E8B85]">{auditShop.owner_phone}</p>
-              </div>
-              <button onClick={() => setAuditShop(null)} className="bg-white p-2 rounded-full shadow-sm hover:scale-105 transition-transform text-[#3E3B36]">
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Slideout Metrics */}
-            <div className="p-8 border-b border-[#E8E3DA] grid grid-cols-2 gap-6 bg-white">
-              <div>
-                <p className="text-[10px] font-bold text-[#8E8B85] uppercase tracking-widest mb-1">Active Balance</p>
-                <p className="text-3xl font-light text-[#3E3B36]">{(auditShop.wallets?.credits_remaining || 0).toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-[#8E8B85] uppercase tracking-widest mb-1">Total Consumed</p>
-                <p className="text-3xl font-light text-[#3E3B36]">
-                  {data.campaigns
-                    .filter(c => c.shop_id === auditShop.id && c.status === 'completed')
-                    .reduce((sum, c) => sum + (c.total_recipients || 0), 0)
-                    .toLocaleString()
-                  }
-                </p>
-              </div>
-            </div>
-
-            {/* Slideout Campaign Log */}
-            <div className="flex-1 overflow-y-auto p-8 bg-white">
-              <h3 className="text-sm font-bold uppercase tracking-widest mb-6 border-b border-[#E8E3DA] pb-4">Total Campaigns Log</h3>
+            <div className="p-6 overflow-y-auto space-y-8">
               
-              <div className="space-y-4">
-                {data.campaigns.filter(c => c.shop_id === auditShop.id).length === 0 ? (
-                  <p className="text-sm text-[#8E8B85] italic">No historical campaigns detected.</p>
-                ) : (
-                  data.campaigns
-                    .filter(c => c.shop_id === auditShop.id)
-                    .sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                    .map(campaign => (
-                      <div key={campaign.id} className="border border-[#E8E3DA] p-5 hover:bg-[#F5F1EA] transition-colors rounded-sm">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold text-[#3E3B36]">{campaign.title}</h4>
-                          <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 ${
-                            campaign.status === 'completed' ? 'bg-green-50 text-green-700 border border-green-200' :
-                            campaign.status === 'failed' ? 'bg-red-50 text-red-700 border border-red-200' :
-                            'bg-amber-50 text-amber-700 border border-amber-200'
-                          }`}>
-                            {campaign.status}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-[#8E8B85]">
-                          <span>{new Date(campaign.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</span>
-                          <span className="font-medium text-[#3E3B36]">{campaign.total_recipients} Delivered</span>
-                        </div>
-                      </div>
-                  ))
-                )}
+              {/* Core Profile */}
+              <div>
+                <h4 className="text-[10px] font-bold text-[#8E8B85] tracking-[0.2em] uppercase mb-4 border-b border-[#E8E3DA] pb-2">Merchant Profile</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] text-[#8E8B85] uppercase tracking-wider mb-1">Shop Name</p>
+                    <p className="text-sm font-semibold text-[#3E3B36]">{selectedTicket.shop?.shop_name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[#8E8B85] uppercase tracking-wider mb-1">Industry Type</p>
+                    <p className="text-sm font-semibold text-[#3E3B36]">{selectedTicket.shop?.industry_type || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[#8E8B85] uppercase tracking-wider mb-1">Owner Phone</p>
+                    <p className="text-sm font-mono text-[#3E3B36]">{selectedTicket.shop?.owner_phone || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[#8E8B85] uppercase tracking-wider mb-1">Status</p>
+                    {selectedTicket.shop?.is_blocked ? (
+                      <span className="bg-red-100 text-red-800 text-[10px] px-2 py-0.5 rounded-sm font-bold uppercase tracking-wider">Blocked</span>
+                    ) : (
+                      <span className="bg-green-100 text-green-800 text-[10px] px-2 py-0.5 rounded-sm font-bold uppercase tracking-wider">Active</span>
+                    )}
+                  </div>
+                </div>
               </div>
+
+              {/* Geographic Block */}
+              <div>
+                <h4 className="text-[10px] font-bold text-[#8E8B85] tracking-[0.2em] uppercase mb-4 border-b border-[#E8E3DA] pb-2">Geographic Node</h4>
+                <div className="bg-[#F5F1EA] p-4 rounded-sm grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] text-[#8E8B85] uppercase tracking-wider mb-1">City / District</p>
+                    <p className="text-xs font-semibold text-[#3E3B36]">
+                      {selectedTicket.shop?.city || 'N/A'}, {selectedTicket.shop?.district || 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[#8E8B85] uppercase tracking-wider mb-1">State / Country</p>
+                    <p className="text-xs font-semibold text-[#3E3B36]">
+                      {selectedTicket.shop?.state || 'N/A'}, {selectedTicket.shop?.country || 'N/A'}
+                    </p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-[10px] text-[#8E8B85] uppercase tracking-wider mb-1">Full Address Line</p>
+                    <p className="text-xs text-[#3E3B36]">{selectedTicket.shop?.location_address || 'Not Provided'}</p>
+                  </div>
+                </div>
+              </div>
+
             </div>
             
+            <div className="p-4 border-t border-[#E8E3DA] bg-[#F5F1EA] flex justify-end">
+              <button 
+                onClick={() => setSelectedTicket(null)}
+                className="bg-[#3E3B36] text-[#F5F1EA] px-6 py-2 text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors"
+              >
+                Close Matrix
+              </button>
+            </div>
           </div>
         </div>
       )}

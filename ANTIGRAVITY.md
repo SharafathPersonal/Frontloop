@@ -53,5 +53,11 @@
 | Batch insert safety | Code review: customers bulk insert chunk validation |
 
 ---
+## RULE 4 — Database Synchronization Transparency
+
+**Absolute clarity on all backend schema alterations.**
+
+- If any feature implementation or bug fix requires an alteration to the Supabase Database Structure, Row-Level Security (RLS) policies, or PostgreSQL Functions (RPC), the exact SQL migration code block MUST be explicitly provided and flagged in the response.
+- Clear instructions on pasting the code into the Supabase SQL Editor must accompany the update to ensure zero drift between the codebase layers and the database environment.
 
 *Last reviewed: 2026-07-08 · Maintained by: Core Systems*

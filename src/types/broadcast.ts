@@ -62,6 +62,13 @@ export interface Shop {
   id: string;                 // uuid — mirrors auth.users.id
   shop_name: string;
   owner_phone: string;
+  contact_number?: string | null;
+  location_address?: string | null;
+  city?: string | null;
+  district?: string | null;
+  state?: string | null;
+  country?: string | null;
+  is_blocked?: boolean;
   industry_type: string;
   meta_access_token?: string | null;
   meta_phone_number_id?: string | null;
@@ -181,6 +188,8 @@ export interface RegisterFormValues {
   confirmPassword: string;
   shop_name: string;
   owner_phone: string;
+  contact_number?: string;
+  location_address?: string;
   industry_type: string;
 }
 

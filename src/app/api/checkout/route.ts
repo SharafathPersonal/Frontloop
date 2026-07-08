@@ -4,20 +4,13 @@ import { cookies } from 'next/headers';
 
 export async function POST(req: Request) {
   try {
-    const { amount } = await req.json();
+    const { amount_inr, credit_count } = await req.json();
     
-    // Map pack amounts to INR prices based on the frontend CREDIT_PACKS
-    const prices: Record<number, number> = {
-      50: 199,
-      100: 349,
-      200: 599,
-      500: 1299
-    };
-    
-    const orderAmount = prices[amount];
-    if (!orderAmount) {
-      return NextResponse.json({ ok: false, error: 'Invalid credit pack' }, { status: 400 });
+    if (!amount_inr || !credit_count) {
+      return NextResponse.json({ ok: false, error: 'Invalid credit payload structure' }, { status: 400 });
     }
+
+    const orderAmount = amount_inr;
 
     const cookieStore = await cookies();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,8 +58,15 @@ export async function POST(req: Request) {
           customer_phone: (shop.owner_phone || '').replace(/\D/g, '').slice(-10) || '9999999999',
         },
         order_meta: {
-          return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/settings?order_id={order_id}`
-        }
+          return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/settings?order_id={order_id}`,
+          brand_name: 'True Attendly Broadcast',
+          brand_logo_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/images/logo-dark.png`
+        },
+        order_tags: {
+          shop_id: user.id,
+          credit_count: credit_count.toString()
+        },
+        order_note: `Recharge: ${credit_count} Tokens`,
       })
     });
 

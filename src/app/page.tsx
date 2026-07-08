@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { APP_VERSION } from '@/lib/config';
+import { Phone, MessageCircle } from 'lucide-react';
 
 // ──────────────────────────────────────────────────────────────────
 // LANDING PAGE — True Attendly Broadcast
@@ -248,7 +249,7 @@ export default function LandingPage() {
               </div>
 
               {/* CTA Row */}
-              <div className="gsap-reveal flex items-center gap-4 flex-wrap">
+              <div className="gsap-reveal flex items-center gap-4 flex-wrap pb-4">
                 <Link href="/auth/register" className="btn-primary rounded-sm">
                   Start Broadcasting
                 </Link>
@@ -258,7 +259,7 @@ export default function LandingPage() {
               </div>
 
               {/* USP Bullets */}
-              <div className="gsap-reveal space-y-2.5 pt-2">
+              <div className="gsap-reveal space-y-2.5">
                 {[
                   'Zero monthly subscriptions — pay only per message sent',
                   'Real-time credit deduction with wallet transparency',
@@ -278,6 +279,12 @@ export default function LandingPage() {
                     </p>
                   </div>
                 ))}
+              </div>
+
+              {/* Advanced Tech Tags */}
+              <div className="gsap-reveal flex flex-col gap-2 pt-4 mt-2 border-t border-white/10">
+                <p className="tracking-[0.2em] text-xs text-[#8B8378] uppercase font-medium">Multi-Tier AI Engine Failover Protection (Gemini/Groq Powered)</p>
+                <p className="tracking-[0.2em] text-xs text-[#8B8378] uppercase font-medium">Real-Time Local Connection Packet Intercept Guard</p>
               </div>
 
             </div>
@@ -343,8 +350,8 @@ export default function LandingPage() {
             {[
               {
                 icon: '◆',
-                title: 'Dynamic Story Engine',
-                desc: 'Upload your product catalogs or daily offer flyers. Craft text layouts optimized for immediate conversion.',
+                title: 'AI-Powered Message Polisher',
+                desc: 'Draft raw offers in any tone and let our multi-tier failover AI (Gemini/Groq) refine it into premium marketing copy instantly. Automatically injects Meta standard tokens ({{1}} and {{2}}) for flawless conversion and compliance.',
               },
               {
                 icon: '◎',
@@ -358,8 +365,8 @@ export default function LandingPage() {
               },
               {
                 icon: '◉',
-                title: 'Lightweight Contact Sync',
-                desc: 'Drop in standard customer CSV manifests. Parse phone contacts instantly on high-speed PostgreSQL tables.',
+                title: 'Unified CSV & Excel Parser',
+                desc: 'Ingest massive retail contact lists using our high-speed spreadsheet parser. Supports both CSV and raw .xlsx Excel manifests with automatic 10-digit phone regex masking and serverless-safe duplicate upsert filtering.',
               },
             ].map((card) => (
               <div
@@ -439,7 +446,7 @@ export default function LandingPage() {
               {
                 label: '02',
                 title: 'Contact Intelligence',
-                desc: 'Import CSV phone books in seconds. Automatically deduplicate, validate, and segment your customer database for precise targeting.',
+                desc: 'Drop in massive retail manifests directly using our high-speed .csv and .xlsx Excel engine. The platform automatically applies 10-digit regex validation and executes duplicate-safe upsert pipelines instantly.',
               },
               {
                 label: '03',
@@ -450,6 +457,16 @@ export default function LandingPage() {
                 label: '04',
                 title: 'Delivery Analytics',
                 desc: 'Audit every campaign dispatch with a full delivery ledger. Track status transitions from pending to completed, with timestamped logs.',
+              },
+              {
+                label: '05',
+                title: 'Advanced Database Terminal',
+                desc: 'Segment your retail buyers instantly with our high-performance infinite scroll architecture. Filter by saved customer tags (VIP, Regular, New) using PostgreSQL array rules, search via omni-search, and clear registries in a single transactional stroke.',
+              },
+              {
+                label: '06',
+                title: 'Dynamic Pricing & Autonomous Ledger',
+                desc: 'Enjoy an entirely synchronized pricing grid mapped straight from our master administrative engine. Package tiers (50, 100, 200, or 500 Credits) refresh dynamically via Cashfree Payment Gateway checkout routines with success-only row-by-row deductions.',
               },
             ].map((service, i) => (
               <div
@@ -481,6 +498,28 @@ export default function LandingPage() {
             ))}
           </div>
 
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 4.5 — INFRASTRUCTURE SAFETY
+      ══════════════════════════════════════════════════════════ */}
+      <section className="bg-[#F5F1EA] border-y border-[#E8E3DA] py-16 scroll-reveal-section">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="mb-12 gsap-reveal">
+            <p className="uppercase tracking-[0.25em] text-[#8B8378] text-xs mb-3 font-medium">INFRASTRUCTURE</p>
+            <h2 className="serif-headline text-xl text-[#3E3B36]">Hardened against failures. Built for high volumes.</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 gsap-reveal">
+            <div>
+              <h3 className="lexend-subheading text-sm font-medium mb-3 text-[#3E3B36]">Idempotency Conflict Security</h3>
+              <p className="text-sm leading-relaxed text-[#8B8378]">Our API blocks multi-click accidental duplicate dispatches within a 5-minute threshold using cryptographic safety tokens, ensuring your wallet is never double-charged for the same payload.</p>
+            </div>
+            <div>
+              <h3 className="lexend-subheading text-sm font-medium mb-3 text-[#3E3B36]">Zero-CLS Structural Skeletons</h3>
+              <p className="text-sm leading-relaxed text-[#8B8378]">We guarantee absolute visual stability. From native route skeleton barriers to client-side React Error Boundaries (error.tsx) and real-time offline network listeners, every core operation is safeguarded.</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -524,6 +563,48 @@ export default function LandingPage() {
             </Link>
           </div>
 
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 5.5 — OWNER CONTACT & SUPPORT
+      ══════════════════════════════════════════════════════════ */}
+      <section className="bg-[#F5F1EA] py-12 scroll-reveal-section border-t border-[#E8E3DA]">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden shadow-sm flex flex-col md:flex-row gsap-reveal">
+            
+            <div className="p-10 md:w-1/2 flex flex-col justify-center border-b md:border-b-0 md:border-r border-[#E8E3DA]">
+              <p className="uppercase tracking-[0.2em] text-[10px] text-[#C4A896] font-bold mb-3">Priority Access</p>
+              <h2 className="serif-headline text-3xl text-[#3E3B36] mb-4">24/7 Concierge Support.</h2>
+              <p className="text-sm leading-relaxed text-[#8B8378] mb-6">
+                Have an urgent dispatch issue or billing question? Our founding team is available around the clock to keep your retail pipelines running smoothly.
+              </p>
+              <div className="text-xs text-[#3E3B36] space-y-1.5 font-medium border-t border-[#E8E3DA] pt-4">
+                <p>Founder: <span className="font-semibold text-[#C4A896]">Sharafath</span></p>
+                <p>Head Office: Aykarapadi, Malappuram, Kerala, India</p>
+              </div>
+            </div>
+
+            <div className="p-10 md:w-1/2 bg-[#FCFCFC] flex flex-col justify-center space-y-4">
+              <a 
+                href="tel:+916282560928" 
+                className="flex items-center justify-center gap-2 w-full py-5 border border-[#3E3B36] text-[#3E3B36] hover:bg-[#3E3B36] hover:text-[#FFFFFF] transition-colors rounded-lg text-xs font-semibold tracking-[0.15em] uppercase"
+              >
+                <Phone size={16} />
+                DIRECT VOICE LINE
+              </a>
+              <a 
+                href="https://wa.me/916282560928?text=Hello%20Sharafath,%20I%20am%20interested%20in%20Attendly%20Broadcast." 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center justify-center gap-2 w-full py-5 bg-[#25D366] hover:bg-[#1DA851] text-white transition-colors rounded-lg text-xs font-semibold tracking-[0.15em] uppercase"
+              >
+                <MessageCircle size={16} />
+                WHATSAPP DISPATCH HELP
+              </a>
+            </div>
+
+          </div>
         </div>
       </section>
 

@@ -1,0 +1,41 @@
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
+
+export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
+  try {
+    const params = await props.params;
+    const cookieStore = await cookies();
+    const adminSession = cookieStore.get('admin_session');
+
+    if (adminSession?.value !== 'authenticated') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!serviceRoleKey) {
+       return NextResponse.json({ error: 'Missing service role key' }, { status: 500 });
+    }
+
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    const shopId = params.id;
+    const body = await request.json();
+    const { is_blocked } = body;
+
+    const { error } = await supabaseAdmin
+      .from('shops')
+      .update({ is_blocked })
+      .eq('id', shopId);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, is_blocked });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

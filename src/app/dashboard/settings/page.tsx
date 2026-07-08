@@ -7,6 +7,7 @@ import type { Shop, Wallet } from '@/types/broadcast';
 import { CheckCircle, AlertTriangle, CreditCard, User, Building, ChevronDown, ExternalLink, Zap, Lock } from 'lucide-react';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Spinner } from '@/components/ui/Spinner';
 
 function FacebookIcon({ size = 16 }: { size?: number }) {
   return (
@@ -19,20 +20,15 @@ function FacebookIcon({ size = 16 }: { size?: number }) {
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 type CreditStatus = 'idle' | 'redirecting';
 
-const CREDIT_PACKS = [
-  { amount: 50, label: '50 Credits', desc: 'Starter', price: '₹199' },
-  { amount: 100, label: '100 Credits', desc: 'Basic', price: '₹349' },
-  { amount: 200, label: '200 Credits', desc: 'Growth', price: '₹599' },
-  { amount: 500, label: '500 Credits', desc: 'Pro', price: '₹1,299' },
-];
-
 export default function SettingsPage() {
   const [shop, setShop] = useState<Shop | null>(null);
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [shopForm, setShopForm] = useState({
-    shop_name: '', owner_phone: '', industry_type: '',
+    shop_name: '', owner_phone: '', contact_number: '', location_address: '', 
+    city: '', district: '', state: '', country: '', industry_type: '',
     meta_access_token: '', meta_phone_number_id: '', meta_business_account_id: '', meta_template_name: '',
   });
+  const [creditPacks, setCreditPacks] = useState<any[]>([]);
   const [selectedPack, setSelectedPack] = useState<number>(100);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [creditStatus, setCreditStatus] = useState<CreditStatus>('idle');
@@ -53,15 +49,34 @@ export default function SettingsPage() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const [{ data: shopData }, { data: walletData }] = await Promise.all([
+      const [{ data: shopData }, { data: walletData }, { data: pricingData }] = await Promise.all([
         supabase.from('shops').select('*').eq('id', user.id).maybeSingle(),
         supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle(),
+        supabase.from('pricing_tiers').select('*').order('amount_inr', { ascending: true }),
       ]);
+      if (pricingData && pricingData.length > 0) {
+        setCreditPacks(pricingData.map((t: any) => ({
+          amount: t.credit_count,
+          amount_inr: t.amount_inr,
+          label: `${t.credit_count} Credits`,
+          desc: 'Top-up Package',
+          price: `₹${t.amount_inr}`,
+        })));
+        if (!selectedPack || !pricingData.find((t:any) => t.credit_count === selectedPack)) {
+          setSelectedPack(pricingData[0].credit_count);
+        }
+      }
       if (shopData) {
         setShop(shopData);
         setShopForm({
           shop_name: shopData.shop_name || '',
           owner_phone: shopData.owner_phone || '',
+          contact_number: shopData.contact_number || '',
+          location_address: shopData.location_address || '',
+          city: shopData.city || '',
+          district: shopData.district || '',
+          state: shopData.state || '',
+          country: shopData.country || '',
           industry_type: shopData.industry_type || '',
           meta_access_token: shopData.meta_access_token || '',
           meta_phone_number_id: shopData.meta_phone_number_id || '',
@@ -89,6 +104,12 @@ export default function SettingsPage() {
       id: user.id,
       shop_name: shopForm.shop_name,
       owner_phone: shopForm.owner_phone,
+      contact_number: shopForm.contact_number,
+      location_address: shopForm.location_address,
+      city: shopForm.city,
+      district: shopForm.district,
+      state: shopForm.state,
+      country: shopForm.country,
       industry_type: shopForm.industry_type,
       meta_access_token: shopForm.meta_access_token,
       meta_phone_number_id: shopForm.meta_phone_number_id,
@@ -134,12 +155,15 @@ export default function SettingsPage() {
   };
 
   const handleCreditPurchase = async () => {
+    const pack = creditPacks.find(p => p.amount === selectedPack);
+    if (!pack) return;
+
     setCreditStatus('redirecting');
     try {
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: selectedPack }),
+        body: JSON.stringify({ amount_inr: pack.amount_inr, credit_count: pack.amount }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
@@ -238,7 +262,7 @@ export default function SettingsPage() {
           <div>
             <p className="text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-3">Select Credit Pack</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {CREDIT_PACKS.map((pack) => (
+              {creditPacks.map((pack) => (
                 <button
                   key={pack.amount}
                   onClick={() => setSelectedPack(pack.amount)}
@@ -262,10 +286,19 @@ export default function SettingsPage() {
           <button
             onClick={handleCreditPurchase}
             disabled={creditStatus === 'redirecting'}
-            className="btn-primary rounded-lg flex items-center gap-2 disabled:opacity-50"
+            className="btn-primary rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 min-h-[48px]"
           >
-            <Zap size={12} strokeWidth={1.5} />
-            {creditStatus === 'redirecting' ? 'Redirecting to checkout...' : `Purchase ${selectedPack} Credits`}
+            {creditStatus === 'redirecting' ? (
+              <>
+                <Spinner />
+                INITIALIZING SECURE CHECKOUT...
+              </>
+            ) : (
+              <>
+                <Zap size={12} strokeWidth={1.5} />
+                Purchase {selectedPack} Credits
+              </>
+            )}
           </button>
         </div>
       </section>
@@ -370,6 +403,19 @@ export default function SettingsPage() {
           <div>
             <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Owner WhatsApp Number</label>
             <input type="tel" required value={shopForm.owner_phone} onChange={(e) => setShopForm({ ...shopForm, owner_phone: e.target.value })} className="input-editorial" placeholder={shop?.owner_phone || "+91 98765 43210"} />
+          </div>
+          <div>
+            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Official Contact Number (Voice)</label>
+            <input type="tel" value={shopForm.contact_number} onChange={(e) => setShopForm({ ...shopForm, contact_number: e.target.value })} className="input-editorial" placeholder={shop?.contact_number || "+91 98765 43210"} />
+          </div>
+          <div>
+            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Physical Store Location</label>
+            <div className="grid grid-cols-2 gap-4">
+              <input type="text" value={shopForm.city} onChange={(e) => setShopForm({ ...shopForm, city: e.target.value })} className="input-editorial" placeholder="City / Locality" />
+              <input type="text" value={shopForm.district} onChange={(e) => setShopForm({ ...shopForm, district: e.target.value })} className="input-editorial" placeholder="District" />
+              <input type="text" value={shopForm.state} onChange={(e) => setShopForm({ ...shopForm, state: e.target.value })} className="input-editorial" placeholder="State" />
+              <input type="text" value={shopForm.country} onChange={(e) => setShopForm({ ...shopForm, country: e.target.value })} className="input-editorial" placeholder="Country" />
+            </div>
           </div>
           <div>
             <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Industry Type</label>

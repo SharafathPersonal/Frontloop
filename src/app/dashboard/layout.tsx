@@ -17,6 +17,7 @@ import {
   X,
   Wallet as WalletIcon,
   Users,
+  HelpCircle,
 } from 'lucide-react';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 
@@ -32,6 +33,7 @@ const navLinks: NavLink[] = [
   { label: 'Broadcast', href: '/dashboard/broadcast', icon: <Radio size={14} strokeWidth={1.5} /> },
   { label: 'History', href: '/dashboard/history', icon: <Clock size={14} strokeWidth={1.5} /> },
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings size={14} strokeWidth={1.5} /> },
+  { label: 'Support', href: '/dashboard/support', icon: <HelpCircle size={14} strokeWidth={1.5} /> },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
