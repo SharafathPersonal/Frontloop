@@ -217,4 +217,47 @@
 
 ---
 
+## 2026-07-08 — Phase 11: Master Admin Dashboard & Audit Operations
+
+### [ADMIN] Master Credentials & Security Gate
+- **Module:** Admin / API
+- **Nature:** Initialized highly restricted `admin_session` authentication gate based on `.env.local` custom configurations (`ADMIN_USERNAME`, `ADMIN_PASSWORD`). Built isolated Next.js API Routes (`/api/admin/login`, `/api/admin/data`) passing via HttpOnly cookie verification prior to any Supabase exposure.
+- **Files:** `.env.local`, `src/app/api/admin/login/route.ts`, `src/app/api/admin/data/route.ts`
+
+### [UI] Luxury-Minimal Master Dashboard
+- **Module:** Admin Interface
+- **Nature:** Built `/admin/page.tsx` using strictly `#F5F1EA` and `#3E3B36` color matrix. Features 3 core Global Analytic cards (Total Shops, Tokens, Global Traffic) alongside a Chronological Monthly Ledger mapping historic transaction volume.
+- **Files:** `src/app/admin/page.tsx`
+
+### [MERCHANT] Centralized Ledger & Core Credit Infusion
+- **Module:** Admin / Merchants
+- **Nature:** Constructed the primary cross-platform Merchant Management Table rendering dynamic shop statuses. Built `MANAGE CREDITS` atomic execution layer triggering immediate credit increments directly into `public.wallets.credits_remaining` utilizing isolated RPC bypassing RLS correctly.
+- **Files:** `src/app/api/admin/credits/route.ts`, `src/app/admin/page.tsx`
+
+### [AUDIT] Live Slideout Consumption Metric
+- **Module:** Admin / Audit
+- **Nature:** Enhanced the merchant row logic to invoke a sleek `#FFFFFF` side-panel audit modal. Maps dynamic consumption of completed broadcasts against `public.campaigns` directly, filtering securely by `shop_id`. Contains nested Historical Campaigns Matrix and a real-time Visual Badge identifier (Low Credits Alert vs High Vol Sender) mapped onto the master table layout.
+- **Files:** `src/app/admin/page.tsx`
+
+---
+
+## 2026-07-08 — Phase 12: AI Message Polisher Integration
+
+### [AI ENGINE] Multi-tier AI Polisher with Failover
+- **Module:** Broadcast / AI
+- **Nature:** Added multi-tier AI Message Polisher with failover protection and database-backed rate-limiting. Integrated Gemini (Tier 1), Groq (Tier 2), SambaNova (Tier 3), Cerebras (Tier 4), and Local Fallback (Tier 5). Implemented a `user_rate_limits` table lookup inside `/api/ai/polish` ensuring 10 requests per 1-minute window, gracefully bypassing checks if the database is unavailable.
+- **Files:** `/src/app/api/ai/polish/route.ts`, `/src/app/dashboard/broadcast/page.tsx`, `.env.local`
+
+### [AI ENGINE] Token Enforcement Refactor
+- **Module:** Broadcast / AI
+- **Nature:** Unified the placeholder system to strictly use `{{1}}` for Customer Name and `{{2}}` for Storefront Name. Refactored the UI (`/dashboard/broadcast/page.tsx`) text hints and preview mapping logic. Overhauled the `/api/ai/polish` `systemPrompt` enforcing absolute rule parameters for B2B copywriting ensuring these Meta parameters are never rewritten. Updated Tier 5 local fallback sequence.
+- **Files:** `src/app/api/ai/polish/route.ts`, `src/app/dashboard/broadcast/page.tsx`
+
+### [UI/UX] Campaign Preview Rendering Repair
+- **Module:** Broadcast / UI
+- **Nature:** Completely refactored the visual preview architecture in `/src/app/dashboard/broadcast/page.tsx` to align with luxury-minimal design guidelines. Removed recursive string overlaps and constructed a realistic smartphone frame layout (`border-l-2 border-[#C4A896] bg-[#FFFFFF] shadow-sm`). Integrated a dynamic variable engine that gracefully maps `{{1}}` to a mock name ("Ayesha") and parses live Supabase session queries to map `{{2}}` to the true `brand_name`. Bound the backend AI return payload securely to the main `form.message_body` textarea state to ensure 1:1 preview parity.
+- **Files:** `/src/app/dashboard/broadcast/page.tsx`
+
+---
+
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*

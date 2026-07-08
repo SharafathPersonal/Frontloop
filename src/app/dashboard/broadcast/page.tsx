@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import type { CampaignFormValues, CreditCheckResult, Wallet } from '@/types/broadcast';
-import { Upload, X, CheckCircle, AlertTriangle, Send, FileText, Image as ImageIcon, Tag, ChevronDown } from 'lucide-react';
+import { Upload, X, CheckCircle, AlertTriangle, Send, FileText, Image as ImageIcon, Tag, ChevronDown, Wand2 } from 'lucide-react';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 import { Spinner } from '@/components/ui/Spinner';
 
@@ -14,6 +14,7 @@ interface RecipientTag { value: CustomerTag; label: string; count: number; }
 
 export default function BroadcastPage() {
   const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [shopName, setShopName] = useState('Your Shop');
   const [form, setForm] = useState<CampaignFormValues>({ title: '', message_body: '', image_url: '' });
   const [selectedTags, setSelectedTags] = useState<CustomerTag[]>([]);
   const [tagOptions, setTagOptions] = useState<RecipientTag[]>([]);
@@ -35,12 +36,50 @@ export default function BroadcastPage() {
   // Confirm modal state
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
+  // AI Polish state
+  const [isPolishing, setIsPolishing] = useState(false);
+  const [selectedTone, setSelectedTone] = useState('Premium');
+
+  const handleAIPolish = async () => {
+    if (!form.message_body.trim()) {
+      setErrorMsg('Please write a message to polish.');
+      return;
+    }
+    
+    setIsPolishing(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch('/api/ai/polish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          raw_message: form.message_body,
+          shop_name: shopName,
+          industry_type: 'Retail',
+          selected_tone: selectedTone
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to polish message');
+      }
+
+      setForm(prev => ({ ...prev, message_body: data.polished_message }));
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'AI Polishing failed.');
+    } finally {
+      setIsPolishing(false);
+    }
+  };
+
   useEffect(() => {
     async function loadWallet() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const [{ data: w }, tagCounts] = await Promise.all([
+      const [{ data: w }, { data: s }, tagCounts] = await Promise.all([
         supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle(),
+        supabase.from('shops').select('shop_name').eq('id', user.id).maybeSingle(),
         Promise.all(['VIP', 'Regular', 'New'].map(async (tag) => {
           const { count } = await supabase
             .from('customers_master')
@@ -51,6 +90,7 @@ export default function BroadcastPage() {
         })),
       ]);
       if (w) setWallet(w);
+      if (s?.shop_name) setShopName(s.shop_name);
       setTagOptions(tagCounts);
     }
     loadWallet();
@@ -239,20 +279,49 @@ export default function BroadcastPage() {
               rows={5}
               value={form.message_body}
               onChange={(e) => setForm({ ...form, message_body: e.target.value })}
-              className="input-editorial resize-none"
-              placeholder="Hi {name}, we have an exclusive offer just for you…"
+              disabled={isPolishing}
+              className="input-editorial resize-none disabled:opacity-50"
+              placeholder="Hi {{1}}, we have an exclusive offer just for you from {{2}}…"
             />
-            <p className="text-[10px] text-[#8B8378] mt-1.5">
-              Use <code className="bg-[#F5F1EA] px-1 rounded text-[#C4A896]">{'{name}'}</code> to personalise each message.
+            
+            <div className="flex items-center gap-3 mt-3">
+              <button
+                type="button"
+                onClick={handleAIPolish}
+                disabled={isPolishing || !form.message_body.trim()}
+                className="flex items-center gap-2 border border-[#C4A896] rounded px-3 py-1.5 tracking-[0.2em] text-xs text-[#C4A896] hover:bg-[#3E3B36] hover:border-[#3E3B36] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Wand2 size={12} className={isPolishing ? 'animate-spin' : ''} />
+                {isPolishing ? 'AI THINKING...' : 'POLISH WITH AI'}
+              </button>
+              <select
+                value={selectedTone}
+                onChange={(e) => setSelectedTone(e.target.value)}
+                disabled={isPolishing}
+                className="bg-transparent border border-[#E8E3DA] text-[#8B8378] text-xs tracking-[0.1em] uppercase rounded px-2 py-1.5 focus:outline-none focus:border-[#C4A896] disabled:opacity-50"
+              >
+                <option value="Premium">Premium</option>
+                <option value="Friendly">Friendly</option>
+                <option value="Festive">Festive</option>
+                <option value="Urgent">Urgent</option>
+              </select>
+            </div>
+            
+            <p className="text-[10px] text-[#8B8378] mt-2">
+              💡 Quick Guide: Use <code className="bg-[#F5F1EA] px-1 rounded text-[#C4A896]">{'{{1}}'}</code> to automatically insert the Customer's Name. Use <code className="bg-[#F5F1EA] px-1 rounded text-[#C4A896]">{'{{2}}'}</code> to automatically insert your official Storefront Name.
             </p>
           </div>
 
           {form.message_body && (
             <div className="bg-[#F5F1EA] rounded-xl p-4">
               <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-3">Preview</p>
-              <div className="bg-[#FFFFFF] rounded-lg p-3 border border-[#E8E3DA]">
+              <div className="bg-[#FFFFFF] rounded-lg p-5 border-l-2 border-[#C4A896] shadow-sm">
                 <p className="text-sm text-[#3E3B36] leading-relaxed whitespace-pre-wrap">
-                  {form.message_body.replace('{name}', 'Ayesha')}
+                  {form.message_body
+                    .replace(/\{name\}/gi, '{{1}}')
+                    .replace(/\{shop\}/gi, '{{2}}')
+                    .replace(/\{\{1\}\}/g, 'Ayesha')
+                    .replace(/\{\{2\}\}/g, shopName)}
                 </p>
               </div>
             </div>
