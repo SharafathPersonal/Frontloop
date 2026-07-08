@@ -183,6 +183,29 @@ export default function SettingsPage() {
     }
   };
 
+  const handleFacebookConnect = () => {
+    try {
+      const redirectUri = typeof window !== 'undefined' 
+        ? `${window.location.origin}/api/auth/callback/facebook`
+        : 'https://broadcast.trueattendly.online/api/auth/callback/facebook';
+        
+      const appId = process.env.NEXT_PUBLIC_META_APP_ID || '';
+      if (!appId) {
+        throw new Error('Meta App ID is missing from environment configurations.');
+      }
+        
+      const fbAuthUrl = `https://www.facebook.com/v17.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=business_management,whatsapp_business_management&response_type=code`;
+      
+      const newWindow = window.open(fbAuthUrl, 'FacebookLogin', 'width=600,height=700');
+      
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        throw new Error('Popup intercepted by browser. Please allow popups for this site to authorize Meta integration.');
+      }
+    } catch (err: any) {
+      setCheckoutErrorMsg(err.message || 'Failed to initialize Meta connection. Please check your popup blockers.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto space-y-8">
@@ -330,7 +353,7 @@ export default function SettingsPage() {
               Authorize your Meta Business account to enable WhatsApp Cloud API broadcasting. Your token is securely stored and never shared.
             </p>
             <button
-              onClick={() => alert('Meta Embedded Signup flow - integrate your Facebook App ID here.\n\nUse: window.FB.login() with scope: business_management,whatsapp_business_management')}
+              onClick={handleFacebookConnect}
               className="flex items-center gap-3 bg-[#1877F2] hover:bg-[#1565C0] text-white px-5 py-3 rounded-xl transition-colors font-medium text-sm"
             >
               <FacebookIcon size={16} />

@@ -485,6 +485,11 @@
 - **Nature:** Added `public.user_activity_logs` into `supabase-schema.sql` utilizing absolute RLS lockdowns. Injected background POST hooks directly into `login` and `logout` flow execution blocks ensuring synchronous tracking of merchant interactions. Constructed a "Security & Audit Logs" table under the `/admin` view with 50-row paginated Infinite Scroll fetching directly via Service Role credentials.
 - **Files:** `supabase-schema.sql`, `src/app/api/auth/log/route.ts`, `src/app/auth/login/page.tsx`, `src/app/dashboard/layout.tsx`, `src/app/admin/page.tsx`, `src/app/api/admin/logs/route.ts`
 
+### [INTEGRATION] Settings Meta Provider Modal Update
+- **Module:** Settings Layout
+- **Nature:** Refactored the `handleFacebookConnect` modal logic in the Settings Dashboard. Bound dynamic `window.location.origin` callback routing and deployed robust popup-blocker intercepts displaying graceful Toast exceptions rather than invisible failures.
+- **Files:** `src/app/dashboard/settings/page.tsx`
+
 ---
 
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*
