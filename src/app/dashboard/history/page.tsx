@@ -10,6 +10,7 @@ const STATUS_FILTERS: { label: string; value: CampaignStatus | 'all' }[] = [
   { label: 'Completed', value: 'completed' },
   { label: 'Processing', value: 'processing' },
   { label: 'Pending', value: 'pending' },
+  { label: 'Failed', value: 'failed' },
   { label: 'Insufficient Credits', value: 'insufficient_credits' },
 ];
 
@@ -79,6 +80,7 @@ export default function HistoryPage() {
     completed: { label: 'Completed', className: 'status-pill status-completed' },
     processing: { label: 'Processing', className: 'status-pill status-processing' },
     pending: { label: 'Pending', className: 'status-pill status-pending' },
+    failed: { label: 'Failed', className: 'status-pill status-failed' },
     insufficient_credits: { label: 'Insufficient Credits', className: 'status-pill status-insufficient_credits' },
   };
 

@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { APP_VERSION } from '@/lib/config';
 import { supabase } from '@/lib/supabaseClient';
 import type { LoginFormValues } from '@/types/broadcast';
+import { Spinner } from '@/components/ui/Spinner';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export default function LoginPage() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 mb-6">
             <div className="relative w-8 h-8 flex items-center justify-center">
-              <Image src="/images/logo-dark.png" alt="Attendly Logo" fill className="object-contain" />
+              <Image src="/images/logo-dark.png" alt="Attendly Logo" fill sizes="32px" className="object-contain" />
             </div>
             <span className="serif-headline text-lg text-[#3E3B36]">Attendly Broadcast</span>
           </div>
@@ -72,8 +73,9 @@ export default function LoginPage() {
                 autoComplete="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="input-editorial"
+                className="input-editorial disabled:opacity-50"
                 placeholder="you@example.com"
+                disabled={loading}
               />
             </div>
 
@@ -87,8 +89,9 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                className="input-editorial"
+                className="input-editorial disabled:opacity-50"
                 placeholder="••••••••"
+                disabled={loading}
               />
             </div>
 
@@ -96,9 +99,16 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary w-full rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary w-full rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {loading ? 'Signing in...' : 'Sign In'}
+                {loading ? (
+                  <>
+                    <Spinner />
+                    <span>PROCESSING PROFILE...</span>
+                  </>
+                ) : (
+                  'Sign In'
+                )}
               </button>
             </div>
 

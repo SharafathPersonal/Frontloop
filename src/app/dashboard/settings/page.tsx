@@ -2,43 +2,61 @@
 
 import { useEffect, useState, FormEvent } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { load } from '@cashfreepayments/cashfree-js';
 import type { Shop, Wallet } from '@/types/broadcast';
-import { CheckCircle, AlertTriangle, CreditCard, User, Building } from 'lucide-react';
+import { CheckCircle, AlertTriangle, CreditCard, User, Building, ChevronDown, ExternalLink, Zap, Lock } from 'lucide-react';
+import CustomConfirm from '@/components/ui/CustomConfirm';
+import { Skeleton } from '@/components/ui/Skeleton';
+
+function FacebookIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
+    </svg>
+  );
+}
+
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+type CreditStatus = 'idle' | 'redirecting';
+
+const CREDIT_PACKS = [
+  { amount: 50, label: '50 Credits', desc: 'Starter', price: '₹199' },
+  { amount: 100, label: '100 Credits', desc: 'Basic', price: '₹349' },
+  { amount: 200, label: '200 Credits', desc: 'Growth', price: '₹599' },
+  { amount: 500, label: '500 Credits', desc: 'Pro', price: '₹1,299' },
+];
 
 export default function SettingsPage() {
   const [shop, setShop] = useState<Shop | null>(null);
   const [wallet, setWallet] = useState<Wallet | null>(null);
-  const [shopForm, setShopForm] = useState({ 
-    shop_name: '', 
-    owner_phone: '', 
-    industry_type: '',
-    meta_access_token: '',
-    meta_phone_number_id: '',
-    meta_business_account_id: '',
-    meta_template_name: '' 
+  const [shopForm, setShopForm] = useState({
+    shop_name: '', owner_phone: '', industry_type: '',
+    meta_access_token: '', meta_phone_number_id: '', meta_business_account_id: '', meta_template_name: '',
   });
-  const [creditAmount, setCreditAmount] = useState<number>(100);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [creditStatus, setCreditStatus] = useState<'idle' | 'adding' | 'added' | 'error'>('idle');
+  const [selectedPack, setSelectedPack] = useState<number>(100);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [creditStatus, setCreditStatus] = useState<CreditStatus>('idle');
   const [loading, setLoading] = useState(true);
+  const [manualProviderOpen, setManualProviderOpen] = useState(false);
 
-  const CREDIT_PACKS = [
-    { amount: 50, label: '50 Credits', desc: 'Starter Pack' },
-    { amount: 200, label: '200 Credits', desc: 'Growth Pack' },
-    { amount: 500, label: '500 Credits', desc: 'Pro Pack' },
-    { amount: 1000, label: '1,000 Credits', desc: 'Enterprise Pack' },
-  ];
+  // Modal States
+  const [isShopConfirmOpen, setIsShopConfirmOpen] = useState(false);
+  const [isPasswordConfirmOpen, setIsPasswordConfirmOpen] = useState(false);
+  const [checkoutErrorMsg, setCheckoutErrorMsg] = useState<string | null>(null);
+
+  // Password Reset States
+  const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
+  const [passwordStatus, setPasswordStatus] = useState<SaveStatus>('idle');
+  const [passwordMsg, setPasswordMsg] = useState('');
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
       const [{ data: shopData }, { data: walletData }] = await Promise.all([
-        supabase.from('shops').select('*').eq('id', user.id).single(),
-        supabase.from('wallets').select('*').eq('shop_id', user.id).single(),
+        supabase.from('shops').select('*').eq('id', user.id).maybeSingle(),
+        supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle(),
       ]);
-
       if (shopData) {
         setShop(shopData);
         setShopForm({
@@ -54,69 +72,129 @@ export default function SettingsPage() {
       if (walletData) setWallet(walletData);
       setLoading(false);
     }
-
     load();
   }, []);
 
-  const handleSaveProfile = async (e: FormEvent) => {
+  const handleConfirmSaveProfile = (e: FormEvent) => {
     e.preventDefault();
-    setSaveStatus('saving');
+    setIsShopConfirmOpen(true);
+  };
 
+  const executeSaveProfile = async () => {
+    setIsShopConfirmOpen(false);
+    setSaveStatus('saving');
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('shops') as any)
-      .update({
-        shop_name: shopForm.shop_name,
-        owner_phone: shopForm.owner_phone,
-        industry_type: shopForm.industry_type,
-        meta_access_token: shopForm.meta_access_token,
-        meta_phone_number_id: shopForm.meta_phone_number_id,
-        meta_business_account_id: shopForm.meta_business_account_id,
-        meta_template_name: shopForm.meta_template_name,
-      })
-      .eq('id', user.id);
-
+    const { error } = await supabase.from('shops').upsert({
+      id: user.id,
+      shop_name: shopForm.shop_name,
+      owner_phone: shopForm.owner_phone,
+      industry_type: shopForm.industry_type,
+      meta_access_token: shopForm.meta_access_token,
+      meta_phone_number_id: shopForm.meta_phone_number_id,
+      meta_business_account_id: shopForm.meta_business_account_id,
+      meta_template_name: shopForm.meta_template_name,
+    }, { onConflict: 'id' });
     setSaveStatus(error ? 'error' : 'saved');
-    if (!error) {
-      setShop((prev) => prev ? { ...prev, ...shopForm } : prev);
-      setTimeout(() => setSaveStatus('idle'), 3000);
+    if (!error) { setShop((prev) => prev ? { ...prev, ...shopForm } : prev); setTimeout(() => setSaveStatus('idle'), 3000); }
+  };
+
+  const handleConfirmPassword = (e: FormEvent) => {
+    e.preventDefault();
+    setPasswordMsg('');
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordStatus('error');
+      setPasswordMsg('Password must be at least 6 characters.');
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordStatus('error');
+      setPasswordMsg('Passwords do not match.');
+      return;
+    }
+    setIsPasswordConfirmOpen(true);
+  };
+
+  const executeUpdatePassword = async () => {
+    setIsPasswordConfirmOpen(false);
+    setPasswordStatus('saving');
+    const { error } = await supabase.auth.updateUser({
+      password: passwordForm.newPassword,
+    });
+    
+    if (error) {
+      setPasswordStatus('error');
+      setPasswordMsg(error.message);
+    } else {
+      setPasswordStatus('saved');
+      setPasswordMsg('Password updated securely!');
+      setPasswordForm({ newPassword: '', confirmPassword: '' });
+      setTimeout(() => { setPasswordStatus('idle'); setPasswordMsg(''); }, 3000);
     }
   };
 
-  const handleTopUpCredits = async () => {
-    setCreditStatus('adding');
+  const handleCreditPurchase = async () => {
+    setCreditStatus('redirecting');
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: selectedPack }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+      const cashfree = await load({ mode: process.env.NEXT_PUBLIC_CASHFREE_ENV === 'production' ? 'production' : 'sandbox' });
+      
+      if (!cashfree) throw new Error("Cashfree SDK failed to load");
 
-    const current = wallet?.credits_remaining ?? 0;
-    const { error } = await supabase
-      .from('wallets')
-      .update({
-        credits_remaining: current + creditAmount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('shop_id', user.id);
-
-    if (error) {
-      setCreditStatus('error');
-      return;
+      cashfree.checkout({
+        paymentSessionId: data.payment_session_id,
+        returnUrl: window.location.origin + '/dashboard/settings?order_id={order_id}',
+      });
+    } catch (err: unknown) {
+      setCreditStatus('idle');
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      setCheckoutErrorMsg(msg);
     }
-
-    setCreditStatus('added');
-    setWallet((prev) => prev ? { ...prev, credits_remaining: current + creditAmount } : prev);
-    setTimeout(() => setCreditStatus('idle'), 3000);
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-[#E8E3DA] border-t-[#C4A896] rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-xs tracking-[0.2em] text-[#8B8378] uppercase">Loading settings...</p>
+      <div className="max-w-3xl mx-auto space-y-8">
+        <div>
+          <Skeleton className="h-8 w-64 mb-3" />
+          <Skeleton className="h-4 w-96" />
         </div>
+        
+        <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
+          <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
+            <Skeleton className="w-8 h-8 rounded-lg" />
+            <div>
+              <Skeleton className="h-4 w-32 mb-1.5" />
+              <Skeleton className="h-3 w-48" />
+            </div>
+          </div>
+          <div className="p-6 space-y-6">
+            <Skeleton className="h-28 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+          </div>
+        </section>
+
+        <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
+          <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
+            <Skeleton className="w-8 h-8 rounded-lg" />
+            <div>
+              <Skeleton className="h-4 w-32 mb-1.5" />
+              <Skeleton className="h-3 w-48" />
+            </div>
+          </div>
+          <div className="p-6 space-y-5">
+            <Skeleton className="h-12 w-full rounded-lg" />
+            <Skeleton className="h-12 w-full rounded-lg" />
+            <Skeleton className="h-12 w-full rounded-lg" />
+          </div>
+        </section>
       </div>
     );
   }
@@ -124,17 +202,13 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-8">
 
-      {/* Page Header */}
       <div>
-        <h1 className="serif-headline text-2xl md:text-3xl text-[#3E3B36]">Shop Settings</h1>
-        <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mt-1.5">
-          Manage your workspace configuration and credit wallet
-        </p>
+        <h1 className="serif-headline text-2xl md:text-3xl text-[#3E3B36]">Settings & Provider Hub</h1>
+        <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mt-1.5">Manage workspace, credits, and Meta integration</p>
       </div>
 
-      {/* ── CREDIT WALLET ───────────────────────────────────────── */}
+      {/* ── CREDIT PURCHASE MATRICES ─────────────────────────────── */}
       <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
-
         <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
           <div className="w-8 h-8 bg-[#F5F1EA] rounded-lg flex items-center justify-center">
             <CreditCard size={14} className="text-[#C4A896]" strokeWidth={1.5} />
@@ -146,14 +220,11 @@ export default function SettingsPage() {
         </div>
 
         <div className="p-6 space-y-6">
-
-          {/* Balance display */}
+          {/* Balance */}
           <div className="bg-[#3E3B36] rounded-xl p-6 flex items-center justify-between">
             <div>
               <p className="text-[10px] tracking-[0.25em] text-[#F5F1EA]/50 uppercase mb-1">Current Balance</p>
-              <p className="serif-headline text-4xl text-[#F5F1EA]">
-                {wallet ? wallet.credits_remaining.toLocaleString() : '0'}
-              </p>
+              <p className="serif-headline text-4xl text-[#F5F1EA]">{wallet ? wallet.credits_remaining.toLocaleString() : '0'}</p>
               <p className="text-xs text-[#C4A896] mt-1 tracking-[0.1em] uppercase">Credits</p>
             </div>
             <div className="text-right">
@@ -163,81 +234,125 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Credit packs */}
+          {/* Credit pack selection */}
           <div>
             <p className="text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-3">Select Credit Pack</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {CREDIT_PACKS.map((pack) => (
                 <button
                   key={pack.amount}
-                  onClick={() => setCreditAmount(pack.amount)}
-                  className={`p-3 rounded-xl border text-left transition-all ${
-                    creditAmount === pack.amount
+                  onClick={() => setSelectedPack(pack.amount)}
+                  className={`p-4 rounded-xl border text-left transition-all relative ${
+                    selectedPack === pack.amount
                       ? 'border-[#C4A896] bg-[#F5F1EA]'
-                      : 'border-[#E8E3DA] bg-[#FFFFFF] hover:border-[#C4A896]/50'
+                      : 'border-[#E8E3DA] hover:border-[#C4A896]/50'
                   }`}
                 >
+                  {selectedPack === pack.amount && (
+                    <div className="absolute top-2 right-2"><CheckCircle size={12} className="text-[#C4A896]" strokeWidth={1.5} /></div>
+                  )}
                   <p className="text-sm font-medium text-[#3E3B36]">{pack.label}</p>
                   <p className="text-[10px] text-[#8B8378] tracking-[0.1em] uppercase mt-0.5">{pack.desc}</p>
+                  <p className="text-base font-semibold text-[#3E3B36] mt-2">{pack.price}</p>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Custom amount */}
+          <button
+            onClick={handleCreditPurchase}
+            disabled={creditStatus === 'redirecting'}
+            className="btn-primary rounded-lg flex items-center gap-2 disabled:opacity-50"
+          >
+            <Zap size={12} strokeWidth={1.5} />
+            {creditStatus === 'redirecting' ? 'Redirecting to checkout...' : `Purchase ${selectedPack} Credits`}
+          </button>
+        </div>
+      </section>
+
+      {/* ── PROVIDER HUB — Facebook Embedded Signup ─────────────── */}
+      <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
+        <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
+          <div className="w-8 h-8 bg-[#F5F1EA] rounded-lg flex items-center justify-center">
+            <FacebookIcon size={14} />
+          </div>
           <div>
-            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
-              Custom Amount
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={100000}
-              value={creditAmount}
-              onChange={(e) => setCreditAmount(Math.max(1, parseInt(e.target.value) || 1))}
-              className="input-editorial max-w-xs"
-              placeholder="Enter credit amount"
-            />
+            <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">Meta WhatsApp Provider</h2>
+            <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Connect your Business account</p>
           </div>
+          {shop?.meta_access_token && (
+            <div className="ml-auto flex items-center gap-1.5 text-[#C4A896]">
+              <div className="w-1.5 h-1.5 bg-[#C4A896] rounded-full animate-pulse" />
+              <span className="text-[10px] tracking-[0.15em] uppercase">Connected</span>
+            </div>
+          )}
+        </div>
 
-          {/* Action note */}
-          <div className="bg-[#F5F1EA] border border-[#E8E3DA] rounded-lg p-4">
-            <p className="text-xs text-[#3E3B36] leading-relaxed">
-              <span className="text-[#C4A896] font-medium">Note:</span> In production, credit top-ups are processed via a payment gateway.
-              This button simulates adding credits directly to your wallet for testing purposes.
+        <div className="p-6 space-y-5">
+
+          {/* Primary: 1-Click Facebook Embedded Signup */}
+          <div className="bg-[#F5F1EA] rounded-xl p-5">
+            <p className="text-xs text-[#3E3B36] mb-1 font-medium">Connect with Facebook</p>
+            <p className="text-[11px] text-[#8B8378] leading-relaxed mb-4">
+              Authorize your Meta Business account to enable WhatsApp Cloud API broadcasting. Your token is securely stored and never shared.
             </p>
+            <button
+              onClick={() => alert('Meta Embedded Signup flow — integrate your Facebook App ID here.\n\nUse: window.FB.login() with scope: business_management,whatsapp_business_management')}
+              className="flex items-center gap-3 bg-[#1877F2] hover:bg-[#1565C0] text-white px-5 py-3 rounded-xl transition-colors font-medium text-sm"
+            >
+              <FacebookIcon size={16} />
+              Continue with Facebook
+              <ExternalLink size={12} className="ml-auto opacity-70" />
+            </button>
           </div>
 
-          {/* Top up button */}
-          <div className="flex items-center gap-4">
+          {/* Secondary: Manual credential entry toggle */}
+          <div className="border border-[#E8E3DA] rounded-xl overflow-hidden">
             <button
-              onClick={handleTopUpCredits}
-              disabled={creditStatus === 'adding'}
-              className="btn-primary rounded-lg flex items-center gap-2 disabled:opacity-50"
+              onClick={() => setManualProviderOpen(!manualProviderOpen)}
+              className="w-full px-5 py-4 flex items-center justify-between hover:bg-[#F5F1EA]/40 transition-colors"
             >
-              {creditStatus === 'adding' ? 'Processing...' : `Add ${creditAmount.toLocaleString()} Credits`}
+              <div className="text-left">
+                <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase">Manual Token Entry</p>
+                <p className="text-[10px] text-[#8B8378] mt-0.5 normal-case tracking-normal">Developer safety route — enter credentials directly</p>
+              </div>
+              <ChevronDown size={14} className={`text-[#8B8378] transition-transform flex-shrink-0 ${manualProviderOpen ? 'rotate-180' : ''}`} />
             </button>
-            {creditStatus === 'added' && (
-              <div className="flex items-center gap-1.5 text-[#C4A896]">
-                <CheckCircle size={14} strokeWidth={1.5} />
-                <span className="text-xs tracking-[0.1em] uppercase">Credits added!</span>
-              </div>
-            )}
-            {creditStatus === 'error' && (
-              <div className="flex items-center gap-1.5 text-[#8B8378]">
-                <AlertTriangle size={14} strokeWidth={1.5} />
-                <span className="text-xs tracking-[0.1em] uppercase">Failed to add credits</span>
-              </div>
+
+            {manualProviderOpen && (
+              <form onSubmit={handleConfirmSaveProfile} className="border-t border-[#E8E3DA] p-5 space-y-4">
+                <div>
+                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Meta Access Token</label>
+                  <input type="password" value={shopForm.meta_access_token} onChange={(e) => setShopForm({ ...shopForm, meta_access_token: e.target.value })} className="input-editorial" placeholder="EAAB..." />
+                </div>
+                <div>
+                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Phone Number ID</label>
+                  <input type="text" value={shopForm.meta_phone_number_id} onChange={(e) => setShopForm({ ...shopForm, meta_phone_number_id: e.target.value })} className="input-editorial" placeholder="1234567890" />
+                </div>
+                <div>
+                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Business Account ID</label>
+                  <input type="text" value={shopForm.meta_business_account_id} onChange={(e) => setShopForm({ ...shopForm, meta_business_account_id: e.target.value })} className="input-editorial" placeholder="0987654321" />
+                </div>
+                <div>
+                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Default Template Name</label>
+                  <input type="text" value={shopForm.meta_template_name} onChange={(e) => setShopForm({ ...shopForm, meta_template_name: e.target.value })} className="input-editorial" placeholder="hello_world" />
+                </div>
+                <div className="flex items-center gap-4 pt-1">
+                  <button type="submit" disabled={saveStatus === 'saving'} className="btn-primary rounded-lg disabled:opacity-50">
+                    {saveStatus === 'saving' ? 'Saving...' : 'Save Credentials'}
+                  </button>
+                  {saveStatus === 'saved' && <div className="flex items-center gap-1.5 text-[#C4A896]"><CheckCircle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Saved!</span></div>}
+                  {saveStatus === 'error' && <div className="flex items-center gap-1.5 text-[#8B8378]"><AlertTriangle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Save failed</span></div>}
+                </div>
+              </form>
             )}
           </div>
 
         </div>
-
       </section>
 
-      {/* ── SHOP PROFILE ────────────────────────────────────────── */}
+      {/* ── SHOP PROFILE ─────────────────────────────────────────── */}
       <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
-
         <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
           <div className="w-8 h-8 bg-[#F5F1EA] rounded-lg flex items-center justify-center">
             <Building size={14} className="text-[#C4A896]" strokeWidth={1.5} />
@@ -247,145 +362,97 @@ export default function SettingsPage() {
             <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Business identity node</p>
           </div>
         </div>
-
-        <form onSubmit={handleSaveProfile} className="p-6 space-y-5">
-
+        <form onSubmit={handleConfirmSaveProfile} className="p-6 space-y-5">
           <div>
-            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
-              Shop / Brand Name
-            </label>
-            <input
-              type="text"
-              required
-              value={shopForm.shop_name}
-              onChange={(e) => setShopForm({ ...shopForm, shop_name: e.target.value })}
-              className="input-editorial"
-              placeholder="Your shop name"
-            />
+            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Shop / Brand Name</label>
+            <input type="text" required value={shopForm.shop_name} onChange={(e) => setShopForm({ ...shopForm, shop_name: e.target.value })} className="input-editorial" placeholder={shop?.shop_name || "Your shop name"} />
           </div>
-
           <div>
-            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
-              Owner WhatsApp Number
-            </label>
-            <input
-              type="tel"
-              required
-              value={shopForm.owner_phone}
-              onChange={(e) => setShopForm({ ...shopForm, owner_phone: e.target.value })}
-              className="input-editorial"
-              placeholder="+91 98765 43210"
-            />
+            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Owner WhatsApp Number</label>
+            <input type="tel" required value={shopForm.owner_phone} onChange={(e) => setShopForm({ ...shopForm, owner_phone: e.target.value })} className="input-editorial" placeholder={shop?.owner_phone || "+91 98765 43210"} />
           </div>
-
           <div>
-            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
-              Industry Type
-            </label>
-            <input
-              type="text"
-              value={shopForm.industry_type}
-              onChange={(e) => setShopForm({ ...shopForm, industry_type: e.target.value })}
-              className="input-editorial"
-              placeholder="e.g. Fashion & Apparel"
-            />
+            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Industry Type</label>
+            <select value={shopForm.industry_type} onChange={(e) => setShopForm({ ...shopForm, industry_type: e.target.value })} className="input-editorial appearance-none cursor-pointer">
+              <option value="" disabled>{shop?.industry_type || "Select Industry Type"}</option>
+              <option value="Fashion & Apparel">Fashion & Apparel</option>
+              <option value="Food & Beverage">Food & Beverage</option>
+              <option value="Health & Beauty">Health & Beauty</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Education">Education</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
-
-          <div className="border-t border-[#E8E3DA] pt-4 mt-4">
-            <h3 className="lexend-subheading text-sm font-medium text-[#3E3B36] mb-4">Meta API Credentials</h3>
-          </div>
-
-          <div>
-            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
-              Meta Access Token
-            </label>
-            <input
-              type="password"
-              value={shopForm.meta_access_token}
-              onChange={(e) => setShopForm({ ...shopForm, meta_access_token: e.target.value })}
-              className="input-editorial"
-              placeholder="EAAB..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
-              Phone Number ID
-            </label>
-            <input
-              type="text"
-              value={shopForm.meta_phone_number_id}
-              onChange={(e) => setShopForm({ ...shopForm, meta_phone_number_id: e.target.value })}
-              className="input-editorial"
-              placeholder="1234567890"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
-              Business Account ID
-            </label>
-            <input
-              type="text"
-              value={shopForm.meta_business_account_id}
-              onChange={(e) => setShopForm({ ...shopForm, meta_business_account_id: e.target.value })}
-              className="input-editorial"
-              placeholder="0987654321"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
-              Default Template Name
-            </label>
-            <input
-              type="text"
-              value={shopForm.meta_template_name}
-              onChange={(e) => setShopForm({ ...shopForm, meta_template_name: e.target.value })}
-              className="input-editorial"
-              placeholder="hello_world"
-            />
-          </div>
-
-          <div className="flex items-center gap-4 pt-2">
-            <button
-              type="submit"
-              disabled={saveStatus === 'saving'}
-              className="btn-primary rounded-lg disabled:opacity-50"
-            >
+          <div className="flex items-center gap-4 pt-1">
+            <button type="submit" disabled={saveStatus === 'saving'} className="btn-primary rounded-lg disabled:opacity-50">
               {saveStatus === 'saving' ? 'Saving...' : 'Save Profile'}
             </button>
-            {saveStatus === 'saved' && (
-              <div className="flex items-center gap-1.5 text-[#C4A896]">
-                <CheckCircle size={14} strokeWidth={1.5} />
-                <span className="text-xs tracking-[0.1em] uppercase">Saved!</span>
-              </div>
-            )}
-            {saveStatus === 'error' && (
-              <div className="flex items-center gap-1.5 text-[#8B8378]">
-                <AlertTriangle size={14} strokeWidth={1.5} />
-                <span className="text-xs tracking-[0.1em] uppercase">Save failed</span>
-              </div>
-            )}
+            {saveStatus === 'saved' && <div className="flex items-center gap-1.5 text-[#C4A896]"><CheckCircle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Saved!</span></div>}
+            {saveStatus === 'error' && <div className="flex items-center gap-1.5 text-[#8B8378]"><AlertTriangle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Save failed</span></div>}
           </div>
-
         </form>
-
       </section>
 
-      {/* ── ACCOUNT INFO ────────────────────────────────────────── */}
+      {/* ── SECURITY & PASSWORD MANAGEMENT ─────────────────────── */}
       <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
-
         <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
           <div className="w-8 h-8 bg-[#F5F1EA] rounded-lg flex items-center justify-center">
-            <User size={14} className="text-[#C4A896]" strokeWidth={1.5} />
+            <Lock size={14} className="text-[#C4A896]" strokeWidth={1.5} />
           </div>
           <div>
-            <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">Account Details</h2>
-            <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Workspace identity</p>
+            <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">Security & Password Management</h2>
+            <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Update workspace credentials</p>
           </div>
         </div>
+        <form onSubmit={handleConfirmPassword} className="p-6 space-y-5">
+          <div>
+            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">New Password</label>
+            <input 
+              type="password" 
+              required 
+              value={passwordForm.newPassword} 
+              onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} 
+              className="bg-[#FFFFFF] border border-[#E8E3DA] py-3 px-4 text-sm text-[#3E3B36] transition-colors focus:border-[#C4A896] outline-none rounded-lg w-full" 
+              placeholder="Enter new password" 
+            />
+          </div>
+          <div>
+            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Confirm New Password</label>
+            <input 
+              type="password" 
+              required 
+              value={passwordForm.confirmPassword} 
+              onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })} 
+              className="bg-[#FFFFFF] border border-[#E8E3DA] py-3 px-4 text-sm text-[#3E3B36] transition-colors focus:border-[#C4A896] outline-none rounded-lg w-full" 
+              placeholder="Confirm new password" 
+            />
+          </div>
+          <div className="flex items-center gap-4 pt-1">
+            <button type="submit" disabled={passwordStatus === 'saving'} className="btn-primary rounded-lg disabled:opacity-50">
+              {passwordStatus === 'saving' ? 'Updating...' : 'Update Password'}
+            </button>
+            {passwordStatus === 'saved' && (
+              <div className="flex items-center gap-1.5 text-[#C4A896]">
+                <CheckCircle size={14} strokeWidth={1.5} />
+                <span className="text-xs tracking-[0.1em] uppercase">{passwordMsg}</span>
+              </div>
+            )}
+            {passwordStatus === 'error' && (
+              <div className="flex items-center gap-1.5 text-[#8B8378]">
+                <AlertTriangle size={14} strokeWidth={1.5} />
+                <span className="text-xs tracking-[0.1em] uppercase">{passwordMsg}</span>
+              </div>
+            )}
+          </div>
+        </form>
+      </section>
 
+      {/* ── ACCOUNT INFO ─────────────────────────────────────────── */}
+      <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
+        <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
+          <div className="w-8 h-8 bg-[#F5F1EA] rounded-lg flex items-center justify-center"><User size={14} className="text-[#C4A896]" strokeWidth={1.5} /></div>
+          <div><h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">Account Details</h2><p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Workspace identity</p></div>
+        </div>
         <div className="p-6">
           <div className="space-y-4">
             {[
@@ -399,8 +466,35 @@ export default function SettingsPage() {
             ))}
           </div>
         </div>
-
       </section>
+
+      {/* MODALS */}
+      <CustomConfirm
+        isOpen={isShopConfirmOpen}
+        title="Update Shop Profile"
+        message="Are you sure you want to save these modifications to your active business identity? This will be immediately reflected."
+        confirmText="SAVE PROFILE"
+        onConfirm={executeSaveProfile}
+        onCancel={() => setIsShopConfirmOpen(false)}
+      />
+
+      <CustomConfirm
+        isOpen={isPasswordConfirmOpen}
+        title="Update Workspace Security"
+        message="Are you sure you want to change your workspace password? You will need to use the new credentials on your next login."
+        confirmText="UPDATE PASSWORD"
+        onConfirm={executeUpdatePassword}
+        onCancel={() => setIsPasswordConfirmOpen(false)}
+      />
+
+      <CustomConfirm
+        isOpen={checkoutErrorMsg !== null}
+        title="Payment Session Error"
+        message={checkoutErrorMsg || ''}
+        confirmText="DISMISS"
+        onConfirm={() => setCheckoutErrorMsg(null)}
+        onCancel={() => setCheckoutErrorMsg(null)}
+      />
 
     </div>
   );

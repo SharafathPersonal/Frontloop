@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { APP_VERSION } from '@/lib/config';
 import { supabase } from '@/lib/supabaseClient';
 import type { RegisterFormValues } from '@/types/broadcast';
+import { Spinner } from '@/components/ui/Spinner';
 
 const INDUSTRY_TYPES = [
   'Fashion & Apparel',
@@ -55,6 +56,13 @@ export default function RegisterPage() {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
+      options: {
+        data: {
+          shop_name: form.shop_name,
+          owner_phone: form.owner_phone,
+          industry_type: form.industry_type,
+        }
+      }
     });
 
     if (authError || !authData.user) {
@@ -63,35 +71,9 @@ export default function RegisterPage() {
       return;
     }
 
-    const userId = authData.user.id;
-
-    // 2. Create shop profile row
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: shopError } = await (supabase.from('shops') as any).insert({
-      id: userId,
-      shop_name: form.shop_name,
-      owner_phone: form.owner_phone,
-      industry_type: form.industry_type,
-    });
-
-    if (shopError) {
-      setError('Account created but failed to save shop profile. Please contact support.');
-      setLoading(false);
-      return;
-    }
-
-    // 3. Create wallet with 0 credits
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: walletError } = await (supabase.from('wallets') as any).insert({
-      shop_id: userId,
-      credits_remaining: 0,
-    });
-
-    if (walletError) {
-      // Non-fatal; wallet can be created later
-      console.warn('[Register] Wallet creation deferred:', walletError.message);
-    }
-
+    // Note: The secondary writes to `public.shops` and `public.wallets` 
+    // are now handled atomically by a PostgreSQL trigger on `auth.users` insert!
+    
     setLoading(false);
     router.push('/dashboard');
     router.refresh();
@@ -105,7 +87,7 @@ export default function RegisterPage() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 mb-6">
             <div className="relative w-8 h-8 flex items-center justify-center">
-              <Image src="/images/logo-dark.png" alt="Attendly Logo" fill className="object-contain" />
+              <Image src="/images/logo-dark.png" alt="Attendly Logo" fill sizes="32px" className="object-contain" />
             </div>
             <span className="serif-headline text-lg text-[#3E3B36]">Attendly Broadcast</span>
           </div>
@@ -134,8 +116,9 @@ export default function RegisterPage() {
                 required
                 value={form.shop_name}
                 onChange={(e) => setForm({ ...form, shop_name: e.target.value })}
-                className="input-editorial"
+                className="input-editorial disabled:opacity-50"
                 placeholder="e.g. Noor Fashion House"
+                disabled={loading}
               />
             </div>
 
@@ -148,7 +131,8 @@ export default function RegisterPage() {
                 required
                 value={form.industry_type}
                 onChange={(e) => setForm({ ...form, industry_type: e.target.value })}
-                className="input-editorial"
+                className="input-editorial disabled:opacity-50"
+                disabled={loading}
               >
                 <option value="" disabled>Select your industry</option>
                 {INDUSTRY_TYPES.map((t) => (
@@ -167,8 +151,9 @@ export default function RegisterPage() {
                 required
                 value={form.owner_phone}
                 onChange={(e) => setForm({ ...form, owner_phone: e.target.value })}
-                className="input-editorial"
+                className="input-editorial disabled:opacity-50"
                 placeholder="+91 98765 43210"
+                disabled={loading}
               />
             </div>
 
@@ -188,8 +173,9 @@ export default function RegisterPage() {
                 autoComplete="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="input-editorial"
+                className="input-editorial disabled:opacity-50"
                 placeholder="you@example.com"
+                disabled={loading}
               />
             </div>
 
@@ -204,8 +190,9 @@ export default function RegisterPage() {
                 autoComplete="new-password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                className="input-editorial"
+                className="input-editorial disabled:opacity-50"
                 placeholder="Min. 8 characters"
+                disabled={loading}
               />
             </div>
 
@@ -220,8 +207,9 @@ export default function RegisterPage() {
                 autoComplete="new-password"
                 value={form.confirmPassword}
                 onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                className="input-editorial"
+                className="input-editorial disabled:opacity-50"
                 placeholder="Repeat your password"
+                disabled={loading}
               />
             </div>
 
@@ -229,9 +217,16 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary w-full rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary w-full rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {loading ? 'Creating workspace...' : 'Create Workspace'}
+                {loading ? (
+                  <>
+                    <Spinner />
+                    <span>PROCESSING PROFILE...</span>
+                  </>
+                ) : (
+                  'Create Workspace'
+                )}
               </button>
             </div>
 

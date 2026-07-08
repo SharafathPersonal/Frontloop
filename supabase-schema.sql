@@ -1,16 +1,19 @@
--- ================================================================
--- TRUE ATTENDLY BROADCAST — Supabase PostgreSQL Schema Engine
--- Run this in: Supabase Dashboard → SQL Editor → New Query
--- ================================================================
+-- ==============================================================================
+-- PHASE 1: THE DEFINITIVE POSTGRESQL SCHEMA ENGINE
+-- DANGER: This will drop existing tables to apply the new architecture cleanly.
+-- ==============================================================================
 
--- Enable UUID generation extension
+drop table if exists public.payment_logs cascade;
+drop table if exists public.campaigns cascade;
+drop table if exists public.customers_master cascade;
+drop table if exists public.wallets cascade;
+drop table if exists public.shops cascade;
+
+-- Enable UUID extension
 create extension if not exists "uuid-ossp";
 
--- ----------------------------------------------------------------
--- 1. SHOPS MASTER TABLE
--- Links directly to Supabase Auth user row (1:1 relationship)
--- ----------------------------------------------------------------
-create table if not exists public.shops (
+-- 1. SHOPS MASTER TABLE (Linked to Supabase Auth)
+create table public.shops (
     id uuid references auth.users on delete cascade primary key,
     shop_name text not null,
     owner_phone text not null,
@@ -22,139 +25,83 @@ create table if not exists public.shops (
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
-comment on table public.shops is 'One row per registered merchant workspace, keyed to auth.users.id';
-
--- ----------------------------------------------------------------
 -- 2. CREDIT WALLET LEDGER
--- One wallet per shop. credits_remaining must always be >= 0.
--- ----------------------------------------------------------------
-create table if not exists public.wallets (
+create table public.wallets (
     shop_id uuid references public.shops(id) on delete cascade primary key,
     credits_remaining bigint not null default 0,
     updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
     constraint check_positive_credits check (credits_remaining >= 0)
 );
 
-comment on table public.wallets is 'Pay-as-you-send credit ledger. 1 credit = 1 WhatsApp message dispatched.';
+-- 3. CUSTOMERS MASTER DISPATCH TABLE
+create table public.customers_master (
+    id uuid default gen_random_uuid() primary key,
+    shop_id uuid references public.shops(id) on delete cascade not null,
+    customer_name text not null,
+    whatsapp_number text not null,
+    tags text[] default '{}'::text[], -- e.g., ['VIP', 'Regular']
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    constraint unique_shop_whatsapp unique (shop_id, whatsapp_number)
+);
 
--- ----------------------------------------------------------------
--- 3. OUTBOUND CAMPAIGNS (BROADCAST STORIES)
--- ----------------------------------------------------------------
-create table if not exists public.campaigns (
+-- 4. OUTBOUND CAMPAIGNS & WHATSAPP LOGS TABLE
+create table public.campaigns (
     id uuid default gen_random_uuid() primary key,
     shop_id uuid references public.shops(id) on delete cascade not null,
     title text not null,
     message_body text not null,
     image_url text,
-    status text not null default 'pending'
-        check (status in ('pending', 'processing', 'completed', 'insufficient_credits')),
+    status text not null default 'pending', -- pending, processing, completed, failed, insufficient_credits
     total_recipients integer not null default 0,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
-comment on table public.campaigns is 'Each broadcast campaign. status transitions: pending → processing → completed | insufficient_credits';
-comment on column public.campaigns.status is 'pending | processing | completed | insufficient_credits';
+-- 5. PAYMENT TRANSACTION HISTORY LEDGER (Cashfree/Gateway Logs)
+create table public.payment_logs (
+    id uuid default gen_random_uuid() primary key,
+    shop_id uuid references public.shops(id) on delete cascade not null,
+    order_id text not null unique,
+    amount numeric(10, 2) not null,
+    credits_credited integer not null,
+    payment_status text not null default 'pending', -- pending, success, failed
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
 
--- ================================================================
--- ROW LEVEL SECURITY (RLS) — Strict per-shop isolation
--- ================================================================
+-- ==============================================================================
+-- PHASE 2: SECURITY & ROW LEVEL SECURITY (RLS) POLICIES
+-- Enable absolute isolation so shop owners can never read or mutate other users
+-- ==============================================================================
 
--- Enable RLS on all tables
 alter table public.shops enable row level security;
 alter table public.wallets enable row level security;
+alter table public.customers_master enable row level security;
 alter table public.campaigns enable row level security;
+alter table public.payment_logs enable row level security;
 
--- ── Shops policies ────────────────────────────────────────────────
+-- Setup explicit user context verification checks
+create policy "Shops isolation" on public.shops for all using (auth.uid() = id);
+create policy "Wallets isolation" on public.wallets for all using (auth.uid() = shop_id);
+create policy "Customers isolation" on public.customers_master for all using (auth.uid() = shop_id);
+create policy "Campaigns isolation" on public.campaigns for all using (auth.uid() = shop_id);
+create policy "Payment logs isolation" on public.payment_logs for all using (auth.uid() = shop_id);
 
--- Drop existing policies if re-running this migration
-drop policy if exists "Users can view and edit their own shop profile" on public.shops;
-
-create policy "Users can view and edit their own shop profile"
-    on public.shops
-    for all
-    using (auth.uid() = id)
-    with check (auth.uid() = id);
-
--- ── Wallets policies ──────────────────────────────────────────────
-
-drop policy if exists "Users can view their own wallet balances" on public.wallets;
-drop policy if exists "Users can update their own wallet" on public.wallets;
-
-create policy "Users can view their own wallet balances"
-    on public.wallets
-    for select
-    using (auth.uid() = shop_id);
-
-create policy "Users can update their own wallet"
-    on public.wallets
-    for update
-    using (auth.uid() = shop_id)
-    with check (auth.uid() = shop_id);
-
-create policy "Users can insert their own wallet"
-    on public.wallets
-    for insert
-    with check (auth.uid() = shop_id);
-
--- ── Campaigns policies ────────────────────────────────────────────
-
-drop policy if exists "Users can manage their own campaigns" on public.campaigns;
-
-create policy "Users can manage their own campaigns"
-    on public.campaigns
-    for all
-    using (auth.uid() = shop_id)
-    with check (auth.uid() = shop_id);
-
--- ================================================================
--- INDEXES — Performance optimization
--- ================================================================
-
-create index if not exists idx_campaigns_shop_id on public.campaigns(shop_id);
-create index if not exists idx_campaigns_created_at on public.campaigns(created_at desc);
-create index if not exists idx_campaigns_status on public.campaigns(status);
-
--- ================================================================
--- HELPER FUNCTION: Safe credit deduction (prevents going negative)
--- Call via: select deduct_credits('<shop_id>', <amount>);
--- Returns: boolean (true if deducted, false if insufficient credits)
--- ================================================================
-
+-- ==============================================================================
+-- PHASE 3: ATOMIC WALLET DEDUCTION RPC
+-- Safely decrement credits exactly by 1 (or amount) ensuring no race conditions
+-- ==============================================================================
 create or replace function public.deduct_credits(p_shop_id uuid, p_amount integer)
-returns boolean
+returns void
 language plpgsql
 security definer
-set search_path = public
 as $$
-declare
-  v_current bigint;
 begin
-  -- Lock the wallet row for this transaction
-  select credits_remaining into v_current
-  from public.wallets
-  where shop_id = p_shop_id
-  for update;
+    update public.wallets
+    set credits_remaining = credits_remaining - p_amount,
+        updated_at = now()
+    where shop_id = p_shop_id and credits_remaining >= p_amount;
 
-  if v_current is null or v_current < p_amount then
-    return false;
-  end if;
-
-  update public.wallets
-  set
-    credits_remaining = credits_remaining - p_amount,
-    updated_at = now()
-  where shop_id = p_shop_id;
-
-  return true;
+    if not found then
+        raise exception 'Insufficient credits or wallet not found';
+    end if;
 end;
 $$;
-
-comment on function public.deduct_credits is 'Atomic credit deduction with negative-balance guard. Returns false if insufficient.';
-
--- ================================================================
--- VERIFICATION QUERIES (run after migration to confirm setup)
--- ================================================================
--- select * from public.shops limit 5;
--- select * from public.wallets limit 5;
--- select * from public.campaigns limit 5;
--- select tablename, policyname, cmd from pg_policies where schemaname = 'public';

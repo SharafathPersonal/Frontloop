@@ -16,7 +16,9 @@ import {
   Menu,
   X,
   Wallet as WalletIcon,
+  Users,
 } from 'lucide-react';
+import CustomConfirm from '@/components/ui/CustomConfirm';
 
 interface NavLink {
   label: string;
@@ -26,6 +28,7 @@ interface NavLink {
 
 const navLinks: NavLink[] = [
   { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={14} strokeWidth={1.5} /> },
+  { label: 'Audience', href: '/dashboard/customers', icon: <Users size={14} strokeWidth={1.5} /> },
   { label: 'Broadcast', href: '/dashboard/broadcast', icon: <Radio size={14} strokeWidth={1.5} /> },
   { label: 'History', href: '/dashboard/history', icon: <Clock size={14} strokeWidth={1.5} /> },
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings size={14} strokeWidth={1.5} /> },
@@ -37,6 +40,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [shop, setShop] = useState<Shop | null>(null);
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -47,18 +52,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
 
       const [{ data: shopData }, { data: walletData }] = await Promise.all([
-        supabase.from('shops').select('*').eq('id', user.id).single(),
-        supabase.from('wallets').select('*').eq('shop_id', user.id).single(),
+        supabase.from('shops').select('*').eq('id', user.id).maybeSingle(),
+        supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle(),
       ]);
 
       if (shopData) setShop(shopData);
       if (walletData) setWallet(walletData);
+
+      setIsAuthLoading(false);
     }
 
     loadData();
   }, [router]);
 
+  const triggerSignOut = () => setIsLogoutConfirmOpen(true);
+
   const handleSignOut = async () => {
+    setIsLogoutConfirmOpen(false);
     await supabase.auth.signOut();
     router.push('/');
     router.refresh();
@@ -135,7 +145,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </p>
         )}
         <button
-          onClick={handleSignOut}
+          onClick={triggerSignOut}
           className="flex items-center gap-3 w-full py-2.5 px-3 rounded-lg text-xs tracking-[0.15em] uppercase text-[#8B8378] hover:text-[#C4A896] transition-colors mb-4"
         >
           <LogOut size={14} strokeWidth={1.5} />
@@ -151,6 +161,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     </div>
   );
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-[#F5F1EA] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#E8E3DA] border-t-[#C4A896] rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#F5F1EA] overflow-hidden">
@@ -204,6 +222,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
 
       </div>
+
+      <CustomConfirm
+        isOpen={isLogoutConfirmOpen}
+        title="System Logout"
+        message="Are you sure you want to securely end your active session and sign out of the workspace?"
+        confirmText="SIGN OUT"
+        onConfirm={handleSignOut}
+        onCancel={() => setIsLogoutConfirmOpen(false)}
+      />
     </div>
   );
 }

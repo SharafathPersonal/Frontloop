@@ -18,7 +18,12 @@ export const metadata: Metadata = {
     title: 'True Attendly Broadcast',
     description: 'The Editorial WhatsApp Marketing Platform for High-Retention Retail.',
   },
+  icons: {
+    icon: '/images/logo-dark.png',
+  },
 };
+
+import { OfflineBanner } from '@/components/ui/OfflineBanner';
 
 export default function RootLayout({
   children,
@@ -31,7 +36,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <OfflineBanner />
+        {children}
+      </body>
     </html>
   );
 }

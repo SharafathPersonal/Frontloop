@@ -155,12 +155,14 @@ export default function LandingPage() {
                 src="/images/logo-light.png"
                 alt="Attendly"
                 fill
+                sizes="40px"
                 className="object-contain logo-light transition-opacity duration-300" 
               />
               <Image 
                 src="/images/logo-dark.png"
                 alt="Attendly"
                 fill
+                sizes="40px"
                 className="object-contain logo-dark opacity-0 transition-opacity duration-300 absolute inset-0" 
               />
             </div>
@@ -294,7 +296,7 @@ export default function LandingPage() {
                   className="relative w-28 h-28 rounded-xl flex items-center justify-center p-4"
                   style={{ background: 'rgba(255,255,255,0.10)' }}
                 >
-                  <Image src="/images/logo-light.png" alt="Attendly Logo" fill className="object-contain p-4" />
+                  <Image src="/images/logo-light.png" alt="Attendly Logo" fill sizes="112px" className="object-contain p-4" />
                 </div>
                 <p
                   className="text-[10px] tracking-[0.25em] uppercase"
@@ -540,7 +542,7 @@ export default function LandingPage() {
               <div
                 className="relative w-8 h-8 rounded-sm flex items-center justify-center"
               >
-                <Image src="/images/logo-dark.png" alt="Attendly Logo" fill className="object-contain" />
+                <Image src="/images/logo-dark.png" alt="Attendly Logo" fill sizes="32px" className="object-contain" />
               </div>
             </div>
 

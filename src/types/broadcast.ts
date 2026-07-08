@@ -26,6 +26,16 @@ export interface Database {
         Insert: CampaignInsert;
         Update: CampaignUpdate;
       };
+      customers_master: {
+        Row: Customer;
+        Insert: CustomerInsert;
+        Update: Partial<CustomerInsert>;
+      };
+      payment_logs: {
+        Row: PaymentLog;
+        Insert: PaymentLogInsert;
+        Update: Partial<PaymentLogInsert>;
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -43,7 +53,10 @@ export type CampaignStatus =
   | 'pending'
   | 'processing'
   | 'completed'
+  | 'failed'
   | 'insufficient_credits';
+
+export type CustomerTag = string; // e.g., 'VIP', 'Regular', 'New'
 
 export interface Shop {
   id: string;                 // uuid — mirrors auth.users.id
@@ -92,6 +105,35 @@ export type CampaignInsert = Omit<Campaign, 'id' | 'created_at' | 'status'> & {
 
 export type CampaignUpdate = Partial<Omit<Campaign, 'id' | 'shop_id'>>;
 
+export interface Customer {
+  id: string;           // uuid
+  shop_id: string;      // FK → shops.id
+  customer_name: string;
+  whatsapp_number: string; 
+  tags: CustomerTag[];
+  created_at: string;
+}
+
+export type CustomerInsert = Omit<Customer, 'id' | 'created_at'> & {
+  id?: string;
+  created_at?: string;
+};
+
+export interface PaymentLog {
+  id: string;
+  shop_id: string;
+  order_id: string;
+  amount: number;
+  credits_credited: number;
+  payment_status: string;
+  created_at: string;
+}
+
+export type PaymentLogInsert = Omit<PaymentLog, 'id' | 'created_at'> & {
+  id?: string;
+  created_at?: string;
+};
+
 // ------------------------------------------------------------------
 // 3. APPLICATION-LAYER DATA TRANSFER OBJECTS
 // ------------------------------------------------------------------
@@ -109,10 +151,10 @@ export interface ParsedContact {
   phone: string;
 }
 
-/** The full payload sent to the broadcast dispatcher */
+/** The full payload sent to the broadcast dispatcher (tag-based targeting) */
 export interface BroadcastPayload {
   campaign: CampaignFormValues;
-  recipients: ParsedContact[];
+  targetTags: CustomerTag[];
   creditsRequired: number;
 }
 
