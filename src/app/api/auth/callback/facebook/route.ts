@@ -32,7 +32,41 @@ export async function GET(request: Request) {
         },
       }
     );
-    await supabase.auth.exchangeCodeForSession(code);
+    
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Unauthorized user context.' }, { status: 401 });
+    }
+
+    try {
+      const appId = process.env.NEXT_PUBLIC_META_APP_ID;
+      const appSecret = process.env.META_APP_SECRET || '';
+      const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || 'https://broadcast.trueattendly.online'}/api/auth/callback/facebook`;
+
+      const tokenResponse = await fetch(`https://graph.facebook.com/v17.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`);
+      const tokenData = await tokenResponse.json();
+
+      if (tokenData.error) {
+        throw new Error(tokenData.error.message || 'Failed to exchange Meta code');
+      }
+
+      const meta_access_token = tokenData.access_token;
+      
+      const { error: upsertError } = await supabase.from('meta_configs').upsert({
+        shop_id: user.id,
+        meta_access_token,
+        is_connected: true,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'shop_id' });
+
+      if (upsertError) {
+        return NextResponse.json({ error: 'Database transaction failed', details: upsertError.message }, { status: 500 });
+      }
+
+    } catch (err: any) {
+      return NextResponse.json({ error: 'Internal Server Error', details: err.message }, { status: 500 });
+    }
     
     const html = `
       <html>

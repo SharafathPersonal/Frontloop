@@ -588,6 +588,23 @@
   - **Mobile UX & Grid Fixed:** Updated `viewport` in `layout.tsx` to `userScalable: false` locking initial zoom bugs on iOS. Stripped conflicting `.block` from the active campaigns ledger grid mapping in `/dashboard/page.tsx` resolving responsive layout collapse.
 - **Files:** `/src/app/layout.tsx`, `/src/app/dashboard/page.tsx`, `/src/app/api/admin/login/route.ts`, `/src/app/api/admin/data/route.ts`, `/src/app/api/admin/pricing/route.ts`, `/src/app/api/webhook/whatsapp/route.ts`, `/src/app/api/webhook/cashfree/route.ts`
 
+## 2026-07-09 — Phase 30: Meta Authorization Synchronization & DB Persistence
+
+### [SCHEMA] Database Configuration Interceptor
+- **Module:** Database Schema / `public.meta_configs`
+- **Nature:** Generated an optimized PostgreSQL schema script to implement the `public.meta_configs` table (`id`, `shop_id`, `meta_access_token`, `meta_page_id`, `meta_business_id`, `is_connected`, `created_at`, `updated_at`). Added strict Row Level Security (RLS) ensuring that authenticated merchants can only select, insert, update, or delete their own records.
+- **Files:** `/home/st/.gemini/antigravity/brain/6a36d22a-982f-486a-9ccf-b415ac916699/artifacts/meta_configs_schema.sql`
+
+### [BACKEND] Endpoint Refactoring & Transaction Layer
+- **Module:** Backend API / Facebook Auth Callback
+- **Nature:** Upgraded `/src/app/api/auth/callback/facebook/route.ts` to execute a secure server-to-server Graph API exchange substituting the legacy code stub. Inserted a robust Supabase `.upsert()` transaction targeting `public.meta_configs` mapped securely by the active user `shop_id`, and ensured clean `500 Internal Server Error` fallback payloads on network or database exceptions to prevent silent execution blocks.
+- **Files:** `/src/app/api/auth/callback/facebook/route.ts`
+
+### [FRONTEND] Client-Side Reconciliation & Permanent UI Badging
+- **Module:** Dashboard Settings View
+- **Nature:** Refactored the Meta connection logic inside `/src/app/dashboard/settings/page.tsx`. Implemented reactive URL parameter parsing using `useSearchParams` (`?meta_status=success`) that instantly resolves to the new luxury-minimal "✓ Connected to Meta Business Node" badge. Replaced short-lived frontend state parameters with an immediate `useEffect` fetch from `public.meta_configs`, guaranteeing permanent persistence of the authenticated view across layout remounts.
+- **Files:** `/src/app/dashboard/settings/page.tsx`
+
 ---
 
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*

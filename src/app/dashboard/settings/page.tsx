@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, FormEvent } from 'react';
+import { useEffect, useState, FormEvent, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { load } from '@cashfreepayments/cashfree-js';
 import type { Shop, Wallet } from '@/types/broadcast';
@@ -20,7 +21,7 @@ function FacebookIcon({ size = 16 }: { size?: number }) {
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 type CreditStatus = 'idle' | 'redirecting';
 
-export default function SettingsPage() {
+function SettingsContent() {
   const [shop, setShop] = useState<Shop | null>(null);
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [shopForm, setShopForm] = useState({
@@ -34,6 +35,10 @@ export default function SettingsPage() {
   const [creditStatus, setCreditStatus] = useState<CreditStatus>('idle');
   const [loading, setLoading] = useState(true);
   const [manualProviderOpen, setManualProviderOpen] = useState(false);
+  const [isMetaConnected, setIsMetaConnected] = useState(false);
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Modal States
   const [isShopConfirmOpen, setIsShopConfirmOpen] = useState(false);
@@ -46,14 +51,25 @@ export default function SettingsPage() {
   const [passwordMsg, setPasswordMsg] = useState('');
 
   useEffect(() => {
+    if (searchParams.get('meta_status') === 'success') {
+      setIsMetaConnected(true);
+      router.replace('/dashboard/settings');
+    }
+  }, [searchParams, router]);
+
+  useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const [{ data: shopData }, { data: walletData }, { data: pricingData }] = await Promise.all([
+      const [{ data: shopData }, { data: walletData }, { data: pricingData }, { data: metaConfigData }] = await Promise.all([
         supabase.from('shops').select('*').eq('id', user.id).maybeSingle(),
         supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle(),
         supabase.from('pricing_tiers').select('*').order('amount_inr', { ascending: true }),
+        supabase.from('meta_configs').select('is_connected').eq('shop_id', user.id).maybeSingle(),
       ]);
+      if (metaConfigData?.is_connected) {
+        setIsMetaConnected(true);
+      }
       if (pricingData && pricingData.length > 0) {
         setCreditPacks(pricingData.map((t: any) => ({
           amount: t.credit_count,
@@ -215,10 +231,12 @@ export default function SettingsPage() {
       meta_business_account_id: null,
       meta_template_name: null
     }).eq('id', shop.id);
+    await supabase.from('meta_configs').delete().eq('shop_id', shop.id);
     
     if (!error) {
       setShop(prev => prev ? { ...prev, meta_access_token: '', meta_phone_number_id: '', meta_business_account_id: '', meta_template_name: '' } : prev);
       setShopForm(prev => ({ ...prev, meta_access_token: '', meta_phone_number_id: '', meta_business_account_id: '', meta_template_name: '' }));
+      setIsMetaConnected(false);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 3000);
     } else {
@@ -356,7 +374,7 @@ export default function SettingsPage() {
             <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">Meta WhatsApp Provider</h2>
             <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Connect your Business account</p>
           </div>
-          {shop?.meta_access_token && (
+          {isMetaConnected && (
             <div className="ml-auto flex items-center gap-1.5 text-[#C4A896]">
               <div className="w-1.5 h-1.5 bg-[#C4A896] rounded-full animate-pulse" />
               <span className="text-[10px] tracking-[0.15em] uppercase">Connected</span>
@@ -372,13 +390,13 @@ export default function SettingsPage() {
             <p className="text-[11px] text-[#8B8378] leading-relaxed mb-4">
               Authorize your Meta Business account to enable WhatsApp Cloud API broadcasting. Your token is securely stored and never shared.
             </p>
-            {shop?.meta_access_token ? (
+            {isMetaConnected ? (
               <div className="mt-2">
-                <div className="inline-flex items-center gap-2 bg-[#FFFFFF] border border-[#E8E3DA] px-4 py-2.5 rounded-lg shadow-sm">
-                  <div className="w-4 h-4 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                    <CheckCircle size={10} className="text-emerald-500" strokeWidth={3} />
+                <div className="inline-flex items-center gap-2 bg-[#F5F1EA] text-[#3E3B36] px-4 py-2.5 rounded-lg border border-[#E8E3DA]">
+                  <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   </div>
-                  <span className="text-sm text-[#3E3B36] font-medium">✓ Connected to Meta Business</span>
+                  <span className="text-sm font-medium">✓ Connected to Meta Business Node</span>
                 </div>
                 <button
                   onClick={handleDisconnectFacebook}
@@ -603,5 +621,13 @@ export default function SettingsPage() {
       />
 
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="max-w-3xl mx-auto space-y-8"><div className="h-8 w-64 mb-3 bg-[#E8E3DA] animate-pulse rounded" /><div className="h-4 w-96 bg-[#E8E3DA] animate-pulse rounded" /></div>}>
+      <SettingsContent />
+    </Suspense>
   );
 }
