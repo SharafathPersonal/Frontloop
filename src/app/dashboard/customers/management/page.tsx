@@ -40,6 +40,7 @@ export default function AudienceManagementPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editCustomer, setEditCustomer] = useState<CustomerRow | null>(null);
   const [editStatus, setEditStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [globalError, setGlobalError] = useState<{title: string, message: string} | null>(null);
 
   const observerTarget = useRef<HTMLDivElement>(null);
   const PAGE_SIZE = 50;
@@ -152,7 +153,7 @@ export default function AudienceManagementPage() {
     if (!editCustomer) return;
     const validPhone = validatePhone(editCustomer.whatsapp_number);
     if (!validPhone) {
-      alert('Invalid phone format. Must be 10 digits.');
+      setGlobalError({ title: 'Invalid Phone Number', message: 'Invalid phone format. Must be 10 digits.' });
       return;
     }
 
@@ -356,6 +357,14 @@ export default function AudienceManagementPage() {
         confirmText="CLEAR REGISTRY"
         onConfirm={executeClearAll}
         onCancel={() => setIsClearConfirmOpen(false)}
+      />
+      <CustomConfirm
+        isOpen={globalError !== null}
+        title={globalError?.title || 'Error'}
+        message={globalError?.message || ''}
+        confirmText="DISMISS"
+        onConfirm={() => setGlobalError(null)}
+        onCancel={() => setGlobalError(null)}
       />
     </div>
   );

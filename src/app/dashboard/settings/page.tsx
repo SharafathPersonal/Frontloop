@@ -43,7 +43,8 @@ function SettingsContent() {
   // Modal States
   const [isShopConfirmOpen, setIsShopConfirmOpen] = useState(false);
   const [isPasswordConfirmOpen, setIsPasswordConfirmOpen] = useState(false);
-  const [checkoutErrorMsg, setCheckoutErrorMsg] = useState<string | null>(null);
+  const [isMetaDisconnectConfirmOpen, setIsMetaDisconnectConfirmOpen] = useState(false);
+  const [globalError, setGlobalError] = useState<{title: string, message: string} | null>(null);
 
   // Password Reset States
   const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
@@ -195,7 +196,7 @@ function SettingsContent() {
     } catch (err: unknown) {
       setCreditStatus('idle');
       const msg = err instanceof Error ? err.message : 'Unknown error';
-      setCheckoutErrorMsg(msg);
+      setGlobalError({ title: 'Payment Session Error', message: msg });
     }
   };
 
@@ -218,12 +219,17 @@ function SettingsContent() {
         throw new Error('Popup intercepted by browser. Please allow popups for this site to authorize Meta integration.');
       }
     } catch (err: any) {
-      setCheckoutErrorMsg(err.message || 'Failed to initialize Meta connection. Please check your popup blockers.');
+      setGlobalError({ title: 'Meta Connection Error', message: err.message || 'Failed to initialize Meta connection. Please check your popup blockers.' });
     }
   };
 
-  const handleDisconnectFacebook = async () => {
-    if (!shop || !window.confirm('Are you sure you want to disconnect your Meta account?')) return;
+  const handleDisconnectFacebook = () => {
+    if (!shop) return;
+    setIsMetaDisconnectConfirmOpen(true);
+  };
+
+  const executeDisconnectFacebook = async () => {
+    setIsMetaDisconnectConfirmOpen(false);
     setSaveStatus('saving');
     const { error } = await supabase.from('shops').update({
       meta_access_token: null,
@@ -612,12 +618,21 @@ function SettingsContent() {
       />
 
       <CustomConfirm
-        isOpen={checkoutErrorMsg !== null}
-        title="Payment Session Error"
-        message={checkoutErrorMsg || ''}
+        isOpen={isMetaDisconnectConfirmOpen}
+        title="Disconnect Meta Account"
+        message="Are you sure you want to disconnect your Meta account? This will immediately sever your WhatsApp Cloud API connection."
+        confirmText="DISCONNECT"
+        onConfirm={executeDisconnectFacebook}
+        onCancel={() => setIsMetaDisconnectConfirmOpen(false)}
+      />
+
+      <CustomConfirm
+        isOpen={globalError !== null}
+        title={globalError?.title || 'Error'}
+        message={globalError?.message || ''}
         confirmText="DISMISS"
-        onConfirm={() => setCheckoutErrorMsg(null)}
-        onCancel={() => setCheckoutErrorMsg(null)}
+        onConfirm={() => setGlobalError(null)}
+        onCancel={() => setGlobalError(null)}
       />
 
     </div>

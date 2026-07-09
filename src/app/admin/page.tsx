@@ -43,6 +43,7 @@ export default function AdminDashboard() {
 
   // Ticket Modal State
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
+  const [globalError, setGlobalError] = useState<{title: string, message: string} | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -162,10 +163,10 @@ export default function AdminDashboard() {
         setInfusionAmount('');
         fetchMerchants(1, true); // Refresh data
       } else {
-        alert('Failed to infuse credits');
+        setGlobalError({ title: 'Infusion Error', message: 'Failed to infuse credits' });
       }
     } catch (e) {
-      alert('Error infusing credits');
+      setGlobalError({ title: 'Infusion Error', message: 'Error infusing credits' });
     }
   };
 
@@ -616,6 +617,15 @@ export default function AdminDashboard() {
         cancelText="NO, CANCEL"
         onConfirm={handleSavePricing}
         onCancel={() => setPricingConfirmOpen(false)}
+      />
+
+      <CustomConfirm
+        isOpen={globalError !== null}
+        title={globalError?.title || 'Error'}
+        message={globalError?.message || ''}
+        confirmText="DISMISS"
+        onConfirm={() => setGlobalError(null)}
+        onCancel={() => setGlobalError(null)}
       />
 
       {/* TICKET DETAILS MODAL */}

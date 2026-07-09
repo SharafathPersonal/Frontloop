@@ -24,6 +24,7 @@ export default function MerchantLedgerPage() {
   // Suspend State
   const [isSuspending, setIsSuspending] = useState(false);
   const [suspendConfirmOpen, setSuspendConfirmOpen] = useState(false);
+  const [globalError, setGlobalError] = useState<{title: string, message: string} | null>(null);
 
   useEffect(() => {
     fetchMerchantDetails();
@@ -62,10 +63,10 @@ export default function MerchantLedgerPage() {
         setInfusionAmount('');
         await fetchMerchantDetails();
       } else {
-        alert('Failed to infuse credits');
+        setGlobalError({ title: 'Infusion Error', message: 'Failed to infuse credits' });
       }
     } catch (e) {
-      alert('Error infusing credits');
+      setGlobalError({ title: 'Infusion Error', message: 'Error infusing credits' });
     } finally {
       setIsInfusing(false);
     }
@@ -84,10 +85,10 @@ export default function MerchantLedgerPage() {
       if (res.ok) {
         setShop({ ...shop, is_blocked: newStatus });
       } else {
-        alert('Failed to update suspension status');
+        setGlobalError({ title: 'Status Update Error', message: 'Failed to update suspension status' });
       }
     } catch (e) {
-      alert('Error updating status');
+      setGlobalError({ title: 'Status Update Error', message: 'Error updating status' });
     } finally {
       setIsSuspending(false);
     }
@@ -335,6 +336,14 @@ export default function MerchantLedgerPage() {
         onCancel={() => setSuspendConfirmOpen(false)}
       />
 
+      <CustomConfirm
+        isOpen={globalError !== null}
+        title={globalError?.title || 'Error'}
+        message={globalError?.message || ''}
+        confirmText="DISMISS"
+        onConfirm={() => setGlobalError(null)}
+        onCancel={() => setGlobalError(null)}
+      />
     </div>
   );
 }

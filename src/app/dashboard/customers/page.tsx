@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx';
 import Link from 'next/link';
 import { Upload, X, CheckCircle, AlertTriangle, Users, UserPlus, Tag, ArrowRight } from 'lucide-react';
 import { Spinner } from '@/components/ui/Spinner';
+import CustomConfirm from '@/components/ui/CustomConfirm';
 
 type CustomerTag = 'VIP' | 'Regular' | 'New';
 
@@ -39,6 +40,7 @@ export default function CustomersUploadPage() {
   const [manualPhone, setManualPhone] = useState('');
   const [manualTag, setManualTag] = useState<CustomerTag>('New');
   const [manualStatus, setManualStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [globalError, setGlobalError] = useState<{title: string, message: string} | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -160,7 +162,7 @@ export default function CustomersUploadPage() {
     const validPhone = validatePhone(manualPhone);
     if (!validPhone) {
       setManualStatus('error');
-      alert('Invalid phone format. Please enter a valid 10-digit number.');
+      setGlobalError({ title: 'Invalid Phone Number', message: 'Invalid phone format. Please enter a valid 10-digit number.' });
       return;
     }
     
@@ -369,6 +371,15 @@ export default function CustomersUploadPage() {
           </div>
         </div>
       </div>
+
+      <CustomConfirm
+        isOpen={globalError !== null}
+        title={globalError?.title || 'Error'}
+        message={globalError?.message || ''}
+        confirmText="DISMISS"
+        onConfirm={() => setGlobalError(null)}
+        onCancel={() => setGlobalError(null)}
+      />
     </div>
   );
 }
