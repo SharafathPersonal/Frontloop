@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { APP_VERSION } from '@/lib/config';
-import { Phone, MessageCircle, XCircle, CheckCircle, ArrowRight } from 'lucide-react';
+import { Phone, MessageCircle, XCircle, CheckCircle, ArrowRight, Mail } from 'lucide-react';
 
 // ──────────────────────────────────────────────────────────────────
 // LANDING PAGE — True Attendly Broadcast
@@ -739,6 +739,13 @@ export default function LandingPage() {
 
             <div className="p-10 md:w-1/2 bg-[#FCFCFC] flex flex-col justify-center space-y-4">
               <a 
+                href="mailto:support@trueattendly.online"
+                className="flex items-center justify-center gap-2 w-full py-5 border border-[#3E3B36] text-[#3E3B36] hover:bg-[#3E3B36] hover:text-[#FFFFFF] transition-colors rounded-lg text-xs font-semibold tracking-[0.15em] uppercase"
+              >
+                <Mail size={16} />
+                support@trueattendly.online
+              </a>
+              <a 
                 href="tel:+916282560928" 
                 className="flex items-center justify-center gap-2 w-full py-5 border border-[#3E3B36] text-[#3E3B36] hover:bg-[#3E3B36] hover:text-[#FFFFFF] transition-colors rounded-lg text-xs font-semibold tracking-[0.15em] uppercase"
               >
@@ -768,7 +775,7 @@ export default function LandingPage() {
         style={{ backgroundColor: '#FFFFFF', borderTop: '1px solid #E8E3DA' }}
       >
         <div className="max-w-6xl mx-auto px-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
 
             {/* Logo */}
             <div className="flex items-center gap-2">
@@ -781,38 +788,56 @@ export default function LandingPage() {
 
             {/* Center */}
             <p
-              className="text-[10px] tracking-[0.25em] uppercase"
+              className="text-[10px] tracking-[0.25em] uppercase text-center"
               style={{ color: '#8B8378' }}
             >
               True Attendly Broadcast · broadcast.trueattendly.online
             </p>
 
-            {/* Right Side container */}
-            <div className="flex items-center gap-6">
-              {/* Nav Links */}
-              <div className="hidden md:flex items-center gap-6">
-                {['About', 'Services', 'Contact', 'Sign In'].map((item) => (
-                  <a
-                    key={item}
-                    href={item === 'Sign In' ? '/auth/login' : `#${item.toLowerCase()}`}
-                    className="text-[10px] tracking-[0.15em] uppercase transition-colors duration-200"
-                    style={{ color: '#8B8378' }}
-                    onMouseEnter={(e) => ((e.target as HTMLElement).style.color = '#C4A896')}
-                    onMouseLeave={(e) => ((e.target as HTMLElement).style.color = '#8B8378')}
-                  >
-                    {item}
-                  </a>
-                ))}
-              </div>
-              
-              {/* Version Badge */}
-              <div className="border border-[#E8E3DA] bg-transparent py-1 px-3 rounded-md">
-                <span className="text-[10px] tracking-[0.15em] text-[#C4A896] font-mono">
-                  {APP_VERSION}
-                </span>
-              </div>
+            {/* Version Badge */}
+            <div className="border border-[#E8E3DA] bg-transparent py-1 px-3 rounded-md hidden md:block">
+              <span className="text-[10px] tracking-[0.15em] text-[#C4A896] font-mono">
+                {APP_VERSION}
+              </span>
             </div>
 
+          </div>
+
+          <div className="border-t border-[#E8E3DA] pt-8 flex flex-col md:flex-row items-center justify-center md:justify-between gap-6">
+            {/* Nav & Compliance Links */}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-5">
+              {[
+                { label: 'About', href: '#about' },
+                { label: 'Pricing', href: '#services' },
+                { label: 'Contact', href: '#contact' },
+                { label: 'Privacy Policy', href: '/privacy' },
+                { label: 'Terms of Service', href: '/terms' },
+                { label: 'Refund Policy', href: '/refund-policy' },
+              ].map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="text-[10px] tracking-[0.15em] uppercase transition-colors duration-200"
+                  style={{ color: '#8B8378' }}
+                  onMouseEnter={(e) => ((e.target as HTMLElement).style.color = '#C4A896')}
+                  onMouseLeave={(e) => ((e.target as HTMLElement).style.color = '#8B8378')}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+            
+            <div className="flex items-center gap-5">
+              <Link
+                href="/auth/login"
+                className="text-[10px] tracking-[0.15em] uppercase transition-colors duration-200 font-semibold"
+                style={{ color: '#3E3B36' }}
+                onMouseEnter={(e) => ((e.target as HTMLElement).style.color = '#C4A896')}
+                onMouseLeave={(e) => ((e.target as HTMLElement).style.color = '#3E3B36')}
+              >
+                Sign In →
+              </Link>
+            </div>
           </div>
         </div>
       </footer>
