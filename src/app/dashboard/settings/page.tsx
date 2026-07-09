@@ -426,46 +426,48 @@ function SettingsContent() {
           </div>
 
           {/* Secondary: Manual credential entry toggle */}
-          <div className="border border-[#E8E3DA] rounded-xl overflow-hidden">
-            <button
-              onClick={() => setManualProviderOpen(!manualProviderOpen)}
-              className="w-full px-5 py-4 flex items-center justify-between hover:bg-[#F5F1EA]/40 transition-colors"
-            >
-              <div className="text-left">
-                <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase">Manual Token Entry</p>
-                <p className="text-[10px] text-[#8B8378] mt-0.5 normal-case tracking-normal">Developer safety route - enter credentials directly</p>
-              </div>
-              <ChevronDown size={14} className={`text-[#8B8378] transition-transform flex-shrink-0 ${manualProviderOpen ? 'rotate-180' : ''}`} />
-            </button>
+          {!isMetaConnected && (
+            <div className="border border-[#E8E3DA] rounded-xl overflow-hidden">
+              <button
+                onClick={() => setManualProviderOpen(!manualProviderOpen)}
+                className="w-full px-5 py-4 flex items-center justify-between hover:bg-[#F5F1EA]/40 transition-colors"
+              >
+                <div className="text-left">
+                  <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase">Manual Token Entry</p>
+                  <p className="text-[10px] text-[#8B8378] mt-0.5 normal-case tracking-normal">Developer safety route - enter credentials directly</p>
+                </div>
+                <ChevronDown size={14} className={`text-[#8B8378] transition-transform flex-shrink-0 ${manualProviderOpen ? 'rotate-180' : ''}`} />
+              </button>
 
-            {manualProviderOpen && (
-              <form onSubmit={handleConfirmSaveProfile} className="border-t border-[#E8E3DA] p-5 space-y-4">
-                <div>
-                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Meta Access Token</label>
-                  <input type="password" value={shopForm.meta_access_token} onChange={(e) => setShopForm({ ...shopForm, meta_access_token: e.target.value })} className="input-editorial" placeholder="EAAB..." />
-                </div>
-                <div>
-                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Phone Number ID</label>
-                  <input type="text" value={shopForm.meta_phone_number_id} onChange={(e) => setShopForm({ ...shopForm, meta_phone_number_id: e.target.value })} className="input-editorial" placeholder="1234567890" />
-                </div>
-                <div>
-                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Business Account ID</label>
-                  <input type="text" value={shopForm.meta_business_account_id} onChange={(e) => setShopForm({ ...shopForm, meta_business_account_id: e.target.value })} className="input-editorial" placeholder="0987654321" />
-                </div>
-                <div>
-                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Default Template Name</label>
-                  <input type="text" value={shopForm.meta_template_name} onChange={(e) => setShopForm({ ...shopForm, meta_template_name: e.target.value })} className="input-editorial" placeholder="hello_world" />
-                </div>
-                <div className="flex items-center gap-4 pt-1">
-                  <button type="submit" disabled={saveStatus === 'saving'} className="btn-primary rounded-lg disabled:opacity-50">
-                    {saveStatus === 'saving' ? 'Saving...' : 'Save Credentials'}
-                  </button>
-                  {saveStatus === 'saved' && <div className="flex items-center gap-1.5 text-[#C4A896]"><CheckCircle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Saved!</span></div>}
-                  {saveStatus === 'error' && <div className="flex items-center gap-1.5 text-[#8B8378]"><AlertTriangle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Save failed</span></div>}
-                </div>
-              </form>
-            )}
-          </div>
+              {manualProviderOpen && (
+                <form onSubmit={handleConfirmSaveProfile} className="border-t border-[#E8E3DA] p-5 space-y-4">
+                  <div>
+                    <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Meta Access Token</label>
+                    <input type="password" value={shopForm.meta_access_token} onChange={(e) => setShopForm({ ...shopForm, meta_access_token: e.target.value })} className="input-editorial" placeholder="EAAB..." />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Phone Number ID</label>
+                    <input type="text" value={shopForm.meta_phone_number_id} onChange={(e) => setShopForm({ ...shopForm, meta_phone_number_id: e.target.value })} className="input-editorial" placeholder="1234567890" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Business Account ID</label>
+                    <input type="text" value={shopForm.meta_business_account_id} onChange={(e) => setShopForm({ ...shopForm, meta_business_account_id: e.target.value })} className="input-editorial" placeholder="0987654321" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Default Template Name</label>
+                    <input type="text" value={shopForm.meta_template_name} onChange={(e) => setShopForm({ ...shopForm, meta_template_name: e.target.value })} className="input-editorial" placeholder="hello_world" />
+                  </div>
+                  <div className="flex items-center gap-4 pt-1">
+                    <button type="submit" disabled={saveStatus === 'saving'} className="btn-primary rounded-lg disabled:opacity-50">
+                      {saveStatus === 'saving' ? 'Saving...' : 'Save Credentials'}
+                    </button>
+                    {saveStatus === 'saved' && <div className="flex items-center gap-1.5 text-[#C4A896]"><CheckCircle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Saved!</span></div>}
+                    {saveStatus === 'error' && <div className="flex items-center gap-1.5 text-[#8B8378]"><AlertTriangle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Save failed</span></div>}
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
 
         </div>
       </section>
