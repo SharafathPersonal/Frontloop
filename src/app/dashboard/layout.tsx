@@ -98,7 +98,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const SidebarContent = () => {
-    const { mode } = useWhatsAppMode();
+    const { mode, isLoading } = useWhatsAppMode();
     return (
     <div className="flex flex-col h-full">
 
@@ -140,6 +140,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {navLinks.map((link) => {
           const active = isActive(link.href);
           const isTemplates = link.label === 'Templates';
+          
+          if (isTemplates && isLoading) {
+            return (
+              <div key={link.href} className="py-2.5 px-3 rounded-lg bg-[#F5F1EA]/30 animate-pulse h-9 w-full" />
+            );
+          }
+
           const isLocked = isTemplates && mode === 'QR_EXPRESS';
 
           if (isLocked) {

@@ -109,7 +109,17 @@ export const startWhatsAppEngine = async (shopId: string, supabase: SupabaseClie
   sock.ev.on('creds.update', saveCreds);
 
   sock.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect } = update;
+    const { connection, lastDisconnect, qr } = update;
+
+    if (qr) {
+      console.log(`[WhatsApp Engine] New QR code generated for Shop ${shopId}`);
+      await supabase.from('whatsapp_sessions').upsert({
+        shop_id: shopId,
+        session_key: 'qr',
+        session_value: { qr },
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'shop_id, session_key' });
+    }
 
     if (connection === 'close') {
       const error = lastDisconnect?.error as Boom;
@@ -144,6 +154,7 @@ export const startWhatsAppEngine = async (shopId: string, supabase: SupabaseClie
     } else if (connection === 'open') {
       console.log(`[WhatsApp Engine] Connected successfully for Shop ${shopId}`);
       await supabase.from('shops').update({ qr_express_status: 'connected' }).eq('id', shopId);
+      await supabase.from('whatsapp_sessions').delete().eq('shop_id', shopId).eq('session_key', 'qr');
     }
   });
 

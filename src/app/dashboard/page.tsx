@@ -111,7 +111,7 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {shop?.qr_express_status === 'disconnected' && (
+      {shop?.whatsapp_mode === 'QR_EXPRESS' && shop?.qr_express_status === 'disconnected' && (
         <div className="bg-rose-50 border border-rose-200 rounded-xl p-5 flex items-start gap-4 shadow-sm animate-pulse">
           <AlertTriangle size={20} className="text-rose-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
           <div>

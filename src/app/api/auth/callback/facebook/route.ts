@@ -42,13 +42,21 @@ export async function GET(request: Request) {
     try {
       const appId = process.env.NEXT_PUBLIC_META_APP_ID;
       const appSecret = process.env.FACEBOOK_CLIENT_SECRET || process.env.META_APP_SECRET || '';
-      const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || 'https://broadcast.trueattendly.online'}/api/auth/callback/facebook`;
+      const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://broadcast.trueattendly.online').replace(/\/+$/, '');
+      const redirectUri = `${baseUrl}/api/auth/callback/facebook`;
 
       if (!appId || !appSecret) {
         throw new Error('Server misconfiguration: Missing Meta App ID or Secret');
       }
 
-      const tokenResponse = await fetch(`https://graph.facebook.com/v17.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`);
+      const tokenParams = new URLSearchParams({
+        client_id: appId,
+        redirect_uri: redirectUri,
+        client_secret: appSecret,
+        code: code,
+      });
+
+      const tokenResponse = await fetch(`https://graph.facebook.com/v17.0/oauth/access_token?${tokenParams.toString()}`);
       const tokenData = await tokenResponse.json();
 
       if (tokenData.error) {

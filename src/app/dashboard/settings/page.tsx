@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { load } from '@cashfreepayments/cashfree-js';
 import type { Shop, Wallet, WhatsAppConnectionMode } from '@/types/broadcast';
-import { CheckCircle, AlertTriangle, CreditCard, User, Building, ChevronDown, ExternalLink, Zap, Lock, Smartphone, Globe } from 'lucide-react';
+import { CheckCircle, AlertTriangle, CreditCard, User, Building, ChevronDown, ExternalLink, Zap, Lock, Smartphone, Globe, QrCode, RefreshCw, Wifi, Loader2 } from 'lucide-react';
 import { useWhatsAppMode } from '@/contexts/WhatsAppModeContext';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -40,6 +40,9 @@ function SettingsContent() {
   const [loading, setLoading] = useState(true);
   const [manualProviderOpen, setManualProviderOpen] = useState(false);
   const [isMetaConnected, setIsMetaConnected] = useState(false);
+  const [qrString, setQrString] = useState<string | null>(null);
+  const [qrStatus, setQrStatus] = useState<string>('disconnected');
+  const [isQrStarting, setIsQrStarting] = useState(false);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -130,6 +133,7 @@ function SettingsContent() {
       }
       if (shopData) {
         setShop(shopData);
+        setQrStatus(shopData.qr_express_status || 'disconnected');
         setShopForm({
           shop_name: shopData.shop_name || '',
           owner_phone: shopData.owner_phone || '',
@@ -153,6 +157,76 @@ function SettingsContent() {
     }
     load();
   }, []);
+
+  useEffect(() => {
+    let intervalId: any;
+
+    if (shopForm.whatsapp_mode === 'QR_EXPRESS') {
+      const pollStatus = async () => {
+        try {
+          const res = await fetch('/api/whatsapp/connect');
+          if (res.ok) {
+            const data = await res.json();
+            setQrStatus(data.status);
+            setQrString(data.qr);
+            if (data.status === 'connected') {
+              setQrString(null);
+            }
+          }
+        } catch (err) {
+          console.error('Error polling WhatsApp connection status:', err);
+        }
+      };
+
+      pollStatus();
+      intervalId = setInterval(pollStatus, 3000);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [shopForm.whatsapp_mode]);
+
+  const handleStartQrConnection = async () => {
+    setIsQrStarting(true);
+    try {
+      const res = await fetch('/api/whatsapp/connect', { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to initialize QR session');
+      }
+      setQrStatus('disconnected');
+    } catch (err: any) {
+      setGlobalError({ title: 'QR Connection Error', message: err.message || 'Failed to start QR session.' });
+    } finally {
+      setIsQrStarting(false);
+    }
+  };
+
+  const handleDisconnectQrConnection = async () => {
+    setSaveStatus('saving');
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase.from('shops').update({
+      qr_express_status: 'disconnected',
+      whatsapp_mode: 'NONE'
+    }).eq('id', user.id);
+
+    await supabase.from('whatsapp_sessions').delete().eq('shop_id', user.id);
+
+    if (!error) {
+      setShop(prev => prev ? { ...prev, qr_express_status: 'disconnected', whatsapp_mode: 'NONE' } : null);
+      setShopForm(prev => ({ ...prev, whatsapp_mode: 'NONE' }));
+      setMode('NONE');
+      setQrStatus('disconnected');
+      setQrString(null);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } else {
+      setSaveStatus('error');
+    }
+  };
 
   const handleConfirmSaveProfile = (e: FormEvent) => {
     e.preventDefault();
@@ -183,7 +257,11 @@ function SettingsContent() {
       anti_ban_delay: shopForm.anti_ban_delay,
     }, { onConflict: 'id' });
     setSaveStatus(error ? 'error' : 'saved');
-    if (!error) { setShop((prev) => prev ? { ...prev, ...shopForm } : prev); setTimeout(() => setSaveStatus('idle'), 3000); }
+    if (!error) {
+      setShop((prev) => prev ? { ...prev, ...shopForm } : prev);
+      setMode(shopForm.whatsapp_mode);
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }
   };
 
   const handleSaveManualCredentials = async (e: FormEvent) => {
@@ -315,16 +393,33 @@ function SettingsContent() {
 
   const handleFacebookConnect = () => {
     try {
-      const redirectUri = typeof window !== 'undefined' 
-        ? `${window.location.origin}/api/auth/callback/facebook`
-        : 'https://broadcast.trueattendly.online/api/auth/callback/facebook';
+      const origin = (typeof window !== 'undefined' ? window.location.origin : 'https://broadcast.trueattendly.online').replace(/\/+$/, '');
+      const redirectUri = `${origin}/api/auth/callback/facebook`;
         
       const appId = process.env.NEXT_PUBLIC_META_APP_ID || '';
       if (!appId) {
         throw new Error('Meta App ID is missing from environment configurations.');
       }
         
-      const fbAuthUrl = `https://www.facebook.com/v17.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=business_management,whatsapp_business_management&response_type=code`;
+      // Generate a clean state CSRF token context (Base64url encoded to avoid raw JSON format warnings in Chrome)
+      const statePayload = { timestamp: Date.now(), secure: true };
+      const secureState = typeof window !== 'undefined'
+        ? window.btoa(JSON.stringify(statePayload))
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '')
+        : '';
+
+      const params = new URLSearchParams();
+      params.set('client_id', appId);
+      params.set('redirect_uri', redirectUri);
+      params.set('scope', 'business_management,whatsapp_business_management');
+      params.set('response_type', 'code');
+      if (secureState) {
+        params.set('state', secureState);
+      }
+        
+      const fbAuthUrl = `https://www.facebook.com/v17.0/dialog/oauth?${params.toString()}`;
       
       const newWindow = window.open(fbAuthUrl, 'FacebookLogin', 'width=600,height=700');
       
@@ -406,6 +501,15 @@ function SettingsContent() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}} />
 
       <div>
         <h1 className="serif-headline text-2xl md:text-3xl text-[#3E3B36]">Settings & Provider Hub</h1>
@@ -574,102 +678,212 @@ function SettingsContent() {
       </section>
 
       {/* ── PROVIDER HUB — Facebook Embedded Signup ─────────────── */}
-      <section className={`bg-[#FFFFFF] border rounded-xl overflow-hidden transition-all ${shopForm.whatsapp_mode !== 'META_API' ? 'opacity-50 pointer-events-none grayscale' : 'border-[#E8E3DA]'}`}>
-        <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
-          <div className="w-8 h-8 bg-[#F5F1EA] rounded-lg flex items-center justify-center">
-            <FacebookIcon size={14} />
-          </div>
-          <div>
-            <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">Meta WhatsApp Provider</h2>
-            <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Connect your Business account</p>
-          </div>
-          {isMetaConnected && (
-            <div className="ml-auto flex items-center gap-1.5 text-[#C4A896]">
-              <div className="w-1.5 h-1.5 bg-[#C4A896] rounded-full animate-pulse" />
-              <span className="text-[10px] tracking-[0.15em] uppercase">Connected</span>
+      {shopForm.whatsapp_mode === 'META_API' && (
+        <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden transition-all duration-300 animate-fade-in">
+          <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
+            <div className="w-8 h-8 bg-[#F5F1EA] rounded-lg flex items-center justify-center">
+              <FacebookIcon size={14} />
             </div>
-          )}
-        </div>
+            <div>
+              <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">Meta WhatsApp Provider</h2>
+              <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Connect your Business account</p>
+            </div>
+            {isMetaConnected && (
+              <div className="ml-auto flex items-center gap-1.5 text-[#C4A896]">
+                <div className="w-1.5 h-1.5 bg-[#C4A896] rounded-full animate-pulse" />
+                <span className="text-[10px] tracking-[0.15em] uppercase">Connected</span>
+              </div>
+            )}
+          </div>
 
-        <div className="p-6 space-y-5">
-
-          {/* Primary: 1-Click Facebook Embedded Signup */}
-          <div className="bg-[#F5F1EA] rounded-xl p-5">
-            <p className="text-xs text-[#3E3B36] mb-1 font-medium">Connect with Facebook</p>
-            <p className="text-[11px] text-[#8B8378] leading-relaxed mb-4">
-              Authorize your Meta Business account to enable WhatsApp Cloud API broadcasting. Your token is securely stored and never shared.
-            </p>
-            {isMetaConnected ? (
-              <div className="mt-2">
-                <div className="inline-flex items-center gap-2 bg-[#F5F1EA] text-[#3E3B36] px-4 py-2.5 rounded-lg border border-[#E8E3DA]">
-                  <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="p-6 space-y-5">
+            {/* Primary: 1-Click Facebook Embedded Signup */}
+            <div className="bg-[#F5F1EA] rounded-xl p-5">
+              <p className="text-xs text-[#3E3B36] mb-1 font-medium">Connect with Facebook</p>
+              <p className="text-[11px] text-[#8B8378] leading-relaxed mb-4">
+                Authorize your Meta Business account to enable WhatsApp Cloud API broadcasting. Your token is securely stored and never shared.
+              </p>
+              {isMetaConnected ? (
+                <div className="mt-2">
+                  <div className="inline-flex items-center gap-2 bg-[#F5F1EA] text-[#3E3B36] px-4 py-2.5 rounded-lg border border-[#E8E3DA]">
+                    <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    </div>
+                    <span className="text-sm font-medium">✓ Connected to Meta Business Node</span>
                   </div>
-                  <span className="text-sm font-medium">✓ Connected to Meta Business Node</span>
-                </div>
-                <button
-                  onClick={handleDisconnectFacebook}
-                  className="block mt-4 text-[10px] text-[#8B8378] tracking-[0.05em] hover:text-[#3E3B36] transition-colors uppercase"
-                >
-                  Disconnect Account
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={handleFacebookConnect}
-                className="flex items-center gap-3 bg-[#3E3B36] hover:bg-[#2A2825] text-[#F5F1EA] px-5 py-3 rounded-xl transition-colors font-medium text-sm"
-              >
-                <FacebookIcon size={16} />
-                Connect with Facebook
-                <ExternalLink size={12} className="ml-auto opacity-70" />
-              </button>
-            )}
-          </div>
-
-          {/* Secondary: Manual credential entry toggle */}
-          <div className="border border-[#E8E3DA] rounded-xl overflow-hidden">
-            <button
-              onClick={() => setManualProviderOpen(!manualProviderOpen)}
-              className="w-full px-5 py-4 flex items-center justify-between hover:bg-[#F5F1EA]/40 transition-colors"
-            >
-              <div className="text-left">
-                <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase">Manual Token Entry</p>
-                <p className="text-[10px] text-[#8B8378] mt-0.5 normal-case tracking-normal">Developer safety route - enter credentials directly</p>
-              </div>
-              <ChevronDown size={14} className={`text-[#8B8378] transition-transform flex-shrink-0 ${manualProviderOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {manualProviderOpen && (
-              <form onSubmit={handleSaveManualCredentials} className="border-t border-[#E8E3DA] p-5 space-y-4">
-                <div>
-                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Meta Access Token</label>
-                  <input type="password" value={shopForm.meta_access_token} onChange={(e) => setShopForm({ ...shopForm, meta_access_token: e.target.value })} className="input-editorial" placeholder="EAAB..." readOnly={isMetaConnected} />
-                </div>
-                <div>
-                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Phone Number ID</label>
-                  <input type="text" value={shopForm.meta_phone_number_id} onChange={(e) => setShopForm({ ...shopForm, meta_phone_number_id: e.target.value })} className="input-editorial" placeholder="1234567890" readOnly={isMetaConnected} />
-                </div>
-                <div>
-                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Business Account ID</label>
-                  <input type="text" value={shopForm.meta_business_account_id} onChange={(e) => setShopForm({ ...shopForm, meta_business_account_id: e.target.value })} className="input-editorial" placeholder="0987654321" readOnly={isMetaConnected} />
-                </div>
-                <div>
-                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Default Template Name</label>
-                  <input type="text" value={shopForm.meta_template_name} onChange={(e) => setShopForm({ ...shopForm, meta_template_name: e.target.value })} className="input-editorial" placeholder="hello_world" />
-                </div>
-                <div className="flex items-center gap-4 pt-1">
-                  <button type="submit" disabled={saveStatus === 'saving' || isMetaConnected} className="btn-primary rounded-lg disabled:opacity-50">
-                    {saveStatus === 'saving' ? 'Saving...' : 'Save Credentials'}
+                  <button
+                    onClick={handleDisconnectFacebook}
+                    className="block mt-4 text-[10px] text-[#8B8378] tracking-[0.05em] hover:text-[#3E3B36] transition-colors uppercase"
+                  >
+                    Disconnect Account
                   </button>
-                  {saveStatus === 'saved' && <div className="flex items-center gap-1.5 text-[#C4A896]"><CheckCircle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Saved!</span></div>}
-                  {saveStatus === 'error' && <div className="flex items-center gap-1.5 text-[#8B8378]"><AlertTriangle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Save failed</span></div>}
                 </div>
-              </form>
-            )}
+              ) : (
+                <button
+                  onClick={handleFacebookConnect}
+                  className="flex items-center gap-3 bg-[#3E3B36] hover:bg-[#2A2825] text-[#F5F1EA] px-5 py-3 rounded-xl transition-colors font-medium text-sm"
+                >
+                  <FacebookIcon size={16} />
+                  Connect with Facebook
+                  <ExternalLink size={12} className="ml-auto opacity-70" />
+                </button>
+              )}
+            </div>
+
+            {/* Secondary: Manual credential entry toggle */}
+            <div className="border border-[#E8E3DA] rounded-xl overflow-hidden">
+              <button
+                onClick={() => setManualProviderOpen(!manualProviderOpen)}
+                className="w-full px-5 py-4 flex items-center justify-between hover:bg-[#F5F1EA]/40 transition-colors"
+              >
+                <div className="text-left">
+                  <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase">Manual Token Entry</p>
+                  <p className="text-[10px] text-[#8B8378] mt-0.5 normal-case tracking-normal">Developer safety route - enter credentials directly</p>
+                </div>
+                <ChevronDown size={14} className={`text-[#8B8378] transition-transform flex-shrink-0 ${manualProviderOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {manualProviderOpen && (
+                <form onSubmit={handleSaveManualCredentials} className="border-t border-[#E8E3DA] p-5 space-y-4">
+                  <div>
+                    <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Meta Access Token</label>
+                    <input type="password" value={shopForm.meta_access_token} onChange={(e) => setShopForm({ ...shopForm, meta_access_token: e.target.value })} className="input-editorial" placeholder="EAAB..." readOnly={isMetaConnected} />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Phone Number ID</label>
+                    <input type="text" value={shopForm.meta_phone_number_id} onChange={(e) => setShopForm({ ...shopForm, meta_phone_number_id: e.target.value })} className="input-editorial" placeholder="1234567890" readOnly={isMetaConnected} />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Business Account ID</label>
+                    <input type="text" value={shopForm.meta_business_account_id} onChange={(e) => setShopForm({ ...shopForm, meta_business_account_id: e.target.value })} className="input-editorial" placeholder="0987654321" readOnly={isMetaConnected} />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Default Template Name</label>
+                    <input type="text" value={shopForm.meta_template_name} onChange={(e) => setShopForm({ ...shopForm, meta_template_name: e.target.value })} className="input-editorial" placeholder="hello_world" />
+                  </div>
+                  <div className="flex items-center gap-4 pt-1">
+                    <button type="submit" disabled={saveStatus === 'saving' || isMetaConnected} className="btn-primary rounded-lg disabled:opacity-50">
+                      {saveStatus === 'saving' ? 'Saving...' : 'Save Credentials'}
+                    </button>
+                    {saveStatus === 'saved' && <div className="flex items-center gap-1.5 text-[#C4A896]"><CheckCircle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Saved!</span></div>}
+                    {saveStatus === 'error' && <div className="flex items-center gap-1.5 text-[#8B8378]"><AlertTriangle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Save failed</span></div>}
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── PROVIDER HUB — QR Express Connection Node ─────────────── */}
+      {shopForm.whatsapp_mode === 'QR_EXPRESS' && (
+        <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden transition-all duration-300 animate-fade-in">
+          <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
+            <div className="w-8 h-8 bg-[#F5F1EA] rounded-lg flex items-center justify-center">
+              <QrCode size={14} className="text-[#C4A896]" strokeWidth={1.5} />
+            </div>
+            <div>
+              <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">TrueAttendly QR Express Connection Node</h2>
+              <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Direct WhatsApp Web session</p>
+            </div>
+            <div className="ml-auto">
+              {qrStatus === 'connected' ? (
+                <div className="flex items-center gap-1.5 text-emerald-600">
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                  <span className="text-[10px] tracking-[0.15em] uppercase font-bold">Connected</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-[#8B8378]">
+                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
+                  <span className="text-[10px] tracking-[0.15em] uppercase font-bold">Disconnected</span>
+                </div>
+              )}
+            </div>
           </div>
 
-        </div>
-      </section>
+          <div className="p-6 space-y-5">
+            <div className="bg-[#F9F7F4] rounded-xl p-5 border border-[#E8E3DA] flex flex-col items-center text-center">
+              {qrStatus === 'connected' ? (
+                <div className="py-6 space-y-4">
+                  <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto border border-emerald-100">
+                    <CheckCircle className="text-emerald-600" size={32} strokeWidth={1.5} />
+                  </div>
+                  <div>
+                    <h3 className="serif-headline text-[#3E3B36] text-base font-semibold">Device Linked Successfully</h3>
+                    <p className="text-xs text-[#8B8378] mt-1 max-w-sm">
+                      Your phone is currently connected to the QR Express broadcast queue. You can send messages instantly.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleDisconnectQrConnection}
+                    className="border border-[#E8E3DA] hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-xs text-[#8B8378] tracking-[0.1em] px-4 py-2 rounded-lg transition-colors uppercase font-medium mt-2"
+                  >
+                    Disconnect Device
+                  </button>
+                </div>
+              ) : qrString ? (
+                <div className="py-4 space-y-5 flex flex-col items-center">
+                  <div className="p-3 bg-white border border-[#E8E3DA] rounded-xl shadow-inner relative group">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrString)}&size=200x200`}
+                      alt="WhatsApp Web QR Code"
+                      className="w-48 h-48 block"
+                    />
+                  </div>
+                  <div className="space-y-1.5 max-w-sm">
+                    <p className="text-xs text-[#3E3B36] font-bold uppercase tracking-wider">Scan QR Code</p>
+                    <p className="text-[11px] text-[#8B8378] leading-relaxed">
+                      Open WhatsApp on your phone &gt; tap Menu or Settings &gt; Linked Devices &gt; Link a Device, and point your camera to this screen.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] text-amber-600 bg-amber-50 border border-amber-100 rounded-full px-3 py-1 animate-pulse">
+                    <Loader2 size={10} className="animate-spin" />
+                    <span>Polling connection status...</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-8 space-y-4 max-w-md">
+                  <div className="w-12 h-12 bg-[#F5F1EA] rounded-full flex items-center justify-center mx-auto">
+                    <Wifi size={20} className="text-[#C4A896]" strokeWidth={1.5} />
+                  </div>
+                  <div>
+                    <h3 className="serif-headline text-[#3E3B36] text-sm font-semibold">Start Connection Channel</h3>
+                    <p className="text-xs text-[#8B8378] mt-1">
+                      Initialize the Baileys engine to generate a secure real-time QR code scanner interface.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleStartQrConnection}
+                    disabled={isQrStarting}
+                    className="btn-primary rounded-lg flex items-center gap-2 mx-auto"
+                  >
+                    {isQrStarting ? (
+                      <>
+                        <Loader2 size={12} className="animate-spin" />
+                        INITIALIZING ENGINE...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw size={12} />
+                        GENERATE QR CODE
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Prominent Premium Recommendation Banner */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+              <AlertTriangle size={18} className="text-amber-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
+              <p className="text-amber-800 text-[11px] leading-relaxed">
+                <strong>⚠️ Pro Recommendation:</strong> For high-volume retail campaigns, zero ban-risk, and 100% official scale, we highly recommend switching to the Meta Official Cloud API mode.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── SHOP PROFILE ─────────────────────────────────────────── */}
       <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">

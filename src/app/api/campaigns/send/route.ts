@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Shop profile not found' }, { status: 404 });
     }
 
-    const { meta_access_token, meta_phone_number_id, meta_template_name, whatsapp_mode, anti_ban_delay } = shop as Shop;
+    const { meta_access_token, meta_phone_number_id, meta_template_name, whatsapp_mode, anti_ban_delay, qr_express_status } = shop as Shop;
     
     if (!whatsapp_mode || whatsapp_mode === 'NONE') {
       return NextResponse.json({ ok: false, error: 'Please configure a WhatsApp Connection Mode (Meta API or QR Express) in Settings.' }, { status: 400 });
@@ -50,6 +50,12 @@ export async function POST(req: Request) {
     if (whatsapp_mode === 'META_API') {
       if (!meta_access_token || !meta_phone_number_id || !meta_template_name) {
         return NextResponse.json({ ok: false, error: 'Meta Cloud API credentials are not fully configured in shop settings.' }, { status: 400 });
+      }
+    }
+
+    if (whatsapp_mode === 'QR_EXPRESS') {
+      if (qr_express_status === 'disconnected') {
+        return NextResponse.json({ ok: false, error: 'Your WhatsApp device is disconnected. Please reconnect your device in Settings to resume broadcasts.' }, { status: 400 });
       }
     }
 

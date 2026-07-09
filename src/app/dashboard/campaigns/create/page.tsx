@@ -31,6 +31,7 @@ export default function BroadcastPage() {
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
   const [dispatchedCount, setDispatchedCount] = useState(0);
   const [qrExpressStatus, setQrExpressStatus] = useState<string | null>(null);
+  const showQrDisconnectBanner = mode === 'QR_EXPRESS' && qrExpressStatus === 'disconnected';
 
   // Templates state
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
@@ -340,7 +341,7 @@ export default function BroadcastPage() {
       </div>
 
       {/* 401 Unauthorized Banner */}
-      {mode === 'QR_EXPRESS' && qrExpressStatus === 'disconnected' && (
+      {showQrDisconnectBanner && (
         <div className="bg-[#EF4444] rounded-xl p-5 flex items-start gap-4 shadow-lg border border-[#DC2626] animate-in fade-in duration-300">
           <AlertTriangle size={20} className="text-white flex-shrink-0 mt-0.5" strokeWidth={2} />
           <div>
@@ -613,7 +614,7 @@ export default function BroadcastPage() {
         </div>
         <button
           onClick={handleConfirmSubmit}
-          disabled={selectedTags.length === 0 || recipientCount === 0 || (creditCheck !== null && !creditCheck.sufficient) || (mode === 'QR_EXPRESS' && qrExpressStatus === 'disconnected')}
+          disabled={selectedTags.length === 0 || recipientCount === 0 || (creditCheck !== null && !creditCheck.sufficient) || showQrDisconnectBanner}
           className="btn-primary rounded-lg flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Send size={12} strokeWidth={1.5} />
