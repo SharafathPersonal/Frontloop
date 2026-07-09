@@ -53,16 +53,16 @@ export default function BroadcastPage() {
   const [isPolishing, setIsPolishing] = useState(false);
   const [selectedTone, setSelectedTone] = useState('Premium');
 
-  const handleAIPolish = async () => {
+  const handleAIAntiBan = async () => {
     if (!form.message_body.trim()) {
-      setErrorMsg('Please write a message to polish.');
+      setErrorMsg('Please write a message to generate variations.');
       return;
     }
     
     setIsPolishing(true);
     setErrorMsg(null);
     try {
-      const res = await fetch('/api/ai/polish', {
+      const res = await fetch('/api/ai/spintax', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -75,12 +75,12 @@ export default function BroadcastPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to polish message');
+        throw new Error(data.error || 'Failed to generate variations');
       }
 
-      setForm(prev => ({ ...prev, message_body: data.polished_message }));
+      setForm(prev => ({ ...prev, message_body: data.spintax_message }));
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'AI Polishing failed.');
+      setErrorMsg(err instanceof Error ? err.message : 'AI Generation failed.');
     } finally {
       setIsPolishing(false);
     }
@@ -403,28 +403,30 @@ export default function BroadcastPage() {
               placeholder="Hi {{1}}, we have an exclusive offer just for you from {{2}}…"
             />
             
-            <div className="flex items-center gap-3 mt-3">
-              <button
-                type="button"
-                onClick={handleAIPolish}
-                disabled={isPolishing || !form.message_body.trim()}
-                className="flex items-center gap-2 border border-[#C4A896] rounded px-3 py-1.5 tracking-[0.2em] text-xs text-[#C4A896] hover:bg-[#3E3B36] hover:border-[#3E3B36] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Wand2 size={12} className={isPolishing ? 'animate-spin' : ''} />
-                {isPolishing ? 'AI THINKING...' : 'POLISH WITH AI'}
-              </button>
-              <select
-                value={selectedTone}
-                onChange={(e) => setSelectedTone(e.target.value)}
-                disabled={isPolishing}
-                className="bg-transparent border border-[#E8E3DA] text-[#8B8378] text-xs tracking-[0.1em] uppercase rounded px-2 py-1.5 focus:outline-none focus:border-[#C4A896] disabled:opacity-50"
-              >
-                <option value="Premium">Premium</option>
-                <option value="Friendly">Friendly</option>
-                <option value="Festive">Festive</option>
-                <option value="Urgent">Urgent</option>
-              </select>
-            </div>
+            {mode === 'QR_EXPRESS' && (
+              <div className="flex items-center gap-3 mt-3">
+                <button
+                  type="button"
+                  onClick={handleAIAntiBan}
+                  disabled={isPolishing || !form.message_body.trim()}
+                  className="flex items-center gap-2 border border-[#C4A896] rounded px-3 py-1.5 tracking-[0.2em] text-xs text-[#C4A896] hover:bg-[#3E3B36] hover:border-[#3E3B36] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Wand2 size={12} className={isPolishing ? 'animate-spin' : ''} />
+                  {isPolishing ? 'AI THINKING...' : 'AI ANTI-BAN CONTENT GENERATOR'}
+                </button>
+                <select
+                  value={selectedTone}
+                  onChange={(e) => setSelectedTone(e.target.value)}
+                  disabled={isPolishing}
+                  className="bg-transparent border border-[#E8E3DA] text-[#8B8378] text-xs tracking-[0.1em] uppercase rounded px-2 py-1.5 focus:outline-none focus:border-[#C4A896] disabled:opacity-50"
+                >
+                  <option value="Premium">Premium</option>
+                  <option value="Friendly">Friendly</option>
+                  <option value="Festive">Festive</option>
+                  <option value="Urgent">Urgent</option>
+                </select>
+              </div>
+            )}
             
             <p className="text-[10px] text-[#8B8378] mt-2">
               💡 Quick Guide: Use <code className="bg-[#F5F1EA] px-1 rounded text-[#C4A896]">{'{{1}}'}</code>, <code className="bg-[#F5F1EA] px-1 rounded text-[#C4A896]">{'{{2}}'}</code> to dynamically insert customer name, balance, etc.

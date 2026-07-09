@@ -711,11 +711,11 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Feature 2: Built-in AI Message Polisher */}
+            {/* Feature 2: Enterprise Meta Mode: Smart Template Polish AI */}
             <div className="flex flex-col lg:flex-row-reverse items-center gap-12 gsap-reveal">
               <div className="lg:w-1/2 space-y-4">
-                <h3 className="lexend-subheading text-xl font-medium text-[#3E3B36]">Built-in AI Message Polisher</h3>
-                <p className="text-sm leading-relaxed text-[#8B8378]">Turn raw business notes into luxury customer copy. Input rough drafts and let our built-in AI optimize the spacing, tone, and templates to secure instant Meta-compliance and high engagement.</p>
+                <h3 className="lexend-subheading text-xl font-medium text-[#3E3B36]">Enterprise Meta Mode: Smart Template Polish AI</h3>
+                <p className="text-sm leading-relaxed text-[#8B8378]">Turn raw business notes into luxury customer copy designed specifically for official Meta approvals. Our AI optimizes spacing, tone, and grammar while strictly preserving essential compliance placeholders like <code className="bg-[#F5F1EA] text-[#C4A896] px-1 rounded mx-0.5">{'{{1}}'}</code> and <code className="bg-[#F5F1EA] text-[#C4A896] px-1 rounded mx-0.5">{'{{2}}'}</code>.</p>
               </div>
               <div className="lg:w-1/2 w-full p-8 bg-[#F5F1EA] rounded-2xl flex items-center justify-center">
                 <div className="w-full max-w-md flex flex-col sm:flex-row gap-3">
@@ -727,15 +727,38 @@ export default function LandingPage() {
                     <ArrowRight size={16} className="text-[#C4A896]" />
                   </div>
                   <div className="w-full sm:w-1/2 p-4 bg-[#FFFFFF] rounded-xl border border-[#C4A896] shadow-sm relative">
-                    <span className="absolute top-2 left-3 text-[8px] uppercase tracking-widest font-bold text-[#C4A896]">Polished</span>
+                    <span className="absolute top-2 left-3 text-[8px] uppercase tracking-widest font-bold text-[#C4A896]">Polished (Meta API)</span>
                     <p className="text-xs text-[#3E3B36] font-medium leading-relaxed mt-4">Hi <span className="text-[#C4A896]">{'{{1}}'}</span>! Exclusive new stock has just arrived at <span className="text-[#C4A896]">{'{{2}}'}</span>. Visit us today to secure yours before it&apos;s gone. ✨</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Feature 3: Deep Real-Time Analytics Dashboard */}
+            {/* Feature 3: Small Business QR Mode: Anti-Ban Dynamic AI Generator */}
             <div className="flex flex-col lg:flex-row items-center gap-12 gsap-reveal">
+              <div className="lg:w-1/2 space-y-4">
+                <h3 className="lexend-subheading text-xl font-medium text-[#3E3B36]">Small Business QR Mode: Anti-Ban Dynamic AI Generator</h3>
+                <p className="text-sm leading-relaxed text-[#8B8378]">Maximize inbox delivery with built-in Anti-Ban Spintax technology. Write one broadcast message, and our AI dynamically spins it into hundreds of unique variations sent across the QR bridge—all staggered with smart human-like delays.</p>
+              </div>
+              <div className="lg:w-1/2 w-full p-8 bg-[#F5F1EA] rounded-2xl flex items-center justify-center">
+                <div className="w-full max-w-md p-6 bg-white rounded-xl border border-[#E8E3DA] shadow-sm relative">
+                    <span className="absolute top-3 left-4 text-[9px] uppercase tracking-widest font-bold text-[#10B981] flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-[#10B981] rounded-full animate-pulse"></span> Anti-Ban Spintax Engine
+                    </span>
+                    <div className="mt-6 space-y-3">
+                      <div className="p-3 bg-[#F9F7F4] border border-[#E8E3DA] rounded-lg text-[11px] text-[#3E3B36]">
+                        <span className="text-[#C4A896] font-mono">"{'{'}Hello|Hi|Hey{'}'}"</span> Aliya! We missed you.
+                      </div>
+                      <div className="p-3 bg-[#F9F7F4] border border-[#E8E3DA] rounded-lg text-[11px] text-[#3E3B36]">
+                        <span className="text-[#C4A896] font-mono">"{'{'}Greetings|Welcome back{'}'}"</span> Rahul! Check out our new stock.
+                      </div>
+                    </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 4: Deep Real-Time Analytics Dashboard */}
+            <div className="flex flex-col lg:flex-row-reverse items-center gap-12 gsap-reveal">
               <div className="lg:w-1/2 space-y-4">
                 <h3 className="lexend-subheading text-xl font-medium text-[#3E3B36]">Deep Real-Time Analytics Dashboard</h3>
                 <p className="text-sm leading-relaxed text-[#8B8378]">Track Sent, Delivered (Double-Tick), and Read (Blue-Tick) status logs in absolute real-time. Know exactly who read your campaign and optimize your retail marketing spend with high-performance charts.</p>

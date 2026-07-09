@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { MessageTemplate } from '@/types/broadcast';
-import { Plus, X, Image as ImageIcon, MessageSquareText, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Plus, X, Image as ImageIcon, MessageSquareText, Loader2, AlertCircle, CheckCircle2, Wand2 } from 'lucide-react';
+import { useWhatsAppMode } from '@/contexts/WhatsAppModeContext';
 
 export default function TemplatesPage() {
+  const { mode } = useWhatsAppMode();
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -18,6 +20,42 @@ export default function TemplatesPage() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  
+  const [isPolishing, setIsPolishing] = useState(false);
+  const [selectedTone, setSelectedTone] = useState('Premium');
+
+  const handleAIPolish = async () => {
+    if (!bodyText.trim()) {
+      setSubmitError('Please write a message to polish.');
+      return;
+    }
+    
+    setIsPolishing(true);
+    setSubmitError('');
+    try {
+      const res = await fetch('/api/ai/polish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          raw_message: bodyText,
+          shop_name: 'Your Shop',
+          industry_type: 'Retail',
+          selected_tone: selectedTone
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to polish message');
+      }
+
+      setBodyText(data.polished_message);
+    } catch (err: unknown) {
+      setSubmitError(err instanceof Error ? err.message : 'AI Polishing failed.');
+    } finally {
+      setIsPolishing(false);
+    }
+  };
 
   useEffect(() => {
     fetchTemplates();
@@ -220,7 +258,31 @@ export default function TemplatesPage() {
                   onChange={(e) => setBodyText(e.target.value)}
                   className="w-full px-4 py-3 rounded-lg border border-[#E8E3DA] focus:outline-none focus:ring-2 focus:ring-[#C4A896]/20 focus:border-[#C4A896] text-[#3E3B36] text-sm resize-none"
                 />
-                <p className="text-[10px] text-[#8B8378] mt-1">Use double braces like {'{{1}}'}, {'{{2}}'} for dynamic variables.</p>
+                <p className="text-[10px] text-[#8B8378] mt-1 mb-2">Use double braces like {'{{1}}'}, {'{{2}}'} for dynamic variables.</p>
+                {mode === 'META_API' && (
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleAIPolish}
+                      disabled={isPolishing || !bodyText.trim()}
+                      className="flex items-center gap-2 border border-[#C4A896] rounded px-3 py-1.5 tracking-[0.2em] text-xs text-[#C4A896] hover:bg-[#3E3B36] hover:border-[#3E3B36] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Wand2 size={12} className={isPolishing ? 'animate-spin' : ''} />
+                      {isPolishing ? 'AI THINKING...' : 'AI POLISH TEMPLATE CONTENT'}
+                    </button>
+                    <select
+                      value={selectedTone}
+                      onChange={(e) => setSelectedTone(e.target.value)}
+                      disabled={isPolishing}
+                      className="bg-transparent border border-[#E8E3DA] text-[#8B8378] text-xs tracking-[0.1em] uppercase rounded px-2 py-1.5 focus:outline-none focus:border-[#C4A896] disabled:opacity-50"
+                    >
+                      <option value="Premium">Premium</option>
+                      <option value="Friendly">Friendly</option>
+                      <option value="Festive">Festive</option>
+                      <option value="Urgent">Urgent</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="pt-2 flex gap-3">

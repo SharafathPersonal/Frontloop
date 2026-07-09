@@ -135,12 +135,23 @@ export async function POST(req: Request) {
         for (const recipient of recipients) {
           const formattedPhone = recipient.whatsapp_number.replace(/\D/g, '');
           
-          // Spintax Greeting Variation
-          const greetings = ["Hi", "Hello", "Hey", "Greetings", "Welcome"];
-          const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+          // Apply Template Params
+          let messageText = payload.campaign.message_body;
+          if (payload.templateParams) {
+             Object.keys(payload.templateParams).forEach(key => {
+               messageText = messageText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), payload.templateParams![key]);
+             });
+          }
+          messageText = messageText.replace(/\{name\}/gi, recipient.customer_name || 'Customer');
           
-          let messageText = payload.campaign.message_body.replace(/\{name\}/gi, recipient.customer_name || 'Customer');
-          messageText = messageText.replace(/^(Hi|Hello|Hey|Greetings|Welcome)/i, randomGreeting);
+          // Resolve Spintax {Option A|Option B} variations
+          const resolveSpintax = (text: string) => {
+            return text.replace(/\{([^{}]+)\}/g, (match, contents) => {
+              const choices = contents.split('|');
+              return choices[Math.floor(Math.random() * choices.length)];
+            });
+          };
+          messageText = resolveSpintax(messageText);
 
           try {
             // Mock integration with Baileys/Local API
