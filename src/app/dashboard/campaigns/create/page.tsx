@@ -200,7 +200,8 @@ export default function BroadcastPage() {
         const { count } = await supabase
           .from('message_logs')
           .select('*', { count: 'exact', head: true })
-          .eq('campaign_id', activeCampaignId);
+          .eq('campaign_id', activeCampaignId)
+          .neq('status', 'pending');
         if (count !== null) {
           setDispatchedCount(count);
           if (count >= recipientCount) {

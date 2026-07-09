@@ -123,15 +123,14 @@ export default function AudienceManagementPage() {
     return () => observer.disconnect();
   }, [hasMore, loadingDb, isFetchingMore, page, fetchDbCustomers]);
 
-  const validatePhone = (num: string) => {
-    const clean = num.replace(/\D/g, '');
-    if (clean.length === 10) {
-      return '91' + clean;
-    }
-    if (clean.length >= 11 && clean.length <= 15) {
-      return clean;
-    }
-    return null;
+  const validatePhone = (num: string): string | null => {
+    const pureNum = num.split('@')[0];
+    const cleaned = pureNum.replace(/[\s\-\+]/g, '').replace(/^0+/, '');
+    const match = cleaned.match(/^(\d{1,4})?(\d{10})$/);
+    if (!match) return null;
+    const countryCode = match[1] || '91';
+    const subscriberNumber = match[2];
+    return `${countryCode}${subscriberNumber}@s.whatsapp.net`;
   };
 
   const executeDelete = async () => {
@@ -292,7 +291,7 @@ export default function AudienceManagementPage() {
                 {dbCustomers.map((c, i) => (
                   <tr key={i} className="border-b border-[#E8E3DA]/60 last:border-0 hover:bg-[#F5F1EA]/30 transition-colors group">
                     <td className="px-5 py-3 text-xs text-[#3E3B36]">{c.customer_name || '-'}</td>
-                    <td className="px-5 py-3 text-xs text-[#8B8378] font-mono">{c.whatsapp_number}</td>
+                    <td className="px-5 py-3 text-xs text-[#8B8378] font-mono">{c.whatsapp_number.split('@')[0]}</td>
                     <td className="px-5 py-3">
                       {c.tags?.map(t => (
                         <span key={t} className="inline-block bg-[#F5F1EA] border border-[#E8E3DA] text-[#8B8378] text-[10px] px-2 py-0.5 rounded-md mr-1">{t}</span>
@@ -334,7 +333,7 @@ export default function AudienceManagementPage() {
               </div>
               <div>
                 <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Phone Number</label>
-                <input type="text" value={editCustomer.whatsapp_number} onChange={e => setEditCustomer({...editCustomer, whatsapp_number: e.target.value})} className="input-editorial" disabled />
+                <input type="text" value={editCustomer.whatsapp_number.split('@')[0]} onChange={e => setEditCustomer({...editCustomer, whatsapp_number: e.target.value})} className="input-editorial" disabled />
                 <p className="text-[10px] text-[#8B8378] mt-1">Primary key. Delete and re-create to change.</p>
               </div>
               <div className="flex items-center gap-3 mt-6">

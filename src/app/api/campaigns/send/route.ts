@@ -1,32 +1,120 @@
+/**
+ * TRUE ATTENDLY BROADCAST — Campaign Dispatcher API
+ *
+ * ARCHITECTURE NOTE — WHY TWO SUPABASE CLIENTS:
+ *
+ * `userClient`  — Built from the cookie-based session. Valid ONLY during the
+ *                 synchronous request window (before NextResponse is returned).
+ *                 Used for auth, shop/wallet reads, campaign INSERT, and ledger
+ *                 pre-population because RLS must enforce the shop_id boundary.
+ *
+ * `adminClient` — Built from SUPABASE_SERVICE_ROLE_KEY. Bypasses RLS.
+ *                 Used EXCLUSIVELY inside the waitUntil() background callback
+ *                 because the cookie store is destroyed the moment the HTTP
+ *                 response is sent — making the userClient permanently invalid
+ *                 for any async work that outlives the request. This is the
+ *                 root cause of the "permanent Processing / empty ledger" bug.
+ */
+
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
 import { getWhatsAppSocket } from '@/lib/whatsapp-bridge';
 import type { BroadcastPayload, Shop, Wallet, CustomerTag } from '@/types/broadcast';
 
-interface CustomerRecord { customer_name: string; whatsapp_number: string; tags: CustomerTag[]; }
+interface CustomerRecord {
+  customer_name: string;
+  whatsapp_number: string;
+  tags: CustomerTag[];
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> =>
+  Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`Operation timed out after ${timeoutMs}ms`)),
+        timeoutMs,
+      ),
+    ),
+  ]);
+
+/** Resolve Spintax variations: {A|B|C} → random choice */
+const resolveSpintax = (text: string): string =>
+  text.replace(/\{([^{}]+)\}/g, (_match, contents: string) => {
+    const choices = contents.split('|');
+    return choices[Math.floor(Math.random() * choices.length)];
+  });
+
+/** Apply {{1}} template params and {name} substitution to a message body */
+const buildMessage = (
+  body: string,
+  customerName: string,
+  templateParams?: Record<string, string>,
+): string => {
+  let text = body;
+  if (templateParams) {
+    Object.keys(templateParams).forEach((key) => {
+      text = text.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), templateParams[key]);
+    });
+  }
+  text = text.replace(/\{name\}/gi, customerName || 'Customer');
+  return resolveSpintax(text);
+};
+
+// ---------------------------------------------------------------------------
+// POST handler
+// ---------------------------------------------------------------------------
 
 export async function POST(req: Request) {
-  try {
-    const cookieStore = await cookies();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = createServerClient<any>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll(); },
-          setAll(cookiesToSet) {
-            try { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); } catch { /* noop in read-only context */ }
-          },
+  // ── 1. Build the user (cookie-session) Supabase client ──────────────────
+  const cookieStore = await cookies();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userClient = createServerClient<any>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
         },
-      }
-    );
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options),
+            );
+          } catch {
+            /* noop — read-only context after response is sent */
+          }
+        },
+      },
+    },
+  );
 
-    // 1. Tenant Validation
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+  // ── 2. Build the admin (service-role) Supabase client ───────────────────
+  //    This client bypasses RLS and is safe to use inside waitUntil() after
+  //    the HTTP response has been delivered (when cookies are gone).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const adminClient = createClient<any>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+
+  try {
+    // ── 3. Auth + payload validation ─────────────────────────────────────
+    const {
+      data: { user },
+      error: authError,
+    } = await userClient.auth.getUser();
+
     if (authError || !user) {
       return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
     }
@@ -34,68 +122,129 @@ export async function POST(req: Request) {
     const payload = (await req.json()) as BroadcastPayload;
 
     if (!payload.targetTags || payload.targetTags.length === 0) {
-      return NextResponse.json({ ok: false, error: 'No target audience tags provided' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: 'No target audience tags provided' },
+        { status: 400 },
+      );
     }
 
-    // 2. Fetch Shop & Check Mode
-    const { data: shop, error: shopError } = await supabase.from('shops').select('*').eq('id', user.id).maybeSingle();
+    // ── 4. Load shop profile ─────────────────────────────────────────────
+    const { data: shop, error: shopError } = await userClient
+      .from('shops')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+
     if (shopError || !shop) {
       return NextResponse.json({ ok: false, error: 'Shop profile not found' }, { status: 404 });
     }
 
-    const { meta_access_token, meta_phone_number_id, meta_template_name, whatsapp_mode, anti_ban_delay, qr_express_status } = shop as Shop;
-    
+    const {
+      meta_access_token,
+      meta_phone_number_id,
+      meta_template_name,
+      whatsapp_mode,
+      anti_ban_delay,
+      qr_express_status,
+    } = shop as Shop;
+
     if (!whatsapp_mode || whatsapp_mode === 'NONE') {
-      return NextResponse.json({ ok: false, error: 'Please configure a WhatsApp Connection Mode (Meta API or QR Express) in Settings.' }, { status: 400 });
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            'Please configure a WhatsApp Connection Mode (Meta API or QR Express) in Settings.',
+        },
+        { status: 400 },
+      );
     }
 
     if (whatsapp_mode === 'META_API') {
       if (!meta_access_token || !meta_phone_number_id || !meta_template_name) {
-        return NextResponse.json({ ok: false, error: 'Meta Cloud API credentials are not fully configured in shop settings.' }, { status: 400 });
+        return NextResponse.json(
+          {
+            ok: false,
+            error: 'Meta Cloud API credentials are not fully configured in shop settings.',
+          },
+          { status: 400 },
+        );
       }
     }
 
-    if (whatsapp_mode === 'QR_EXPRESS') {
-      if (qr_express_status === 'disconnected') {
-        return NextResponse.json({ ok: false, error: 'Your WhatsApp device is disconnected. Please reconnect your device in Settings to resume broadcasts.' }, { status: 400 });
-      }
+    if (whatsapp_mode === 'QR_EXPRESS' && qr_express_status === 'disconnected') {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            'Your WhatsApp device is disconnected. Please reconnect in Settings to resume broadcasts.',
+        },
+        { status: 400 },
+      );
     }
 
-    // 3. Resolve Recipients from customers_master by targetTags (any overlap is fine)
-    const { data: recipientsData, error: recipientsError } = await supabase
+    // ── 5. Resolve recipients (case-insensitive tag match) ───────────────
+    const { data: allContacts, error: contactsError } = await userClient
       .from('customers_master')
       .select('customer_name, whatsapp_number, tags')
-      .eq('shop_id', user.id)
-      .overlaps('tags', payload.targetTags);
+      .eq('shop_id', user.id);
 
-    if (recipientsError) {
-      return NextResponse.json({ ok: false, error: 'Failed to load recipients' }, { status: 500 });
+    if (contactsError) {
+      return NextResponse.json({ ok: false, error: 'Failed to load contacts' }, { status: 500 });
     }
 
-    const recipients: CustomerRecord[] = recipientsData ?? [];
+    const targetTagsLower = payload.targetTags.map((t) => t.toLowerCase().trim());
+
+    const recipients: CustomerRecord[] = (allContacts ?? []).filter((c) => {
+      if (!Array.isArray(c.tags)) return false;
+      return c.tags.some((tag: string) => targetTagsLower.includes(tag.toLowerCase().trim()));
+    });
+
+    // ── 6. STRICT EMPTY GUARD — fail fast, record campaign as failed ──────
     if (recipients.length === 0) {
-      return NextResponse.json({ ok: false, error: 'No contacts found for selected tags.' }, { status: 400 });
+      const failureReason = `No contacts found with tag(s): ${payload.targetTags.join(', ')}`;
+
+      await userClient.from('campaigns').insert({
+        shop_id: user.id,
+        title: payload.campaign.title,
+        message_body: payload.campaign.message_body,
+        image_url: payload.campaign.image_url || null,
+        status: 'failed',
+        total_recipients: 0,
+        total_sent: 0,
+        total_failed: 0,
+        dispatch_mode: whatsapp_mode,
+      });
+
+      return NextResponse.json({ ok: false, error: failureReason }, { status: 400 });
     }
 
-    // 4. Pre-Flight Credit Check
-    const { data: wallet, error: walletError } = await supabase.from('wallets').select('credits_remaining').eq('shop_id', user.id).maybeSingle();
-    if (walletError || !wallet) {
+    // ── 7. Wallet / credit check ─────────────────────────────────────────
+    const { data: walletRow, error: walletError } = await userClient
+      .from('wallets')
+      .select('credits_remaining')
+      .eq('shop_id', user.id)
+      .maybeSingle();
+
+    if (walletError || !walletRow) {
       return NextResponse.json({ ok: false, error: 'Wallet not found' }, { status: 404 });
     }
 
-    const { credits_remaining } = wallet as Wallet;
+    const { credits_remaining } = walletRow as Wallet;
     const requiredCredits = recipients.length;
 
     if (credits_remaining < requiredCredits) {
       return NextResponse.json(
-        { ok: false, error: `Insufficient credits. Need ${requiredCredits}, have ${credits_remaining}.` },
-        { status: 402 }
+        {
+          ok: false,
+          error: `Insufficient credits. Need ${requiredCredits}, have ${credits_remaining}.`,
+        },
+        { status: 402 },
       );
     }
 
-    // 4.5. Idempotency Key Security
+    // ── 8. Idempotency guard ─────────────────────────────────────────────
     const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    const { data: existingCampaign } = await supabase
+    const { data: duplicate } = await userClient
       .from('campaigns')
       .select('id')
       .eq('shop_id', user.id)
@@ -105,291 +254,413 @@ export async function POST(req: Request) {
       .gte('created_at', fiveMinsAgo)
       .maybeSingle();
 
-    if (existingCampaign) {
+    if (duplicate) {
       return NextResponse.json(
-        { ok: false, error: 'Idempotency Conflict: An identical campaign is currently processing.' },
-        { status: 409 }
+        { ok: false, error: 'An identical campaign is already being processed.' },
+        { status: 409 },
       );
     }
 
-    // 5. Create Campaign Record (Status: processing)
-    const { data: campaign, error: campaignInsertError } = await supabase
+    // ── 9. Create campaign row (status: processing) ──────────────────────
+    const campaignTitle = `${payload.campaign.title} [Tags: ${payload.targetTags.join(', ')}]`;
+
+    const { data: campaign, error: campaignInsertError } = await userClient
       .from('campaigns')
       .insert({
         shop_id: user.id,
-        title: `${payload.campaign.title} [Tags: ${payload.targetTags.join(', ')}]`,
+        title: campaignTitle,
         message_body: payload.campaign.message_body,
         image_url: payload.campaign.image_url || null,
         status: 'processing',
         total_recipients: requiredCredits,
+        total_sent: 0,
+        total_failed: 0,
         dispatch_mode: whatsapp_mode,
       })
       .select()
       .single();
 
     if (campaignInsertError || !campaign) {
-      return NextResponse.json({ ok: false, error: 'Failed to initialize campaign.' }, { status: 500 });
+      return NextResponse.json({ ok: false, error: 'Failed to create campaign record.' }, { status: 500 });
     }
 
-    // 6. Helper Functions for Async Processing
-    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-    const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
-      return Promise.race([
-        promise,
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout: Message dispatch took longer than 10 seconds')), timeoutMs)
-        ),
-      ]);
-    };
+    const campaignId: string = campaign.id;
 
-    // 7. Branch Dispatch Logic based on Mode
+    // ── 10. PRE-POPULATE ledger with 'pending_dispatch' rows ─────────────
+    //   This ensures the analytics view NEVER shows an empty ledger, even
+    //   before the first message is processed.
+    const now = Date.now();
+    const initialLogs = recipients.map((r, idx) => {
+      const phone = r.whatsapp_number.split('@')[0];
+      return {
+        campaign_id: campaignId,
+        // Unique placeholder ID; will be overwritten on send
+        meta_message_id: `pre_${campaignId}_${phone}_${now}_${idx}`,
+        recipient_phone: phone,
+        status: 'pending_dispatch',
+      };
+    });
+
+    const { error: preInsertError } = await userClient
+      .from('message_logs')
+      .insert(initialLogs);
+
+    if (preInsertError) {
+      // Non-fatal: continue dispatch even if pre-population partially fails,
+      // but log so we can investigate.
+      console.error('[Campaign Dispatcher] Ledger pre-population error:', preInsertError);
+    }
+
+    // ── 11. Snapshot data needed inside the background worker ────────────
+    //   We capture everything NOW (while the request is live) so the
+    //   background callback is a pure closure with no live dependencies on
+    //   the dying userClient or the cookie store.
+    const shopId = user.id;
+    const recipientsSnapshot = [...recipients];
+    const templateParamsSnapshot = payload.templateParams ?? {};
+    const messageBodySnapshot = payload.campaign.message_body;
+    const templateNameSnapshot = payload.campaign.template_name ?? meta_template_name ?? '';
+    const antiBanDelaySeconds = Math.max(30, Math.min(60, anti_ban_delay ?? 45));
+
+    // ── 12. Background dispatch ──────────────────────────────────────────
     if (whatsapp_mode === 'QR_EXPRESS') {
-      
-      // BACKGROUND PROCESSING QUEUE FOR QR EXPRESS
-      // We process this in a Next.js waitUntil() block to prevent early garbage collection or Vercel timeouts.
-      waitUntil((async () => {
-        let successCount = 0;
-        let failedCount = 0;
-        
-        try {
-          for (const recipient of recipients) {
-            let cleanPhone = recipient.whatsapp_number.replace(/\D/g, '');
-            if (cleanPhone.length === 10) {
-              cleanPhone = '91' + cleanPhone;
-            }
-            if (cleanPhone.length < 11 || cleanPhone.length > 15) {
-              failedCount++;
-              await supabase.from('message_logs').insert({
-                campaign_id: campaign.id,
-                meta_message_id: `qr_express_fail_invalid_phone_${Date.now()}_${cleanPhone || 'unknown'}`,
-                recipient_phone: cleanPhone || 'unknown',
-                status: 'failed'
-              });
-              await supabase.rpc('increment_campaign_metric', { campaign_row_id: campaign.id, metric_name: 'failed', quantity: 1 });
-              continue;
-            }
-            const formattedPhone = cleanPhone;
-            
-            // Apply Template Params
-            let messageText = payload.campaign.message_body;
-            if (payload.templateParams) {
-               Object.keys(payload.templateParams).forEach(key => {
-                 messageText = messageText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), payload.templateParams![key]);
-               });
-            }
-            messageText = messageText.replace(/\{name\}/gi, recipient.customer_name || 'Customer');
-            
-            // Resolve Spintax {Option A|Option B} variations
-            const resolveSpintax = (text: string) => {
-              return text.replace(/\{([^{}]+)\}/g, (match, contents) => {
-                const choices = contents.split('|');
-                return choices[Math.floor(Math.random() * choices.length)];
-              });
-            };
-            messageText = resolveSpintax(messageText);
+      // ── QR EXPRESS: anti-ban throttled queue ──────────────────────────
+      waitUntil(
+        (async () => {
+          let successCount = 0;
+          let failedCount = 0;
 
-            try {
-              // Retrieve active Baileys socket instance from session manager using user.id
-              const sock = await getWhatsAppSocket(user.id, supabase);
-              if (!sock) {
-                throw new Error('Baileys socket session could not be established');
-              }
+          // ── PRE-LOOP: verify socket liveness before touching the queue ────
+          const sockCheck = await getWhatsAppSocket(shopId, adminClient);
+          const socketIsLive =
+            sockCheck != null &&
+            // Baileys exposes the underlying WebSocket on sock.ws
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (sockCheck as any).ws?.readyState === 1; // 1 = OPEN
 
-              // Wrap message sending attempt in a 10-second timeout window
-              await withTimeout((async () => {
-                const jid = `${formattedPhone}@s.whatsapp.net`;
-                await sock.sendMessage(jid, { text: messageText });
-              })(), 10000);
+          if (!socketIsLive) {
+            console.error(`[QR Express] Socket not live for shop ${shopId}. Aborting campaign ${campaignId}.`);
 
-              const { error: deductError } = await supabase.rpc('deduct_credits', { p_shop_id: user.id, p_amount: 1 });
-              if (!deductError) {
-                successCount++;
-                await supabase.from('message_logs').insert({
-                  campaign_id: campaign.id,
-                  meta_message_id: `qr_express_${Date.now()}_${formattedPhone}`,
-                  recipient_phone: formattedPhone,
-                  status: 'sent'
-                });
-                await supabase.rpc('increment_campaign_sent', { campaign_row_id: campaign.id, quantity: 1 });
-              } else {
-                failedCount++;
-                await supabase.from('message_logs').insert({
-                  campaign_id: campaign.id,
-                  meta_message_id: `qr_express_fail_deduct_${Date.now()}_${formattedPhone}`,
-                  recipient_phone: formattedPhone,
-                  status: 'failed'
-                });
-                await supabase.rpc('increment_campaign_metric', { campaign_row_id: campaign.id, metric_name: 'failed', quantity: 1 });
-              }
-            } catch (e) {
-              console.error('[QR Express Loop Error]:', e);
-              failedCount++;
-              await supabase.from('message_logs').insert({
-                campaign_id: campaign.id,
-                meta_message_id: `qr_express_fail_err_${Date.now()}_${formattedPhone}`,
-                recipient_phone: formattedPhone,
-                status: 'failed'
-              });
-              await supabase.rpc('increment_campaign_metric', { campaign_row_id: campaign.id, metric_name: 'failed', quantity: 1 });
-            }
-            
-            // Ultra-Safe Anti-Ban Throttling with bounded jitter (strictly in [30s, 60s])
-            const safeDelay = Math.max(30, Math.min(60, anti_ban_delay || 45));
-            const delayBase = safeDelay * 1000;
-            const jitter = Math.floor(Math.random() * 10000) - 5000; // +/- 5 seconds
-            const finalDelay = Math.max(30000, Math.min(60000, delayBase + jitter));
-            await delay(finalDelay);
+            // Mark all pre-populated ledger rows as failed
+            await adminClient
+              .from('message_logs')
+              .update({
+                meta_message_id: `abort_no_socket_${campaignId}_${Date.now()}`,
+                status: 'failed',
+              })
+              .eq('campaign_id', campaignId)
+              .eq('status', 'pending_dispatch');
+
+            // Fail the campaign immediately
+            await adminClient
+              .from('campaigns')
+              .update({
+                status: 'failed',
+                total_failed: recipientsSnapshot.length,
+              })
+              .eq('id', campaignId);
+
+            console.error(
+              `[QR Express] Campaign ${campaignId} terminated: WhatsApp phone is completely disconnected or offline.`,
+            );
+            return; // exit background worker
           }
 
-          // Complete the campaign status update
-          await supabase.from('campaigns').update({
-            status: successCount > 0 || failedCount === 0 ? 'completed' : 'failed',
-          }).eq('id', campaign.id);
-
-        } catch (globalError) {
-          console.error('[Global Campaign Error for QR_EXPRESS]:', globalError);
-          await supabase.from('campaigns').update({
-            status: 'failed',
-          }).eq('id', campaign.id);
-        }
-      })());
-
-      return NextResponse.json({ 
-        ok: true, 
-        data: { 
-          status: 'queued', 
-          mode: 'QR_EXPRESS',
-          campaign_id: campaign.id,
-          estimated_time_minutes: Math.ceil(recipients.length * (anti_ban_delay || 45) / 60)
-        } 
-      }, { status: 202 }); // 202 Accepted
-
-    } else {
-      
-      // SEQUENTIAL META API DISPATCH (Avoids connection pool exhaustion)
-      // Runs asynchronously in Next.js waitUntil() to redirect UI instantly.
-      waitUntil((async () => {
-        let successCount = 0;
-        let failedCount = 0;
-
-        try {
-          for (const recipient of recipients) {
-            const formattedPhone = recipient.whatsapp_number.replace(/\D/g, '');
-            
-            const parameters: { type: string; text: string }[] = [];
-            if (payload.templateParams && Object.keys(payload.templateParams).length > 0) {
-              const sortedKeys = Object.keys(payload.templateParams).sort((a,b) => parseInt(a)-parseInt(b));
-              sortedKeys.forEach(key => {
-                 let val = payload.templateParams![key];
-                 if (val.includes('{name}')) val = val.replace('{name}', recipient.customer_name || 'Customer');
-                 parameters.push({ type: 'text', text: val });
-              });
-            } else {
-              const customParam = payload.campaign.message_body.replace('{name}', recipient.customer_name || 'Customer');
-              parameters.push({ type: 'text', text: customParam });
-            }
-
-            const templateToUse = payload.campaign.template_name || meta_template_name;
-
-            try {
-              const response = await withTimeout(
-                fetch(
-                  `https://graph.facebook.com/v20.0/${meta_phone_number_id}/messages`,
-                  {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${meta_access_token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      messaging_product: 'whatsapp',
-                      to: formattedPhone,
-                      type: 'template',
-                      template: {
-                        name: templateToUse,
-                        language: { code: 'en_US' },
-                        components: parameters.length > 0 ? [{ type: 'body', parameters }] : [],
-                      },
-                    }),
-                  }
-                ),
-                10000
+          try {
+            for (const recipient of recipientsSnapshot) {
+              const formattedPhone = recipient.whatsapp_number.split('@')[0];
+              const recipientJid   = `${formattedPhone}@s.whatsapp.net`;
+              const messageText    = buildMessage(
+                messageBodySnapshot,
+                recipient.customer_name,
+                templateParamsSnapshot,
               );
-              
-              if (response.status === 200) {
-                const responseData = await response.json();
-                const messageId = responseData.messages?.[0]?.id;
-                
-                const { error: deductError } = await supabase.rpc('deduct_credits', { p_shop_id: user.id, p_amount: 1 });
-                if (!deductError) {
-                  successCount++;
-                  if (messageId) {
-                    await supabase.from('message_logs').insert({
-                      campaign_id: campaign.id,
-                      meta_message_id: messageId,
-                      recipient_phone: formattedPhone,
-                      status: 'sent'
-                    });
-                  }
-                  await supabase.rpc('increment_campaign_sent', { campaign_row_id: campaign.id, quantity: 1 });
-                } else {
-                  failedCount++;
-                  await supabase.from('message_logs').insert({
-                    campaign_id: campaign.id,
-                    meta_message_id: `meta_fail_deduct_${Date.now()}_${formattedPhone}`,
-                    recipient_phone: formattedPhone,
-                    status: 'failed'
-                  });
-                  await supabase.rpc('increment_campaign_metric', { campaign_row_id: campaign.id, metric_name: 'failed', quantity: 1 });
+
+              try {
+                // Re-fetch socket each iteration so reconnect events are respected
+                const sock = await getWhatsAppSocket(shopId, adminClient);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                if (!sock || (sock as any).ws?.readyState !== 1) {
+                  throw new Error('WhatsApp socket lost connection mid-campaign');
                 }
-              } else {
-                failedCount++;
-                await supabase.from('message_logs').insert({
-                  campaign_id: campaign.id,
-                  meta_message_id: `meta_fail_status_${Date.now()}_${formattedPhone}`,
-                  recipient_phone: formattedPhone,
-                  status: 'failed'
+
+                // ── REAL Baileys transmission — 12 s hard timeout ──────────
+                const sendReceipt = await withTimeout(
+                  sock.sendMessage(recipientJid, { text: messageText }),
+                  12_000,
+                );
+
+                // Validate delivery receipt — Baileys returns a proto message stub
+                const confirmedMsgId: string | undefined = sendReceipt?.key?.id ?? undefined;
+
+                if (!confirmedMsgId) {
+                  throw new Error(`No valid message key returned by Baileys for JID ${recipientJid}`);
+                }
+
+                // Credit deducted ONLY after confirmed receipt from WhatsApp
+                const { error: deductError } = await adminClient.rpc('deduct_credits', {
+                  p_shop_id: shopId,
+                  p_amount: 1,
                 });
-                await supabase.rpc('increment_campaign_metric', { campaign_row_id: campaign.id, metric_name: 'failed', quantity: 1 });
+
+                if (deductError) {
+                  throw new Error(`Credit deduction failed: ${deductError.message}`);
+                }
+
+                successCount++;
+
+                // Ledger: pending_dispatch → delivered (confirmed by WA servers)
+                await adminClient
+                  .from('message_logs')
+                  .update({ meta_message_id: confirmedMsgId, status: 'delivered' })
+                  .eq('campaign_id', campaignId)
+                  .eq('recipient_phone', formattedPhone)
+                  .eq('status', 'pending_dispatch');
+
+                // Increment campaign sent + delivered counters
+                await adminClient.rpc('increment_campaign_sent', {
+                  campaign_row_id: campaignId,
+                  quantity: 1,
+                });
+                await adminClient.rpc('increment_campaign_metric', {
+                  campaign_row_id: campaignId,
+                  metric_name: 'delivered',
+                  quantity: 1,
+                });
+
+              } catch (perContactError) {
+                console.error(`[QR Express] Failed for ${formattedPhone}:`, perContactError);
+                failedCount++;
+
+                // Ledger: pending_dispatch → failed (no credit deducted)
+                await adminClient
+                  .from('message_logs')
+                  .update({
+                    meta_message_id: `failed_${campaignId}_${formattedPhone}_${Date.now()}`,
+                    status: 'failed',
+                  })
+                  .eq('campaign_id', campaignId)
+                  .eq('recipient_phone', formattedPhone)
+                  .eq('status', 'pending_dispatch');
+
+                await adminClient.rpc('increment_campaign_metric', {
+                  campaign_row_id: campaignId,
+                  metric_name: 'failed',
+                  quantity: 1,
+                });
+
+                // continue is implicit — loop always advances to next contact
               }
-            } catch (err) {
-              console.error('[Meta API Loop Error]:', err);
-              failedCount++;
-              await supabase.from('message_logs').insert({
-                campaign_id: campaign.id,
-                meta_message_id: `meta_fail_err_${Date.now()}_${formattedPhone}`,
-                recipient_phone: formattedPhone,
-                status: 'failed'
-              });
-              await supabase.rpc('increment_campaign_metric', { campaign_row_id: campaign.id, metric_name: 'failed', quantity: 1 });
+
+              // Anti-ban delay: bounded random in [30 s, 60 s]
+              const baseMs     = antiBanDelaySeconds * 1_000;
+              const jitterMs   = Math.floor(Math.random() * 10_000) - 5_000; // ±5 s
+              const throttleMs = Math.max(30_000, Math.min(60_000, baseMs + jitterMs));
+              await delay(throttleMs);
             }
+          } catch (loopError) {
+            console.error('[QR Express] Unexpected loop-level error:', loopError);
+          } finally {
+            // ── GUARANTEED STATUS TRANSITION ──────────────────────────────
+            const finalStatus =
+              successCount > 0
+                ? 'completed'
+                : failedCount === recipientsSnapshot.length
+                  ? 'failed'
+                  : 'completed';
+
+            await adminClient
+              .from('campaigns')
+              .update({ status: finalStatus })
+              .eq('id', campaignId)
+              .eq('status', 'processing');
+
+            console.log(
+              `[QR Express] Campaign ${campaignId} finished — ` +
+              `sent=${successCount} failed=${failedCount} status=${finalStatus}`,
+            );
           }
+        })(),
+      );
 
-          await supabase.from('campaigns').update({
-            status: successCount > 0 || failedCount === 0 ? 'completed' : 'failed',
-          }).eq('id', campaign.id);
+      return NextResponse.json(
+        {
+          ok: true,
+          data: {
+            status: 'queued',
+            mode: 'QR_EXPRESS',
+            campaign_id: campaignId,
+            total_recipients: requiredCredits,
+            estimated_time_minutes: Math.ceil(
+              (requiredCredits * antiBanDelaySeconds) / 60,
+            ),
+          },
+        },
+        { status: 202 },
+      );
+    } else {
+      // ── META API: sequential HTTPS dispatch ───────────────────────────
+      waitUntil(
+        (async () => {
+          let successCount = 0;
+          let failedCount = 0;
 
-        } catch (globalError) {
-          console.error('[Global Campaign Error for META_API]:', globalError);
-          await supabase.from('campaigns').update({
-            status: 'failed',
-          }).eq('id', campaign.id);
-        }
-      })());
+          try {
+            for (const recipient of recipientsSnapshot) {
+              const formattedPhone = recipient.whatsapp_number.split('@')[0];
 
-      return NextResponse.json({
-        ok: true,
-        data: {
-          status: 'queued',
-          mode: 'META_API',
-          campaign_id: campaign.id,
-          estimated_time_minutes: 1
-        }
-      }, { status: 202 }); // 202 Accepted
+              // Build Meta API template components
+              const parameters: { type: string; text: string }[] = [];
+              if (Object.keys(templateParamsSnapshot).length > 0) {
+                Object.keys(templateParamsSnapshot)
+                  .sort((a, b) => parseInt(a) - parseInt(b))
+                  .forEach((key) => {
+                    let val = templateParamsSnapshot[key];
+                    val = val.replace('{name}', recipient.customer_name || 'Customer');
+                    parameters.push({ type: 'text', text: val });
+                  });
+              } else {
+                parameters.push({
+                  type: 'text',
+                  text: messageBodySnapshot.replace('{name}', recipient.customer_name || 'Customer'),
+                });
+              }
+
+              try {
+                // ── REAL Meta API call — 12 s hard timeout ─────────────
+                const response = await withTimeout(
+                  fetch(
+                    `https://graph.facebook.com/v20.0/${meta_phone_number_id}/messages`,
+                    {
+                      method: 'POST',
+                      headers: {
+                        Authorization: `Bearer ${meta_access_token}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        messaging_product: 'whatsapp',
+                        to: formattedPhone,
+                        type: 'template',
+                        template: {
+                          name: templateNameSnapshot,
+                          language: { code: 'en_US' },
+                          components: parameters.length > 0 ? [{ type: 'body', parameters }] : [],
+                        },
+                      }),
+                    },
+                  ),
+                  12_000,
+                );
+
+                if (!response.ok) {
+                  const errBody = await response.text();
+                  throw new Error(`Meta API HTTP ${response.status}: ${errBody.slice(0, 200)}`);
+                }
+
+                const responseData  = await response.json();
+                // Validate confirmed message ID from Meta — only credit on success
+                const confirmedMsgId: string | undefined = responseData.messages?.[0]?.id;
+
+                if (!confirmedMsgId) {
+                  throw new Error(`Meta API returned no message ID for ${formattedPhone}`);
+                }
+
+                // Deduct credit ONLY after confirmed Meta message ID received
+                const { error: deductError } = await adminClient.rpc('deduct_credits', {
+                  p_shop_id: shopId,
+                  p_amount: 1,
+                });
+
+                if (deductError) {
+                  throw new Error(`Credit deduction failed: ${deductError.message}`);
+                }
+
+                successCount++;
+
+                // Ledger: pending_dispatch → sent (Meta webhook upgrades to delivered/read)
+                await adminClient
+                  .from('message_logs')
+                  .update({ meta_message_id: confirmedMsgId, status: 'sent' })
+                  .eq('campaign_id', campaignId)
+                  .eq('recipient_phone', formattedPhone)
+                  .eq('status', 'pending_dispatch');
+
+                await adminClient.rpc('increment_campaign_sent', {
+                  campaign_row_id: campaignId,
+                  quantity: 1,
+                });
+
+              } catch (perContactError) {
+                console.error(`[Meta API] Failed for ${formattedPhone}:`, perContactError);
+                failedCount++;
+
+                // Ledger: pending_dispatch → failed (no credit deducted)
+                await adminClient
+                  .from('message_logs')
+                  .update({
+                    meta_message_id: `meta_failed_${campaignId}_${formattedPhone}_${Date.now()}`,
+                    status: 'failed',
+                  })
+                  .eq('campaign_id', campaignId)
+                  .eq('recipient_phone', formattedPhone)
+                  .eq('status', 'pending_dispatch');
+
+                await adminClient.rpc('increment_campaign_metric', {
+                  campaign_row_id: campaignId,
+                  metric_name: 'failed',
+                  quantity: 1,
+                });
+
+                // continue is implicit — loop always advances to next contact
+              }
+            }
+          } catch (loopError) {
+            console.error('[Meta API] Unexpected loop-level error:', loopError);
+          } finally {
+            // ── GUARANTEED STATUS TRANSITION ──────────────────────────────
+            const finalStatus =
+              successCount > 0
+                ? 'completed'
+                : failedCount === recipientsSnapshot.length
+                  ? 'failed'
+                  : 'completed';
+
+            await adminClient
+              .from('campaigns')
+              .update({ status: finalStatus })
+              .eq('id', campaignId)
+              .eq('status', 'processing');
+
+            console.log(
+              `[Meta API] Campaign ${campaignId} finished — ` +
+              `sent=${successCount} failed=${failedCount} status=${finalStatus}`,
+            );
+          }
+        })(),
+      );
+
+      return NextResponse.json(
+        {
+          ok: true,
+          data: {
+            status: 'queued',
+            mode: 'META_API',
+            campaign_id: campaignId,
+            total_recipients: requiredCredits,
+            estimated_time_minutes: 1,
+          },
+        },
+        { status: 202 },
+      );
     }
-
   } catch (err: unknown) {
+    console.error('[Campaign Dispatcher] Unhandled top-level error:', err);
     return NextResponse.json(
-      { ok: false, error: err instanceof Error ? err.message : 'Internal Server Error' },
-      { status: 500 }
+      {
+        ok: false,
+        error: err instanceof Error ? err.message : 'Internal Server Error',
+      },
+      { status: 500 },
     );
   }
 }
-

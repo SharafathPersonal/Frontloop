@@ -62,15 +62,14 @@ export default function CustomersUploadPage() {
     initUser();
   }, [fetchDbTotal]);
 
-  const validatePhone = (num: string) => {
-    const clean = num.replace(/\D/g, '');
-    if (clean.length === 10) {
-      return '91' + clean;
-    }
-    if (clean.length >= 11 && clean.length <= 15) {
-      return clean;
-    }
-    return null;
+  const validatePhone = (num: string): string | null => {
+    const pureNum = num.split('@')[0];
+    const cleaned = pureNum.replace(/[\s\-\+]/g, '').replace(/^0+/, '');
+    const match = cleaned.match(/^(\d{1,4})?(\d{10})$/);
+    if (!match) return null;
+    const countryCode = match[1] || '91';
+    const subscriberNumber = match[2];
+    return `${countryCode}${subscriberNumber}@s.whatsapp.net`;
   };
 
   const parseFile = useCallback((file: File) => {
