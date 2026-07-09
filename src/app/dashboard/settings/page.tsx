@@ -185,7 +185,8 @@ function SettingsContent() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
 
-      const cashfree = await load({ mode: process.env.NEXT_PUBLIC_CASHFREE_ENV === 'production' ? 'production' : 'sandbox' });
+      const isProdMode = process.env.NEXT_PUBLIC_CASHFREE_ENV === 'production' || process.env.CASHFREE_ENV === 'production';
+      const cashfree = await load({ mode: isProdMode ? 'production' : 'sandbox' });
       
       if (!cashfree) throw new Error("Cashfree SDK failed to load");
 

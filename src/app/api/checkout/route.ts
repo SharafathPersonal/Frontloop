@@ -38,9 +38,12 @@ export async function POST(req: Request) {
     }
 
     const orderId = `order_${user.id}_${Date.now()}`;
-    const env = process.env.NEXT_PUBLIC_CASHFREE_ENV === 'production' ? 'api' : 'sandbox';
+    
+    // 1. Strict Production Routing
+    const isProd = process.env.CASHFREE_ENV === 'production' || process.env.NEXT_PUBLIC_CASHFREE_ENV === 'production';
+    const baseUrl = isProd ? 'https://api.cashfree.com' : 'https://sandbox.cashfree.com';
 
-    const response = await fetch(`https://${env}.cashfree.com/pg/orders`, {
+    const response = await fetch(`${baseUrl}/pg/orders`, {
       method: 'POST',
       headers: {
         'x-client-id': process.env.NEXT_PUBLIC_CASHFREE_APP_ID || '',
