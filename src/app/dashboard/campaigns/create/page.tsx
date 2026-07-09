@@ -30,6 +30,7 @@ export default function BroadcastPage() {
   // QR Express Polling
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
   const [dispatchedCount, setDispatchedCount] = useState(0);
+  const [qrExpressStatus, setQrExpressStatus] = useState<string | null>(null);
 
   // Templates state
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
@@ -92,7 +93,7 @@ export default function BroadcastPage() {
       if (!user) return;
       const [{ data: w }, { data: s }, tagCounts, { data: tmplData }] = await Promise.all([
         supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle(),
-        supabase.from('shops').select('shop_name').eq('id', user.id).maybeSingle(),
+        supabase.from('shops').select('shop_name, qr_express_status').eq('id', user.id).maybeSingle(),
         Promise.all(['VIP', 'Regular', 'New'].map(async (tag) => {
           const { count } = await supabase
             .from('customers_master')
@@ -104,7 +105,10 @@ export default function BroadcastPage() {
         supabase.from('message_templates').select('*').eq('shop_id', user.id).eq('status', 'APPROVED')
       ]);
       if (w) setWallet(w);
-      if (s?.shop_name) setShopName(s.shop_name);
+      if (s) {
+        if (s.shop_name) setShopName(s.shop_name);
+        setQrExpressStatus(s.qr_express_status || null);
+      }
       setTagOptions(tagCounts);
       if (tmplData) setTemplates(tmplData as MessageTemplate[]);
     }
@@ -156,6 +160,18 @@ export default function BroadcastPage() {
     let interval: any;
     if (step === 'dispatching' && activeCampaignId && mode === 'QR_EXPRESS') {
       interval = setInterval(async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: s } = await supabase.from('shops').select('qr_express_status').eq('id', user.id).maybeSingle();
+          if (s?.qr_express_status === 'disconnected') {
+            setQrExpressStatus('disconnected');
+            setStep('compose');
+            setErrorMsg('Your WhatsApp device was manually logged out (401 Unauthorized). Campaign dispatch has been paused. Please reconnect your device in Settings.');
+            clearInterval(interval);
+            return;
+          }
+        }
+
         const { count } = await supabase
           .from('message_logs')
           .select('*', { count: 'exact', head: true })
@@ -322,6 +338,19 @@ export default function BroadcastPage() {
           View All Campaigns
         </button>
       </div>
+
+      {/* 401 Unauthorized Banner */}
+      {mode === 'QR_EXPRESS' && qrExpressStatus === 'disconnected' && (
+        <div className="bg-[#EF4444] rounded-xl p-5 flex items-start gap-4 shadow-lg border border-[#DC2626] animate-in fade-in duration-300">
+          <AlertTriangle size={20} className="text-white flex-shrink-0 mt-0.5" strokeWidth={2} />
+          <div>
+            <p className="text-white text-sm font-bold tracking-wide mb-1 uppercase">Authentication Error (401 Unauthorized)</p>
+            <p className="text-white/90 text-xs leading-relaxed">
+              Your linked WhatsApp device was manually logged out. The broadcast queue is explicitly LOCKED to prevent data loss. Please go to Settings and rescan the QR code to resume operations.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Credit Guard Banner */}
       {creditCheck && !creditCheck.sufficient && (
@@ -584,7 +613,7 @@ export default function BroadcastPage() {
         </div>
         <button
           onClick={handleConfirmSubmit}
-          disabled={selectedTags.length === 0 || recipientCount === 0 || (creditCheck !== null && !creditCheck.sufficient)}
+          disabled={selectedTags.length === 0 || recipientCount === 0 || (creditCheck !== null && !creditCheck.sufficient) || (mode === 'QR_EXPRESS' && qrExpressStatus === 'disconnected')}
           className="btn-primary rounded-lg flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Send size={12} strokeWidth={1.5} />

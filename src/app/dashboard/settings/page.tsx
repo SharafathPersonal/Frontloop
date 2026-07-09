@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, FormEvent, Suspense } from 'react';
+import { useEffect, useState, FormEvent, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { load } from '@cashfreepayments/cashfree-js';
@@ -22,6 +22,7 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 type CreditStatus = 'idle' | 'redirecting';
 
 function SettingsContent() {
+  const isVerifying = useRef(false);
   const [shop, setShop] = useState<Shop | null>(null);
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [shopForm, setShopForm] = useState({
@@ -62,7 +63,8 @@ function SettingsContent() {
       window.history.replaceState({}, '', '/dashboard/settings');
     }
 
-    if (orderId) {
+    if (orderId && !isVerifying.current) {
+      isVerifying.current = true;
       setCreditStatus('redirecting');
       
       // Immediately clean the URL to prevent re-triggering on page refresh
