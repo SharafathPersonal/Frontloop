@@ -21,7 +21,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
-import { getWhatsAppSocket } from '@/lib/whatsapp-bridge';
+import { getWhatsAppSocket, isSocketLive } from '@/lib/whatsapp-bridge';
 import type { BroadcastPayload, Shop, Wallet, CustomerTag } from '@/types/broadcast';
 
 interface CustomerRecord {
@@ -330,16 +330,16 @@ export async function POST(req: Request) {
           let successCount = 0;
           let failedCount = 0;
 
-          // ── PRE-LOOP: verify socket liveness before touching the queue ────
-          const sockCheck = await getWhatsAppSocket(shopId, adminClient);
-          const socketIsLive =
-            sockCheck != null &&
-            // Baileys exposes the underlying WebSocket on sock.ws
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (sockCheck as any).ws?.readyState === 1; // 1 = OPEN
+          // ── PRE-LOOP: full liveness check — both WS transport + Baileys auth ──
+          //    getWhatsAppSocket() already waits up to 20 s for the connection
+          //    to reach 'open'. If it returns null, the socket never authenticated.
+          const sockPreflight = await getWhatsAppSocket(shopId, adminClient);
+          const socketIsLive  = sockPreflight != null && isSocketLive(shopId);
 
           if (!socketIsLive) {
-            console.error(`[QR Express] Socket not live for shop ${shopId}. Aborting campaign ${campaignId}.`);
+            console.error(
+              `[QR Express] Socket not live for shop ${shopId}. Aborting campaign ${campaignId}.`,
+            );
 
             // Mark all pre-populated ledger rows as failed
             await adminClient
@@ -351,17 +351,18 @@ export async function POST(req: Request) {
               .eq('campaign_id', campaignId)
               .eq('status', 'pending_dispatch');
 
-            // Fail the campaign immediately
+            // Fail the campaign — reason recorded in console; UI shows 'failed'
             await adminClient
               .from('campaigns')
               .update({
-                status: 'failed',
+                status:       'failed',
                 total_failed: recipientsSnapshot.length,
               })
               .eq('id', campaignId);
 
             console.error(
-              `[QR Express] Campaign ${campaignId} terminated: WhatsApp phone is completely disconnected or offline.`,
+              `[QR Express] Campaign ${campaignId} terminated: ` +
+              `WhatsApp phone is completely disconnected or offline.`,
             );
             return; // exit background worker
           }
@@ -377,10 +378,9 @@ export async function POST(req: Request) {
               );
 
               try {
-                // Re-fetch socket each iteration so reconnect events are respected
+                // Re-fetch socket; isSocketLive() confirms both WS + Baileys 'open'
                 const sock = await getWhatsAppSocket(shopId, adminClient);
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                if (!sock || (sock as any).ws?.readyState !== 1) {
+                if (!sock || !isSocketLive(shopId)) {
                   throw new Error('WhatsApp socket lost connection mid-campaign');
                 }
 
