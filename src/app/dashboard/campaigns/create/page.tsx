@@ -146,12 +146,36 @@ export default function BroadcastPage() {
 
   // Recompute recipient count & credit check when tags change
   useEffect(() => {
-    const total = tagOptions.filter(t => selectedTags.includes(t.value)).reduce((s, t) => s + t.count, 0);
-    setRecipientCount(total);
-    if (!wallet || total === 0) { setCreditCheck(null); return; }
-    const available = wallet.credits_remaining;
-    setCreditCheck({ sufficient: available >= total, creditsAvailable: available, creditsRequired: total, deficit: Math.max(0, total - available) });
-  }, [wallet, selectedTags, tagOptions]);
+    async function updateCount() {
+      if (selectedTags.length === 0) {
+        setRecipientCount(0);
+        setCreditCheck(null);
+        return;
+      }
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { count } = await supabase
+        .from('customers_master')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_id', user.id)
+        .overlaps('tags', selectedTags);
+
+      const total = count ?? 0;
+      setRecipientCount(total);
+      if (!wallet) { setCreditCheck(null); return; }
+      const available = wallet.credits_remaining;
+      setCreditCheck({ 
+        sufficient: available >= total, 
+        creditsAvailable: available, 
+        creditsRequired: total, 
+        deficit: Math.max(0, total - available) 
+      });
+    }
+
+    updateCount();
+  }, [wallet, selectedTags]);
 
   const toggleTag = (tag: CustomerTag) => {
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);

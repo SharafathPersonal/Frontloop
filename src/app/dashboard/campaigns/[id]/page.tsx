@@ -9,10 +9,12 @@ import { ArrowLeft, Clock, Info } from 'lucide-react';
 export default function CampaignDrillDownPage({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = use(params);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [recipients, setRecipients] = useState<(Customer & { message_status: string })[]>([]);
+  const [recipients, setRecipients] = useState<{ id: string; customer_name: string; whatsapp_number: string; message_status: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let channel: any;
+
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -27,28 +29,104 @@ export default function CampaignDrillDownPage({ params }: { params: Promise<{ id
       if (campaignData) {
         setCampaign(campaignData);
         
-        // Fetch mock recipients to simulate the ledger
+        // Fetch real customers for phone-to-name lookup mapping
         const { data: customers } = await supabase
           .from('customers_master')
-          .select('*')
-          .eq('shop_id', user.id)
-          .limit(campaignData.total_recipients || 10);
+          .select('customer_name, whatsapp_number')
+          .eq('shop_id', user.id);
         
+        const phoneToName: Record<string, string> = {};
         if (customers) {
-          // Assign mock statuses to match 85% read, 12% delivered, 3% failed
-          const enriched = customers.map((c, i) => {
-            const ratio = i / customers.length;
-            let status = 'READ';
-            if (ratio > 0.85 && ratio <= 0.97) status = 'DELIVERED';
-            if (ratio > 0.97) status = 'FAILED';
-            return { ...c, message_status: status };
+          customers.forEach(c => {
+            const clean = c.whatsapp_number.replace(/\D/g, '');
+            phoneToName[clean] = c.customer_name;
           });
-          setRecipients(enriched);
         }
+
+        const enrichLogs = (logsList: any[]) => {
+          return logsList.map((log: any) => {
+            const cleanPhone = log.recipient_phone.replace(/\D/g, '');
+            return {
+              id: log.id,
+              customer_name: phoneToName[cleanPhone] || 'Unknown Recipient',
+              whatsapp_number: log.recipient_phone,
+              message_status: log.status.toUpperCase()
+            };
+          });
+        };
+
+        // Fetch real message logs for this campaign
+        const { data: logsData } = await supabase
+          .from('message_logs')
+          .select('*')
+          .eq('campaign_id', unwrappedParams.id)
+          .order('created_at', { ascending: false });
+
+        if (logsData) {
+          setRecipients(enrichLogs(logsData));
+        }
+
+        // Setup the real-time Supabase subscription channel with automatic reconnection
+        const setupChannel = () => {
+          channel = supabase
+            .channel(`public:campaigns:${unwrappedParams.id}`)
+            .on(
+              'postgres_changes',
+              {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'campaigns',
+                filter: `id=eq.${unwrappedParams.id}`
+              },
+              (payload) => {
+                setCampaign(payload.new as Campaign);
+              }
+            )
+            .on(
+              'postgres_changes',
+              {
+                event: '*',
+                schema: 'public',
+                table: 'message_logs',
+                filter: `campaign_id=eq.${unwrappedParams.id}`
+              },
+              async () => {
+                // Re-fetch latest logs when there are updates in real time
+                const { data: latestLogs } = await supabase
+                  .from('message_logs')
+                  .select('*')
+                  .eq('campaign_id', unwrappedParams.id)
+                  .order('created_at', { ascending: false });
+                
+                if (latestLogs) {
+                  setRecipients(enrichLogs(latestLogs));
+                }
+              }
+            );
+
+          channel.subscribe((status: string) => {
+            console.log(`[Realtime Channel] Connection status changed to: ${status}`);
+            if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+              console.warn('[Realtime Channel] Connection closed or errored. Retrying subscription in 3 seconds...');
+              setTimeout(() => {
+                if (channel) channel.subscribe();
+              }, 3000);
+            }
+          });
+        };
+
+        setupChannel();
       }
       setLoading(false);
     }
+
     load();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [unwrappedParams.id]);
 
   if (loading) {
@@ -69,14 +147,20 @@ export default function CampaignDrillDownPage({ params }: { params: Promise<{ id
   }
 
   // Calculate metrics
-  const sent = campaign.total_recipients;
-  const failed = Math.floor(sent * 0.03);
-  const read = Math.floor(sent * 0.85);
-  const delivered = sent - failed - read; // The "Delivered, Not Read" portion
+  const total = campaign.total_recipients || 1;
+  const sent = campaign.total_sent || 0;
+  const failed = campaign.total_failed || 0;
+  const read = campaign.total_read || 0;
+  const delivered = Math.max(0, (campaign.total_delivered || 0) - read);
 
-  const readPct = sent > 0 ? Math.round((read / sent) * 100) : 0;
-  const deliveredPct = sent > 0 ? Math.round((delivered / sent) * 100) : 0;
-  const failedPct = sent > 0 ? Math.round((failed / sent) * 100) : 0;
+  const readPct = Math.round((read / total) * 100);
+  const deliveredPct = Math.round((delivered / total) * 100);
+  const failedPct = Math.round((failed / total) * 100);
+
+  // Parse the campaign title to see if it contains targeting tags metadata
+  const match = campaign.title.match(/(.*)\s+\[Tags:\s*([^\]]+)\]/);
+  const displayTitle = match ? match[1] : campaign.title;
+  const targetTags = match ? match[2] : 'All';
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -86,13 +170,15 @@ export default function CampaignDrillDownPage({ params }: { params: Promise<{ id
         <Link href="/dashboard/campaigns" className="inline-flex items-center gap-1.5 text-[10px] tracking-[0.15em] text-[#8B8378] hover:text-[#C4A896] transition-colors uppercase mb-4">
           <ArrowLeft size={12} /> Back to Ledger
         </Link>
-        <h1 className="serif-headline text-2xl md:text-3xl text-[#3E3B36]">{campaign.title}</h1>
-        <div className="flex items-center gap-3 mt-2">
+        <h1 className="serif-headline text-2xl md:text-3xl text-[#3E3B36]">{displayTitle}</h1>
+        <div className="flex items-center gap-3 mt-2 flex-wrap">
           <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase flex items-center gap-1">
             <Clock size={12} /> {new Date(campaign.created_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
           </p>
           <span className="w-1 h-1 bg-[#E8E3DA] rounded-full" />
           <span className="text-xs tracking-[0.15em] text-[#8B8378] uppercase">{campaign.total_recipients.toLocaleString()} Recipients</span>
+          <span className="w-1 h-1 bg-[#E8E3DA] rounded-full" />
+          <span className="text-xs tracking-[0.15em] text-[#C4A896] uppercase font-semibold">Target: {targetTags}</span>
         </div>
       </div>
 

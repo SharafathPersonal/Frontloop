@@ -63,7 +63,14 @@ export default function CustomersUploadPage() {
   }, [fetchDbTotal]);
 
   const validatePhone = (num: string) => {
-    return num.replace(/\D/g, '').match(/[0-9]{10}$/)?.[0] || null;
+    const clean = num.replace(/\D/g, '');
+    if (clean.length === 10) {
+      return '91' + clean;
+    }
+    if (clean.length >= 11 && clean.length <= 15) {
+      return clean;
+    }
+    return null;
   };
 
   const parseFile = useCallback((file: File) => {

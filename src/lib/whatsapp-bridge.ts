@@ -15,15 +15,15 @@ const logger = pino({ level: 'silent' });
 /**
  * Robust Baileys Auth State synced atomically to Supabase.
  */
-export const useSupabaseAuthState = async (
+export const getSupabaseAuthState = async (
   shopId: string, 
   supabase: SupabaseClient
 ): Promise<{ state: AuthenticationState, saveCreds: () => Promise<void> }> => {
-  const writeData = async (data: any, key: string) => {
+  const writeData = async (data: unknown, key: string) => {
     await supabase.from('whatsapp_sessions').upsert({
       shop_id: shopId,
       session_key: key,
-      session_value: JSON.parse(JSON.stringify(data, BufferJSON.replacer)),
+      session_value: JSON.parse(JSON.stringify(data, BufferJSON.replacer)) as Record<string, unknown>,
       updated_at: new Date().toISOString()
     }, { onConflict: 'shop_id, session_key' });
   };
@@ -58,6 +58,7 @@ export const useSupabaseAuthState = async (
       creds,
       keys: {
         get: async (type, ids) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const data: { [key: string]: any } = {};
           await Promise.all(
             ids.map(async (id) => {
@@ -91,11 +92,22 @@ export const useSupabaseAuthState = async (
   };
 };
 
+// Global in-memory registry of active sockets (for hot container reuse)
+export const activeSessions = new Map<string, ReturnType<typeof makeWASocket>>();
+
+export const getWhatsAppSocket = async (shopId: string, supabase: SupabaseClient) => {
+  let sock = activeSessions.get(shopId);
+  if (!sock) {
+    sock = await startWhatsAppEngine(shopId, supabase);
+  }
+  return sock;
+};
+
 /**
  * Bulletproof WhatsApp Web Connection Engine
  */
 export const startWhatsAppEngine = async (shopId: string, supabase: SupabaseClient) => {
-  const { state, saveCreds } = await useSupabaseAuthState(shopId, supabase);
+  const { state, saveCreds } = await getSupabaseAuthState(shopId, supabase);
 
   const sock = makeWASocket({
     auth: state,
@@ -105,6 +117,9 @@ export const startWhatsAppEngine = async (shopId: string, supabase: SupabaseClie
     defaultQueryTimeoutMs: 60000,
     retryRequestDelayMs: 250,
   });
+
+  // Track the active socket in-memory
+  activeSessions.set(shopId, sock);
 
   sock.ev.on('creds.update', saveCreds);
 
@@ -145,6 +160,9 @@ export const startWhatsAppEngine = async (shopId: string, supabase: SupabaseClie
           .eq('shop_id', shopId)
           .eq('status', 'processing')
           .eq('dispatch_mode', 'QR_EXPRESS');
+
+        // 4. Remove active socket session from map
+        activeSessions.delete(shopId);
 
       } else {
         // Temporary network drop -> Silent reconnect strategy

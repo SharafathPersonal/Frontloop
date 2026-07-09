@@ -12,19 +12,61 @@ export default function CampaignsLedgerPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let channel: any;
+
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = await supabase
-        .from('campaigns')
-        .select('*')
-        .eq('shop_id', user.id)
-        .order('created_at', { ascending: false });
-      
-      if (data) setCampaigns(data);
+
+      const fetchCampaigns = async () => {
+        const { data } = await supabase
+          .from('campaigns')
+          .select('*')
+          .eq('shop_id', user.id)
+          .order('created_at', { ascending: false });
+        if (data) setCampaigns(data);
+      };
+
+      await fetchCampaigns();
       setLoading(false);
+
+      // Realtime channel for keeping ledger and chart metrics in sync
+      const setupChannel = () => {
+        channel = supabase
+          .channel(`public:campaigns_ledger:${user.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'campaigns',
+              filter: `shop_id=eq.${user.id}`
+            },
+            () => {
+              fetchCampaigns();
+            }
+          );
+
+        channel.subscribe((status: string) => {
+          if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+            console.warn('[Realtime Campaigns Ledger] Connection closed/errored, retrying in 3s...');
+            setTimeout(() => {
+              if (channel) channel.subscribe();
+            }, 3000);
+          }
+        });
+      };
+
+      setupChannel();
     }
+
     load();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, []);
 
   const { chartData } = useMemo(() => {
@@ -137,8 +179,15 @@ export default function CampaignsLedgerPage() {
               const date = new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
               return (
                 <Link key={c.id} href={`/dashboard/campaigns/${c.id}`} className="grid grid-cols-4 gap-4 px-6 py-4 border-b border-[#E8E3DA] last:border-0 hover:bg-[#F5F1EA]/50 transition-colors block cursor-pointer group">
-                  <div className="flex items-center">
-                    <p className="text-sm text-[#3E3B36] font-medium truncate group-hover:text-[#C4A896] transition-colors">{c.title}</p>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="text-sm text-[#3E3B36] font-medium truncate group-hover:text-[#C4A896] transition-colors">
+                      {c.title.replace(/\s+\[Tags:\s*[^\]]+\]/, '')}
+                    </p>
+                    {c.title.includes('[Tags:') && (
+                      <span className="text-[9px] bg-[#F5F1EA] text-[#8B8378] px-1.5 py-0.5 rounded font-mono uppercase tracking-wider shrink-0">
+                        {c.title.match(/\[Tags:\s*([^\]]+)\]/)?.[1] || ''}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center">
                     <span className="text-xs text-[#8B8378]">{date}</span>
