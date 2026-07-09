@@ -22,6 +22,7 @@ import {
   Lock,
 } from 'lucide-react';
 import CustomConfirm from '@/components/ui/CustomConfirm';
+import { ToastProvider } from '@/contexts/ToastContext';
 import { WhatsAppModeProvider, useWhatsAppMode } from '@/contexts/WhatsAppModeContext';
 
 interface NavLink {
@@ -214,68 +215,70 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <WhatsAppModeProvider>
-      <div className="flex h-screen bg-[#F5F1EA] overflow-hidden">
+    <ToastProvider>
+      <WhatsAppModeProvider>
+        <div className="flex h-screen bg-[#F5F1EA] overflow-hidden">
 
-        {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 bg-[#FFFFFF] border-r border-[#E8E3DA] flex-shrink-0 h-screen overflow-y-auto">
-        <SidebarContent />
-      </aside>
+          {/* Desktop Sidebar */}
+        <aside className="hidden lg:flex flex-col w-64 bg-[#FFFFFF] border-r border-[#E8E3DA] flex-shrink-0 h-screen overflow-y-auto">
+          <SidebarContent />
+        </aside>
 
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="absolute inset-0 bg-[#3E3B36]/40 backdrop-blur-sm"
-            onClick={() => setSidebarOpen(false)}
-          />
-          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#FFFFFF] border-r border-[#E8E3DA] overflow-y-auto z-10">
-            <button
+        {/* Mobile Sidebar Overlay */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <div
+              className="absolute inset-0 bg-[#3E3B36]/40 backdrop-blur-sm"
               onClick={() => setSidebarOpen(false)}
-              className="absolute top-4 right-4 text-[#8B8378] hover:text-[#C4A896] transition-colors"
-            >
-              <X size={18} />
-            </button>
-            <SidebarContent />
-          </aside>
-        </div>
-      )}
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-
-        {/* Mobile top bar */}
-        <div className="lg:hidden flex items-center justify-between px-4 py-4 bg-[#FFFFFF] border-b border-[#E8E3DA]">
-          <div className="flex items-center gap-2">
-            <div className="relative w-7 h-7 flex items-center justify-center">
-              <Image src="/images/logo-dark.png" alt="Attendly Logo" fill className="object-contain" />
-            </div>
-            <span className="serif-headline text-base text-[#3E3B36]">Broadcast</span>
+            />
+            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#FFFFFF] border-r border-[#E8E3DA] overflow-y-auto z-10">
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="absolute top-4 right-4 text-[#8B8378] hover:text-[#C4A896] transition-colors"
+              >
+                <X size={18} />
+              </button>
+              <SidebarContent />
+            </aside>
           </div>
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="text-[#8B8378] hover:text-[#C4A896] transition-colors"
-          >
-            <Menu size={20} />
-          </button>
+        )}
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+
+          {/* Mobile top bar */}
+          <div className="lg:hidden flex items-center justify-between px-4 py-4 bg-[#FFFFFF] border-b border-[#E8E3DA]">
+            <div className="flex items-center gap-2">
+              <div className="relative w-7 h-7 flex items-center justify-center">
+                <Image src="/images/logo-dark.png" alt="Attendly Logo" fill className="object-contain" />
+              </div>
+              <span className="serif-headline text-base text-[#3E3B36]">Broadcast</span>
+            </div>
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="text-[#8B8378] hover:text-[#C4A896] transition-colors"
+            >
+              <Menu size={20} />
+            </button>
+          </div>
+
+          {/* Page Content */}
+          <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+            {children}
+          </main>
+
         </div>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
-          {children}
-        </main>
-
-      </div>
-
-      <CustomConfirm
-        isOpen={isLogoutConfirmOpen}
-        title="System Logout"
-        message="Are you sure you want to securely end your active session and sign out of the workspace?"
-        confirmText="SIGN OUT"
-        onConfirm={handleSignOut}
-        onCancel={() => setIsLogoutConfirmOpen(false)}
-      />
-      </div>
-    </WhatsAppModeProvider>
+        <CustomConfirm
+          isOpen={isLogoutConfirmOpen}
+          title="System Logout"
+          message="Are you sure you want to securely end your active session and sign out of the workspace?"
+          confirmText="SIGN OUT"
+          onConfirm={handleSignOut}
+          onCancel={() => setIsLogoutConfirmOpen(false)}
+        />
+        </div>
+      </WhatsAppModeProvider>
+    </ToastProvider>
   );
 }

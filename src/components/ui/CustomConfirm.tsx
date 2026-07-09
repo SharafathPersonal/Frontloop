@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 
 interface CustomConfirmProps {
   isOpen: boolean;
@@ -10,6 +10,7 @@ interface CustomConfirmProps {
   confirmText?: string;
   cancelText?: string;
   requireInput?: string;
+  type?: 'info' | 'danger' | 'warning';
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -21,6 +22,7 @@ export default function CustomConfirm({
   confirmText = 'CONFIRM',
   cancelText = 'CANCEL',
   requireInput,
+  type,
   onConfirm,
   onCancel,
 }: CustomConfirmProps) {
@@ -29,6 +31,7 @@ export default function CustomConfirm({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      setInputValue(''); // Reset input value on open
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -54,12 +57,32 @@ export default function CustomConfirm({
           <X size={16} strokeWidth={1.5} />
         </button>
         
-        <h2 className="serif-headline font-normal tracking-tight text-[#3E3B36] text-lg">
-          {title}
-        </h2>
-        <p className="text-sm text-[#8B8378] leading-relaxed mt-2 font-sans">
-          {message}
-        </p>
+        <div className="flex items-start gap-4">
+          {type === 'danger' && (
+            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="text-red-600" size={20} strokeWidth={2} />
+            </div>
+          )}
+          {type === 'warning' && (
+            <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="text-amber-600" size={20} strokeWidth={2} />
+            </div>
+          )}
+          {type === 'info' && (
+            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+              <Info className="text-blue-600" size={20} strokeWidth={2} />
+            </div>
+          )}
+          
+          <div className="flex-1">
+            <h2 className="serif-headline font-normal tracking-tight text-[#3E3B36] text-lg">
+              {title}
+            </h2>
+            <p className="text-sm text-[#8B8378] leading-relaxed mt-2 font-sans">
+              {message}
+            </p>
+          </div>
+        </div>
 
         {requireInput && (
           <div className="mt-6">
@@ -79,14 +102,18 @@ export default function CustomConfirm({
         <div className="flex items-center justify-end gap-3 mt-8">
           <button 
             onClick={onCancel}
-            className="text-[10px] tracking-[0.2em] uppercase text-[#8B8378] hover:text-[#3E3B36] transition-colors py-3 px-4 font-medium"
+            className="text-[10px] tracking-[0.2em] uppercase text-[#8B8378] hover:text-[#3E3B36] transition-colors py-3 px-4 font-medium cursor-pointer"
           >
             {cancelText}
           </button>
           <button 
             onClick={onConfirm}
             disabled={requireInput ? inputValue !== requireInput : false}
-            className="bg-[#3E3B36] text-[#FFFFFF] text-[10px] tracking-[0.2em] uppercase py-3 px-6 rounded-lg hover:bg-[#C4A896] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`text-[10px] tracking-[0.2em] uppercase py-3 px-6 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
+              type === 'danger' 
+                ? 'bg-red-600 hover:bg-red-700 text-white' 
+                : 'bg-[#3E3B36] text-[#FFFFFF] hover:bg-[#C4A896]'
+            }`}
           >
             {confirmText}
           </button>

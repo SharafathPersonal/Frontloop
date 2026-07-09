@@ -14,24 +14,85 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let channelCampaigns: any;
+    let channelWallet: any;
+    let channelShop: any;
+
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const [
-        { data: shopData },
-        { data: walletData },
-        { data: campaignData },
-      ] = await Promise.all([
-        supabase.from('shops').select('*').eq('id', user.id).maybeSingle(),
-        supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle(),
-        supabase.from('campaigns').select('*').eq('shop_id', user.id).order('created_at', { ascending: true }),
-      ]);
-      if (shopData) setShop(shopData);
-      if (walletData) setWallet(walletData);
-      if (campaignData) setCampaigns(campaignData);
+
+      const fetchAllData = async () => {
+        const [
+          { data: shopData },
+          { data: walletData },
+          { data: campaignData },
+        ] = await Promise.all([
+          supabase.from('shops').select('*').eq('id', user.id).maybeSingle(),
+          supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle(),
+          supabase.from('campaigns').select('*').eq('shop_id', user.id).order('created_at', { ascending: true }),
+        ]);
+        if (shopData) setShop(shopData);
+        if (walletData) setWallet(walletData);
+        if (campaignData) setCampaigns(campaignData);
+      };
+
+      await fetchAllData();
       setLoading(false);
+
+      // Subscribe to campaigns
+      channelCampaigns = supabase
+        .channel(`dashboard-campaigns:${user.id}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'campaigns', filter: `shop_id=eq.${user.id}` },
+          () => fetchAllData()
+        )
+        .subscribe((status: string) => {
+          if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+            console.warn('[Dashboard Campaigns] Realtime channel error — retrying…');
+            setTimeout(() => channelCampaigns?.subscribe(), 3000);
+          }
+        });
+
+      // Subscribe to wallets
+      channelWallet = supabase
+        .channel(`dashboard-wallet:${user.id}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'wallets', filter: `shop_id=eq.${user.id}` },
+          () => fetchAllData()
+        )
+        .subscribe((status: string) => {
+          if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+            console.warn('[Dashboard Wallet] Realtime channel error — retrying…');
+            setTimeout(() => channelWallet?.subscribe(), 3000);
+          }
+        });
+
+      // Subscribe to shops
+      channelShop = supabase
+        .channel(`dashboard-shop:${user.id}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'shops', filter: `id=eq.${user.id}` },
+          () => fetchAllData()
+        )
+        .subscribe((status: string) => {
+          if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+            console.warn('[Dashboard Shop] Realtime channel error — retrying…');
+            setTimeout(() => channelShop?.subscribe(), 3000);
+          }
+        });
     }
+
     load();
+
+    return () => {
+      if (channelCampaigns) supabase.removeChannel(channelCampaigns);
+      if (channelWallet) supabase.removeChannel(channelWallet);
+      if (channelShop) supabase.removeChannel(channelShop);
+    };
   }, []);
 
   const { totalSent, totalDelivered, totalRead, totalFailed, chartData } = useMemo(() => {

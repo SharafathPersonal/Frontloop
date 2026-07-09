@@ -301,7 +301,7 @@ export async function POST(req: Request) {
       };
     });
 
-    const { error: preInsertError } = await userClient
+    const { error: preInsertError } = await adminClient
       .from('message_logs')
       .insert(initialLogs);
 
@@ -330,44 +330,17 @@ export async function POST(req: Request) {
           let successCount = 0;
           let failedCount = 0;
 
-          // ── PRE-LOOP: full liveness check — both WS transport + Baileys auth ──
-          //    getWhatsAppSocket() already waits up to 20 s for the connection
-          //    to reach 'open'. If it returns null, the socket never authenticated.
-          const sockPreflight = await getWhatsAppSocket(shopId, adminClient);
-          const socketIsLive  = sockPreflight != null && isSocketLive(shopId);
-
-          if (!socketIsLive) {
-            console.error(
-              `[QR Express] Socket not live for shop ${shopId}. Aborting campaign ${campaignId}.`,
-            );
-
-            // Mark all pre-populated ledger rows as failed
-            await adminClient
-              .from('message_logs')
-              .update({
-                meta_message_id: `abort_no_socket_${campaignId}_${Date.now()}`,
-                status: 'failed',
-              })
-              .eq('campaign_id', campaignId)
-              .eq('status', 'pending_dispatch');
-
-            // Fail the campaign — reason recorded in console; UI shows 'failed'
-            await adminClient
-              .from('campaigns')
-              .update({
-                status:       'failed',
-                total_failed: recipientsSnapshot.length,
-              })
-              .eq('id', campaignId);
-
-            console.error(
-              `[QR Express] Campaign ${campaignId} terminated: ` +
-              `WhatsApp phone is completely disconnected or offline.`,
-            );
-            return; // exit background worker
-          }
-
           try {
+            // ── PRE-LOOP: full liveness check — both WS transport + Baileys auth ──
+            //    getWhatsAppSocket() already waits up to 20 s for the connection
+            //    to reach 'open'. If it returns null, the socket never authenticated.
+            const sockPreflight = await getWhatsAppSocket(shopId, adminClient);
+            const socketIsLive  = sockPreflight != null && isSocketLive(shopId);
+
+            if (!socketIsLive) {
+              throw new Error("WhatsApp phone is completely disconnected or offline.");
+            }
+
             for (const recipient of recipientsSnapshot) {
               const formattedPhone = recipient.whatsapp_number.split('@')[0];
               const recipientJid   = `${formattedPhone}@s.whatsapp.net`;
@@ -448,8 +421,6 @@ export async function POST(req: Request) {
                   metric_name: 'failed',
                   quantity: 1,
                 });
-
-                // continue is implicit — loop always advances to next contact
               }
 
               // Anti-ban delay: bounded random in [30 s, 60 s]
@@ -459,21 +430,37 @@ export async function POST(req: Request) {
               await delay(throttleMs);
             }
           } catch (loopError) {
-            console.error('[QR Express] Unexpected loop-level error:', loopError);
+            console.error('[QR Express] Unexpected loop-level or preflight error:', loopError);
+            failedCount = recipientsSnapshot.length - successCount;
           } finally {
-            // ── GUARANTEED STATUS TRANSITION ──────────────────────────────
-            const finalStatus =
-              successCount > 0
-                ? 'completed'
-                : failedCount === recipientsSnapshot.length
-                  ? 'failed'
-                  : 'completed';
+            try {
+              // Clean up any stuck pending_dispatch rows
+              await adminClient
+                .from('message_logs')
+                .update({
+                  meta_message_id: `failed_incomplete_${campaignId}_${Date.now()}`,
+                  status: 'failed',
+                })
+                .eq('campaign_id', campaignId)
+                .eq('status', 'pending_dispatch');
+            } catch (err) {
+              console.error('[QR Express] Failed to clean up stuck pending logs:', err);
+            }
 
-            await adminClient
-              .from('campaigns')
-              .update({ status: finalStatus })
-              .eq('id', campaignId)
-              .eq('status', 'processing');
+            // ── GUARANTEED STATUS TRANSITION ──────────────────────────────
+            const finalStatus = successCount > 0 ? 'completed' : 'failed';
+
+            try {
+              await adminClient
+                .from('campaigns')
+                .update({
+                  status: finalStatus,
+                  total_failed: failedCount,
+                })
+                .eq('id', campaignId);
+            } catch (err) {
+              console.error('[QR Express] Failed to update campaign status:', err);
+            }
 
             console.log(
               `[QR Express] Campaign ${campaignId} finished — ` +
@@ -610,26 +597,40 @@ export async function POST(req: Request) {
                   metric_name: 'failed',
                   quantity: 1,
                 });
-
-                // continue is implicit — loop always advances to next contact
               }
             }
           } catch (loopError) {
             console.error('[Meta API] Unexpected loop-level error:', loopError);
+            failedCount = recipientsSnapshot.length - successCount;
           } finally {
-            // ── GUARANTEED STATUS TRANSITION ──────────────────────────────
-            const finalStatus =
-              successCount > 0
-                ? 'completed'
-                : failedCount === recipientsSnapshot.length
-                  ? 'failed'
-                  : 'completed';
+            try {
+              // Clean up any stuck pending_dispatch rows
+              await adminClient
+                .from('message_logs')
+                .update({
+                  meta_message_id: `failed_incomplete_${campaignId}_${Date.now()}`,
+                  status: 'failed',
+                })
+                .eq('campaign_id', campaignId)
+                .eq('status', 'pending_dispatch');
+            } catch (err) {
+              console.error('[Meta API] Failed to clean up stuck pending logs:', err);
+            }
 
-            await adminClient
-              .from('campaigns')
-              .update({ status: finalStatus })
-              .eq('id', campaignId)
-              .eq('status', 'processing');
+            // ── GUARANTEED STATUS TRANSITION ──────────────────────────────
+            const finalStatus = successCount > 0 ? 'completed' : 'failed';
+
+            try {
+              await adminClient
+                .from('campaigns')
+                .update({
+                  status: finalStatus,
+                  total_failed: failedCount,
+                })
+                .eq('id', campaignId);
+            } catch (err) {
+              console.error('[Meta API] Failed to update campaign status:', err);
+            }
 
             console.log(
               `[Meta API] Campaign ${campaignId} finished — ` +

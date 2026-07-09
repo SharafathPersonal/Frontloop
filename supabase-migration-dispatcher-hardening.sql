@@ -256,6 +256,30 @@ END $$;
 
 
 -- ─────────────────────────────────────────────────────────────────────────────
+-- SECTION 10: message_logs RLS policy
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE public.message_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage message logs of their campaigns" ON public.message_logs;
+CREATE POLICY "Users can manage message logs of their campaigns"
+  ON public.message_logs FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.campaigns c
+      WHERE c.id = message_logs.campaign_id
+        AND c.shop_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.campaigns c
+      WHERE c.id = campaign_id
+        AND c.shop_id = auth.uid()
+    )
+  );
+
+
+-- ─────────────────────────────────────────────────────────────────────────────
 -- DONE
 -- ─────────────────────────────────────────────────────────────────────────────
 SELECT 'Migration applied successfully. All systems nominal.' AS result;

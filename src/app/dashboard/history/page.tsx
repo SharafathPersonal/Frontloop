@@ -22,24 +22,47 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let channel: any;
+
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data } = await supabase
-        .from('campaigns')
-        .select('*')
-        .eq('shop_id', user.id)
-        .order('created_at', { ascending: false });
+      const fetchCampaigns = async () => {
+        const { data } = await supabase
+          .from('campaigns')
+          .select('*')
+          .eq('shop_id', user.id)
+          .order('created_at', { ascending: false });
 
-      if (data) {
-        setCampaigns(data);
-        setFiltered(data);
-      }
+        if (data) {
+          setCampaigns(data);
+        }
+      };
+
+      await fetchCampaigns();
       setLoading(false);
+
+      channel = supabase
+        .channel(`history-campaigns:${user.id}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'campaigns', filter: `shop_id=eq.${user.id}` },
+          () => fetchCampaigns()
+        )
+        .subscribe((status: string) => {
+          if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+            console.warn('[History Campaigns] Realtime channel error — retrying…');
+            setTimeout(() => channel?.subscribe(), 3000);
+          }
+        });
     }
 
     load();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
 
   // Apply filters whenever dependencies change
