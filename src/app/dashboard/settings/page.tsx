@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { load } from '@cashfreepayments/cashfree-js';
 import type { Shop, Wallet, WhatsAppConnectionMode } from '@/types/broadcast';
 import { CheckCircle, AlertTriangle, CreditCard, User, Building, ChevronDown, ExternalLink, Zap, Lock, Smartphone, Globe } from 'lucide-react';
+import { useWhatsAppMode } from '@/contexts/WhatsAppModeContext';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Spinner } from '@/components/ui/Spinner';
@@ -42,6 +43,7 @@ function SettingsContent() {
 
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { setMode } = useWhatsAppMode();
 
   // Modal States
   const [isShopConfirmOpen, setIsShopConfirmOpen] = useState(false);
@@ -182,6 +184,69 @@ function SettingsContent() {
     }, { onConflict: 'id' });
     setSaveStatus(error ? 'error' : 'saved');
     if (!error) { setShop((prev) => prev ? { ...prev, ...shopForm } : prev); setTimeout(() => setSaveStatus('idle'), 3000); }
+  };
+
+  const handleSaveManualCredentials = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaveStatus('saving');
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('No authenticated user found.');
+      }
+      
+      const [shopUpdate, metaConfigUpdate] = await Promise.all([
+        supabase.from('shops').update({
+          meta_access_token: shopForm.meta_access_token,
+          meta_phone_number_id: shopForm.meta_phone_number_id,
+          meta_business_account_id: shopForm.meta_business_account_id,
+          meta_template_name: shopForm.meta_template_name,
+          whatsapp_mode: 'META_API',
+        }).eq('id', user.id),
+        supabase.from('meta_configs').upsert({
+          shop_id: user.id,
+          meta_access_token: shopForm.meta_access_token,
+          is_connected: true,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'shop_id' })
+      ]);
+
+      if (shopUpdate.error) throw shopUpdate.error;
+      if (metaConfigUpdate.error) throw metaConfigUpdate.error;
+
+      setShop(prev => prev ? { 
+        ...prev, 
+        meta_access_token: shopForm.meta_access_token,
+        meta_phone_number_id: shopForm.meta_phone_number_id,
+        meta_business_account_id: shopForm.meta_business_account_id,
+        meta_template_name: shopForm.meta_template_name,
+        whatsapp_mode: 'META_API'
+      } : prev);
+      
+      setShopForm(prev => ({
+        ...prev,
+        meta_access_token: shopForm.meta_access_token,
+        meta_phone_number_id: shopForm.meta_phone_number_id,
+        meta_business_account_id: shopForm.meta_business_account_id,
+        meta_template_name: shopForm.meta_template_name,
+        whatsapp_mode: 'META_API'
+      }));
+      
+      setIsMetaConnected(true);
+      setMode('META_API');
+      
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+      
+    } catch (err: any) {
+      console.error('Error saving manual credentials:', err);
+      setSaveStatus('error');
+      setGlobalError({
+        title: 'Save Failed',
+        message: err.message || 'An error occurred while updating credentials.'
+      });
+    }
   };
 
   const handleConfirmPassword = (e: FormEvent) => {
@@ -575,7 +640,7 @@ function SettingsContent() {
             </button>
 
             {manualProviderOpen && (
-              <form onSubmit={handleConfirmSaveProfile} className="border-t border-[#E8E3DA] p-5 space-y-4">
+              <form onSubmit={handleSaveManualCredentials} className="border-t border-[#E8E3DA] p-5 space-y-4">
                 <div>
                   <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Meta Access Token</label>
                   <input type="password" value={shopForm.meta_access_token} onChange={(e) => setShopForm({ ...shopForm, meta_access_token: e.target.value })} className="input-editorial" placeholder="EAAB..." readOnly={isMetaConnected} />
