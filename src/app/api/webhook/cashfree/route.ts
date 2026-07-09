@@ -24,9 +24,9 @@ export async function POST(req: Request) {
     const credit_count = parseInt(credit_count_str, 10);
 
     // 3. Instantiate High-Privilege Admin Client
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!serviceRoleKey) {
-      return NextResponse.json({ error: 'Missing service role key' }, { status: 500 });
+      return NextResponse.json({ error: 'Missing service role infrastructure' }, { status: 500 });
     }
 
     const supabaseAdmin = createClient(
@@ -35,18 +35,7 @@ export async function POST(req: Request) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // 4. Idempotency Check
-    const { data: existingLog } = await supabaseAdmin
-      .from('payment_logs')
-      .select('id')
-      .eq('order_id', order_id)
-      .maybeSingle();
-
-    if (existingLog) {
-      return NextResponse.json({ message: 'Transaction already processed' }, { status: 200 });
-    }
-
-    // 5. Log Transaction
+    // 4. Atomic Idempotency Check & Logging
     const { error: logError } = await supabaseAdmin
       .from('payment_logs')
       .insert({
@@ -57,9 +46,14 @@ export async function POST(req: Request) {
         payment_status: 'SUCCESS'
       });
 
-    if (logError) throw logError;
+    if (logError) {
+      if (logError.code === '23505') { // Postgres Unique Violation
+        return NextResponse.json({ message: 'Transaction already processed atomically' }, { status: 200 });
+      }
+      throw logError;
+    }
 
-    // 6. Atomic Wallet Update (via securely defined RPC)
+    // 5. Atomic Wallet Update (via securely defined RPC)
     const { error: rpcError } = await supabaseAdmin.rpc('increment', {
       row_id: shop_id,
       value: credit_count
@@ -69,8 +63,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, message: 'Wallet credited atomically' });
 
-  } catch (error: any) {
-    console.error('Cashfree Webhook Error:', error);
+  } catch (error: unknown) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

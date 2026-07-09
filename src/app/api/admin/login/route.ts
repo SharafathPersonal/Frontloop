@@ -10,7 +10,11 @@ export async function POST(req: Request) {
       password === process.env.ADMIN_PASSWORD
     ) {
       const cookieStore = await cookies();
-      cookieStore.set('admin_session', 'authenticated', {
+      const adminSecret = process.env.ADMIN_SECURE_TOKEN;
+      if (!adminSecret) {
+        return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+      }
+      cookieStore.set('admin_session', adminSecret, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',

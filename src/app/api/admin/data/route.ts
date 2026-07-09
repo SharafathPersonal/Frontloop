@@ -6,8 +6,9 @@ export async function GET() {
   try {
     const cookieStore = await cookies();
     const adminSession = cookieStore.get('admin_session');
+    const adminSecret = process.env.ADMIN_SECURE_TOKEN;
 
-    if (adminSession?.value !== 'authenticated') {
+    if (!adminSession?.value || !adminSecret || adminSession.value !== adminSecret) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

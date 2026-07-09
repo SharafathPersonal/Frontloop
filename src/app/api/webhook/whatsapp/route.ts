@@ -22,9 +22,30 @@ export async function GET(req: Request) {
 // ============================================================
 // 2. INBOUND MESSAGE STATUS TRACKING
 // ============================================================
+import crypto from 'crypto';
+
 export async function POST(req: Request) {
   try {
-    const payload = await req.json();
+    const rawBody = await req.text();
+    const signature = req.headers.get('x-hub-signature-256');
+
+    if (!signature) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const secret = process.env.META_APP_SECRET;
+    if (!secret) {
+      return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
+    }
+
+    const hmac = crypto.createHmac('sha256', secret);
+    const digest = 'sha256=' + hmac.update(rawBody).digest('hex');
+
+    if (signature !== digest) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const payload = JSON.parse(rawBody);
 
     // Isolated admin client to bypass RLS for background webhook updates securely
     const adminSupabase = createClient(

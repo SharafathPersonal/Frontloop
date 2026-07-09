@@ -206,6 +206,26 @@ export default function SettingsPage() {
     }
   };
 
+  const handleDisconnectFacebook = async () => {
+    if (!shop || !window.confirm('Are you sure you want to disconnect your Meta account?')) return;
+    setSaveStatus('saving');
+    const { error } = await supabase.from('shops').update({
+      meta_access_token: null,
+      meta_phone_number_id: null,
+      meta_business_account_id: null,
+      meta_template_name: null
+    }).eq('id', shop.id);
+    
+    if (!error) {
+      setShop(prev => prev ? { ...prev, meta_access_token: '', meta_phone_number_id: '', meta_business_account_id: '', meta_template_name: '' } : prev);
+      setShopForm(prev => ({ ...prev, meta_access_token: '', meta_phone_number_id: '', meta_business_account_id: '', meta_template_name: '' }));
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } else {
+      setSaveStatus('error');
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto space-y-8">
@@ -352,14 +372,31 @@ export default function SettingsPage() {
             <p className="text-[11px] text-[#8B8378] leading-relaxed mb-4">
               Authorize your Meta Business account to enable WhatsApp Cloud API broadcasting. Your token is securely stored and never shared.
             </p>
-            <button
-              onClick={handleFacebookConnect}
-              className="flex items-center gap-3 bg-[#1877F2] hover:bg-[#1565C0] text-white px-5 py-3 rounded-xl transition-colors font-medium text-sm"
-            >
-              <FacebookIcon size={16} />
-              Continue with Facebook
-              <ExternalLink size={12} className="ml-auto opacity-70" />
-            </button>
+            {shop?.meta_access_token ? (
+              <div className="mt-2">
+                <div className="inline-flex items-center gap-2 bg-[#FFFFFF] border border-[#E8E3DA] px-4 py-2.5 rounded-lg shadow-sm">
+                  <div className="w-4 h-4 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                    <CheckCircle size={10} className="text-emerald-500" strokeWidth={3} />
+                  </div>
+                  <span className="text-sm text-[#3E3B36] font-medium">✓ Connected to Meta Business</span>
+                </div>
+                <button
+                  onClick={handleDisconnectFacebook}
+                  className="block mt-4 text-[10px] text-[#8B8378] tracking-[0.05em] hover:text-[#3E3B36] transition-colors uppercase"
+                >
+                  Disconnect Account
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleFacebookConnect}
+                className="flex items-center gap-3 bg-[#3E3B36] hover:bg-[#2A2825] text-[#F5F1EA] px-5 py-3 rounded-xl transition-colors font-medium text-sm"
+              >
+                <FacebookIcon size={16} />
+                Connect with Facebook
+                <ExternalLink size={12} className="ml-auto opacity-70" />
+              </button>
+            )}
           </div>
 
           {/* Secondary: Manual credential entry toggle */}

@@ -231,7 +231,7 @@ export default function DashboardPage() {
               const s = statusConfig[c.status] ?? statusConfig.pending;
               const date = new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
               return (
-                <Link key={c.id} href={`/dashboard/campaigns/${c.id}`} className="grid grid-cols-4 gap-4 px-6 py-4 border-b border-[#E8E3DA] last:border-0 hover:bg-[#F5F1EA]/50 transition-colors block">
+                <Link key={c.id} href={`/dashboard/campaigns/${c.id}`} className="grid grid-cols-4 gap-4 px-6 py-4 border-b border-[#E8E3DA] last:border-0 hover:bg-[#F5F1EA]/50 transition-colors">
                   <div>
                     <p className="text-sm text-[#3E3B36] font-medium truncate">{c.title}</p>
                     <p className="text-[10px] text-[#8B8378] mt-0.5 truncate">{c.message_body.substring(0, 40)}…</p>

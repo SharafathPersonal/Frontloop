@@ -33,7 +33,24 @@ export async function GET(request: Request) {
       }
     );
     await supabase.auth.exchangeCodeForSession(code);
-    return NextResponse.redirect(new URL('/dashboard/settings', request.url));
+    
+    const html = `
+      <html>
+        <body>
+          <script>
+            // 1. Tell the main app window that Facebook authentication is complete
+            if (window.opener) {
+              window.opener.location.href = '/dashboard/settings?meta_status=success';
+            }
+            // 2. Forcefully close this popup tab instantly
+            window.close();
+          </script>
+        </body>
+      </html>
+    `;
+    return new NextResponse(html, {
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    });
   }
 
   return NextResponse.redirect(new URL('/login', request.url));

@@ -565,6 +565,29 @@
 - **Nature:** Adjusted the action column buttons (Edit, Delete) in the Audience Database Terminal to ensure reliable touch interactions. Replaced `opacity-0` constraints with `opacity-100 md:opacity-0 md:group-hover:opacity-100`, forcing the action links to remain explicitly visible on mobile viewports while preserving the sleek luxury-hover aesthetic for desktop users.
 - **Files:** `/src/app/dashboard/customers/management/page.tsx`
 
+## 2026-07-09 — Phase 32: Popup Sync & Meta Connection State
+
+### [INTEGRATION] Meta Popup Lifecycle & Parent Sync
+- **Module:** Auth Callback Infrastructure
+- **Nature:** Modified the Facebook OAuth callback route to return a clean HTML script that communicates with the `window.opener`. The payload forces a parent redirect to `/dashboard/settings?meta_status=success` and immediately triggers `window.close()`, resolving the issue of the dashboard rendering inside the popup frame.
+- **Files:** `/src/app/api/auth/callback/facebook/route.ts`
+
+### [UI/UX] Meta Connected Badge & Disconnect Logic
+- **Module:** Merchant Settings / Provider Hub
+- **Nature:** Overhauled the Facebook integration block utilizing luxury-minimal tokens (`#F5F1EA`, `#3E3B36`). If a `meta_access_token` is detected, the button elegantly transitions into an emerald success badge stating "✓ Connected to Meta Business". Added a secure, database-linked "Disconnect Account" atomic action to safely unlink Meta tokens via Supabase update logic.
+- **Files:** `/src/app/dashboard/settings/page.tsx`
+
+## Phase 29: Production Audit Remediation & Security Hardening
+
+### [SECURITY] Architecture & Resilience Overhaul
+- **Module:** Global Platform Infrastructure
+- **Nature:** 
+  - **Meta Webhook Hardening:** Intercepted raw POST streams on `/api/webhook/whatsapp/route.ts` to enforce `x-hub-signature-256` HMAC validation via `crypto`, rejecting unverified payloads with 401.
+  - **Cashfree Race Condition Resolved:** Eliminated `maybeSingle` pre-check in `/api/webhook/cashfree/route.ts`, leveraging Postgres Unique Violation (Code 23505) for atomic idempotency. Stripped `ANON_KEY` fallback and removed trace leaks via `catch (error: unknown)`.
+  - **Admin Security Wall Rebuilt:** Refactored `/api/admin/login/route.ts`, `data/route.ts`, and `pricing/route.ts` to validate against `process.env.ADMIN_SECURE_TOKEN` instead of weak static strings.
+  - **Mobile UX & Grid Fixed:** Updated `viewport` in `layout.tsx` to `userScalable: false` locking initial zoom bugs on iOS. Stripped conflicting `.block` from the active campaigns ledger grid mapping in `/dashboard/page.tsx` resolving responsive layout collapse.
+- **Files:** `/src/app/layout.tsx`, `/src/app/dashboard/page.tsx`, `/src/app/api/admin/login/route.ts`, `/src/app/api/admin/data/route.ts`, `/src/app/api/admin/pricing/route.ts`, `/src/app/api/webhook/whatsapp/route.ts`, `/src/app/api/webhook/cashfree/route.ts`
+
 ---
 
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*
