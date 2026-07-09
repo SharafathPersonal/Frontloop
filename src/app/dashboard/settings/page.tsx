@@ -229,6 +229,7 @@ function SettingsContent() {
   };
 
   const executeDisconnectFacebook = async () => {
+    if (!shop) return;
     setIsMetaDisconnectConfirmOpen(false);
     setSaveStatus('saving');
     const { error } = await supabase.from('shops').update({
