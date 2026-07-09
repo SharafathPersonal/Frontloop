@@ -553,4 +553,18 @@
 
 ---
 
+## 2026-07-09 — Phase 31: Mobile Responsive Layout Polish
+
+### [UI/UX] Mobile Initial Zoom & Horizontal Overflow Fix
+- **Module:** Root Layout / CSS
+- **Nature:** Explicitly configured the Next.js `Viewport` object with `maximumScale: 5` to prevent automatic system zoom on mobile browsers while allowing manual scaling. Appended `overflow-x-hidden w-full` to the root `<body>` tag, successfully barricading rogue elements from breaking device frame limits.
+- **Files:** `/src/app/layout.tsx`
+
+### [UI/UX] Audience Ledger Actions Touch Support
+- **Module:** Audience Management / Dashboard
+- **Nature:** Adjusted the action column buttons (Edit, Delete) in the Audience Database Terminal to ensure reliable touch interactions. Replaced `opacity-0` constraints with `opacity-100 md:opacity-0 md:group-hover:opacity-100`, forcing the action links to remain explicitly visible on mobile viewports while preserving the sleek luxury-hover aesthetic for desktop users.
+- **Files:** `/src/app/dashboard/customers/management/page.tsx`
+
+---
+
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*

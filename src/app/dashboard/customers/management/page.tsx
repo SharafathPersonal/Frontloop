@@ -291,7 +291,7 @@ export default function AudienceManagementPage() {
                       ))}
                     </td>
                     <td className="px-5 py-3 text-right">
-                      <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                         <button onClick={() => { setEditCustomer(c); setEditModalOpen(true); }} className="text-[#8B8378] hover:text-[#3E3B36] transition-colors"><Edit size={14} /></button>
                         <button onClick={() => { setCustomerToDelete(c.whatsapp_number); setIsDeleteConfirmOpen(true); }} className="text-[#8B8378] hover:text-[#C4A896] transition-colors"><Trash2 size={14} /></button>
                       </div>
