@@ -59,7 +59,8 @@ export type CampaignStatus =
   | 'processing'
   | 'completed'
   | 'failed'
-  | 'insufficient_credits';
+  | 'insufficient_credits'
+  | 'paused_logout';
 
 export type CustomerTag = string; // e.g., 'VIP', 'Regular', 'New'
 
@@ -83,6 +84,7 @@ export interface Shop {
   meta_template_name?: string | null;
   whatsapp_mode: WhatsAppConnectionMode;
   anti_ban_delay: number;
+  qr_express_status?: string | null;
   created_at: string;         // ISO 8601 timestamp
 }
 

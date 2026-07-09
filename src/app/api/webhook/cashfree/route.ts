@@ -76,29 +76,13 @@ export async function POST(req: Request) {
       throw logError;
     }
 
-    // 5. Update Wallet
-    const { data: wallet, error: fetchError } = await supabaseAdmin
-      .from('wallets')
-      .select('credits_remaining')
-      .eq('shop_id', shop_id)
-      .single();
+    // 5. Atomic Wallet Update via RPC
+    const { error: rpcError } = await supabaseAdmin.rpc('add_credits', { 
+      p_shop_id: shop_id, 
+      p_amount: credit_count 
+    });
 
-    if (fetchError || !wallet) {
-      // Create wallet if it doesn't exist
-      const { error: insertError } = await supabaseAdmin
-        .from('wallets')
-        .insert({ shop_id, credits_remaining: credit_count });
-      
-      if (insertError) throw insertError;
-    } else {
-      const newBalance = wallet.credits_remaining + credit_count;
-      const { error: updateError } = await supabaseAdmin
-        .from('wallets')
-        .update({ credits_remaining: newBalance, updated_at: new Date().toISOString() })
-        .eq('shop_id', shop_id);
-
-      if (updateError) throw updateError;
-    }
+    if (rpcError) throw rpcError;
 
     return NextResponse.json({ ok: true, message: 'Wallet credited atomically' });
 

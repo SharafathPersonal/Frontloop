@@ -82,6 +82,7 @@ export default function HistoryPage() {
     pending: { label: 'Pending', className: 'status-pill status-pending' },
     failed: { label: 'Failed', className: 'status-pill status-failed' },
     insufficient_credits: { label: 'Insufficient Credits', className: 'status-pill status-insufficient_credits' },
+    paused_logout: { label: 'Paused (Session Expired)', className: 'status-pill status-failed bg-orange-100 text-orange-700' },
   };
 
   const totalDelivered = campaigns
