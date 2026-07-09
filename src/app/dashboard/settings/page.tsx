@@ -52,9 +52,46 @@ function SettingsContent() {
   const [passwordMsg, setPasswordMsg] = useState('');
 
   useEffect(() => {
-    if (searchParams.get('meta_status') === 'success') {
+    const metaStatus = searchParams.get('meta_status');
+    const orderId = searchParams.get('order_id');
+
+    if (metaStatus === 'success') {
       setIsMetaConnected(true);
       router.replace('/dashboard/settings');
+    }
+
+    if (orderId) {
+      setCreditStatus('redirecting');
+      
+      // Fallback verification 
+      fetch('/api/checkout/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId }),
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok) {
+          setGlobalError({ title: 'Payment Successful', message: 'Your wallet has been credited!' });
+        } else {
+          setGlobalError({ title: 'Payment Status', message: data.error || 'Payment might be pending or failed.' });
+        }
+      })
+      .catch(err => {
+        setGlobalError({ title: 'Verification Error', message: err.message });
+      })
+      .finally(() => {
+        setCreditStatus('idle');
+        router.replace('/dashboard/settings');
+        // Refresh wallet state
+        supabase.auth.getUser().then(({ data: { user } }) => {
+          if (user) {
+            supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle().then(({ data: w }) => {
+              if (w) setWallet(w);
+            });
+          }
+        });
+      });
     }
   }, [searchParams, router]);
 
