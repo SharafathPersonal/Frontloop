@@ -36,12 +36,23 @@ export async function POST(req: Request) {
     // 1. Get Shop's Meta Credentials
     const { data: shop } = await supabase
       .from('shops')
-      .select('meta_access_token, meta_business_account_id')
+      .select('meta_access_token, meta_business_account_id, whatsapp_mode')
       .eq('id', user.id)
       .single();
 
     if (!shop || !shop.meta_access_token || !shop.meta_business_account_id) {
-      return NextResponse.json({ error: 'Meta Business Account not connected' }, { status: 400 });
+      console.error("Template API Fail: Missing Meta Token or WABA ID for User:", user.id);
+      return NextResponse.json({ 
+        success: false, 
+        error: "Your Facebook connection is active, but your WhatsApp Business Account ID or Access Token could not be retrieved from the database. Please re-authenticate via Facebook in Settings to sync your profile variables." 
+      }, { status: 400 });
+    }
+
+    if (shop.whatsapp_mode !== 'META_API') {
+      return NextResponse.json({ 
+        success: false, 
+        error: "Your workspace is not configured for Meta API. Please switch to Meta Official API in Settings." 
+      }, { status: 400 });
     }
 
     // 2. Prepare Meta API Payload
@@ -67,7 +78,7 @@ export async function POST(req: Request) {
     };
 
     // 3. Send to Meta Graph API
-    const metaUrl = `https://graph.facebook.com/v17.0/${shop.meta_business_account_id}/message_templates`;
+    const metaUrl = `https://graph.facebook.com/v20.0/${shop.meta_business_account_id}/message_templates`;
     
     const metaRes = await fetch(metaUrl, {
       method: 'POST',

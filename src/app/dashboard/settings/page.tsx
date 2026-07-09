@@ -59,11 +59,14 @@ function SettingsContent() {
 
     if (metaStatus === 'success') {
       setIsMetaConnected(true);
-      router.replace('/dashboard/settings');
+      window.history.replaceState({}, '', '/dashboard/settings');
     }
 
     if (orderId) {
       setCreditStatus('redirecting');
+      
+      // Immediately clean the URL to prevent re-triggering on page refresh
+      window.history.replaceState({}, '', '/dashboard/settings');
       
       // Fallback verification 
       fetch('/api/checkout/verify', {
@@ -84,7 +87,6 @@ function SettingsContent() {
       })
       .finally(() => {
         setCreditStatus('idle');
-        router.replace('/dashboard/settings');
         // Refresh wallet state
         supabase.auth.getUser().then(({ data: { user } }) => {
           if (user) {
