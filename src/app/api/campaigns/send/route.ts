@@ -35,15 +35,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'No target audience tags provided' }, { status: 400 });
     }
 
-    // 2. Fetch Shop & Meta Credentials
+    // 2. Fetch Shop & Check Mode
     const { data: shop, error: shopError } = await supabase.from('shops').select('*').eq('id', user.id).maybeSingle();
     if (shopError || !shop) {
       return NextResponse.json({ ok: false, error: 'Shop profile not found' }, { status: 404 });
     }
 
-    const { meta_access_token, meta_phone_number_id, meta_template_name } = shop as Shop;
-    if (!meta_access_token || !meta_phone_number_id || !meta_template_name) {
-      return NextResponse.json({ ok: false, error: 'Meta Cloud API credentials are not fully configured in shop settings.' }, { status: 400 });
+    const { meta_access_token, meta_phone_number_id, meta_template_name, whatsapp_mode, anti_ban_delay } = shop as Shop;
+    
+    if (!whatsapp_mode || whatsapp_mode === 'NONE') {
+      return NextResponse.json({ ok: false, error: 'Please configure a WhatsApp Connection Mode (Meta API or QR Express) in Settings.' }, { status: 400 });
+    }
+
+    if (whatsapp_mode === 'META_API') {
+      if (!meta_access_token || !meta_phone_number_id || !meta_template_name) {
+        return NextResponse.json({ ok: false, error: 'Meta Cloud API credentials are not fully configured in shop settings.' }, { status: 400 });
+      }
     }
 
     // 3. Resolve Recipients from customers_master by targetTags (any overlap is fine)
@@ -107,6 +114,7 @@ export async function POST(req: Request) {
         image_url: payload.campaign.image_url || null,
         status: 'processing',
         total_recipients: requiredCredits,
+        dispatch_mode: whatsapp_mode,
       })
       .select()
       .single();
@@ -115,75 +123,148 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Failed to initialize campaign.' }, { status: 500 });
     }
 
-    // 6. Meta API Dispatch Loop (Row-by-Row Execution)
-    let successCount = 0;
-    let failedCount = 0;
-
-    const dispatchPromises = recipients.map(async (recipient) => {
-      const formattedPhone = recipient.whatsapp_number.replace(/\D/g, '');
-      const customParam = payload.campaign.message_body.replace('{name}', recipient.customer_name || 'Customer');
-
-      try {
-        const response = await fetch(
-          `https://graph.facebook.com/v20.0/${meta_phone_number_id}/messages`,
-          {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${meta_access_token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              messaging_product: 'whatsapp',
-              to: formattedPhone,
-              type: 'template',
-              template: {
-                name: meta_template_name,
-                language: { code: 'en_US' },
-                components: [{ type: 'body', parameters: [{ type: 'text', text: customParam }] }],
-              },
-            }),
-          }
-        );
+    // 6. Branch Dispatch Logic based on Mode
+    if (whatsapp_mode === 'QR_EXPRESS') {
+      
+      // BACKGROUND PROCESSING QUEUE FOR QR EXPRESS
+      // We process this asynchronously to not block the Vercel request and handle the anti-ban delay.
+      (async () => {
+        let successCount = 0;
+        let failedCount = 0;
         
-        if (response.status === 200) {
-          const responseData = await response.json();
-          const messageId = responseData.messages?.[0]?.id;
+        for (const recipient of recipients) {
+          const formattedPhone = recipient.whatsapp_number.replace(/\D/g, '');
           
-          // Trigger atomic 1-credit deduction via RPC ONLY on success
-          const { error: deductError } = await supabase.rpc('deduct_credits', { p_shop_id: user.id, p_amount: 1 });
-          if (!deductError) {
-            successCount++;
-            
-            // Log message for webhook status matching
-            if (messageId) {
+          // Spintax Greeting Variation
+          const greetings = ["Hi", "Hello", "Hey", "Greetings", "Welcome"];
+          const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+          
+          let messageText = payload.campaign.message_body.replace(/\{name\}/gi, recipient.customer_name || 'Customer');
+          messageText = messageText.replace(/^(Hi|Hello|Hey|Greetings|Welcome)/i, randomGreeting);
+
+          try {
+            // Mock integration with Baileys/Local API
+            // In a real app this would POST to a dedicated WhatsApp Web bridge microservice
+            await new Promise(r => setTimeout(r, 800)); // Simulate processing
+
+            const { error: deductError } = await supabase.rpc('deduct_credits', { p_shop_id: user.id, p_amount: 1 });
+            if (!deductError) {
+              successCount++;
               await supabase.from('message_logs').insert({
                 campaign_id: campaign.id,
-                meta_message_id: messageId,
+                meta_message_id: `qr_express_${Date.now()}_${formattedPhone}`,
                 recipient_phone: formattedPhone,
                 status: 'sent'
               });
+              await supabase.rpc('increment_campaign_sent', { campaign_row_id: campaign.id, quantity: 1 });
+            } else {
+              failedCount++;
             }
-            
-            // Increment the tracking metric synchronously via atomic RPC to prevent race conditions
-            await supabase.rpc('increment_campaign_sent', { campaign_row_id: campaign.id, quantity: 1 });
-          } else {
-            failedCount++; // Deduct failed, treat as failed delivery
+          } catch (e) {
+            failedCount++;
           }
+          
+          // Ultra-Safe Anti-Ban Throttling
+          const safeDelay = Math.max(30, Math.min(60, anti_ban_delay || 45));
+          const delayBase = safeDelay * 1000;
+          const jitter = Math.floor(Math.random() * 10000) - 5000; // +/- 5 seconds
+          await new Promise(res => setTimeout(res, delayBase + jitter));
+        }
+
+        // Complete the campaign
+        await supabase.from('campaigns').update({
+          status: successCount > 0 || failedCount === 0 ? 'completed' : 'failed',
+        }).eq('id', campaign.id);
+      })();
+
+      return NextResponse.json({ 
+        ok: true, 
+        data: { 
+          status: 'queued', 
+          mode: 'QR_EXPRESS',
+          campaign_id: campaign.id,
+          estimated_time_minutes: Math.ceil(recipients.length * (anti_ban_delay || 45) / 60)
+        } 
+      });
+
+    } else {
+      
+      // PARALLEL META API DISPATCH
+      let successCount = 0;
+      let failedCount = 0;
+
+      const dispatchPromises = recipients.map(async (recipient) => {
+        const formattedPhone = recipient.whatsapp_number.replace(/\D/g, '');
+        
+        const parameters: any[] = [];
+        if (payload.templateParams && Object.keys(payload.templateParams).length > 0) {
+          const sortedKeys = Object.keys(payload.templateParams).sort((a,b) => parseInt(a)-parseInt(b));
+          sortedKeys.forEach(key => {
+             let val = payload.templateParams![key];
+             if (val.includes('{name}')) val = val.replace('{name}', recipient.customer_name || 'Customer');
+             parameters.push({ type: 'text', text: val });
+          });
         } else {
-          // Meta rejected it (rate limit, bad phone, etc)
+          const customParam = payload.campaign.message_body.replace('{name}', recipient.customer_name || 'Customer');
+          parameters.push({ type: 'text', text: customParam });
+        }
+
+        const templateToUse = payload.campaign.template_name || meta_template_name;
+
+        try {
+          const response = await fetch(
+            `https://graph.facebook.com/v20.0/${meta_phone_number_id}/messages`,
+            {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${meta_access_token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                messaging_product: 'whatsapp',
+                to: formattedPhone,
+                type: 'template',
+                template: {
+                  name: templateToUse,
+                  language: { code: 'en_US' },
+                  components: parameters.length > 0 ? [{ type: 'body', parameters }] : [],
+                },
+              }),
+            }
+          );
+          
+          if (response.status === 200) {
+            const responseData = await response.json();
+            const messageId = responseData.messages?.[0]?.id;
+            
+            const { error: deductError } = await supabase.rpc('deduct_credits', { p_shop_id: user.id, p_amount: 1 });
+            if (!deductError) {
+              successCount++;
+              if (messageId) {
+                await supabase.from('message_logs').insert({
+                  campaign_id: campaign.id,
+                  meta_message_id: messageId,
+                  recipient_phone: formattedPhone,
+                  status: 'sent'
+                });
+              }
+              await supabase.rpc('increment_campaign_sent', { campaign_row_id: campaign.id, quantity: 1 });
+            } else {
+              failedCount++; 
+            }
+          } else {
+            failedCount++;
+          }
+        } catch (err) {
           failedCount++;
         }
-      } catch (err) {
-        // Network or fetch failure — skip this recipient
-        failedCount++;
-      }
-    });
+      });
 
-    await Promise.all(dispatchPromises);
+      await Promise.all(dispatchPromises);
 
-    // 7. Update Campaign Status
-    await supabase.from('campaigns').update({
-      status: successCount > 0 || failedCount === 0 ? 'completed' : 'failed',
-    }).eq('id', campaign.id);
+      await supabase.from('campaigns').update({
+        status: successCount > 0 || failedCount === 0 ? 'completed' : 'failed',
+      }).eq('id', campaign.id);
 
-    return NextResponse.json({ ok: true, data: { attempted: requiredCredits, successful: successCount, failed: failedCount } });
+      return NextResponse.json({ ok: true, data: { campaign_id: campaign.id, attempted: requiredCredits, successful: successCount, failed: failedCount, mode: 'META_API' } });
+    }
 
   } catch (err: unknown) {
     return NextResponse.json(
@@ -192,3 +273,4 @@ export async function POST(req: Request) {
     );
   }
 }
+

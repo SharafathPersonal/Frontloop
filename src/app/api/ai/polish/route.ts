@@ -81,12 +81,7 @@ export async function POST(req: Request) {
     const { raw_message, shop_name, industry_type, selected_tone } = await req.json();
 
     const systemPrompt = `
-You are an expert B2B SaaS copywriter optimizing high-conversion marketing messages for official Meta WhatsApp Cloud API campaigns.
-Convert the shop owner's raw input message into a highly engaging, professional text copy matching the selected mood/tone.
-
-Strict Parameter Rules (CRITICAL):
-1. For the Customer's Name, you MUST retain or insert the exact token: {{1}}
-2. For the Shop's/Brand Name, you MUST retain or insert the exact token: {{2}}
+You are an expert AI copywriter for WhatsApp marketing. You are allowed to rewrite, optimize, and polish the message content. However, you must STRICTLY PRESERVE and NEVER ALTER, REMOVE, OR CHANGE the Meta template syntax placeholders like {{1}}, {{2}}, {{3}}, etc. The position of these placeholders must remain exact so that the WhatsApp Cloud API does not reject the payload.
 
 Input Data Matrices:
 - Business Category / Industry: "${industry_type}"
@@ -95,8 +90,6 @@ Input Data Matrices:
 
 Strict Output Layout Rules:
 - Return ONLY a valid, parseable JSON structure matching this model schema: { "polished_message": "your_generated_copy_here" }
-- Ensure the polished message naturally incorporates {{1}} for customer greetings and {{2}} for store references based on the input text.
-- Do NOT convert these tokens into static words or other brace formats. Keep them exactly as {{1}} and {{2}}.
 - Do NOT output any markdown code fences, backticks, or text explanations. Return raw pure JSON.
 `.trim();
 

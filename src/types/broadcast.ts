@@ -36,6 +36,11 @@ export interface Database {
         Insert: PaymentLogInsert;
         Update: Partial<PaymentLogInsert>;
       };
+      message_templates: {
+        Row: MessageTemplate;
+        Insert: MessageTemplateInsert;
+        Update: Partial<MessageTemplateInsert>;
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -58,6 +63,8 @@ export type CampaignStatus =
 
 export type CustomerTag = string; // e.g., 'VIP', 'Regular', 'New'
 
+export type WhatsAppConnectionMode = 'META_API' | 'QR_EXPRESS' | 'NONE';
+
 export interface Shop {
   id: string;                 // uuid — mirrors auth.users.id
   shop_name: string;
@@ -74,12 +81,16 @@ export interface Shop {
   meta_phone_number_id?: string | null;
   meta_business_account_id?: string | null;
   meta_template_name?: string | null;
+  whatsapp_mode: WhatsAppConnectionMode;
+  anti_ban_delay: number;
   created_at: string;         // ISO 8601 timestamp
 }
 
-export type ShopInsert = Omit<Shop, 'id' | 'created_at'> & {
+export type ShopInsert = Omit<Shop, 'id' | 'created_at' | 'whatsapp_mode' | 'anti_ban_delay'> & {
   id?: string;
   created_at?: string;
+  whatsapp_mode?: WhatsAppConnectionMode;
+  anti_ban_delay?: number;
 };
 
 export type ShopUpdate = Partial<ShopInsert>;
@@ -105,13 +116,15 @@ export interface Campaign {
   total_delivered: number;
   total_read: number;
   total_failed: number;
+  dispatch_mode: WhatsAppConnectionMode;
   created_at: string;
 }
 
-export type CampaignInsert = Omit<Campaign, 'id' | 'created_at' | 'status'> & {
+export type CampaignInsert = Omit<Campaign, 'id' | 'created_at' | 'status' | 'dispatch_mode'> & {
   id?: string;
   created_at?: string;
   status?: CampaignStatus;
+  dispatch_mode?: WhatsAppConnectionMode;
 };
 
 export type CampaignUpdate = Partial<Omit<Campaign, 'id' | 'shop_id'>>;
@@ -145,6 +158,26 @@ export type PaymentLogInsert = Omit<PaymentLog, 'id' | 'created_at'> & {
   created_at?: string;
 };
 
+export type TemplateStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type TemplateCategory = 'MARKETING' | 'UTILITY';
+
+export interface MessageTemplate {
+  id: string;
+  shop_id: string;
+  template_name: string;
+  category: TemplateCategory;
+  header_type?: 'IMAGE' | 'NONE' | null;
+  body_text: string;
+  status: TemplateStatus;
+  created_at: string;
+}
+
+export type MessageTemplateInsert = Omit<MessageTemplate, 'id' | 'created_at' | 'status'> & {
+  id?: string;
+  created_at?: string;
+  status?: TemplateStatus;
+};
+
 // ------------------------------------------------------------------
 // 3. APPLICATION-LAYER DATA TRANSFER OBJECTS
 // ------------------------------------------------------------------
@@ -154,6 +187,7 @@ export interface CampaignFormValues {
   title: string;
   message_body: string;
   image_url?: string;
+  template_name?: string;
 }
 
 /** A single parsed contact row from a CSV upload */
@@ -167,6 +201,7 @@ export interface BroadcastPayload {
   campaign: CampaignFormValues;
   targetTags: CustomerTag[];
   creditsRequired: number;
+  templateParams?: Record<string, string>;
 }
 
 /** Credit check result before dispatching */

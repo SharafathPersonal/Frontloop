@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { APP_VERSION } from '@/lib/config';
-import { Phone, MessageCircle, XCircle, CheckCircle, ArrowRight, Mail } from 'lucide-react';
+import { Phone, MessageCircle, XCircle, CheckCircle, ArrowRight, Mail, Smartphone } from 'lucide-react';
 
 // ──────────────────────────────────────────────────────────────────
 // LANDING PAGE — True Attendly Broadcast
@@ -462,6 +462,94 @@ export default function LandingPage() {
                 Retail Reality Check: A customer might ignore a billboard, but they NEVER leave a WhatsApp notification unread.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 3.8 — DUAL INFRASTRUCTURE ARCHITECTURE
+      ══════════════════════════════════════════════════════════ */}
+      <section className="bg-white py-24 scroll-reveal-section border-t border-[#E8E3DA]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
+             <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#C4A896' }}>
+              Dual Routing Infrastructure
+            </p>
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-4">
+              Two Powerful Broadcast Engines. One Unified Dashboard.
+            </h2>
+            <p className="text-base leading-relaxed text-[#8B8378]">
+              Whether you represent an Enterprise brand needing guaranteed delivery at scale, or a local shop looking for a quick, template-free setup, our Dual-Channel Architecture adapts instantly.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 gsap-reveal">
+            {/* Meta Official API */}
+            <div className="border border-[#E8E3DA] rounded-2xl p-8 bg-[#F9F7F4] flex flex-col justify-between hover:border-[#C4A896]/50 transition-colors">
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                   <div className="w-10 h-10 bg-[#3E3B36] text-[#FFFFFF] rounded-xl flex items-center justify-center">
+                     <span className="font-bold text-lg">M</span>
+                   </div>
+                   <div>
+                     <h3 className="lexend-subheading text-lg font-bold text-[#3E3B36]">Meta Official API Mode</h3>
+                     <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">For Enterprise & Large Brands</p>
+                   </div>
+                </div>
+                <ul className="space-y-4 mb-8">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>100% Verified Delivery:</strong> Official Cloud API gateway with zero blocking risk.</p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Green Badge Eligibility:</strong> Verified business profile presence.</p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Infinite Scale:</strong> Send up to 100,000+ messages per day instantly.</p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={16} className="text-[#8B8378] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#8B8378] leading-relaxed">Requires Meta Template Approvals.</p>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* QR Express Mode */}
+            <div className="border border-[#E8E3DA] rounded-2xl p-8 bg-white flex flex-col justify-between hover:border-[#C4A896]/50 transition-colors shadow-sm">
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                   <div className="w-10 h-10 bg-[#3E3B36] text-[#F5F1EA] rounded-xl flex items-center justify-center">
+                     <Smartphone size={20} />
+                   </div>
+                   <div>
+                     <h3 className="lexend-subheading text-lg font-bold text-[#3E3B36]">TrueAttendly Express Mode</h3>
+                     <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">For Local Shops & SMEs</p>
+                   </div>
+                </div>
+                <ul className="space-y-4 mb-8">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Zero Template Approvals:</strong> Write any message and dispatch immediately.</p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Instant Connection:</strong> Quick QR scan setup powered by WhatsApp Web.</p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Smart Throttled Dispatch:</strong> Our built-in AI introduces a human-like 30-second delay between broadcasts, reducing your WhatsApp account ban risk to under 10% automatically.</p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={16} className="text-[#8B8378] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#8B8378] leading-relaxed">Recommended &lt; 500 messages per day to maintain sender reputation.</p>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>

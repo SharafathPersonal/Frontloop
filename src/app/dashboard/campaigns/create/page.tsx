@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import type { CampaignFormValues, CreditCheckResult, Wallet } from '@/types/broadcast';
-import { Upload, X, CheckCircle, AlertTriangle, Send, FileText, Image as ImageIcon, Tag, ChevronDown, Wand2 } from 'lucide-react';
+import type { CampaignFormValues, CreditCheckResult, Wallet, MessageTemplate } from '@/types/broadcast';
+import { Upload, X, CheckCircle, AlertTriangle, Send, FileText, Image as ImageIcon, Tag, ChevronDown, Wand2, MessageSquareText, ShieldCheck } from 'lucide-react';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 import { Spinner } from '@/components/ui/Spinner';
+import { useWhatsAppMode } from '@/contexts/WhatsAppModeContext';
 
 type StepState = 'compose' | 'dispatching' | 'success' | 'error';
 type CustomerTag = 'VIP' | 'Regular' | 'New';
@@ -14,6 +15,7 @@ type CustomerTag = 'VIP' | 'Regular' | 'New';
 interface RecipientTag { value: CustomerTag; label: string; count: number; }
 
 export default function BroadcastPage() {
+  const { mode } = useWhatsAppMode();
   const router = useRouter();
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [shopName, setShopName] = useState('Your Shop');
@@ -24,6 +26,15 @@ export default function BroadcastPage() {
   const [creditCheck, setCreditCheck] = useState<CreditCheckResult | null>(null);
   const [step, setStep] = useState<StepState>('compose');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // QR Express Polling
+  const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
+  const [dispatchedCount, setDispatchedCount] = useState(0);
+
+  // Templates state
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [templateParams, setTemplateParams] = useState<Record<string, string>>({});
 
   // Image upload state
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -79,7 +90,7 @@ export default function BroadcastPage() {
     async function loadWallet() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const [{ data: w }, { data: s }, tagCounts] = await Promise.all([
+      const [{ data: w }, { data: s }, tagCounts, { data: tmplData }] = await Promise.all([
         supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle(),
         supabase.from('shops').select('shop_name').eq('id', user.id).maybeSingle(),
         Promise.all(['VIP', 'Regular', 'New'].map(async (tag) => {
@@ -90,13 +101,43 @@ export default function BroadcastPage() {
             .contains('tags', [tag]);
           return { value: tag as CustomerTag, label: tag, count: count ?? 0 };
         })),
+        supabase.from('message_templates').select('*').eq('shop_id', user.id).eq('status', 'APPROVED')
       ]);
       if (w) setWallet(w);
       if (s?.shop_name) setShopName(s.shop_name);
       setTagOptions(tagCounts);
+      if (tmplData) setTemplates(tmplData as MessageTemplate[]);
     }
     loadWallet();
   }, []);
+
+  // Extract placeholders dynamically
+  useEffect(() => {
+    const matches = form.message_body.match(/\{\{(\d+)\}\}/g);
+    if (matches) {
+      const newParams: Record<string, string> = {};
+      matches.forEach(m => {
+        const key = m.replace(/[{}]/g, '');
+        newParams[key] = templateParams[key] || '';
+      });
+      setTemplateParams(newParams);
+    } else {
+      setTemplateParams({});
+    }
+  }, [form.message_body]);
+
+  const handleTemplateSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const tId = e.target.value;
+    setSelectedTemplateId(tId);
+    if (tId) {
+      const t = templates.find(x => x.id === tId);
+      if (t) {
+        setForm(prev => ({ ...prev, message_body: t.body_text }));
+      }
+    } else {
+      setForm(prev => ({ ...prev, message_body: '' }));
+    }
+  };
 
   // Recompute recipient count & credit check when tags change
   useEffect(() => {
@@ -110,6 +151,26 @@ export default function BroadcastPage() {
   const toggleTag = (tag: CustomerTag) => {
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
+
+  useEffect(() => {
+    let interval: any;
+    if (step === 'dispatching' && activeCampaignId && mode === 'QR_EXPRESS') {
+      interval = setInterval(async () => {
+        const { count } = await supabase
+          .from('message_logs')
+          .select('*', { count: 'exact', head: true })
+          .eq('campaign_id', activeCampaignId);
+        if (count !== null) {
+          setDispatchedCount(count);
+          if (count >= recipientCount) {
+            setStep('success');
+            clearInterval(interval);
+          }
+        }
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [step, activeCampaignId, mode, recipientCount]);
 
   const handleImageDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -162,14 +223,27 @@ export default function BroadcastPage() {
     }
 
     try {
+      const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
       const res = await fetch('/api/campaigns/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaign: { ...form, image_url: imageUrl }, targetTags: selectedTags, creditsRequired: recipientCount }),
+        body: JSON.stringify({
+          campaign: { ...form, image_url: imageUrl, template_name: selectedTemplate?.template_name },
+          targetTags: selectedTags,
+          creditsRequired: recipientCount,
+          templateParams
+        }),
       });
       const data = await res.json();
       if (!res.ok) { setErrorMsg(data.error || 'Failed to dispatch broadcast'); setStep('error'); return; }
-      setStep('success');
+      
+      if (data.data?.mode === 'QR_EXPRESS') {
+        setActiveCampaignId(data.data.campaign_id);
+        setDispatchedCount(0);
+      } else {
+        setStep('success');
+      }
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: fw } = await supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle();
@@ -210,9 +284,25 @@ export default function BroadcastPage() {
     return (
       <div className="max-w-2xl mx-auto text-center py-20 flex flex-col items-center justify-center gap-6">
         <Spinner className="w-8 h-8 border-t-[#C4A896] border-[#E8E3DA]" />
-        <p className="text-xs tracking-[0.2em] text-[#8B8378] uppercase font-medium">
-          DISPATCHING ENGINES... [{recipientCount}/{recipientCount}]
-        </p>
+        
+        {mode === 'QR_EXPRESS' ? (
+          <div className="w-full max-w-md space-y-4">
+            <p className="text-xs tracking-[0.2em] text-[#8B8378] uppercase font-medium">
+              ANTI-BAN QUEUE ACTIVE... [{dispatchedCount}/{recipientCount}]
+            </p>
+            <div className="w-full bg-[#E8E3DA] rounded-full h-1.5 overflow-hidden">
+              <div 
+                className="bg-[#10B981] h-full transition-all duration-1000 ease-in-out" 
+                style={{ width: `${Math.min(100, (dispatchedCount/Math.max(1, recipientCount))*100)}%` }} 
+              />
+            </div>
+            <p className="text-[10px] text-[#8B8378]">Executing dynamic smart delays to protect your number.</p>
+          </div>
+        ) : (
+          <p className="text-xs tracking-[0.2em] text-[#8B8378] uppercase font-medium">
+            DISPATCHING ENGINES... [{recipientCount}/{recipientCount}]
+          </p>
+        )}
       </div>
     );
   }
@@ -283,6 +373,25 @@ export default function BroadcastPage() {
             />
           </div>
 
+          {mode === 'META_API' && (
+            <div>
+              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Select Your Approved Template</label>
+              <div className="relative">
+                <select
+                  value={selectedTemplateId}
+                  onChange={handleTemplateSelect}
+                  className="input-editorial appearance-none pr-10"
+                >
+                  <option value="">-- Start from scratch or select template --</option>
+                  {templates.map(t => (
+                    <option key={t.id} value={t.id}>{t.template_name} ({t.category})</option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B8378]" pointerEvents="none" />
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Message Body</label>
             <textarea
@@ -318,21 +427,48 @@ export default function BroadcastPage() {
             </div>
             
             <p className="text-[10px] text-[#8B8378] mt-2">
-              💡 Quick Guide: Use <code className="bg-[#F5F1EA] px-1 rounded text-[#C4A896]">{'{{1}}'}</code> to automatically insert the Customer's Name. Use <code className="bg-[#F5F1EA] px-1 rounded text-[#C4A896]">{'{{2}}'}</code> to automatically insert your official Storefront Name.
+              💡 Quick Guide: Use <code className="bg-[#F5F1EA] px-1 rounded text-[#C4A896]">{'{{1}}'}</code>, <code className="bg-[#F5F1EA] px-1 rounded text-[#C4A896]">{'{{2}}'}</code> to dynamically insert customer name, balance, etc.
             </p>
           </div>
+          
+          {Object.keys(templateParams).length > 0 && (
+            <div className="bg-[#F9F7F4] border border-[#E8E3DA] rounded-xl p-5 space-y-4">
+              <p className="text-xs tracking-[0.1em] text-[#3E3B36] uppercase font-medium">Template Variables</p>
+              {Object.keys(templateParams).sort((a,b) => parseInt(a)-parseInt(b)).map(key => (
+                <div key={key} className="flex flex-col gap-1">
+                  <label className="text-[10px] text-[#8B8378] uppercase">Variable {'{{' + key + '}}'}</label>
+                  <input
+                    type="text"
+                    value={templateParams[key]}
+                    onChange={(e) => setTemplateParams({ ...templateParams, [key]: e.target.value })}
+                    className="w-full px-3 py-2 text-sm bg-white border border-[#E8E3DA] rounded focus:outline-none focus:border-[#C4A896]"
+                    placeholder={`Value for {{${key}}}`}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
 
           {form.message_body && (
             <div className="bg-[#F5F1EA] rounded-xl p-4">
               <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-3">Preview</p>
               <div className="bg-[#FFFFFF] rounded-lg p-5 border-l-2 border-[#C4A896] shadow-sm">
                 <p className="text-sm text-[#3E3B36] leading-relaxed whitespace-pre-wrap">
-                  {form.message_body
-                    .replace(/\{name\}/gi, '{{1}}')
-                    .replace(/\{shop\}/gi, '{{2}}')
-                    .replace(/\{\{1\}\}/g, 'Ayesha')
-                    .replace(/\{\{2\}\}/g, shopName)}
+                  {Object.keys(templateParams).reduce(
+                    (text, key) => text.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), templateParams[key] || `{{${key}}}`),
+                    form.message_body
+                  )}
                 </p>
+              </div>
+            </div>
+          )}
+          
+          {mode === 'QR_EXPRESS' && (
+            <div className="bg-[#10B981]/10 border border-[#10B981]/30 rounded-xl p-4 flex gap-3">
+              <ShieldCheck size={20} className="text-[#10B981] flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-semibold text-[#3E3B36] uppercase tracking-[0.1em] mb-1">TrueAttendly Anti-Ban Engine Active</p>
+                <p className="text-[11px] leading-relaxed text-[#8B8378]">Messages will be securely dispatched with a 30-60 second smart random delay to 100% protect your WhatsApp number from being blocked.</p>
               </div>
             </div>
           )}

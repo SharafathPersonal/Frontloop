@@ -4,8 +4,8 @@ import { useEffect, useState, FormEvent, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { load } from '@cashfreepayments/cashfree-js';
-import type { Shop, Wallet } from '@/types/broadcast';
-import { CheckCircle, AlertTriangle, CreditCard, User, Building, ChevronDown, ExternalLink, Zap, Lock } from 'lucide-react';
+import type { Shop, Wallet, WhatsAppConnectionMode } from '@/types/broadcast';
+import { CheckCircle, AlertTriangle, CreditCard, User, Building, ChevronDown, ExternalLink, Zap, Lock, Smartphone, Globe } from 'lucide-react';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Spinner } from '@/components/ui/Spinner';
@@ -28,6 +28,8 @@ function SettingsContent() {
     shop_name: '', owner_phone: '', contact_number: '', location_address: '', 
     city: '', district: '', state: '', country: '', industry_type: '',
     meta_access_token: '', meta_phone_number_id: '', meta_business_account_id: '', meta_template_name: '',
+    whatsapp_mode: 'NONE' as WhatsAppConnectionMode,
+    anti_ban_delay: 45
   });
   const [creditPacks, setCreditPacks] = useState<any[]>([]);
   const [selectedPack, setSelectedPack] = useState<number>(100);
@@ -136,6 +138,8 @@ function SettingsContent() {
           meta_phone_number_id: shopData.meta_phone_number_id || '',
           meta_business_account_id: shopData.meta_business_account_id || '',
           meta_template_name: shopData.meta_template_name || '',
+          whatsapp_mode: shopData.whatsapp_mode || 'NONE',
+          anti_ban_delay: shopData.anti_ban_delay || 45,
         });
       }
       if (walletData) setWallet(walletData);
@@ -169,6 +173,8 @@ function SettingsContent() {
       meta_phone_number_id: shopForm.meta_phone_number_id,
       meta_business_account_id: shopForm.meta_business_account_id,
       meta_template_name: shopForm.meta_template_name,
+      whatsapp_mode: shopForm.whatsapp_mode,
+      anti_ban_delay: shopForm.anti_ban_delay,
     }, { onConflict: 'id' });
     setSaveStatus(error ? 'error' : 'saved');
     if (!error) { setShop((prev) => prev ? { ...prev, ...shopForm } : prev); setTimeout(() => setSaveStatus('idle'), 3000); }
@@ -409,8 +415,97 @@ function SettingsContent() {
         </div>
       </section>
 
-      {/* ── PROVIDER HUB — Facebook Embedded Signup ─────────────── */}
+      {/* ── CONNECTION MODE SETTINGS ──────────────────────────────── */}
       <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
+        <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
+          <div className="w-8 h-8 bg-[#F5F1EA] rounded-lg flex items-center justify-center">
+            <Globe size={14} className="text-[#C4A896]" strokeWidth={1.5} />
+          </div>
+          <div>
+            <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">WhatsApp Connection Mode</h2>
+            <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Configure your broadcast infrastructure engine</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleConfirmSaveProfile} className="p-6 space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            {/* META API OPTION */}
+            <label className={`relative block border rounded-xl p-5 cursor-pointer transition-all ${
+              shopForm.whatsapp_mode === 'META_API' ? 'border-[#C4A896] bg-[#F9F7F4]' : 'border-[#E8E3DA] hover:border-[#C4A896]/50'
+            }`}>
+              <div className="flex items-start gap-3">
+                <input 
+                  type="radio" 
+                  name="whatsapp_mode" 
+                  value="META_API" 
+                  checked={shopForm.whatsapp_mode === 'META_API'} 
+                  onChange={() => setShopForm({ ...shopForm, whatsapp_mode: 'META_API' })} 
+                  className="mt-1 accent-[#C4A896] w-4 h-4" 
+                />
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <FacebookIcon size={14} />
+                    <span className="text-sm font-medium text-[#3E3B36]">Meta Official API</span>
+                  </div>
+                  <p className="text-[11px] text-[#8B8378] leading-relaxed mb-3">100% Verified Gateway, Zero Ban Risk, Template Approvals Required. Best for large scale Enterprise.</p>
+                </div>
+              </div>
+            </label>
+
+            {/* QR EXPRESS OPTION */}
+            <label className={`relative block border rounded-xl p-5 cursor-pointer transition-all ${
+              shopForm.whatsapp_mode === 'QR_EXPRESS' ? 'border-[#C4A896] bg-[#F9F7F4]' : 'border-[#E8E3DA] hover:border-[#C4A896]/50'
+            }`}>
+              <div className="flex items-start gap-3">
+                <input 
+                  type="radio" 
+                  name="whatsapp_mode" 
+                  value="QR_EXPRESS" 
+                  checked={shopForm.whatsapp_mode === 'QR_EXPRESS'} 
+                  onChange={() => setShopForm({ ...shopForm, whatsapp_mode: 'QR_EXPRESS' })} 
+                  className="mt-1 accent-[#C4A896] w-4 h-4" 
+                />
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Smartphone size={14} className="text-[#3E3B36]" />
+                    <span className="text-sm font-medium text-[#3E3B36]">TrueAttendly Express Mode</span>
+                  </div>
+                  <p className="text-[11px] text-[#8B8378] leading-relaxed mb-3">Quick QR Scan Connection, No Approvals, Fully Throttled Anti-Ban Spintax engine. Ideal for local SMEs.</p>
+                </div>
+              </div>
+            </label>
+
+          </div>
+
+          {shopForm.whatsapp_mode === 'QR_EXPRESS' && (
+            <div className="bg-[#3E3B36] rounded-xl p-5 mt-4">
+              <label className="block text-xs tracking-[0.2em] text-[#F5F1EA]/80 uppercase mb-2">Anti-Ban Dispatch Delay (Seconds)</label>
+              <div className="flex items-center gap-3">
+                <input 
+                  type="number" 
+                  min={30} 
+                  max={120} 
+                  value={shopForm.anti_ban_delay} 
+                  onChange={(e) => setShopForm({ ...shopForm, anti_ban_delay: parseInt(e.target.value) || 45 })} 
+                  className="bg-[#2A2825] border border-[#F5F1EA]/20 py-2 px-3 text-sm text-[#F5F1EA] rounded-lg w-24 outline-none focus:border-[#C4A896]" 
+                />
+                <p className="text-[10px] text-[#F5F1EA]/60">Minimum 30s recommended to avoid bulk detection.</p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-4 pt-4 border-t border-[#E8E3DA] mt-4">
+            <button type="submit" disabled={saveStatus === 'saving'} className="btn-primary rounded-lg disabled:opacity-50">
+              {saveStatus === 'saving' ? 'Saving...' : 'Save Connection Mode'}
+            </button>
+            {saveStatus === 'saved' && <div className="flex items-center gap-1.5 text-[#C4A896]"><CheckCircle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Saved!</span></div>}
+          </div>
+        </form>
+      </section>
+
+      {/* ── PROVIDER HUB — Facebook Embedded Signup ─────────────── */}
+      <section className={`bg-[#FFFFFF] border rounded-xl overflow-hidden transition-all ${shopForm.whatsapp_mode !== 'META_API' ? 'opacity-50 pointer-events-none grayscale' : 'border-[#E8E3DA]'}`}>
         <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
           <div className="w-8 h-8 bg-[#F5F1EA] rounded-lg flex items-center justify-center">
             <FacebookIcon size={14} />

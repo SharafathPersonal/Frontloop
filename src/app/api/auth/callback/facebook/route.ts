@@ -44,6 +44,10 @@ export async function GET(request: Request) {
       const appSecret = process.env.FACEBOOK_CLIENT_SECRET || process.env.META_APP_SECRET || '';
       const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || 'https://broadcast.trueattendly.online'}/api/auth/callback/facebook`;
 
+      if (!appId || !appSecret) {
+        throw new Error('Server misconfiguration: Missing Meta App ID or Secret');
+      }
+
       const tokenResponse = await fetch(`https://graph.facebook.com/v17.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`);
       const tokenData = await tokenResponse.json();
 
@@ -63,6 +67,11 @@ export async function GET(request: Request) {
       if (upsertError) {
         return NextResponse.json({ error: 'Database transaction failed', details: upsertError.message }, { status: 500 });
       }
+
+      await supabase.from('shops').update({ 
+        meta_access_token,
+        whatsapp_mode: 'META_API'
+      }).eq('id', user.id);
 
     } catch (err: any) {
       return NextResponse.json({ error: 'Internal Server Error', details: err.message }, { status: 500 });

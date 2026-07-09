@@ -18,8 +18,11 @@ import {
   Wallet as WalletIcon,
   Users,
   HelpCircle,
+  MessageSquareText,
+  Lock,
 } from 'lucide-react';
 import CustomConfirm from '@/components/ui/CustomConfirm';
+import { WhatsAppModeProvider, useWhatsAppMode } from '@/contexts/WhatsAppModeContext';
 
 interface NavLink {
   label: string;
@@ -31,6 +34,7 @@ const navLinks: NavLink[] = [
   { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={14} strokeWidth={1.5} /> },
   { label: 'Audience', href: '/dashboard/customers', icon: <Users size={14} strokeWidth={1.5} /> },
   { label: 'Campaigns', href: '/dashboard/campaigns', icon: <Radio size={14} strokeWidth={1.5} /> },
+  { label: 'Templates', href: '/dashboard/templates', icon: <MessageSquareText size={14} strokeWidth={1.5} /> },
   { label: 'History', href: '/dashboard/history', icon: <Clock size={14} strokeWidth={1.5} /> },
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings size={14} strokeWidth={1.5} /> },
   { label: 'Support', href: '/dashboard/support', icon: <HelpCircle size={14} strokeWidth={1.5} /> },
@@ -93,7 +97,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return pathname.startsWith(href);
   };
 
-  const SidebarContent = () => (
+  const SidebarContent = () => {
+    const { mode } = useWhatsAppMode();
+    return (
     <div className="flex flex-col h-full">
 
       {/* Brand Header */}
@@ -133,6 +139,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase px-3 mb-3">Navigation</p>
         {navLinks.map((link) => {
           const active = isActive(link.href);
+          const isTemplates = link.label === 'Templates';
+          const isLocked = isTemplates && mode === 'QR_EXPRESS';
+
+          if (isLocked) {
+            return (
+              <div key={link.href} className="flex flex-col gap-1 py-2.5 px-3 rounded-lg bg-[#F5F1EA]/50 opacity-60">
+                <div className="flex items-center gap-3 text-xs tracking-[0.15em] uppercase text-[#8B8378]">
+                  <Lock size={14} strokeWidth={1.5} />
+                  {link.label}
+                </div>
+                <p className="text-[9px] text-[#8B8378] ml-7">Meta API only</p>
+              </div>
+            );
+          }
+
           return (
             <Link
               key={link.href}
@@ -174,7 +195,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
     </div>
-  );
+    );
+  };
 
   if (isAuthLoading) {
     return (
@@ -185,9 +207,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex h-screen bg-[#F5F1EA] overflow-hidden">
+    <WhatsAppModeProvider>
+      <div className="flex h-screen bg-[#F5F1EA] overflow-hidden">
 
-      {/* Desktop Sidebar */}
+        {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-[#FFFFFF] border-r border-[#E8E3DA] flex-shrink-0 h-screen overflow-y-auto">
         <SidebarContent />
       </aside>
@@ -245,6 +268,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         onConfirm={handleSignOut}
         onCancel={() => setIsLogoutConfirmOpen(false)}
       />
-    </div>
+      </div>
+    </WhatsAppModeProvider>
   );
 }
