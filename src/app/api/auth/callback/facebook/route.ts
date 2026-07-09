@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 
     try {
       const appId = process.env.NEXT_PUBLIC_META_APP_ID;
-      const appSecret = process.env.META_APP_SECRET || '';
+      const appSecret = process.env.FACEBOOK_CLIENT_SECRET || process.env.META_APP_SECRET || '';
       const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || 'https://broadcast.trueattendly.online'}/api/auth/callback/facebook`;
 
       const tokenResponse = await fetch(`https://graph.facebook.com/v17.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`);
