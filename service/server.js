@@ -24,7 +24,7 @@ app.use(express.json());
 const allowedOrigin = process.env.NEXT_JS_FRONTEND_URL || 'http://localhost:3000';
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || origin === allowedOrigin || origin.startsWith('http://localhost:')) {
+    if (!origin || origin === allowedOrigin || origin.startsWith('http://localhost:') || origin.startsWith('http://192.168.')) {
       callback(null, true);
     } else {
       callback(new Error('Blocked by Secured CORS Policy Architecture'));
