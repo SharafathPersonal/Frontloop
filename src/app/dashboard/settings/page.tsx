@@ -243,7 +243,8 @@ function SettingsContent() {
       whatsapp_mode: 'NONE'
     }).eq('id', user.id);
 
-    await supabase.from('whatsapp_sessions').delete().eq('shop_id', user.id);
+    await supabase.from('whatsapp_sessions').delete().eq('id', 'default');
+    await supabase.from('whatsapp_sessions').delete().eq('id', 'qr');
 
     if (!error) {
       setShop(prev => prev ? { ...prev, qr_express_status: 'disconnected', whatsapp_mode: 'NONE' } : null);

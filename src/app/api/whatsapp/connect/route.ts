@@ -32,7 +32,7 @@ export async function POST() {
     await supabase.from('shops').update({ qr_express_status: 'disconnected' }).eq('id', user.id);
     
     // Delete any stale QR codes
-    await supabase.from('whatsapp_sessions').delete().eq('shop_id', user.id).eq('session_key', 'qr');
+    await supabase.from('whatsapp_sessions').delete().eq('id', 'qr');
 
     // Fire and forget the engine startup in the background on Render server
     const renderServerUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
@@ -75,14 +75,11 @@ export async function GET() {
     // 2. Fetch the QR code from whatsapp_sessions if disconnected
     const { data: qrSession } = await supabase
       .from('whatsapp_sessions')
-      .select('session_value')
-      .eq('shop_id', user.id)
-      .eq('session_key', 'qr')
+      .select('creds')
+      .eq('id', 'qr')
       .maybeSingle();
 
-    const qrString = qrSession?.session_value && typeof qrSession.session_value === 'object'
-      ? (qrSession.session_value as any).qr || null
-      : null;
+    const qrString = (qrSession?.creds as any)?.qr || null;
 
     return NextResponse.json({ 
       ok: true, 

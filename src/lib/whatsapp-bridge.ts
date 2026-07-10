@@ -54,82 +54,81 @@ export const connectionOpenSessions = new Set<string>();
 export const getSupabaseAuthState = async (
   shopId: string,
   supabase: SupabaseClient,
-): Promise<{ state: AuthenticationState; saveCreds: () => Promise<void> }> => {
+): Promise<{ state: AuthenticationState; saveCreds: () => Promise<void>; purgeEntireSession: () => Promise<void> }> => {
 
-  const writeData = async (data: unknown, key: string) => {
-    await supabase.from('whatsapp_sessions').upsert(
-      {
-        shop_id:       shopId,
-        session_key:   key,
-        session_value: JSON.parse(JSON.stringify(data, BufferJSON.replacer)) as Record<string, unknown>,
-        updated_at:    new Date().toISOString(),
-      },
-      // ⚠️ NO SPACE — Supabase requires comma-separated, no spaces
-      { onConflict: 'shop_id,session_key' },
-    );
-  };
-
-  const readData = async (key: string) => {
-    const { data } = await supabase
-      .from('whatsapp_sessions')
-      .select('session_value')
-      .eq('shop_id', shopId)
-      .eq('session_key', key)
-      .maybeSingle();
-
-    if (data?.session_value) {
-      return JSON.parse(JSON.stringify(data.session_value), BufferJSON.reviver);
+  const customReplacer = (k: string, v: any) => {
+    if (v instanceof Uint8Array || v instanceof Buffer || (v && v.type === 'Buffer')) {
+      return { type: 'Buffer', data: Array.from(v.data || v) };
     }
-    return null;
+    return BufferJSON.replacer(k, v);
   };
 
-  const removeData = async (key: string) => {
-    await supabase
-      .from('whatsapp_sessions')
-      .delete()
-      .eq('shop_id', shopId)
-      .eq('session_key', key);
+  const customReviver = (k: string, v: any) => {
+    if (v && v.type === 'Buffer' && Array.isArray(v.data)) {
+      return Buffer.from(v.data);
+    }
+    return BufferJSON.reviver(k, v);
   };
 
-  const credsData = await readData('creds');
-  const creds: AuthenticationCreds = credsData || initAuthCreds();
+  const { data } = await supabase
+    .from('whatsapp_sessions')
+    .select('creds')
+    .eq('id', 'default')
+    .maybeSingle();
+
+  let creds: AuthenticationCreds;
+  if (data?.creds) {
+    let parsed = JSON.parse(JSON.stringify(data.creds), customReviver);
+    creds = parsed;
+  } else {
+    creds = initAuthCreds();
+  }
+
+  const saveCreds = async () => {
+    const serializedCreds = JSON.parse(JSON.stringify(creds, customReplacer));
+    await supabase.from('whatsapp_sessions').upsert({
+      id: 'default',
+      creds: serializedCreds,
+      updated_at: new Date().toISOString(),
+    });
+  };
+
+  const inMemoryKeys: { [key: string]: any } = {};
 
   return {
     state: {
       creds,
       keys: {
         get: async (type, ids) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const data: { [key: string]: any } = {};
-          await Promise.all(
-            ids.map(async (id) => {
-              let value = await readData(`${type}-${id}`);
-              if (type === 'app-state-sync-key' && value) {
-                value = Buffer.from(value.data || value);
-              }
-              data[id] = value;
-            }),
-          );
+          for (const id of ids) {
+            let value = inMemoryKeys[`${type}-${id}`];
+            if (type === 'app-state-sync-key' && value) {
+              value = Buffer.from(value.data || value);
+            }
+            data[id] = value;
+          }
           return data;
         },
         set: async (data) => {
-          const tasks: Promise<void>[] = [];
           for (const category in data) {
             for (const id in data[category as keyof SignalDataTypeMap]) {
               const value = data[category as keyof SignalDataTypeMap]?.[id];
-              const key   = `${category}-${id}`;
               if (value) {
-                tasks.push(writeData(value, key));
+                inMemoryKeys[`${category}-${id}`] = value;
               } else {
-                tasks.push(removeData(key));
+                delete inMemoryKeys[`${category}-${id}`];
               }
             }
           }
-          await Promise.all(tasks);
         },
       },
     },
-    saveCreds: () => writeData(creds, 'creds'),
+    saveCreds,
+    purgeEntireSession: async () => {
+      await supabase.from('whatsapp_sessions').delete().eq('id', 'default');
+      await supabase.from('whatsapp_sessions').delete().eq('id', 'qr');
+    }
   };
 };
 
@@ -261,7 +260,7 @@ export const startWhatsAppEngine = async (
   shopId: string,
   supabase: SupabaseClient,
 ): Promise<ReturnType<typeof makeWASocket>> => {
-  const { state, saveCreds } = await getSupabaseAuthState(shopId, supabase);
+  const { state, saveCreds, purgeEntireSession } = await getSupabaseAuthState(shopId, supabase);
 
   const sock = makeWASocket({
     auth:                  state,
@@ -363,16 +362,11 @@ export const startWhatsAppEngine = async (
     // New QR code → persist to Supabase for the Settings QR scanner
     if (qr) {
       console.log(`[WA Engine] QR generated for shop ${shopId}`);
-      await supabase.from('whatsapp_sessions').upsert(
-        {
-          shop_id:       shopId,
-          session_key:   'qr',
-          session_value: { qr },
-          updated_at:    new Date().toISOString(),
-        },
-        // ⚠️ NO SPACE
-        { onConflict: 'shop_id,session_key' },
-      );
+      await supabase.from('whatsapp_sessions').upsert({
+        id: 'qr',
+        creds: { qr },
+        updated_at: new Date().toISOString(),
+      });
     }
 
     if (connection === 'open') {
@@ -381,8 +375,7 @@ export const startWhatsAppEngine = async (
       connectionOpenSessions.add(shopId);
       await supabase.from('shops').update({ qr_express_status: 'connected' }).eq('id', shopId);
       // Clear QR code from session store — no longer needed
-      await supabase.from('whatsapp_sessions').delete()
-        .eq('shop_id', shopId).eq('session_key', 'qr');
+      await supabase.from('whatsapp_sessions').delete().eq('id', 'qr');
     }
 
     if (connection === 'close') {
@@ -392,7 +385,13 @@ export const startWhatsAppEngine = async (
       const error      = lastDisconnect?.error as Boom;
       const statusCode = error?.output?.statusCode;
 
-      if (statusCode === DisconnectReason.loggedOut) {
+      const isConflictOrLogout = 
+        statusCode === DisconnectReason.loggedOut || 
+        statusCode === DisconnectReason.connectionReplaced ||
+        statusCode === 401 || 
+        statusCode === 411;
+
+      if (isConflictOrLogout) {
         // ── Explicit logout — purge everything ──────────────────────────
         console.error(`[WA Engine] Shop ${shopId} logged out. Purging session.`);
 
@@ -404,7 +403,7 @@ export const startWhatsAppEngine = async (
           qr_express_status: 'disconnected',
         }).eq('id', shopId);
 
-        await supabase.from('whatsapp_sessions').delete().eq('shop_id', shopId);
+        await purgeEntireSession();
 
         // Pause any in-flight QR Express campaigns
         await supabase.from('campaigns')
