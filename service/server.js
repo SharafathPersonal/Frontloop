@@ -205,7 +205,8 @@ const startWhatsAppEngine = async (shopId) => {
     }
     // Clean up stale socket before restarting
     console.log(`[WA Engine] Cleaning up stale engine for shop ${shopId} before start.`);
-    try { existingSock.ev.removeAllListeners('connection.update'); } catch (e) {}
+    try { existingSock.ev.removeAllListeners(); } catch (e) {}
+    try { existingSock.end(new Error('Atomic fresh start guard invoked')); } catch (e) {}
     try { existingSock.ws.close(); } catch (e) {}
     activeSessions.delete(shopId);
     connectionOpenSessions.delete(shopId);
@@ -282,13 +283,9 @@ const startWhatsAppEngine = async (shopId) => {
       const error = lastDisconnect?.error;
       const statusCode = error?.output?.statusCode || error?.output?.payload?.statusCode;
 
-      if (
-        statusCode === DisconnectReason.loggedOut || 
-        statusCode === 405 || 
-        statusCode === 403
-      ) {
-        // Explicit logout or Corrupt Session (405/403) -> Purge all auth tokens & reset shop fields
-        console.error(`[WA Engine] Shop ${shopId} session expired or corrupt (code ${statusCode}). Purging session.`);
+      if (statusCode === DisconnectReason.loggedOut) {
+        // Explicit logout -> Purge all auth tokens & reset shop fields
+        console.error(`[WA Engine] Shop ${shopId} logged out explicitly (code ${statusCode}). Purging session.`);
 
         activeSessions.delete(shopId);
         connectionOpenSessions.delete(shopId);
@@ -403,7 +400,7 @@ app.get('/api/whatsapp/connect', async (req, res) => {
     const dbQr = qrSession?.session_value?.qr;
     if (dbQr) {
       delete initializingShops[shop_id];
-      return res.status(200).json({ ok: true, status: "disconnected", qr: dbQr });
+      return res.status(200).json({ ok: true, status: "qr_ready", qr: dbQr });
     }
 
     // Wait up to 10 seconds for the next QR code event to fire
@@ -420,7 +417,7 @@ app.get('/api/whatsapp/connect', async (req, res) => {
 
     if (qrCodeString && qrCodeString !== "CONNECTED" && qrCodeString !== "DISCONNECTED") {
       delete initializingShops[shop_id];
-      return res.status(200).json({ ok: true, status: "disconnected", qr: qrCodeString });
+      return res.status(200).json({ ok: true, status: "qr_ready", qr: qrCodeString });
     }
 
     // Double-check if opened in the meantime
