@@ -319,7 +319,7 @@ const startWhatsAppEngine = async (shopId) => {
     }
   });
 
-  // ── Messages status updates (individual read receipts) ──────────────────
+  // ── Messages status updates (delivery + read tracking) ─────────────────
   sock.ev.on('messages.update', async (updates) => {
     for (const update of updates) {
       const id = update.key.id;
@@ -332,10 +332,31 @@ const startWhatsAppEngine = async (shopId) => {
         }
         shopMap.set(id, status);
       }
-      // 4 is WebMessageInfo.Status.READ (read / blue tick)
+      // 4 = READ (blue tick) — update DB immediately
       if (status === 4 || status === 'read') {
-        console.log(`[BAILEYS AUDIT] Message read by user. Message ID: ${update.key.id}`);
+        console.log(`[BAILEYS AUDIT] Message read. ID: ${update.key.id}`);
         await handleMessageRead(update.key.id);
+      }
+      // 3 = DELIVERY_ACK — update DB to 'delivered' immediately
+      else if (status === 3) {
+        if (!update.key.id) continue;
+        try {
+          const { data: logRow } = await supabase
+            .from('message_logs')
+            .select('status')
+            .eq('meta_message_id', update.key.id)
+            .maybeSingle();
+          const current = logRow?.status?.toLowerCase();
+          if (current && current !== 'delivered' && current !== 'read') {
+            await supabase
+              .from('message_logs')
+              .update({ status: 'delivered' })
+              .eq('meta_message_id', update.key.id);
+            console.log(`[BAILEYS AUDIT] Message delivered. ID: ${update.key.id}`);
+          }
+        } catch (err) {
+          console.error(`[WA Engine] Failed to write delivered status:`, err);
+        }
       }
     }
   });
@@ -616,7 +637,7 @@ app.post('/api/whatsapp/sync-status', async (req, res) => {
             shopMap.delete(msgId);
           }
         } 
-        // status 3 is DELIVERY_ACK (delivered)
+        // status 3 = DELIVERY_ACK (delivered) — case-insensitive guard
         else if (cachedStatus === 3 || cachedStatus === 'delivered') {
           const { data: logData } = await supabase
             .from('message_logs')
@@ -624,10 +645,11 @@ app.post('/api/whatsapp/sync-status', async (req, res) => {
             .eq('meta_message_id', msgId)
             .maybeSingle();
 
-          if (logData && logData.status?.toUpperCase() !== 'READ' && logData.status?.toUpperCase() !== 'DELIVERED') {
+          const currentStatus = logData?.status?.toLowerCase();
+          if (currentStatus && currentStatus !== 'read' && currentStatus !== 'delivered') {
             const { error: updateError } = await supabase
               .from('message_logs')
-              .update({ status: 'DELIVERED' })
+              .update({ status: 'delivered' })
               .eq('meta_message_id', msgId);
 
             if (!updateError) {
