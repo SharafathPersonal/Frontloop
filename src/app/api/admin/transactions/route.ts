@@ -61,8 +61,29 @@ export async function GET(req: Request) {
       created_at: log.created_at
     }));
 
+    let totalSpent = 0;
+    let totalCredits = 0;
+
+    if (page === 0) {
+      const { data: totalsData } = await supabaseAdmin
+        .from('payment_logs')
+        .select('amount, credits_credited, payment_status');
+      
+      totalsData?.forEach((tx: any) => {
+        if (tx.payment_status?.toUpperCase() === 'SUCCESS' || tx.payment_status?.toUpperCase() === 'CHARGED') {
+          totalSpent += Number(tx.amount || 0);
+          totalCredits += Number(tx.credits_credited || 0);
+        }
+      });
+    }
+
     const hasMore = paymentLogs ? paymentLogs.length === limit : false;
-    return NextResponse.json({ transactions: mappedTransactions, hasMore });
+    return NextResponse.json({ 
+      transactions: mappedTransactions, 
+      hasMore, 
+      totalSpent: page === 0 ? totalSpent : undefined, 
+      totalCredits: page === 0 ? totalCredits : undefined 
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
   }

@@ -20,6 +20,8 @@ export default function AdminTransactionsPage() {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [totalSpent, setTotalSpent] = useState(0);
+  const [totalCredits, setTotalCredits] = useState(0);
 
   const observerRef = useRef<HTMLDivElement | null>(null);
 
@@ -82,6 +84,8 @@ export default function AdminTransactionsPage() {
         if (reset) {
           setTransactions(newTx);
           setPage(1);
+          if (data.totalSpent !== undefined) setTotalSpent(data.totalSpent);
+          if (data.totalCredits !== undefined) setTotalCredits(data.totalCredits);
         } else {
           setTransactions((prev) => [...prev, ...newTx]);
           setPage((prev) => prev + 1);
@@ -255,6 +259,29 @@ export default function AdminTransactionsPage() {
           <div className="flex items-center gap-3 border-b border-[#E8E3DA] pb-4">
             <CreditCard size={24} className="text-[#3E3B36]" />
             <h1 className="text-xl font-bold uppercase tracking-widest">Transactions Ledger</h1>
+          </div>
+        </div>
+
+        {/* Totals Matrix */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-2xl p-6 flex items-center gap-4 shadow-sm">
+            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0 border border-emerald-100">
+              <IndianRupee size={24} className="text-emerald-600" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1">Total Global Revenue</p>
+              <p className="serif-headline text-2xl text-[#3E3B36]">₹{totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+            </div>
+          </div>
+          
+          <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-2xl p-6 flex items-center gap-4 shadow-sm">
+            <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0 border border-amber-100">
+              <Coins size={24} className="text-amber-600" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1">Total Platform Credits Issued</p>
+              <p className="serif-headline text-2xl text-[#3E3B36]">{totalCredits.toLocaleString()}</p>
+            </div>
           </div>
         </div>
 
