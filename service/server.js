@@ -11,6 +11,7 @@ const {
   DisconnectReason,
   initAuthCreds,
   BufferJSON,
+  fetchLatestBaileysVersion,
 } = require('@whiskeysockets/baileys');
 const { createClient } = require('@supabase/supabase-js');
 const pino = require('pino');
@@ -211,14 +212,17 @@ const startWhatsAppEngine = async (shopId) => {
   }
 
   const { state, saveCreds } = await getSupabaseAuthState(shopId);
+  const { version } = await fetchLatestBaileysVersion();
 
   const sock = makeWASocket({
+    version,
     auth: state,
     printQRInTerminal: false,
     logger,
     keepAliveIntervalMs: 25_000,
     defaultQueryTimeoutMs: 60_000,
     retryRequestDelayMs: 250,
+    browser: ['Mac OS', 'Chrome', '111.0.5563.64'],
   });
 
   activeSessions.set(shopId, sock);
