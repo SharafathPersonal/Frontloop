@@ -1,36 +1,124 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { CreditCard, Receipt, Clock, CheckCircle, XCircle, ArrowUpRight, Search } from 'lucide-react';
+import { CreditCard, Receipt, Clock, CheckCircle, XCircle, ArrowUpRight, Search, IndianRupee, Coins } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+
+const LIMIT = 15;
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  
+  // Pagination & Infinite Scroll states
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  
+  // Totals
+  const [totalSpent, setTotalSpent] = useState(0);
+  const [totalCredits, setTotalCredits] = useState(0);
+
+  const loaderRef = useRef(null);
+
+  const loadTotals = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    // Simple way to calculate totals on the client for the user's successful transactions
+    const { data: totalsData } = await supabase
+      .from('payment_logs')
+      .select('amount, credits_credited, payment_status')
+      .eq('shop_id', user.id);
+
+    let spent = 0;
+    let credits = 0;
+    totalsData?.forEach(tx => {
+      if (tx.payment_status?.toUpperCase() === 'SUCCESS' || tx.payment_status?.toUpperCase() === 'CHARGED') {
+        spent += Number(tx.amount || 0);
+        credits += Number(tx.credits_credited || 0);
+      }
+    });
+    setTotalSpent(spent);
+    setTotalCredits(credits);
+  };
+
+  const loadTransactions = async (pageIndex: number, isInitial = false) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    if (!isInitial) setLoadingMore(true);
+
+    const from = pageIndex * LIMIT;
+    const to = from + LIMIT - 1;
+
+    let query = supabase
+      .from('payment_logs')
+      .select('id, amount, credits_credited, order_id, payment_status, created_at')
+      .eq('shop_id', user.id)
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (search) {
+      // Basic client-side search fallback logic if search is typed, but usually pagination + search requires server-side filter.
+      // For a robust system, we should filter on server. We'll search by order_id:
+      query = query.ilike('order_id', `%${search}%`);
+    }
+
+    const { data: userTx } = await query;
+
+    if (userTx) {
+      if (isInitial) {
+        setTransactions(userTx);
+      } else {
+        setTransactions(prev => [...prev, ...userTx]);
+      }
+      setHasMore(userTx.length === LIMIT);
+    }
+    
+    if (isInitial) setLoading(false);
+    setLoadingMore(false);
+  };
 
   useEffect(() => {
-    async function loadTransactions() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    setLoading(true);
+    setPage(0);
+    setHasMore(true);
+    loadTotals();
+    loadTransactions(0, true);
+  }, [search]); // Reload when search changes
 
-      const { data: userTx } = await supabase
-        .from('payment_logs')
-        .select('id, amount, credits_credited, order_id, payment_status, created_at')
-        .eq('shop_id', user.id)
-        .order('created_at', { ascending: false });
-
-      setTransactions(userTx || []);
-      setLoading(false);
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      loadTransactions(nextPage);
     }
-    loadTransactions();
-  }, []);
+  }, [page, loadingMore, hasMore]);
 
-  const filteredTx = transactions.filter(tx => 
-    tx.order_id?.toLowerCase().includes(search.toLowerCase()) || 
-    tx.amount?.toString().includes(search)
-  );
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentLoader = loaderRef.current;
+    if (currentLoader) {
+      observer.observe(currentLoader);
+    }
+
+    return () => {
+      if (currentLoader) {
+        observer.unobserve(currentLoader);
+      }
+    };
+  }, [loadMore, hasMore, loadingMore, loading]);
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
@@ -57,6 +145,29 @@ export default function TransactionsPage() {
         </div>
       </div>
 
+      {/* Totals Matrix */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-2xl p-6 flex items-center gap-4 shadow-sm">
+          <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0 border border-emerald-100">
+            <IndianRupee size={24} className="text-emerald-600" strokeWidth={1.5} />
+          </div>
+          <div>
+            <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1">Total Lifetime Spend</p>
+            <p className="serif-headline text-2xl text-[#3E3B36]">₹{totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+          </div>
+        </div>
+        
+        <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-2xl p-6 flex items-center gap-4 shadow-sm">
+          <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0 border border-amber-100">
+            <Coins size={24} className="text-amber-600" strokeWidth={1.5} />
+          </div>
+          <div>
+            <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1">Total Credits Purchased</p>
+            <p className="serif-headline text-2xl text-[#3E3B36]">{totalCredits.toLocaleString()}</p>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -80,7 +191,7 @@ export default function TransactionsPage() {
                     <td className="py-4 px-6"><Skeleton className="h-4 w-28" /></td>
                   </tr>
                 ))
-              ) : filteredTx.length === 0 ? (
+              ) : transactions.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-16 text-center">
                     <div className="flex flex-col items-center justify-center space-y-3">
@@ -93,7 +204,7 @@ export default function TransactionsPage() {
                   </td>
                 </tr>
               ) : (
-                filteredTx.map((tx) => (
+                transactions.map((tx) => (
                   <tr key={tx.id} className="hover:bg-[#FDFCFB] transition-colors group">
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
@@ -137,6 +248,18 @@ export default function TransactionsPage() {
                     </td>
                   </tr>
                 ))
+              )}
+              
+              {/* Infinite Scroll Loader Target */}
+              {hasMore && !loading && transactions.length > 0 && (
+                <tr ref={loaderRef}>
+                  <td colSpan={5} className="py-6 text-center">
+                    <div className="flex items-center justify-center gap-2 text-[#8B8378]">
+                      <div className="w-4 h-4 border-2 border-[#E8E3DA] border-t-[#C4A896] rounded-full animate-spin" />
+                      <span className="text-[10px] uppercase tracking-widest font-medium">Loading More...</span>
+                    </div>
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
