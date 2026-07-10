@@ -80,34 +80,6 @@ export async function POST(req: Request) {
 
     const { raw_message, shop_name, industry_type, selected_tone } = await req.json();
 
-    if (raw_message) {
-      if (/^[^\p{L}\p{N}]*\{\{\d+\}\}/u.test(raw_message) || /\{\{\d+\}\}[^\p{L}\p{N}]*$/u.test(raw_message)) {
-        return NextResponse.json({ error: "Variables can't be at the start or end of the template (punctuation doesn't count). Please add some actual text before and after." }, { status: 400 });
-      }
-
-      const invalidVars = raw_message.match(/\{\{(?!\d+\}\}).*?\}\}/g);
-      if (invalidVars) {
-        return NextResponse.json({ error: `Invalid variable format: ${invalidVars.join(', ')}. Variables must be exactly {{1}}, {{2}}, etc.` }, { status: 400 });
-      }
-
-      const validVars = raw_message.match(/\{\{\d+\}\}/g);
-      if (validVars) {
-        const nums = validVars.map((v: string) => parseInt(v.match(/\d+/)![0]));
-        if (nums.includes(0)) {
-          return NextResponse.json({ error: 'Variables must start at {{1}}. {{0}} is not allowed.' }, { status: 400 });
-        }
-        const uniqueNums = [...new Set<number>(nums)].sort((a: number, b: number) => a - b);
-        if (uniqueNums[0] !== 1) {
-          return NextResponse.json({ error: 'Variables must start at {{1}}.' }, { status: 400 });
-        }
-        for (let i = 0; i < uniqueNums.length; i++) {
-          if (uniqueNums[i] !== i + 1) {
-            return NextResponse.json({ error: `Variables must be sequential. Missing {{${i + 1}}}.` }, { status: 400 });
-          }
-        }
-      }
-    }
-
     const systemPrompt = `
 You are an expert AI copywriter for WhatsApp anti-ban marketing. Your objective is to take the user's raw message and convert it into a "Spintax" format so that each message sent is slightly unique, drastically lowering spam-detection risk.
 
@@ -118,10 +90,10 @@ CRITICAL VARIABLE RULES (Meta Graph API Requirements):
 1. Variables MUST be strictly formatted as {{1}}, {{2}}, {{3}}, etc.
 2. Variables MUST start at {{1}}. Do NOT use {{0}}.
 3. Variables MUST be sequential. (If you use {{1}} and {{3}}, you MUST also use {{2}}).
-4. Do NOT use named variables like {{name}} or add spaces like {{ 1 }}.
-5. If the original message has variables, you must retain exactly the same number of variables in the same format.
+4. Do NOT use named variables like {{name}} or add spaces like {{ 1 }}. If the user provides invalid variables like {{name}} or [Name], you MUST automatically convert them to the correct format ({{1}}, {{2}}, etc.).
+5. If the original message has variables, you must retain exactly the same number of variables.
 6. Make sure to keep {{1}}, {{2}} placeholders intact. DO NOT nest Spintax inside them.
-7. Variables CANNOT be placed at the very beginning or the very end of the message. Always surround them with text.
+7. Variables CANNOT be placed at the very beginning or the very end of the message. If the user placed a variable at the edge, you MUST add appropriate surrounding text (e.g., '{Hello|Hi} {{1}}', '{Best regards|Thanks}, {{2}}').
 
 Input Data Matrices:
 - Business Category / Industry: "${industry_type}"
