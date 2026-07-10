@@ -13,7 +13,7 @@ import {
 // ── Status display config (all valid statuses) ────────────────────────────────
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   completed:            { label: 'Completed',           className: 'status-pill status-completed' },
-  processing:           { label: 'Dispatching…',        className: 'status-pill status-processing' },
+  processing:           { label: 'Processing',          className: 'status-pill status-processing' },
   pending:              { label: 'Pending',             className: 'status-pill status-pending' },
   failed:               { label: 'Failed',              className: 'status-pill status-failed' },
   insufficient_credits: { label: 'Insufficient Credits', className: 'status-pill status-insufficient_credits' },
@@ -162,7 +162,7 @@ export default function CampaignsLedgerPage() {
     <div className="max-w-5xl mx-auto space-y-8">
 
       {/* Page header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="serif-headline text-2xl md:text-3xl text-[#3E3B36]">Campaigns Ledger</h1>
           <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mt-1.5">
@@ -186,7 +186,7 @@ export default function CampaignsLedgerPage() {
 
       {/* Summary stats strip (always visible) */}
       {campaigns.length > 0 && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { label: 'Total Campaigns',    value: campaigns.length },
             { label: 'Messages Sent',      value: summaryStats.totalSent.toLocaleString() },
@@ -279,7 +279,7 @@ export default function CampaignsLedgerPage() {
       {/* Campaign history table */}
       <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
         <div className="px-6 py-5 border-b border-[#E8E3DA]">
-          <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">Campaign History</h2>
+          <h2 className="serif-headline text-sm font-medium text-[#3E3B36]">Campaign History</h2>
           <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mt-0.5">
             Click any row to view detailed analytics
           </p>
@@ -292,8 +292,8 @@ export default function CampaignsLedgerPage() {
           </div>
         ) : (
           <div>
-            {/* Table header */}
-            <div className="grid grid-cols-5 gap-4 px-6 py-3 border-b border-[#E8E3DA] bg-[#F5F1EA]/40">
+            {/* Table header (desktop only) */}
+            <div className="hidden md:grid grid-cols-5 gap-4 px-6 py-3 border-b border-[#E8E3DA] bg-[#F5F1EA]/40">
               <p className="col-span-2 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase">Campaign Name</p>
               <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase">Recipients</p>
               <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase">Sent / Failed</p>
@@ -312,57 +312,107 @@ export default function CampaignsLedgerPage() {
               const failedCount  = c.total_failed  ?? 0;
 
               return (
-                <Link
-                  key={c.id}
-                  href={`/dashboard/campaigns/${c.id}`}
-                  className="grid grid-cols-5 gap-4 px-6 py-4 border-b border-[#E8E3DA] last:border-0 hover:bg-[#F5F1EA]/50 transition-colors cursor-pointer group"
-                >
-                  {/* Name + tag badge */}
-                  <div className="col-span-2 flex items-center gap-2 min-w-0">
-                    <div className="min-w-0">
-                      <p className="text-sm text-[#3E3B36] font-medium truncate group-hover:text-[#C4A896] transition-colors">
-                        {displayTitle}
-                      </p>
-                      <p className="text-[10px] text-[#8B8378] mt-0.5">{date}</p>
+                <div key={c.id} className="border-b border-[#E8E3DA] last:border-0 hover:bg-[#F5F1EA]/50 transition-colors">
+                  {/* Mobile View: Stacked Card */}
+                  <Link
+                    href={`/dashboard/campaigns/${c.id}`}
+                    className="block md:hidden p-5 space-y-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-[#3E3B36] truncate hover:text-[#C4A896] transition-colors">
+                          {displayTitle}
+                        </p>
+                        <p className="text-[10px] text-[#8B8378] mt-1">{date}</p>
+                      </div>
+                      <span className={statusCfg.className}>{statusCfg.label}</span>
                     </div>
-                    {tagMatch && (
-                      <span className="text-[9px] bg-[#F5F1EA] text-[#8B8378] px-1.5 py-0.5 rounded font-mono uppercase tracking-wider shrink-0 whitespace-nowrap">
-                        {tagMatch[1]}
-                      </span>
-                    )}
-                  </div>
 
-                  {/* Recipients */}
-                  <div className="flex items-center">
-                    <span className="text-sm text-[#3E3B36] font-medium">
-                      {(c.total_recipients ?? 0).toLocaleString()}
-                    </span>
-                  </div>
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-[#E8E3DA]/40 text-xs">
+                      <div>
+                        <p className="text-[9px] tracking-[0.1em] text-[#8B8378] uppercase mb-0.5">Recipients</p>
+                        <p className="font-semibold text-[#3E3B36]">{(c.total_recipients ?? 0).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] tracking-[0.1em] text-[#8B8378] uppercase mb-0.5">Sent / Failed</p>
+                        <div className="flex items-center gap-1.5 font-semibold">
+                          <span className="text-[#6366f1]">{sentCount.toLocaleString()}</span>
+                          <span className="text-[#E8E3DA]">/</span>
+                          <span className="text-[#f43f5e]">{failedCount.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
 
-                  {/* Sent / Failed live counters */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-[#6366f1] font-medium">{sentCount.toLocaleString()}</span>
-                    <span className="text-[#E8E3DA]">/</span>
-                    <span className="text-sm text-[#f43f5e] font-medium">{failedCount.toLocaleString()}</span>
-                    {/* Progress bar for in-progress campaigns */}
                     {c.status === 'processing' && (c.total_recipients ?? 0) > 0 && (
-                      <div className="flex-1 max-w-[60px] h-1 bg-[#E8E3DA] rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[#C4A896] transition-all duration-500"
-                          style={{
-                            width: `${Math.min(100, Math.round(((sentCount + failedCount) / (c.total_recipients ?? 1)) * 100))}%`,
-                          }}
-                        />
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[9px] text-[#8B8378] uppercase">
+                          <span>Progress</span>
+                          <span>{Math.min(100, Math.round(((sentCount + failedCount) / (c.total_recipients ?? 1)) * 100))}%</span>
+                        </div>
+                        <div className="w-full h-1 bg-[#E8E3DA] rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-[#C4A896] transition-all duration-500"
+                            style={{
+                              width: `${Math.min(100, Math.round(((sentCount + failedCount) / (c.total_recipients ?? 1)) * 100))}%`,
+                            }}
+                          />
+                        </div>
                       </div>
                     )}
-                  </div>
+                  </Link>
 
-                  {/* Status + arrow */}
-                  <div className="flex items-center justify-between">
-                    <span className={statusCfg.className}>{statusCfg.label}</span>
-                    <ArrowRight size={14} className="text-[#E8E3DA] group-hover:text-[#C4A896] transition-colors" />
-                  </div>
-                </Link>
+                  {/* Desktop View: Grid Row */}
+                  <Link
+                    href={`/dashboard/campaigns/${c.id}`}
+                    className="hidden md:grid grid-cols-5 gap-4 px-6 py-4 items-center hover:bg-[#F5F1EA]/50 transition-colors cursor-pointer group"
+                  >
+                    {/* Name + tag badge */}
+                    <div className="col-span-2 flex items-center gap-2 min-w-0">
+                      <div className="min-w-0">
+                        <p className="text-sm text-[#3E3B36] font-medium truncate group-hover:text-[#C4A896] transition-colors">
+                          {displayTitle}
+                        </p>
+                        <p className="text-[10px] text-[#8B8378] mt-0.5">{date}</p>
+                      </div>
+                      {tagMatch && (
+                        <span className="text-[9px] bg-[#F5F1EA] text-[#8B8378] px-1.5 py-0.5 rounded font-mono uppercase tracking-wider shrink-0 whitespace-nowrap">
+                          {tagMatch[1]}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Recipients */}
+                    <div className="flex items-center">
+                      <span className="text-sm text-[#3E3B36] font-medium">
+                        {(c.total_recipients ?? 0).toLocaleString()}
+                      </span>
+                    </div>
+
+                    {/* Sent / Failed live counters */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-[#6366f1] font-medium">{sentCount.toLocaleString()}</span>
+                      <span className="text-[#E8E3DA]">/</span>
+                      <span className="text-sm text-[#f43f5e] font-medium">{failedCount.toLocaleString()}</span>
+                      {/* Progress bar for in-progress campaigns */}
+                      {c.status === 'processing' && (c.total_recipients ?? 0) > 0 && (
+                        <div className="flex-1 max-w-[60px] h-1 bg-[#E8E3DA] rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-[#C4A896] transition-all duration-500"
+                            style={{
+                              width: `${Math.min(100, Math.round(((sentCount + failedCount) / (c.total_recipients ?? 1)) * 100))}%`,
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Status + arrow */}
+                    <div className="flex items-center justify-between">
+                      <span className={statusCfg.className}>{statusCfg.label}</span>
+                      <ArrowRight size={14} className="text-[#E8E3DA] group-hover:text-[#C4A896] transition-colors" />
+                    </div>
+                  </Link>
+                </div>
               );
             })}
           </div>

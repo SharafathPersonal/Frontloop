@@ -24,12 +24,10 @@ export default function BroadcastPage() {
   const [tagOptions, setTagOptions] = useState<RecipientTag[]>([]);
   const [recipientCount, setRecipientCount] = useState(0);
   const [creditCheck, setCreditCheck] = useState<CreditCheckResult | null>(null);
-  const [step, setStep] = useState<StepState>('compose');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // QR Express Polling
-  const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
-  const [dispatchedCount, setDispatchedCount] = useState(0);
+  // QR Express Connection Status
   const [qrExpressStatus, setQrExpressStatus] = useState<string | null>(null);
   const showQrDisconnectBanner = mode === 'QR_EXPRESS' && qrExpressStatus === 'disconnected';
 
@@ -181,39 +179,6 @@ export default function BroadcastPage() {
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
-  useEffect(() => {
-    let interval: any;
-    if (step === 'dispatching' && activeCampaignId && mode === 'QR_EXPRESS') {
-      interval = setInterval(async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: s } = await supabase.from('shops').select('qr_express_status').eq('id', user.id).maybeSingle();
-          if (s?.qr_express_status === 'disconnected') {
-            setQrExpressStatus('disconnected');
-            setStep('compose');
-            setErrorMsg('Your WhatsApp device was manually logged out (401 Unauthorized). Campaign dispatch has been paused. Please reconnect your device in Settings.');
-            clearInterval(interval);
-            return;
-          }
-        }
-
-        const { count } = await supabase
-          .from('message_logs')
-          .select('*', { count: 'exact', head: true })
-          .eq('campaign_id', activeCampaignId)
-          .neq('status', 'pending');
-        if (count !== null) {
-          setDispatchedCount(count);
-          if (count >= recipientCount) {
-            setStep('success');
-            clearInterval(interval);
-          }
-        }
-      }, 3000);
-    }
-    return () => clearInterval(interval);
-  }, [step, activeCampaignId, mode, recipientCount]);
-
   const handleImageDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setImageDragging(false);
@@ -255,14 +220,17 @@ export default function BroadcastPage() {
 
   const executeSubmit = async () => {
     setIsConfirmOpen(false);
-    setStep('dispatching');
+    setIsSubmitting(true);
+    setErrorMsg(null);
 
     let imageUrl = form.image_url ?? '';
     if (imageFile) {
       const uploaded = await uploadImageToStorage();
-      if (!uploaded) { setStep('error'); return; }
+      if (!uploaded) { setIsSubmitting(false); return; }
       imageUrl = uploaded;
     }
+
+    const startTime = Date.now();
 
     try {
       const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
@@ -277,77 +245,23 @@ export default function BroadcastPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setErrorMsg(data.error || 'Failed to dispatch broadcast'); setStep('error'); return; }
-      
-      if (data.data?.mode === 'QR_EXPRESS') {
-        setActiveCampaignId(data.data.campaign_id);
-        setDispatchedCount(0);
-      } else {
-        setStep('success');
+      if (!res.ok) { setErrorMsg(data.error || 'Failed to dispatch broadcast'); setIsSubmitting(false); return; }
+
+      // Enforce showing micro-spinner/toast for exactly 1-2 seconds max.
+      // Since it responds instantly, we wait for a total of 1.5 seconds.
+      const elapsed = Date.now() - startTime;
+      const remaining = 1500 - elapsed;
+      if (remaining > 0) {
+        await new Promise(r => setTimeout(r, remaining));
       }
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: fw } = await supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle();
-        if (fw) setWallet(fw);
-      }
+
+      // Immediately take user straight to the Campaign History ledger page
+      router.push('/dashboard/campaigns');
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : 'An error occurred.');
-      setStep('error');
+      setIsSubmitting(false);
     }
   };
-
-  const resetForm = () => {
-    setForm({ title: '', message_body: '', image_url: '' });
-    setSelectedTags([]);
-    setImageFile(null);
-    setImagePreviewUrl(null);
-    setCreditCheck(null);
-    setStep('compose');
-    setErrorMsg(null);
-  };
-
-  if (step === 'success') {
-    return (
-      <div className="max-w-2xl mx-auto text-center py-20">
-        <div className="w-14 h-14 bg-[#F5F1EA] border border-[#C4A896]/40 rounded-full flex items-center justify-center mx-auto mb-6">
-          <CheckCircle size={24} className="text-[#C4A896]" strokeWidth={1.5} />
-        </div>
-        <h1 className="serif-headline text-2xl text-[#3E3B36] mb-3">Campaign dispatched</h1>
-        <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mb-8">
-          {recipientCount} recipients queued · {recipientCount} credits deducted
-        </p>
-        <button onClick={resetForm} className="btn-primary rounded-lg">Create Another Campaign</button>
-      </div>
-    );
-  }
-
-  if (step === 'dispatching') {
-    return (
-      <div className="max-w-2xl mx-auto text-center py-20 flex flex-col items-center justify-center gap-6">
-        <Spinner className="w-8 h-8 border-t-[#C4A896] border-[#E8E3DA]" />
-        
-        {mode === 'QR_EXPRESS' ? (
-          <div className="w-full max-w-md space-y-4">
-            <p className="text-xs tracking-[0.2em] text-[#8B8378] uppercase font-medium">
-              ANTI-BAN QUEUE ACTIVE... [{dispatchedCount}/{recipientCount}]
-            </p>
-            <div className="w-full bg-[#E8E3DA] rounded-full h-1.5 overflow-hidden">
-              <div 
-                className="bg-[#10B981] h-full transition-all duration-1000 ease-in-out" 
-                style={{ width: `${Math.min(100, (dispatchedCount/Math.max(1, recipientCount))*100)}%` }} 
-              />
-            </div>
-            <p className="text-[10px] text-[#8B8378]">Executing dynamic smart delays to protect your number.</p>
-          </div>
-        ) : (
-          <p className="text-xs tracking-[0.2em] text-[#8B8378] uppercase font-medium">
-            DISPATCHING ENGINES... [{recipientCount}/{recipientCount}]
-          </p>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -423,7 +337,8 @@ export default function BroadcastPage() {
               type="text"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className="input-editorial"
+              disabled={isSubmitting}
+              className="input-editorial disabled:opacity-50"
               placeholder="e.g. Eid Collection Drop — July"
             />
           </div>
@@ -435,7 +350,8 @@ export default function BroadcastPage() {
                 <select
                   value={selectedTemplateId}
                   onChange={handleTemplateSelect}
-                  className="input-editorial appearance-none pr-10"
+                  disabled={isSubmitting}
+                  className="input-editorial appearance-none pr-10 disabled:opacity-50"
                 >
                   <option value="">-- Start from scratch or select template --</option>
                   {templates.map(t => (
@@ -453,7 +369,7 @@ export default function BroadcastPage() {
               rows={5}
               value={form.message_body}
               onChange={(e) => setForm({ ...form, message_body: e.target.value })}
-              disabled={isPolishing}
+              disabled={isPolishing || isSubmitting}
               className="input-editorial resize-none disabled:opacity-50"
               placeholder="Hi {{1}}, we have an exclusive offer just for you from {{2}}…"
             />
@@ -463,7 +379,7 @@ export default function BroadcastPage() {
                 <button
                   type="button"
                   onClick={handleAIAntiBan}
-                  disabled={isPolishing || !form.message_body.trim()}
+                  disabled={isPolishing || isSubmitting || !form.message_body.trim()}
                   className="flex items-center gap-2 border border-[#C4A896] rounded px-3 py-1.5 tracking-[0.2em] text-xs text-[#C4A896] hover:bg-[#3E3B36] hover:border-[#3E3B36] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Wand2 size={12} className={isPolishing ? 'animate-spin' : ''} />
@@ -472,7 +388,7 @@ export default function BroadcastPage() {
                 <select
                   value={selectedTone}
                   onChange={(e) => setSelectedTone(e.target.value)}
-                  disabled={isPolishing}
+                  disabled={isPolishing || isSubmitting}
                   className="bg-transparent border border-[#E8E3DA] text-[#8B8378] text-xs tracking-[0.1em] uppercase rounded px-2 py-1.5 focus:outline-none focus:border-[#C4A896] disabled:opacity-50"
                 >
                   <option value="Premium">Premium</option>
@@ -498,7 +414,8 @@ export default function BroadcastPage() {
                     type="text"
                     value={templateParams[key]}
                     onChange={(e) => setTemplateParams({ ...templateParams, [key]: e.target.value })}
-                    className="w-full px-3 py-2 text-sm bg-white border border-[#E8E3DA] rounded focus:outline-none focus:border-[#C4A896]"
+                    disabled={isSubmitting}
+                    className="w-full px-3 py-2 text-sm bg-white border border-[#E8E3DA] rounded focus:outline-none focus:border-[#C4A896] disabled:opacity-50"
                     placeholder={`Value for {{${key}}}`}
                   />
                 </div>
@@ -559,11 +476,11 @@ export default function BroadcastPage() {
               </div>
             ) : (
               <div
-                className={`p-8 text-center cursor-pointer transition-all ${imageDragging ? 'bg-[#F5F1EA] border-[#C4A896]' : 'hover:bg-[#F5F1EA]/30'}`}
-                onDragOver={(e) => { e.preventDefault(); setImageDragging(true); }}
+                className={`p-8 text-center cursor-pointer transition-all ${imageDragging ? 'bg-[#F5F1EA] border-[#C4A896]' : 'hover:bg-[#F5F1EA]/30'} ${isSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+                onDragOver={(e) => { if (!isSubmitting) { e.preventDefault(); setImageDragging(true); } }}
                 onDragLeave={() => setImageDragging(false)}
                 onDrop={handleImageDrop}
-                onClick={() => imageRef.current?.click()}
+                onClick={() => !isSubmitting && imageRef.current?.click()}
                 role="button"
                 aria-label="Upload campaign image"
               >
@@ -580,8 +497,9 @@ export default function BroadcastPage() {
           {/* Audience Tag Targeting Selector */}
           <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
             <button
-              onClick={() => setTagDropdownOpen(!tagDropdownOpen)}
-              className="w-full px-5 py-4 flex items-center justify-between border-b border-[#E8E3DA] hover:bg-[#F5F1EA]/30 transition-colors"
+              onClick={() => !isSubmitting && setTagDropdownOpen(!tagDropdownOpen)}
+              disabled={isSubmitting}
+              className="w-full px-5 py-4 flex items-center justify-between border-b border-[#E8E3DA] hover:bg-[#F5F1EA]/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center gap-2">
                 <Tag size={13} strokeWidth={1.5} className="text-[#C4A896]" />
@@ -607,7 +525,8 @@ export default function BroadcastPage() {
                       <input
                         type="checkbox"
                         checked={selectedTags.includes(t.value)}
-                        onChange={() => toggleTag(t.value)}
+                        disabled={isSubmitting}
+                        onChange={() => !isSubmitting && toggleTag(t.value)}
                         className="w-3.5 h-3.5 accent-[#C4A896]"
                       />
                       <span className="text-sm text-[#3E3B36] font-medium">{t.label}</span>
@@ -639,11 +558,20 @@ export default function BroadcastPage() {
         </div>
         <button
           onClick={handleConfirmSubmit}
-          disabled={selectedTags.length === 0 || recipientCount === 0 || (creditCheck !== null && !creditCheck.sufficient) || showQrDisconnectBanner}
+          disabled={selectedTags.length === 0 || recipientCount === 0 || (creditCheck !== null && !creditCheck.sufficient) || showQrDisconnectBanner || isSubmitting}
           className="btn-primary rounded-lg flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <Send size={12} strokeWidth={1.5} />
-          Dispatch Campaign
+          {isSubmitting ? (
+            <>
+              <Spinner className="border-t-white border-transparent w-4 h-4" />
+              <span>Queueing...</span>
+            </>
+          ) : (
+            <>
+              <Send size={12} strokeWidth={1.5} />
+              <span>Dispatch Campaign</span>
+            </>
+          )}
         </button>
       </div>
 
@@ -655,6 +583,13 @@ export default function BroadcastPage() {
         onConfirm={executeSubmit}
         onCancel={() => setIsConfirmOpen(false)}
       />
+
+      {isSubmitting && (
+        <div className="fixed bottom-6 right-6 bg-[#3E3B36] text-[#F5F1EA] px-4 py-3 rounded-xl shadow-2xl border border-[#C4A896]/30 flex items-center gap-3 animate-in slide-in-from-bottom-5 duration-300 z-50">
+          <Spinner className="border-t-[#C4A896] border-[#8B8378] w-4 h-4" />
+          <span className="text-xs font-medium tracking-wide uppercase">Queueing Campaign...</span>
+        </div>
+      )}
     </div>
   );
 }

@@ -144,7 +144,7 @@ export const isSocketLive = (shopId: string): boolean => {
   if (!sock) return false;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const wsOpen = (sock as any).ws?.readyState === 1;
+  const wsOpen = (sock as any).ws?.readyState === 1 || (sock as any).ws?.isOpen === true;
   const baileysOpen = connectionOpenSessions.has(shopId);
 
   return wsOpen && baileysOpen;
@@ -187,12 +187,13 @@ export const waitForSocketOpen = (shopId: string, timeoutMs = 20_000): Promise<b
  * Returns the live, authenticated Baileys socket for the given shop.
  *
  * - If a live socket exists in the registry → returns it immediately.
- * - If none exists → starts the engine, waits up to 20 s for authentication,
+ * - If none exists → starts the engine, waits up to timeoutMs for authentication,
  *   then returns the socket (caller must check isSocketLive() after return).
  */
 export const getWhatsAppSocket = async (
   shopId: string,
   supabase: SupabaseClient,
+  timeoutMs = 20_000,
 ): Promise<ReturnType<typeof makeWASocket> | null> => {
   // Return cached live socket immediately
   if (isSocketLive(shopId)) {
@@ -201,7 +202,7 @@ export const getWhatsAppSocket = async (
 
   // Socket exists but not yet open (handshaking) — wait for it
   if (activeSessions.has(shopId)) {
-    const opened = await waitForSocketOpen(shopId, 20_000);
+    const opened = await waitForSocketOpen(shopId, timeoutMs);
     return opened ? activeSessions.get(shopId)! : null;
   }
 
@@ -209,7 +210,7 @@ export const getWhatsAppSocket = async (
   await startWhatsAppEngine(shopId, supabase);
 
   // Wait for the newly created socket to reach 'open'
-  const opened = await waitForSocketOpen(shopId, 20_000);
+  const opened = await waitForSocketOpen(shopId, timeoutMs);
   return opened ? activeSessions.get(shopId)! : null;
 };
 

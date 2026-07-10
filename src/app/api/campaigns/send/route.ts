@@ -21,7 +21,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
-import { getWhatsAppSocket, isSocketLive } from '@/lib/whatsapp-bridge';
+import { getWhatsAppSocket, isSocketLive, activeSessions } from '@/lib/whatsapp-bridge';
 import type { BroadcastPayload, Shop, Wallet, CustomerTag } from '@/types/broadcast';
 
 interface CustomerRecord {
@@ -331,12 +331,15 @@ export async function POST(req: Request) {
           let failedCount = 0;
 
           try {
-            // ── PRE-LOOP: full liveness check — both WS transport + Baileys auth ──
-            //    getWhatsAppSocket() already waits up to 20 s for the connection
-            //    to reach 'open'. If it returns null, the socket never authenticated.
-            const sockPreflight = await getWhatsAppSocket(shopId, adminClient);
-            const socketIsLive  = sockPreflight != null && isSocketLive(shopId);
-
+            // ── PRE-LOOP: active WebSocket connection stream re-verification ──
+            let sockPreflight: any = activeSessions.get(shopId);
+            const isPreflightSocketDown = !sockPreflight || !sockPreflight.ws || sockPreflight.ws.isOpen !== true;
+            if (isPreflightSocketDown) {
+              console.log('[QR Express] Preflight: socket is dropped or idle. Silently re-authenticating connection within 2 seconds...');
+              sockPreflight = await getWhatsAppSocket(shopId, adminClient, 2000);
+            }
+            
+            const socketIsLive = sockPreflight != null && isSocketLive(shopId);
             if (!socketIsLive) {
               throw new Error("WhatsApp phone is completely disconnected or offline.");
             }
@@ -351,14 +354,29 @@ export async function POST(req: Request) {
               );
 
               try {
-                // Re-fetch socket; isSocketLive() confirms both WS + Baileys 'open'
-                const sock = await getWhatsAppSocket(shopId, adminClient);
+                // Update ledger log status to 'processing' before dispatching
+                await adminClient
+                  .from('message_logs')
+                  .update({ status: 'processing' })
+                  .eq('campaign_id', campaignId)
+                  .eq('recipient_phone', formattedPhone)
+                  .eq('status', 'pending_dispatch');
+
+                // Active WebSocket connection re-verification per contact
+                let sock: any = activeSessions.get(shopId);
+                const isSocketDown = !sock || !sock.ws || sock.ws.isOpen !== true;
+
+                if (isSocketDown) {
+                  console.log(`[QR Express] Mid-campaign: socket is dropped or idle for ${formattedPhone}. Silently re-authenticating within 2 seconds...`);
+                  sock = await getWhatsAppSocket(shopId, adminClient, 2000);
+                }
+
                 if (!sock || !isSocketLive(shopId)) {
                   throw new Error('WhatsApp socket lost connection mid-campaign');
                 }
 
                 // ── REAL Baileys transmission — 12 s hard timeout ──────────
-                const sendReceipt = await withTimeout(
+                const sendReceipt: any = await withTimeout(
                   sock.sendMessage(recipientJid, { text: messageText }),
                   12_000,
                 );
@@ -382,13 +400,13 @@ export async function POST(req: Request) {
 
                 successCount++;
 
-                // Ledger: pending_dispatch → delivered (confirmed by WA servers)
+                // Ledger: processing → delivered (confirmed by WA servers)
                 await adminClient
                   .from('message_logs')
                   .update({ meta_message_id: confirmedMsgId, status: 'delivered' })
                   .eq('campaign_id', campaignId)
                   .eq('recipient_phone', formattedPhone)
-                  .eq('status', 'pending_dispatch');
+                  .eq('status', 'processing');
 
                 // Increment campaign sent + delivered counters
                 await adminClient.rpc('increment_campaign_sent', {
@@ -405,7 +423,7 @@ export async function POST(req: Request) {
                 console.error(`[QR Express] Failed for ${formattedPhone}:`, perContactError);
                 failedCount++;
 
-                // Ledger: pending_dispatch → failed (no credit deducted)
+                // Ledger: update processing or pending_dispatch to failed (no credit deducted)
                 await adminClient
                   .from('message_logs')
                   .update({
@@ -414,7 +432,7 @@ export async function POST(req: Request) {
                   })
                   .eq('campaign_id', campaignId)
                   .eq('recipient_phone', formattedPhone)
-                  .eq('status', 'pending_dispatch');
+                  .in('status', ['pending_dispatch', 'processing']);
 
                 await adminClient.rpc('increment_campaign_metric', {
                   campaign_row_id: campaignId,
@@ -434,7 +452,7 @@ export async function POST(req: Request) {
             failedCount = recipientsSnapshot.length - successCount;
           } finally {
             try {
-              // Clean up any stuck pending_dispatch rows
+              // Clean up any stuck pending_dispatch or processing rows
               await adminClient
                 .from('message_logs')
                 .update({
@@ -442,9 +460,9 @@ export async function POST(req: Request) {
                   status: 'failed',
                 })
                 .eq('campaign_id', campaignId)
-                .eq('status', 'pending_dispatch');
+                .in('status', ['pending_dispatch', 'processing']);
             } catch (err) {
-              console.error('[QR Express] Failed to clean up stuck pending logs:', err);
+              console.error('[QR Express] Failed to clean up stuck pending/processing logs:', err);
             }
 
             // ── GUARANTEED STATUS TRANSITION ──────────────────────────────
