@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import type { Campaign } from '@/types/broadcast';
 import { Radio, ArrowRight, RefreshCw } from 'lucide-react';
+import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend,
@@ -44,6 +46,168 @@ export default function CampaignsLedgerPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportCSV = () => {
+    try {
+      const dataToExport = campaigns.map(c => {
+        const tagMatch = c.title.match(/\[Tags:\s*([^\]]+)\]/);
+        return {
+          'Campaign Title': c.title.replace(/\s+\[Tags:\s*[^\]]+\]/, ''),
+          'Target Tags': tagMatch ? tagMatch[1] : '',
+          'Created Date': new Date(c.created_at).toLocaleString(),
+          'Total Recipients': c.total_recipients ?? 0,
+          'Sent': c.total_sent ?? 0,
+          'Delivered': c.total_delivered ?? 0,
+          'Read': c.total_read ?? 0,
+          'Failed': c.total_failed ?? 0,
+          'Status': c.status,
+          'Failure Reason': c.failure_reason ?? ''
+        };
+      });
+
+      const csv = Papa.unparse(dataToExport);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Campaign_Ledger_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('CSV Export Error:', err);
+    } finally {
+      setExportOpen(false);
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      const dataToExport = campaigns.map(c => {
+        const tagMatch = c.title.match(/\[Tags:\s*([^\]]+)\]/);
+        return {
+          'Campaign Title': c.title.replace(/\s+\[Tags:\s*[^\]]+\]/, ''),
+          'Target Tags': tagMatch ? tagMatch[1] : '',
+          'Created Date': new Date(c.created_at).toLocaleString(),
+          'Total Recipients': c.total_recipients ?? 0,
+          'Sent': c.total_sent ?? 0,
+          'Delivered': c.total_delivered ?? 0,
+          'Read': c.total_read ?? 0,
+          'Failed': c.total_failed ?? 0,
+          'Status': c.status,
+          'Failure Reason': c.failure_reason ?? ''
+        };
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Campaign History');
+      XLSX.writeFile(workbook, `Campaign_Ledger_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (err) {
+      console.error('Excel Export Error:', err);
+    } finally {
+      setExportOpen(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      setExporting(true);
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Header block
+      doc.setFillColor(62, 59, 54); // Dark premium color #3E3B36
+      doc.rect(0, 0, 210, 40, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.text('True Attendly Broadcast', 15, 20);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text('CAMPAIGN HISTORY LEDGER SUMMARY REPORT', 15, 30);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 155, 30);
+
+      // Summary details
+      doc.setTextColor(62, 59, 54);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text('Overall Ledger Summary', 15, 52);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text(`Total Campaigns: ${campaigns.length}`, 15, 60);
+      doc.text(`Total Messages Sent: ${summaryStats.totalSent.toLocaleString()}`, 15, 66);
+      doc.text(`Total Failures recorded: ${summaryStats.totalFailed.toLocaleString()}`, 15, 72);
+
+      // Ledger Table
+      doc.setFont('helvetica', 'bold');
+      doc.text('Campaign Details Table', 15, 85);
+      doc.setDrawColor(232, 227, 218); // #E8E3DA
+      doc.line(15, 88, 195, 88);
+
+      // Table Headers
+      doc.setFontSize(9);
+      doc.text('Campaign Title', 15, 94);
+      doc.text('Date Created', 95, 94);
+      doc.text('Recipients', 135, 94);
+      doc.text('Sent / Failed', 155, 94);
+      doc.text('Status', 180, 94);
+      doc.line(15, 96, 195, 96);
+
+      // Table Rows
+      doc.setFont('helvetica', 'normal');
+      let y = 102;
+      campaigns.forEach((c) => {
+        if (y > 270) {
+          doc.addPage();
+          // Draw page header
+          doc.setFillColor(62, 59, 54);
+          doc.rect(0, 0, 210, 15, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10);
+          doc.text('True Attendly Broadcast Ledger Summary (Continued)', 15, 10);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(62, 59, 54);
+          y = 30;
+        }
+
+        const title = c.title.replace(/\s+\[Tags:\s*[^\]]+\]/, '').substring(0, 36);
+        const date = new Date(c.created_at).toLocaleDateString('en-GB', {
+          day: 'numeric', month: 'short', year: 'numeric'
+        });
+        const recipientsCount = (c.total_recipients ?? 0).toLocaleString();
+        const sentFailed = `${(c.total_sent ?? 0).toLocaleString()} / ${(c.total_failed ?? 0).toLocaleString()}`;
+        const status = c.status.toUpperCase();
+
+        doc.text(title, 15, y);
+        doc.text(date, 95, y);
+        doc.text(recipientsCount, 135, y);
+        doc.text(sentFailed, 155, y);
+        doc.text(status, 180, y);
+
+        doc.setDrawColor(245, 241, 234); // Light line
+        doc.line(15, y + 2, 195, y + 2);
+        y += 8;
+      });
+
+      doc.save(`Campaign_History_Summary_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (err) {
+      console.error('PDF Export Error:', err);
+    } finally {
+      setExporting(false);
+      setExportOpen(false);
+    }
+  };
 
   // ── Data loading + realtime subscription ─────────────────────────────────
   useEffect(() => {
@@ -290,11 +454,58 @@ export default function CampaignsLedgerPage() {
 
       {/* Campaign history table */}
       <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
-        <div className="px-6 py-5 border-b border-[#E8E3DA]">
-          <h2 className="serif-headline text-sm font-medium text-[#3E3B36]">Campaign History</h2>
-          <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mt-0.5">
-            Click any row to view detailed analytics
-          </p>
+        <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 className="serif-headline text-sm font-medium text-[#3E3B36]">Campaign History</h2>
+            <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mt-0.5">
+              Click any row to view detailed analytics
+            </p>
+          </div>
+          {campaigns.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => setExportOpen(!exportOpen)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#E8E3DA] hover:border-[#C4A896] text-[#8B8378] hover:text-[#3E3B36] rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer bg-white"
+              >
+                <span>📥 Export Ledger</span>
+              </button>
+              {exportOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setExportOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-[#E8E3DA] rounded-xl shadow-lg z-20 py-1.5 animate-in fade-in duration-100">
+                    <button
+                      onClick={handleExportCSV}
+                      className="w-full text-left px-4 py-2 text-xs text-[#3E3B36] hover:bg-[#F5F1EA]/50 transition-colors flex items-center gap-2 cursor-pointer"
+                    >
+                      <span>📄 Export as CSV</span>
+                    </button>
+                    <button
+                      onClick={handleExportExcel}
+                      className="w-full text-left px-4 py-2 text-xs text-[#3E3B36] hover:bg-[#F5F1EA]/50 transition-colors flex items-center gap-2 cursor-pointer"
+                    >
+                      <span>📊 Export as Excel</span>
+                    </button>
+                    <button
+                      onClick={handleExportPDF}
+                      disabled={exporting}
+                      className="w-full text-left px-4 py-2 text-xs text-[#3E3B36] hover:bg-[#F5F1EA]/50 transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {exporting ? (
+                        <>
+                          <RefreshCw size={12} className="animate-spin" />
+                          <span>Generating PDF...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>📕 Download PDF Summary</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {campaigns.length === 0 ? (

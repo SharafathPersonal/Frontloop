@@ -132,6 +132,72 @@ export default function CampaignDrillDownPage({
     }
   };
 
+  const [generatingReport, setGeneratingReport] = useState(false);
+
+  const handleDownloadReport = async () => {
+    try {
+      setGeneratingReport(true);
+      showToast("Generating PDF report...", "info");
+
+      const element = document.getElementById('campaign-report-container');
+      if (!element) return;
+
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      // Capture canvas snapshot of the page
+      const canvas = await html2canvas(element, {
+        scale: 2, // Better resolution
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#F5F1EA' // Matches theme background
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // A4 sizes: width = 210mm, height = 297mm
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Draw brand header banner on first page
+      pdf.setFillColor(62, 59, 54); // Dark premium color #3E3B36
+      pdf.rect(0, 0, 210, 20, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
+      pdf.text('True Attendly Broadcast Report', 15, 13);
+
+      // We shift the image down slightly on the first page to fit the brand header
+      const headerOffset = 20;
+      pdf.addImage(imgData, 'PNG', 0, position + headerOffset, imgWidth, imgHeight);
+      heightLeft -= (pageHeight - headerOffset);
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`True_Attendly_Campaign_Report_${campaignId}.pdf`);
+      showToast("PDF report downloaded successfully.", "success");
+    } catch (err) {
+      console.error('PDF Generation Error:', err);
+      showToast("Failed to generate PDF report.", "error");
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
   // Phone-to-name lookup map (built once, reused for enrichment)
   const [phoneToName, setPhoneToName] = useState<Record<string, string>>({});
 
@@ -358,11 +424,12 @@ export default function CampaignDrillDownPage({
   const ledgerPending = recipients.filter((r) => ['PENDING_DISPATCH', 'PENDING'].includes(r.message_status)).length;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div id="campaign-report-container" className="max-w-5xl mx-auto space-y-8 p-4">
 
       {/* Header */}
       <div>
         <Link
+          data-html2canvas-ignore="true"
           href="/dashboard/campaigns"
           className="inline-flex items-center gap-1.5 text-[10px] tracking-[0.15em] text-[#8B8378] hover:text-[#C4A896] transition-colors uppercase mb-4"
         >
@@ -404,6 +471,7 @@ export default function CampaignDrillDownPage({
               {campaignBadge.label}
             </span>
             <button
+              data-html2canvas-ignore="true"
               onClick={handleRefresh}
               disabled={refreshing}
               className="p-2 rounded-lg border border-[#E8E3DA] hover:border-[#C4A896] text-[#8B8378] hover:text-[#3E3B36] transition-all disabled:opacity-40"
@@ -426,16 +494,34 @@ export default function CampaignDrillDownPage({
               Performance metrics sourced directly from the delivery ledger
             </p>
           </div>
-          {failed > 0 && (
+          <div data-html2canvas-ignore="true" className="flex items-center gap-2">
+            {failed > 0 && (
+              <button
+                onClick={handleRetryAll}
+                disabled={retryingAll}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-semibold shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <RefreshCw size={14} className={retryingAll ? 'animate-spin' : ''} />
+                Retry All Failed
+              </button>
+            )}
             <button
-              onClick={handleRetryAll}
-              disabled={retryingAll}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-semibold shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              onClick={handleDownloadReport}
+              disabled={generatingReport}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-[#E8E3DA] hover:border-[#C4A896] text-[#8B8378] hover:text-[#3E3B36] text-xs font-semibold shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-white"
             >
-              <RefreshCw size={14} className={retryingAll ? 'animate-spin' : ''} />
-              Retry All Failed
+              {generatingReport ? (
+                <>
+                  <RefreshCw size={14} className="animate-spin" />
+                  Generating Report...
+                </>
+              ) : (
+                <>
+                  <span>📄 Download Full PDF Report</span>
+                </>
+              )}
             </button>
-          )}
+          </div>
         </div>
 
         {/* Stacked bar — only shown when campaign has sent some messages */}
@@ -577,6 +663,7 @@ export default function CampaignDrillDownPage({
                   </span>
                   {r.message_status === 'FAILED' && (
                     <button
+                      data-html2canvas-ignore="true"
                       onClick={() => handleRetrySingle(r.id)}
                       disabled={retryingSingle === r.id}
                       className="inline-flex items-center gap-1 text-xs text-[#8B8378] hover:text-[#C4A896] transition-colors disabled:opacity-50 cursor-pointer"
