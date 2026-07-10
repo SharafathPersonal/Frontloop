@@ -9,7 +9,8 @@ import { NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
 import { startWhatsAppEngine, activeSessions, isSocketLive, ensureSocketLive } from '@/lib/whatsapp-bridge';
 
-export const maxDuration = 300;
+export const maxDuration = 60; // Enforce 60-second execution cushion
+export const dynamic = 'force-dynamic';
 
 declare global {
   var whatsappSock: any;
@@ -121,6 +122,14 @@ export async function POST(req: Request) {
 
     if (campaignError || !campaign) {
       return NextResponse.json({ ok: false, error: 'Campaign record not found' }, { status: 404 });
+    }
+
+    if (campaign.failure_reason === null) {
+      campaign.failure_reason = 'System re-validated connection state during manual retry';
+      await adminClient
+        .from('campaigns')
+        .update({ failure_reason: 'System re-validated connection state during manual retry' })
+        .eq('id', campaignId);
     }
 
     const dispatchMode = campaign.dispatch_mode;

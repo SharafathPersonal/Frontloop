@@ -23,7 +23,8 @@ import { NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
 import { getWhatsAppSocket, isSocketLive, activeSessions, ensureSocketLive } from '@/lib/whatsapp-bridge';
 
-export const maxDuration = 300; // regional serverless runtime config to prevent premature socket timeout
+export const maxDuration = 60; // Enforce 60-second execution cushion
+export const dynamic = 'force-dynamic';
 
 import type { BroadcastPayload, Shop, Wallet, CustomerTag } from '@/types/broadcast';
 
