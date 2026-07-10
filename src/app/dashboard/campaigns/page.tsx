@@ -253,6 +253,11 @@ export default function CampaignsLedgerPage() {
   // ── Manual refresh ────────────────────────────────────────────────────────
   const handleRefresh = async () => {
     setRefreshing(true);
+    try {
+      await fetch('/api/campaigns/refresh', { method: 'POST' });
+    } catch (err) {
+      console.error('[Campaigns Dashboard] Sync error:', err);
+    }
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data } = await supabase

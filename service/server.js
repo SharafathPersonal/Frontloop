@@ -49,6 +49,8 @@ const connectionOpenSessions = new Set();
 const reconnectTimers = new Map();
 const qrResolvers = new Map();
 const initializingShops = {};
+const messageStatusStore = new Map();
+
 
 // ── Helper functions ───────────────────────────────────────────────────────
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -297,6 +299,19 @@ const startWhatsAppEngine = async (shopId) => {
   // ── Message receipts (Blue Ticks tracking) ──────────────────────────────
   sock.ev.on('message-receipt.update', async (receipts) => {
     for (const receipt of receipts) {
+      const id = receipt.key.id;
+      if (id) {
+        let shopMap = messageStatusStore.get(shopId);
+        if (!shopMap) {
+          shopMap = new Map();
+          messageStatusStore.set(shopId, shopMap);
+        }
+        if (receipt.receiptType === 'read') {
+          shopMap.set(id, 4); // 4 = READ
+        } else if (!shopMap.has(id)) {
+          shopMap.set(id, 3); // 3 = DELIVERED
+        }
+      }
       if (receipt.receiptType === 'read') {
         console.log(`[BAILEYS AUDIT] Message read by user. Message ID: ${receipt.key.id}`);
         await handleMessageRead(receipt.key.id);
@@ -307,7 +322,16 @@ const startWhatsAppEngine = async (shopId) => {
   // ── Messages status updates (individual read receipts) ──────────────────
   sock.ev.on('messages.update', async (updates) => {
     for (const update of updates) {
+      const id = update.key.id;
       const status = update.update.status;
+      if (id && status !== undefined) {
+        let shopMap = messageStatusStore.get(shopId);
+        if (!shopMap) {
+          shopMap = new Map();
+          messageStatusStore.set(shopId, shopMap);
+        }
+        shopMap.set(id, status);
+      }
       // 4 is WebMessageInfo.Status.READ (read / blue tick)
       if (status === 4 || status === 'read') {
         console.log(`[BAILEYS AUDIT] Message read by user. Message ID: ${update.key.id}`);
@@ -524,10 +548,100 @@ app.post('/api/whatsapp/send-message', async (req, res) => {
     } else {
       sendReceipt = await withTimeout(sock.sendMessage(recipientJid, { text: message }), 12000);
     }
+
+    if (sendReceipt && sendReceipt.key && sendReceipt.key.id) {
+      let shopMap = messageStatusStore.get(shop_id);
+      if (!shopMap) {
+        shopMap = new Map();
+        messageStatusStore.set(shop_id, shopMap);
+      }
+      shopMap.set(sendReceipt.key.id, 1); // 1 = sent
+    }
+
     return res.json({ ok: true, log: sendReceipt });
   } catch (error) {
     return res.status(500).json({ error: String(error) });
   }
+});
+
+app.post('/api/whatsapp/sync-status', async (req, res) => {
+  const { shop_id, messages } = req.body;
+  if (!shop_id || !messages || !Array.isArray(messages)) {
+    return res.status(400).json({ error: 'Missing parameters' });
+  }
+
+  const updated = [];
+  try {
+    const shopMap = messageStatusStore.get(shop_id);
+    if (!shopMap) {
+      return res.json({ updated: [] });
+    }
+
+    for (const msg of messages) {
+      const msgId = msg.meta_message_id;
+      if (!msgId) continue;
+
+      const cachedStatus = shopMap.get(msgId);
+      if (cachedStatus !== undefined) {
+        // status 4 is READ, 5 is PLAYED
+        if (cachedStatus === 4 || cachedStatus === 5 || cachedStatus === 'read') {
+          let campaignId = msg.campaign_id;
+          
+          const { data: logData } = await supabase
+            .from('message_logs')
+            .select('campaign_id, status')
+            .eq('meta_message_id', msgId)
+            .maybeSingle();
+            
+          if (logData && logData.status?.toUpperCase() !== 'READ') {
+            campaignId = campaignId || logData.campaign_id;
+            
+            const { error: updateError } = await supabase
+              .from('message_logs')
+              .update({ status: 'READ' })
+              .eq('meta_message_id', msgId);
+
+            if (!updateError) {
+              if (campaignId) {
+                await supabase.rpc('increment_campaign_metric', {
+                  campaign_row_id: campaignId,
+                  metric_name: 'read',
+                  quantity: 1
+                });
+              }
+              updated.push({ meta_message_id: msgId, status: 'READ' });
+              shopMap.delete(msgId);
+            }
+          } else if (logData && logData.status?.toUpperCase() === 'READ') {
+            shopMap.delete(msgId);
+          }
+        } 
+        // status 3 is DELIVERY_ACK (delivered)
+        else if (cachedStatus === 3 || cachedStatus === 'delivered') {
+          const { data: logData } = await supabase
+            .from('message_logs')
+            .select('status')
+            .eq('meta_message_id', msgId)
+            .maybeSingle();
+
+          if (logData && logData.status?.toUpperCase() !== 'READ' && logData.status?.toUpperCase() !== 'DELIVERED') {
+            const { error: updateError } = await supabase
+              .from('message_logs')
+              .update({ status: 'DELIVERED' })
+              .eq('meta_message_id', msgId);
+
+            if (!updateError) {
+              updated.push({ meta_message_id: msgId, status: 'DELIVERED' });
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error(`[WA Engine] Error syncing status:`, err);
+  }
+
+  return res.json({ updated });
 });
 
 const hydrateActiveSessions = async () => {

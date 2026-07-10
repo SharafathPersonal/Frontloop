@@ -63,6 +63,31 @@ export default function CampaignHistoryPage() {
   const [userId, setUserId]     = useState<string | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetch('/api/campaigns/refresh', { method: 'POST' });
+    } catch (err) {
+      console.error('[Campaign History] Sync error:', err);
+    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('campaigns')
+          .select('*')
+          .eq('shop_id', user.id)
+          .order('created_at', { ascending: false });
+        if (data) setAllCampaigns(data as Campaign[]);
+      }
+    } catch (err) {
+      console.error('[Campaign History] handleRefresh error:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // ── Data load ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -282,17 +307,28 @@ export default function CampaignHistoryPage() {
             </p>
           </div>
 
-          {/* Export dropdown */}
-          <div className="relative">
+          <div className="flex items-center gap-3">
+            {/* Refresh Button */}
             <button
-              onClick={() => setExportOpen(o => !o)}
-              disabled={exporting}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 border border-[#E8E3DA] hover:border-[#C4A896] text-[#8B8378] hover:text-[#3E3B36] rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer bg-white disabled:opacity-50"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="inline-flex items-center justify-center p-2.5 border border-[#E8E3DA] hover:border-[#C4A896] text-[#8B8378] hover:text-[#3E3B36] rounded-lg shadow-sm transition-all cursor-pointer bg-white disabled:opacity-50"
+              title="Refresh ledger state"
             >
-              {exporting ? <RefreshCw size={12} className="animate-spin" /> : <Download size={12} />}
-              Export Report
-              <ChevronDown size={12} />
+              <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
             </button>
+
+            {/* Export dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setExportOpen(o => !o)}
+                disabled={exporting}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 border border-[#E8E3DA] hover:border-[#C4A896] text-[#8B8378] hover:text-[#3E3B36] rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer bg-white disabled:opacity-50"
+              >
+                {exporting ? <RefreshCw size={12} className="animate-spin" /> : <Download size={12} />}
+                Export Report
+                <ChevronDown size={12} />
+              </button>
             {exportOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setExportOpen(false)} />
@@ -309,6 +345,7 @@ export default function CampaignHistoryPage() {
                 </div>
               </>
             )}
+          </div>
           </div>
         </div>
       </div>

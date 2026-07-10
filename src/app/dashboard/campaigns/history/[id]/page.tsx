@@ -367,6 +367,15 @@ export default function CampaignDrillDownPage({
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
+      await fetch('/api/campaigns/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaignId }),
+      });
+    } catch (err) {
+      console.error('[Campaign Drill] Sync error:', err);
+    }
+    try {
       await fetchLogs();
       // Also re-fetch campaign row to get updated counters
       const { data } = await supabase
