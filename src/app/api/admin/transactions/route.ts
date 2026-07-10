@@ -44,10 +44,16 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    const { data: usersData } = await supabaseAdmin.auth.admin.listUsers();
+    const userMap = new Map();
+    if (usersData?.users) {
+      usersData.users.forEach((u: any) => userMap.set(u.id, u.email));
+    }
+
     const mappedTransactions = (paymentLogs || []).map((log: any) => ({
       id: log.id,
       shop: log.shop,
-      payer_email: null,
+      payer_email: userMap.get(log.shop_id) || 'N/A',
       amount: log.amount,
       credits_added: log.credits_credited,
       payment_gateway_id: log.order_id,
