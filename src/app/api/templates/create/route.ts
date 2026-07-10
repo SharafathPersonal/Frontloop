@@ -100,6 +100,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Validate variables
+    const invalidVars = body_text.match(/\{\{(?!\d+\}\}).*?\}\}/g);
+    if (invalidVars) {
+      return NextResponse.json({ error: `Invalid variable format: ${invalidVars.join(', ')}. Variables must be exactly {{1}}, {{2}}, etc.` }, { status: 400 });
+    }
+    const validVars = body_text.match(/\{\{\d+\}\}/g);
+    if (validVars) {
+      const nums = validVars.map((v: string) => parseInt(v.match(/\d+/)![0]));
+      if (nums.includes(0)) {
+        return NextResponse.json({ error: 'Variables must start at {{1}}. {{0}} is not allowed.' }, { status: 400 });
+      }
+      const uniqueNums = [...new Set<number>(nums)].sort((a: number, b: number) => a - b);
+      if (uniqueNums[0] !== 1) {
+        return NextResponse.json({ error: 'Variables must start at {{1}}.' }, { status: 400 });
+      }
+      for (let i = 0; i < uniqueNums.length; i++) {
+        if (uniqueNums[i] !== i + 1) {
+          return NextResponse.json({ error: `Variables must be sequential. Missing {{${i + 1}}}.` }, { status: 400 });
+        }
+      }
+    }
+
     // 1. Get Shop's Meta Connection Mode
     const { data: shop } = await supabase
       .from('shops')
@@ -130,12 +152,22 @@ export async function POST(req: Request) {
     }
 
     // 2. Prepare Meta API Payload
-    const components: any[] = [
-      {
-        type: 'BODY',
-        text: body_text,
-      }
-    ];
+    const bodyComponent: any = {
+      type: 'BODY',
+      text: body_text,
+    };
+
+    // Extract variables like {{1}}, {{2}} and generate example values
+    const matches = body_text.match(/\{\{\d+\}\}/g);
+    if (matches) {
+      const maxVar = Math.max(...matches.map((v: string) => parseInt(v.match(/\d+/)![0])));
+      const exampleValues = Array.from({length: maxVar}, (_, i) => `example_${i+1}`);
+      bodyComponent.example = {
+        body_text: [exampleValues] // Meta requires an array of arrays for body_text examples
+      };
+    }
+
+    const components: any[] = [bodyComponent];
 
     if (header_type === 'IMAGE') {
       if (!image_url) {

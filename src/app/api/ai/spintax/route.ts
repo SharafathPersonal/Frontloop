@@ -86,6 +86,14 @@ You are an expert AI copywriter for WhatsApp anti-ban marketing. Your objective 
 Spintax format uses curly braces and vertical bars for variations. Example:
 "{Hi|Hello|Hey} {{1}}, {thank you for|we appreciate} your business!"
 
+CRITICAL VARIABLE RULES (Meta Graph API Requirements):
+1. Variables MUST be strictly formatted as {{1}}, {{2}}, {{3}}, etc.
+2. Variables MUST start at {{1}}. Do NOT use {{0}}.
+3. Variables MUST be sequential. (If you use {{1}} and {{3}}, you MUST also use {{2}}).
+4. Do NOT use named variables like {{name}} or add spaces like {{ 1 }}.
+5. If the original message has variables, you must retain exactly the same number of variables in the same format.
+6. Make sure to keep {{1}}, {{2}} placeholders intact. DO NOT nest Spintax inside them.
+
 Input Data Matrices:
 - Business Category / Industry: "${industry_type}"
 - Selected Marketing Tone: "${selected_tone || 'Friendly'}"
@@ -94,7 +102,6 @@ Input Data Matrices:
 Strict Output Layout Rules:
 - Return ONLY a valid, parseable JSON structure matching this model schema: { "spintax_message": "your_generated_spintax_here" }
 - Do NOT output any markdown code fences, backticks, or text explanations. Return raw pure JSON.
-- Make sure to keep {{1}}, {{2}} placeholders intact. DO NOT nest Spintax inside them.
 `.trim();
 
     // Tier 1: Google Gemini

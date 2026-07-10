@@ -221,6 +221,28 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Validate variables
+    const invalidVars = body_text.match(/\{\{(?!\d+\}\}).*?\}\}/g);
+    if (invalidVars) {
+      return NextResponse.json({ error: `Invalid variable format: ${invalidVars.join(', ')}. Variables must be exactly {{1}}, {{2}}, etc.` }, { status: 400 });
+    }
+    const validVars = body_text.match(/\{\{\d+\}\}/g);
+    if (validVars) {
+      const nums = validVars.map((v: string) => parseInt(v.match(/\d+/)![0]));
+      if (nums.includes(0)) {
+        return NextResponse.json({ error: 'Variables must start at {{1}}. {{0}} is not allowed.' }, { status: 400 });
+      }
+      const uniqueNums = [...new Set<number>(nums)].sort((a: number, b: number) => a - b);
+      if (uniqueNums[0] !== 1) {
+        return NextResponse.json({ error: 'Variables must start at {{1}}.' }, { status: 400 });
+      }
+      for (let i = 0; i < uniqueNums.length; i++) {
+        if (uniqueNums[i] !== i + 1) {
+          return NextResponse.json({ error: `Variables must be sequential. Missing {{${i + 1}}}.` }, { status: 400 });
+        }
+      }
+    }
+
     // Retrieve template from database
     const { data: template, error: fetchError } = await supabase
       .from('message_templates')
@@ -274,12 +296,21 @@ export async function PUT(req: Request) {
       }
 
       // 2. Prepare payload components
-      const components: any[] = [
-        {
-          type: 'BODY',
-          text: body_text,
-        }
-      ];
+      const bodyComponent: any = {
+        type: 'BODY',
+        text: body_text,
+      };
+
+      const matches = body_text.match(/\{\{\d+\}\}/g);
+      if (matches) {
+        const maxVar = Math.max(...matches.map((v: string) => parseInt(v.match(/\d+/)![0])));
+        const exampleValues = Array.from({length: maxVar}, (_, i) => `example_${i+1}`);
+        bodyComponent.example = {
+          body_text: [exampleValues]
+        };
+      }
+
+      const components: any[] = [bodyComponent];
 
       if (header_type === 'IMAGE') {
         if (!image_url) {
@@ -320,8 +351,9 @@ export async function PUT(req: Request) {
 
         const editData = await editRes.json();
         if (!editRes.ok || editData.error) {
+          const errMsg = editData.error?.message || editData.error?.error_user_title || 'Failed to update template on Meta';
           console.error('Meta API Edit Error:', editData.error);
-          return NextResponse.json({ error: editData.error?.message || 'Failed to update template on Meta' }, { status: 400 });
+          return NextResponse.json({ error: errMsg }, { status: 400 });
         }
       } else {
         // 4. Fallback: if not found on Meta, re-create it by posting to the list endpoint
@@ -342,8 +374,9 @@ export async function PUT(req: Request) {
 
         const createData = await createRes.json();
         if (!createRes.ok || createData.error) {
+          const errMsg = createData.error?.message || createData.error?.error_user_title || 'Failed to submit template to Meta';
           console.error('Meta API Fallback Create Error:', createData.error);
-          return NextResponse.json({ error: createData.error?.message || 'Failed to submit template to Meta' }, { status: 400 });
+          return NextResponse.json({ error: errMsg }, { status: 400 });
         }
       }
     }

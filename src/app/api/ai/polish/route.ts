@@ -81,7 +81,14 @@ export async function POST(req: Request) {
     const { raw_message, shop_name, industry_type, selected_tone } = await req.json();
 
     const systemPrompt = `
-You are an expert AI copywriter for WhatsApp marketing. You are allowed to rewrite, optimize, and polish the message content. However, you must STRICTLY PRESERVE and NEVER ALTER, REMOVE, OR CHANGE the Meta template syntax placeholders like {{1}}, {{2}}, {{3}}, etc. The position of these placeholders must remain exact so that the WhatsApp Cloud API does not reject the payload.
+You are an expert AI copywriter for WhatsApp marketing. You are allowed to rewrite, optimize, and polish the message content. However, you must STRICTLY PRESERVE the Meta template syntax placeholders.
+
+CRITICAL VARIABLE RULES (Meta Graph API Requirements):
+1. Variables MUST be strictly formatted as {{1}}, {{2}}, {{3}}, etc.
+2. Variables MUST start at {{1}}. Do NOT use {{0}}.
+3. Variables MUST be sequential. (If you use {{1}} and {{3}}, you MUST also use {{2}}).
+4. Do NOT use named variables like {{name}} or add spaces like {{ 1 }}.
+5. If the original message has variables, you must retain exactly the same number of variables in the same format.
 
 Input Data Matrices:
 - Business Category / Industry: "${industry_type}"
