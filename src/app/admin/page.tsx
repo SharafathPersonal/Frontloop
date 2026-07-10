@@ -14,7 +14,7 @@ export default function AdminDashboard() {
   const [merchants, setMerchants] = useState<any[]>([]);
   const [merchantsSearch, setMerchantsSearch] = useState('');
   const [merchantsSort, setMerchantsSort] = useState('date');
-  const [merchantsPage, setMerchantsPage] = useState(1);
+  const [merchantsPage, setMerchantsPage] = useState(0);
   const [hasMoreMerchants, setHasMoreMerchants] = useState(true);
   const [isLoadingMerchants, setIsLoadingMerchants] = useState(false);
   
@@ -90,7 +90,7 @@ export default function AdminDashboard() {
           setPricingTiers(json.pricing);
         }
         setIsAuthenticated(true);
-        fetchMerchants(1, true);
+        fetchMerchants(0, true);
       }
     } catch (e) {
       console.error(e);
@@ -99,7 +99,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const fetchMerchants = async (page = 1, reset = false) => {
+  const fetchMerchants = async (page = 0, reset = false) => {
     setIsLoadingMerchants(true);
     try {
       const res = await fetch(`/api/admin/merchants?page=${page}&search=${encodeURIComponent(merchantsSearch)}&sort=${merchantsSort}`);
@@ -110,9 +110,14 @@ export default function AdminDashboard() {
         } else {
           setMerchants(prev => [...prev, ...(json.shops || [])]);
         }
-        setHasMoreMerchants((json.shops || []).length === 50);
+        setHasMoreMerchants((json.shops || []).length === 20);
         setMerchantsPage(page);
+      } else {
+        const errText = await res.text();
+        console.error(`[Admin Merchants Matrix] Failed to load. Status: ${res.status}. Response: ${errText}`);
       }
+    } catch (e: any) {
+      console.error(`[Admin Merchants Matrix] Error fetching merchants:`, e?.message || e);
     } finally {
       setIsLoadingMerchants(false);
     }
@@ -121,7 +126,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (isAuthenticated) {
       const delay = setTimeout(() => {
-        fetchMerchants(1, true);
+        fetchMerchants(0, true);
       }, 300);
       return () => clearTimeout(delay);
     }
@@ -391,7 +396,9 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody className="text-sm divide-y divide-[#E8E3DA]">
                   {merchants.map(shop => {
-                    const credits = shop.wallets?.credits_remaining || 0;
+                    const credits = Array.isArray(shop.wallets)
+                      ? (shop.wallets[0]?.credits_remaining || 0)
+                      : (shop.wallets?.credits_remaining || 0);
                     const isLowCredits = credits < 10;
                     return (
                       <tr 

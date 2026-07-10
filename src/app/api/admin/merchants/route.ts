@@ -6,8 +6,9 @@ export async function GET(request: Request) {
   try {
     const cookieStore = await cookies();
     const adminSession = cookieStore.get('admin_session');
+    const adminSecret = process.env.ADMIN_SECURE_TOKEN;
 
-    if (adminSession?.value !== 'authenticated') {
+    if (!adminSession?.value || !adminSecret || adminSession.value !== adminSecret) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -28,12 +29,12 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const sortStr = searchParams.get('sort') || 'date'; // 'date', 'az', 'za'
-    const pageStr = searchParams.get('page') || '1';
+    const pageStr = searchParams.get('page') || '0';
     
-    const page = parseInt(pageStr, 10) || 1;
-    const limit = 50;
-    const start = (page - 1) * limit;
-    const end = start + limit - 1;
+    const page = parseInt(pageStr, 10) || 0;
+    const limit = 20;
+    const from = page * limit;
+    const to = from + limit - 1;
 
     let query = supabaseAdmin
       .from('shops')
@@ -55,7 +56,7 @@ export async function GET(request: Request) {
       query = query.order('created_at', { ascending: false });
     }
 
-    const { data: shopsData, error: shopsError, count } = await query.range(start, end);
+    const { data: shopsData, error: shopsError, count } = await query.range(from, to);
 
     if (shopsError) throw shopsError;
 

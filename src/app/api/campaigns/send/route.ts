@@ -73,9 +73,66 @@ const buildMessage = (
   return resolveSpintax(text);
 };
 
+/**
+ * Helper to parse and flatten any customer tags representation into string[]
+ */
+function parseTags(tagsField: any): string[] {
+  if (!tagsField) return [];
+  
+  if (Array.isArray(tagsField)) {
+    return tagsField.flatMap(val => parseTags(val));
+  }
+
+  if (typeof tagsField === 'string') {
+    const trimmed = tagsField.trim();
+    
+    // Postgres array format e.g. {New,VIP} or {"New","VIP"}
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      const content = trimmed.substring(1, trimmed.length - 1);
+      return content.split(',').map(t => t.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+    }
+
+    // Stringified JSON array e.g. ["New", "VIP"]
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.flatMap(val => parseTags(val));
+        }
+      } catch (e) {
+        // ignore and fallback
+      }
+    }
+    
+    // Comma-separated list
+    if (trimmed.includes(',')) {
+      return trimmed.split(',').map(t => t.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+    }
+
+    // Single tag with potential quotes
+    return [trimmed.replace(/^["']|["']$/g, '')];
+  }
+
+  // If it's an object, try to serialize/deserialize it to handle JSON fields
+  if (typeof tagsField === 'object') {
+    try {
+      const str = JSON.stringify(tagsField);
+      if (str.startsWith('[') && str.endsWith(']')) {
+        const parsed = JSON.parse(str);
+        if (Array.isArray(parsed)) {
+          return parsed.flatMap(val => parseTags(val));
+        }
+      }
+    } catch (e) {}
+  }
+
+  return [];
+}
+
 // ---------------------------------------------------------------------------
 // POST handler
 // ---------------------------------------------------------------------------
+
 
 export async function POST(req: Request) {
   // ── 1. Build the user (cookie-session) Supabase client ──────────────────
@@ -195,28 +252,51 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Failed to load contacts' }, { status: 500 });
     }
 
-    const targetTagsLower = payload.targetTags.map((t) => t.toLowerCase().trim());
+    // Flatten potential payload target tags array/string variations
+    let targetTags: string[] = [];
+    if (Array.isArray(payload.targetTags)) {
+      targetTags = payload.targetTags;
+    } else if (typeof payload.targetTags === 'string') {
+      targetTags = (payload.targetTags as string).split(',').map(t => t.trim()).filter(Boolean);
+    }
+    const targetTagsLower = targetTags.map((t) => t.toLowerCase().trim());
 
     const recipients: CustomerRecord[] = (allContacts ?? []).filter((c) => {
-      if (!Array.isArray(c.tags)) return false;
-      return c.tags.some((tag: string) => targetTagsLower.includes(tag.toLowerCase().trim()));
+      const parsedTags = parseTags(c.tags);
+      return parsedTags.some((tag: string) => targetTagsLower.includes(tag.toLowerCase().trim()));
     });
 
     // ── 6. STRICT EMPTY GUARD — fail fast, record campaign as failed ──────
     if (recipients.length === 0) {
-      const failureReason = `No contacts found with tag(s): ${payload.targetTags.join(', ')}`;
+      const failureReason = `No contacts found with tag(s): ${targetTags.join(', ')}`;
 
-      await userClient.from('campaigns').insert({
-        shop_id: user.id,
-        title: payload.campaign.title,
-        message_body: payload.campaign.message_body,
-        image_url: payload.campaign.image_url || null,
-        status: 'failed',
-        total_recipients: 0,
-        total_sent: 0,
-        total_failed: 0,
-        dispatch_mode: whatsapp_mode,
-      });
+      const { data: newCampaign } = await userClient
+        .from('campaigns')
+        .insert({
+          shop_id: user.id,
+          title: payload.campaign.title,
+          message_body: payload.campaign.message_body,
+          image_url: payload.campaign.image_url || null,
+          status: 'failed',
+          total_recipients: 0,
+          total_sent: 0,
+          total_failed: 0,
+          dispatch_mode: whatsapp_mode,
+        })
+        .select()
+        .single();
+
+      if (newCampaign) {
+        const campaignId = newCampaign.id;
+        await userClient
+          .from('campaigns')
+          .update({ 
+            status: 'failed', 
+            total_failed: 1,
+            failure_reason: 'No contacts found matching the selected target tags for this shop.' 
+          })
+          .eq('id', campaignId);
+      }
 
       return NextResponse.json({ ok: false, error: failureReason }, { status: 400 });
     }
@@ -417,6 +497,16 @@ export async function POST(req: Request) {
                 failedCount++;
 
                 const contactErrMsg = perContactError instanceof Error ? perContactError.message : String(perContactError);
+
+                // Update campaigns table failure_reason with this exception message
+                try {
+                  await adminClient
+                    .from('campaigns')
+                    .update({ failure_reason: contactErrMsg })
+                    .eq('id', campaignId);
+                } catch (campaignErr) {
+                  console.error('[QR Express] Failed to update campaigns table failure_reason:', campaignErr);
+                }
 
                 // Log per-contact error to system_logs for premium transparency
                 try {

@@ -7,8 +7,9 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
     const params = await props.params;
     const cookieStore = await cookies();
     const adminSession = cookieStore.get('admin_session');
+    const adminSecret = process.env.ADMIN_SECURE_TOKEN;
 
-    if (adminSession?.value !== 'authenticated') {
+    if (!adminSession?.value || !adminSecret || adminSession.value !== adminSecret) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

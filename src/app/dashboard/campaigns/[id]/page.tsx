@@ -456,11 +456,6 @@ export default function CampaignDrillDownPage({
                 Target: {targetTags}
               </span>
             </div>
-            {campaign.status === 'failed' && campaign.failure_reason && (
-              <div className="text-xs text-rose-600 bg-rose-50 border border-rose-200 px-3 py-2.5 rounded-lg mt-3 block max-w-xl break-words">
-                <strong>Failure Diagnostic:</strong> {cleanFailureReason(campaign.failure_reason)}
-              </div>
-            )}
           </div>
 
           {/* Campaign status badge + refresh */}
@@ -596,6 +591,13 @@ export default function CampaignDrillDownPage({
             </span>
           </div>
         </div>
+
+        {campaign.status === 'failed' && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-xs font-semibold text-red-800">❌ Error Diagnostic Log:</p>
+            <p className="text-sm text-red-600 mt-1">{campaign.failure_reason || 'Unknown execution error'}</p>
+          </div>
+        )}
       </div>
 
       {/* Recipient Ledger */}
@@ -678,20 +680,41 @@ export default function CampaignDrillDownPage({
             );
           })
         ) : (
-          <div className="py-16 text-center">
-            {campaign.status === 'processing' ? (
-              <>
-                <div className="w-6 h-6 border-2 border-[#E8E3DA] border-t-[#C4A896] rounded-full animate-spin mx-auto mb-4" />
+          <>
+            {/* Elegant PDF Placeholder Grid */}
+            {[1, 2, 3].map((placeholderIdx) => (
+              <div
+                key={`pdf-placeholder-row-${placeholderIdx}`}
+                className="grid grid-cols-3 gap-4 px-6 py-4 border-b border-[#E8E3DA] last:border-0 opacity-40 select-none"
+              >
+                <div className="flex items-center">
+                  <span className="text-sm text-[#8B8378] font-medium italic">Pending Recipient Node...</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-sm text-[#8B8378] font-mono italic">Awaiting Dispatch Queue</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-[10px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 rounded-full bg-[#F5F1EA] text-[#8B8378] border border-[#E8E3DA]">
+                    Pending Dispatch
+                  </span>
+                </div>
+              </div>
+            ))}
+            <div className="py-16 text-center bg-[#F5F1EA]/10 border-t border-[#E8E3DA]">
+              {campaign.status === 'processing' ? (
+                <>
+                  <div className="w-6 h-6 border-2 border-[#E8E3DA] border-t-[#C4A896] rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-xs text-[#8B8378] uppercase tracking-[0.15em]">
+                    Preparing recipient queue…
+                  </p>
+                </>
+              ) : (
                 <p className="text-xs text-[#8B8378] uppercase tracking-[0.15em]">
-                  Preparing recipient queue…
+                  No recipient records found for this campaign. (0 total rows)
                 </p>
-              </>
-            ) : (
-              <p className="text-xs text-[#8B8378] uppercase tracking-[0.15em]">
-                No recipient records found for this campaign.
-              </p>
-            )}
-          </div>
+              )}
+            </div>
+          </>
         )}
       </div>
 
