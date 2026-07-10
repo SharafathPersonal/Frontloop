@@ -129,6 +129,13 @@ export default function TemplateHistoryPage() {
 
   const handleRefresh = async () => {
     setLoading(true);
+    try {
+      // First sync with Meta
+      await fetch('/api/templates/sync');
+    } catch (err) {
+      console.error('Failed to sync templates from Meta:', err);
+    }
+    // Then re-fetch from local database
     await fetchTemplates();
   };
 
@@ -282,9 +289,16 @@ export default function TemplateHistoryPage() {
                           <CheckCircle2 size={12} /> Approved
                         </span>
                       ) : template.status === 'REJECTED' ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-red-50 text-red-700 border border-red-200 tracking-[0.1em] uppercase">
-                          <AlertCircle size={12} /> Rejected
-                        </span>
+                        <div>
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-red-50 text-red-700 border border-red-200 tracking-[0.1em] uppercase">
+                            <AlertCircle size={12} /> Rejected
+                          </span>
+                          {template.rejection_reason && (
+                            <p className="text-[10px] text-red-500 mt-1 max-w-[180px] leading-tight">
+                              {template.rejection_reason}
+                            </p>
+                          )}
+                        </div>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 tracking-[0.1em] uppercase">
                           <Loader2 size={12} className="animate-spin" /> Pending

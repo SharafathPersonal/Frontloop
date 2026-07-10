@@ -96,25 +96,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // 1. Get Shop's Meta Credentials
+    // 1. Get Shop's Meta Connection Mode
     const { data: shop } = await supabase
       .from('shops')
-      .select('meta_access_token, meta_business_account_id, whatsapp_mode')
+      .select('whatsapp_mode')
       .eq('id', user.id)
       .single();
 
-    if (!shop || !shop.meta_access_token || !shop.meta_business_account_id) {
-      console.error("Template API Fail: Missing Meta Token or WABA ID for User:", user.id);
-      return NextResponse.json({ 
-        success: false, 
-        error: "Your Facebook connection is active, but your WhatsApp Business Account ID or Access Token could not be retrieved from the database. Please re-authenticate via Facebook in Settings to sync your profile variables." 
-      }, { status: 400 });
-    }
-
-    if (shop.whatsapp_mode !== 'META_API') {
+    if (!shop || shop.whatsapp_mode !== 'META_API') {
       return NextResponse.json({ 
         success: false, 
         error: "Your workspace is not configured for Meta API. Please switch to Meta Official API in Settings." 
+      }, { status: 400 });
+    }
+
+    // 1b. Get Shop's Meta Credentials from meta_configs
+    const { data: metaConfig, error: configError } = await supabase
+      .from('meta_configs')
+      .select('meta_access_token, meta_business_id')
+      .eq('shop_id', user.id)
+      .single();
+
+    if (!metaConfig?.meta_access_token || !metaConfig?.meta_business_id) {
+      console.error("[META_SUBMIT_ERROR] Missing token or WABA ID in meta_configs for shop:", user.id);
+      return NextResponse.json({ 
+        success: false, 
+        error: "Your Facebook connection is active, but your WhatsApp Business Account ID or Access Token could not be retrieved from the database. Please re-authenticate via Facebook in Settings." 
       }, { status: 400 });
     }
 
@@ -141,13 +148,13 @@ export async function POST(req: Request) {
     };
 
     // 3. Send to Meta Graph API
-    const metaUrl = `https://graph.facebook.com/v20.0/${shop.meta_business_account_id}/message_templates`;
+    const metaUrl = `https://graph.facebook.com/v20.0/${metaConfig.meta_business_id}/message_templates`;
     
     const metaRes = await fetch(metaUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${shop.meta_access_token}`
+        'Authorization': `Bearer ${metaConfig.meta_access_token}`
       },
       body: JSON.stringify(metaPayload),
     });
@@ -226,10 +233,10 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'Template not found or unauthorized' }, { status: 404 });
     }
 
-    // Get Shop's Meta Credentials
+    // Get Shop's Meta Connection Mode
     const { data: shop } = await supabase
       .from('shops')
-      .select('meta_access_token, meta_business_account_id, whatsapp_mode')
+      .select('whatsapp_mode')
       .eq('id', user.id)
       .single();
 
@@ -237,16 +244,25 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'Shop profile not found' }, { status: 404 });
     }
 
+    let metaConfig: any = null;
     if (shop.whatsapp_mode === 'META_API') {
-      if (!shop.meta_access_token || !shop.meta_business_account_id) {
+      const { data, error: configError } = await supabase
+        .from('meta_configs')
+        .select('meta_access_token, meta_business_id')
+        .eq('shop_id', user.id)
+        .single();
+
+      if (!data?.meta_access_token || !data?.meta_business_id) {
+        console.error("[META_SUBMIT_ERROR] Missing token or WABA ID in meta_configs for shop:", user.id);
         return NextResponse.json({ error: 'Missing Meta WABA configuration' }, { status: 400 });
       }
+      metaConfig = data;
 
       // 1. Get the template's Meta ID by querying Meta API with the template name
-      const getTemplatesUrl = `https://graph.facebook.com/v20.0/${shop.meta_business_account_id}/message_templates?name=${template.template_name}`;
+      const getTemplatesUrl = `https://graph.facebook.com/v20.0/${metaConfig.meta_business_id}/message_templates?name=${template.template_name}`;
       const getTemplatesRes = await fetch(getTemplatesUrl, {
         headers: {
-          'Authorization': `Bearer ${shop.meta_access_token}`
+          'Authorization': `Bearer ${metaConfig.meta_access_token}`
         }
       });
 
@@ -272,7 +288,7 @@ export async function PUT(req: Request) {
 
         let headerHandle: string;
         try {
-          headerHandle = await uploadMediaToMeta(image_url, shop.meta_business_account_id, shop.meta_access_token);
+          headerHandle = await uploadMediaToMeta(image_url, metaConfig.meta_business_id, metaConfig.meta_access_token);
         } catch (err: any) {
           console.error('Meta Resumable Upload Error:', err);
           return NextResponse.json({ error: err.message || 'Failed to upload example media to Meta' }, { status: 400 });
@@ -294,7 +310,7 @@ export async function PUT(req: Request) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${shop.meta_access_token}`
+            'Authorization': `Bearer ${metaConfig.meta_access_token}`
           },
           body: JSON.stringify({
             category: category,
@@ -309,12 +325,12 @@ export async function PUT(req: Request) {
         }
       } else {
         // 4. Fallback: if not found on Meta, re-create it by posting to the list endpoint
-        const createUrl = `https://graph.facebook.com/v20.0/${shop.meta_business_account_id}/message_templates`;
+        const createUrl = `https://graph.facebook.com/v20.0/${metaConfig.meta_business_id}/message_templates`;
         const createRes = await fetch(createUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${shop.meta_access_token}`
+            'Authorization': `Bearer ${metaConfig.meta_access_token}`
           },
           body: JSON.stringify({
             name: template.template_name,
@@ -402,18 +418,24 @@ export async function DELETE(req: Request) {
     // Get shop configuration to check mode
     const { data: shop } = await supabase
       .from('shops')
-      .select('meta_access_token, meta_business_account_id, whatsapp_mode')
+      .select('whatsapp_mode')
       .eq('id', user.id)
       .single();
 
     if (shop && shop.whatsapp_mode === 'META_API') {
-      if (shop.meta_access_token && shop.meta_business_account_id) {
+      const { data: metaConfig } = await supabase
+        .from('meta_configs')
+        .select('meta_access_token, meta_business_id')
+        .eq('shop_id', user.id)
+        .single();
+
+      if (metaConfig?.meta_access_token && metaConfig?.meta_business_id) {
         // Trigger Meta API delete endpoint
-        const metaUrl = `https://graph.facebook.com/v20.0/${shop.meta_business_account_id}/message_templates?name=${template.template_name}`;
+        const metaUrl = `https://graph.facebook.com/v20.0/${metaConfig.meta_business_id}/message_templates?name=${template.template_name}`;
         const metaRes = await fetch(metaUrl, {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${shop.meta_access_token}`
+            'Authorization': `Bearer ${metaConfig.meta_access_token}`
           }
         });
 

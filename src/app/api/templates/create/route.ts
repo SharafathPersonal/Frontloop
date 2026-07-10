@@ -100,24 +100,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // 1. Get Shop's Meta Credentials
+    // 1. Get Shop's Meta Connection Mode
     const { data: shop } = await supabase
       .from('shops')
-      .select('meta_access_token, meta_business_account_id, whatsapp_mode')
+      .select('whatsapp_mode')
       .eq('id', user.id)
       .single();
 
-    if (!shop || !shop.meta_access_token || !shop.meta_business_account_id) {
-      return NextResponse.json({ 
-        success: false, 
-        error: "Your Facebook connection is active, but your WhatsApp Business Account ID or Access Token could not be retrieved from the database." 
-      }, { status: 400 });
-    }
-
-    if (shop.whatsapp_mode !== 'META_API') {
+    if (!shop || shop.whatsapp_mode !== 'META_API') {
       return NextResponse.json({ 
         success: false, 
         error: "Your workspace is not configured for Meta API. Please switch to Meta Official API in Settings." 
+      }, { status: 400 });
+    }
+
+    // 1b. Get Shop's Meta Credentials from meta_configs
+    const { data: metaConfig, error: configError } = await supabase
+      .from('meta_configs')
+      .select('meta_access_token, meta_business_id')
+      .eq('shop_id', user.id)
+      .single();
+
+    if (!metaConfig?.meta_access_token || !metaConfig?.meta_business_id) {
+      console.error("[META_SUBMIT_ERROR] Missing token or WABA ID in meta_configs for shop:", user.id);
+      return NextResponse.json({ 
+        success: false, 
+        error: "Your Facebook connection is active, but your WhatsApp Business Account ID or Access Token could not be retrieved from the database. Please re-authenticate via Facebook in Settings." 
       }, { status: 400 });
     }
 
@@ -137,7 +145,7 @@ export async function POST(req: Request) {
       // Perform resumable upload to Meta
       let headerHandle: string;
       try {
-        headerHandle = await uploadMediaToMeta(image_url, shop.meta_business_account_id, shop.meta_access_token);
+        headerHandle = await uploadMediaToMeta(image_url, metaConfig.meta_business_id, metaConfig.meta_access_token);
       } catch (err: any) {
         console.error('Meta Resumable Upload Error:', err);
         return NextResponse.json({ error: err.message || 'Failed to upload example media to Meta' }, { status: 400 });
@@ -160,13 +168,13 @@ export async function POST(req: Request) {
     };
 
     // 3. Send to Meta Graph API
-    const metaUrl = `https://graph.facebook.com/v20.0/${shop.meta_business_account_id}/message_templates`;
+    const metaUrl = `https://graph.facebook.com/v20.0/${metaConfig.meta_business_id}/message_templates`;
     
     const metaRes = await fetch(metaUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${shop.meta_access_token}`
+        'Authorization': `Bearer ${metaConfig.meta_access_token}`
       },
       body: JSON.stringify(metaPayload),
     });
@@ -174,8 +182,23 @@ export async function POST(req: Request) {
     const metaData = await metaRes.json();
 
     if (!metaRes.ok || metaData.error) {
+      const errMsg = metaData.error?.message || metaData.error?.error_user_title || 'Failed to submit template to Meta';
       console.error('Meta API Error:', metaData.error);
-      return NextResponse.json({ error: metaData.error?.message || 'Failed to submit template to Meta' }, { status: 400 });
+      
+      // Still save a REJECTED row for the audit trail
+      await supabase.from('message_templates').insert({
+        shop_id: user.id,
+        template_name: template_name,
+        category: category,
+        header_type: header_type === 'IMAGE' ? 'IMAGE' : 'NONE',
+        body_text: body_text,
+        image_url: header_type === 'IMAGE' ? image_url : null,
+        status: 'REJECTED',
+        rejection_reason: errMsg,
+        updated_at: new Date().toISOString()
+      });
+      
+      return NextResponse.json({ error: errMsg }, { status: 400 });
     }
 
     // 4. Save to Database
@@ -189,6 +212,8 @@ export async function POST(req: Request) {
         body_text: body_text,
         image_url: header_type === 'IMAGE' ? image_url : null,
         status: metaData.status || 'PENDING',
+        meta_template_id: metaData.id || null,
+        updated_at: new Date().toISOString()
       })
       .select()
       .single();

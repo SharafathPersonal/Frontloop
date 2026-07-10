@@ -134,6 +134,17 @@ export async function POST(req: Request) {
 
     const dispatchMode = campaign.dispatch_mode;
 
+    if (shop && dispatchMode === 'META_API') {
+      const { data: metaConfig } = await userClient
+        .from('meta_configs')
+        .select('meta_access_token')
+        .eq('shop_id', shopId)
+        .maybeSingle();
+      if (metaConfig?.meta_access_token) {
+        shop.meta_access_token = metaConfig.meta_access_token;
+      }
+    }
+
     // ── IMPLEMENT WHATSAPP SOCKET HEALTH CHECKER FIRST (Render Engine) ───────
     if (dispatchMode === 'QR_EXPRESS') {
       const renderServerUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';

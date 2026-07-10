@@ -173,6 +173,9 @@ export interface MessageTemplate {
   body_text: string;
   status: TemplateStatus;
   image_url?: string | null;
+  rejection_reason?: string | null;
+  meta_template_id?: string | null;
+  updated_at?: string | null;
   created_at: string;
 }
 
@@ -180,6 +183,9 @@ export type MessageTemplateInsert = Omit<MessageTemplate, 'id' | 'created_at' | 
   id?: string;
   created_at?: string;
   status?: TemplateStatus;
+  rejection_reason?: string | null;
+  meta_template_id?: string | null;
+  updated_at?: string | null;
 };
 
 // ------------------------------------------------------------------

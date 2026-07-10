@@ -64,10 +64,56 @@ export async function GET(request: Request) {
       }
 
       const meta_access_token = tokenData.access_token;
+
+      // ── Retrieve meta_business_id (WABA ID) ──
+      // 1. Try URL parameters first
+      let meta_business_id = requestUrl.searchParams.get('whatsapp_business_account_id') || 
+                             requestUrl.searchParams.get('waba_id') || 
+                             requestUrl.searchParams.get('meta_business_id') || 
+                             requestUrl.searchParams.get('business_id');
+
+      // 2. Fallback 1: Try debug_token using app access token to inspect granular_scopes
+      if (!meta_business_id) {
+        try {
+          const debugResponse = await fetch(`https://graph.facebook.com/v17.0/debug_token?input_token=${meta_access_token}&access_token=${appId}|${appSecret}`);
+          const debugData = await debugResponse.json();
+          if (debugData?.data?.granular_scopes) {
+            const waScope = debugData.data.granular_scopes.find(
+              (gs: any) => gs.scope === 'whatsapp_business_management'
+            );
+            if (waScope && waScope.target_ids && waScope.target_ids.length > 0) {
+              meta_business_id = waScope.target_ids[0];
+            }
+          }
+        } catch (err) {
+          console.error('[META_CALLBACK_WARN] debug_token fallback failed:', err);
+        }
+      }
+
+      // 3. Fallback 2: Try me/businesses list -> first business's WABA list
+      if (!meta_business_id) {
+        try {
+          const bizResponse = await fetch(`https://graph.facebook.com/v17.0/me/businesses?access_token=${meta_access_token}`);
+          const bizData = await bizResponse.json();
+          if (bizData?.data && bizData.data.length > 0) {
+            for (const biz of bizData.data) {
+              const wabaResponse = await fetch(`https://graph.facebook.com/v17.0/${biz.id}/whatsapp_business_accounts?access_token=${meta_access_token}`);
+              const wabaData = await wabaResponse.json();
+              if (wabaData?.data && wabaData.data.length > 0) {
+                meta_business_id = wabaData.data[0].id;
+                break;
+              }
+            }
+          }
+        } catch (err) {
+          console.error('[META_CALLBACK_WARN] me/businesses fallback failed:', err);
+        }
+      }
       
       const { error: upsertError } = await supabase.from('meta_configs').upsert({
         shop_id: user.id,
         meta_access_token,
+        meta_business_id,
         is_connected: true,
         updated_at: new Date().toISOString()
       }, { onConflict: 'shop_id' });
@@ -78,6 +124,7 @@ export async function GET(request: Request) {
 
       await supabase.from('shops').update({ 
         meta_access_token,
+        meta_business_account_id: meta_business_id,
         whatsapp_mode: 'META_API'
       }).eq('id', user.id);
 

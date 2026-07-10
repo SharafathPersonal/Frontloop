@@ -60,18 +60,39 @@ export async function POST(req: Request) {
           // Parse template status updates
           if (change.field === 'message_template_status_update' && change.value) {
             const templateName = change.value.message_template_name;
+            const wabaId = entry.id; // Use WABA ID to scope to the correct shop
             const metaEvent = change.value.event;
+            const rejectionReason = change.value.reason || null;
+            const metaTemplateId = change.value.message_template_id;
+
             let dbStatus: 'PENDING' | 'APPROVED' | 'REJECTED' = 'PENDING';
             if (metaEvent === 'APPROVED') {
               dbStatus = 'APPROVED';
-            } else if (metaEvent === 'REJECTED' || metaEvent === 'PAUSED' || metaEvent === 'DISABLED') {
+            } else if (['REJECTED', 'PAUSED', 'DISABLED'].includes(metaEvent)) {
               dbStatus = 'REJECTED';
             }
 
-            await adminSupabase
-              .from('message_templates')
-              .update({ status: dbStatus })
-              .eq('template_name', templateName);
+            // Scope update by shop via meta_configs WABA ID
+            const { data: metaConfigRow } = await adminSupabase
+              .from('meta_configs')
+              .select('shop_id')
+              .eq('meta_business_id', wabaId)
+              .maybeSingle();
+
+            if (metaConfigRow?.shop_id) {
+              const updatePayload: any = {
+                status: dbStatus,
+                rejection_reason: rejectionReason,
+                updated_at: new Date().toISOString(),
+              };
+              if (metaTemplateId) updatePayload.meta_template_id = String(metaTemplateId);
+
+              await adminSupabase
+                .from('message_templates')
+                .update(updatePayload)
+                .eq('template_name', templateName)
+                .eq('shop_id', metaConfigRow.shop_id); // SCOPED BY SHOP
+            }
           }
           
           // Parse status updates (sent -> delivered -> read)

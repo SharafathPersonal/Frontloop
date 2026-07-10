@@ -214,7 +214,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Shop profile not found' }, { status: 404 });
     }
 
-    const {
+    let {
       meta_access_token,
       meta_phone_number_id,
       meta_template_name,
@@ -235,6 +235,16 @@ export async function POST(req: Request) {
     }
 
     if (whatsapp_mode === 'META_API') {
+      const { data: metaConfig } = await userClient
+        .from('meta_configs')
+        .select('meta_access_token')
+        .eq('shop_id', user.id)
+        .maybeSingle();
+
+      if (metaConfig?.meta_access_token) {
+        meta_access_token = metaConfig.meta_access_token;
+      }
+
       if (!meta_access_token || !meta_phone_number_id || !meta_template_name) {
         return NextResponse.json(
           {
