@@ -57,19 +57,34 @@ const resolveSpintax = (text: string): string =>
     return choices[Math.floor(Math.random() * choices.length)];
   });
 
-/** Apply {{1}} template params and {name} substitution to a message body */
 const buildMessage = (
   body: string,
   customerName: string,
+  shopName: string,
   templateParams?: Record<string, string>,
 ): string => {
   let text = body;
+  
+  // 1. Replace name placeholders first to protect them from being cleared by templateParams loop
+  const nameVal = customerName || 'Customer';
+  text = text.replace(/\{\{1\}\}/g, nameVal);
+  text = text.replace(/\{\{name\}\}/gi, nameVal);
+  text = text.replace(/\{name\}/gi, nameVal);
+
+  // 2. Replace shop name placeholders
+  const shopVal = shopName || 'Attendly Shop';
+  text = text.replace(/\{\{2\}\}/g, shopVal);
+  text = text.replace(/\{\{shop_name\}\}/gi, shopVal);
+  text = text.replace(/\{shop_name\}/gi, shopVal);
+
+  // 3. Replace other template params
   if (templateParams) {
     Object.keys(templateParams).forEach((key) => {
-      text = text.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), templateParams[key]);
+      if (key === '1' || key === '2' || key.toLowerCase() === 'name' || key.toLowerCase() === 'shop_name') return;
+      const val = templateParams[key] ?? '';
+      text = text.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), val);
     });
   }
-  text = text.replace(/\{name\}/gi, customerName || 'Customer');
   return resolveSpintax(text);
 };
 
@@ -347,12 +362,23 @@ export async function POST(req: Request) {
     // ── 9. Create campaign row (status: processing) ──────────────────────
     const campaignTitle = `${payload.campaign.title} [Tags: ${payload.targetTags.join(', ')}]`;
 
+    // Pre-replace constant template variables (except name) for the DB campaign log
+    let dbMessageBody = payload.campaign.message_body;
+    if (payload.templateParams) {
+      const params = payload.templateParams;
+      Object.keys(params).forEach((key) => {
+        if (key === '1' || key.toLowerCase() === 'name') return;
+        const val = params[key] ?? '';
+        dbMessageBody = dbMessageBody.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), val);
+      });
+    }
+
     const { data: campaign, error: campaignInsertError } = await userClient
       .from('campaigns')
       .insert({
         shop_id: user.id,
         title: campaignTitle,
-        message_body: payload.campaign.message_body,
+        message_body: dbMessageBody,
         image_url: payload.campaign.image_url || null,
         status: 'processing',
         total_recipients: requiredCredits,
@@ -381,6 +407,9 @@ export async function POST(req: Request) {
         meta_message_id: `pre_${campaignId}_${phone}_${now}_${idx}`,
         recipient_phone: phone,
         status: 'pending_dispatch',
+        customer_name: r.customer_name || 'Customer',
+        shop_name: shop?.shop_name || 'Attendly Shop',
+        image_url: payload.campaign.image_url || null,
       };
     });
 
@@ -399,6 +428,7 @@ export async function POST(req: Request) {
     //   background callback is a pure closure with no live dependencies on
     //   the dying userClient or the cookie store.
     const shopId = user.id;
+    const shopNameSnapshot = shop?.shop_name || 'Attendly Shop';
     const recipientsSnapshot = [...recipients];
     const templateParamsSnapshot = payload.templateParams ?? {};
     const messageBodySnapshot = payload.campaign.message_body;
@@ -435,7 +465,8 @@ export async function POST(req: Request) {
               const formattedPhone = recipient.whatsapp_number.split('@')[0];
               const messageText = buildMessage(
                 messageBodySnapshot,
-                recipient.customer_name,
+                recipient.customer_name || formattedPhone || 'Customer',
+                shopNameSnapshot,
                 templateParamsSnapshot,
               );
 
@@ -459,6 +490,7 @@ export async function POST(req: Request) {
                       shop_id: shopId,
                       to: formattedPhone,
                       message: messageText,
+                      image_url: campaign.image_url || null,
                     }),
                   }),
                   15_000,
@@ -656,6 +688,7 @@ export async function POST(req: Request) {
           try {
             for (const recipient of recipientsSnapshot) {
               const formattedPhone = recipient.whatsapp_number.split('@')[0];
+              const nameVal = recipient.customer_name || 'Customer';
 
               // Build Meta API template components
               const parameters: { type: string; text: string }[] = [];
@@ -663,14 +696,20 @@ export async function POST(req: Request) {
                 Object.keys(templateParamsSnapshot)
                   .sort((a, b) => parseInt(a) - parseInt(b))
                   .forEach((key) => {
-                    let val = templateParamsSnapshot[key];
-                    val = val.replace('{name}', recipient.customer_name || 'Customer');
+                    let val = templateParamsSnapshot[key] ?? '';
+                    val = val.replace(/\{\{1\}\}/g, nameVal);
+                    val = val.replace(/\{\{name\}\}/gi, nameVal);
+                    val = val.replace(/\{name\}/gi, nameVal);
                     parameters.push({ type: 'text', text: val });
                   });
               } else {
+                let text = messageBodySnapshot;
+                text = text.replace(/\{\{1\}\}/g, nameVal);
+                text = text.replace(/\{\{name\}\}/gi, nameVal);
+                text = text.replace(/\{name\}/gi, nameVal);
                 parameters.push({
                   type: 'text',
-                  text: messageBodySnapshot.replace('{name}', recipient.customer_name || 'Customer'),
+                  text,
                 });
               }
 

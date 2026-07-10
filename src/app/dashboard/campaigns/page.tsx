@@ -234,18 +234,13 @@ export default function CampaignsLedgerPage() {
 
       // Subscribe to any change on this shop's campaigns rows
       channel = supabase
-        .channel(`campaigns-ledger:${user.id}`)
+        .channel(`campaigns-ledger:${user.id}-${Date.now()}`)
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'campaigns', filter: `shop_id=eq.${user.id}` },
           () => fetchCampaigns(),   // always re-fetch to get full row with latest counters
         )
-        .subscribe((status: string) => {
-          if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-            console.warn('[Campaigns Ledger] Realtime channel error — retrying in 3 s…');
-            setTimeout(() => channel?.subscribe(), 3_000);
-          }
-        });
+        .subscribe();
     }
 
     load();
@@ -318,10 +313,13 @@ export default function CampaignsLedgerPage() {
 
   // ── Summary stats (all campaigns regardless of status) ───────────────────
   const summaryStats = useMemo(() => {
-    const totalSent      = campaigns.reduce((s, c) => s + (c.total_sent      ?? 0), 0);
-    const totalFailed    = campaigns.reduce((s, c) => s + (c.total_failed    ?? 0), 0);
-    const processing     = campaigns.filter((c) => c.status === 'processing').length;
-    return { totalSent, totalFailed, processing };
+    const totalRecipients = campaigns.reduce((s, c) => s + (c.total_recipients ?? 0), 0);
+    const totalSent       = campaigns.reduce((s, c) => s + (c.total_sent       ?? 0), 0);
+    const totalDelivered  = campaigns.reduce((s, c) => s + (c.total_delivered  ?? 0), 0);
+    const totalRead       = campaigns.reduce((s, c) => s + (c.total_read       ?? 0), 0);
+    const totalFailed     = campaigns.reduce((s, c) => s + (c.total_failed     ?? 0), 0);
+    const processing      = campaigns.filter((c) => c.status === 'processing').length;
+    return { totalRecipients, totalSent, totalDelivered, totalRead, totalFailed, processing };
   }, [campaigns]);
 
   // ── Loading screen ────────────────────────────────────────────────────────
@@ -362,17 +360,116 @@ export default function CampaignsLedgerPage() {
 
       {/* Summary stats strip (always visible) */}
       {campaigns.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            { label: 'Total Campaigns',    value: campaigns.length },
-            { label: 'Messages Sent',      value: summaryStats.totalSent.toLocaleString() },
-            { label: 'Currently Dispatching', value: summaryStats.processing },
-          ].map((s) => (
-            <div key={s.label} className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-5">
-              <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1">{s.label}</p>
-              <p className="serif-headline text-2xl text-[#3E3B36]">{s.value}</p>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { label: 'Total Campaigns',    value: campaigns.length },
+              { label: 'Messages Sent',      value: (summaryStats.totalSent + summaryStats.totalFailed).toLocaleString() },
+              { label: 'Currently Dispatching', value: summaryStats.processing },
+            ].map((s) => (
+              <div key={s.label} className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-5">
+                <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1">{s.label}</p>
+                <p className="serif-headline text-2xl text-[#3E3B36]">{s.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* WhatsApp Statuses Tick Visualizer Card */}
+          <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-6">
+            <h3 className="lexend-subheading text-xs font-semibold text-[#3E3B36] uppercase tracking-[0.1em] mb-4">
+              Live Delivery Ledger & WhatsApp Status Ticks
+            </h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+              
+              {/* Single Tick (Sent) */}
+              <div className="border border-[#E8E3DA] rounded-lg p-4 bg-[#F9F7F4]/50 flex items-center justify-between">
+                <div>
+                  <p className="text-[9px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Sent (Single Tick)</p>
+                  <p className="serif-headline text-xl text-[#3E3B36]">{Math.max(0, summaryStats.totalSent - summaryStats.totalDelivered).toLocaleString()}</p>
+                </div>
+                <div className="text-[#8B8378]">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Double Tick (Delivered) */}
+              <div className="border border-[#E8E3DA] rounded-lg p-4 bg-[#F9F7F4]/50 flex items-center justify-between">
+                <div>
+                  <p className="text-[9px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Delivered (Double Tick)</p>
+                  <p className="serif-headline text-xl text-[#3E3B36]">{Math.max(0, summaryStats.totalDelivered - summaryStats.totalRead).toLocaleString()}</p>
+                </div>
+                <div className="flex text-[#8B8378]">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-[-10px]">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Blue Tick (Read) */}
+              <div className="border border-[#E8E3DA] rounded-lg p-4 bg-[#F9F7F4]/50 flex items-center justify-between">
+                <div>
+                  <p className="text-[9px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Read (Blue Ticks)</p>
+                  <p className="serif-headline text-xl text-[#10B981]">{summaryStats.totalRead.toLocaleString()}</p>
+                </div>
+                <div className="flex text-[#10B981]">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-[-10px]">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Failed Ticks */}
+              <div className="border border-[#E8E3DA] rounded-lg p-4 bg-[#F9F7F4]/50 flex items-center justify-between">
+                <div>
+                  <p className="text-[9px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Failed</p>
+                  <p className="serif-headline text-xl text-[#F43F5E]">{summaryStats.totalFailed.toLocaleString()}</p>
+                </div>
+                <div className="text-[#F43F5E]">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="15" y1="9" x2="9" y2="15" />
+                    <line x1="9" y1="9" x2="15" y2="15" />
+                  </svg>
+                </div>
+              </div>
+
             </div>
-          ))}
+
+            {summaryStats.totalRecipients > 0 && (
+              <div className="w-full h-3 rounded-full overflow-hidden flex bg-[#F5F1EA]">
+                <div
+                  className="bg-[#10B981] h-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.round((summaryStats.totalRead / summaryStats.totalRecipients) * 100))}%` }}
+                  title={`Read: ${Math.round((summaryStats.totalRead / summaryStats.totalRecipients) * 100)}%`}
+                />
+                <div
+                  className="bg-[#6366F1] h-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.round((Math.max(0, summaryStats.totalDelivered - summaryStats.totalRead) / summaryStats.totalRecipients) * 100))}%` }}
+                  title={`Delivered: ${Math.round((Math.max(0, summaryStats.totalDelivered - summaryStats.totalRead) / summaryStats.totalRecipients) * 100)}%`}
+                />
+                <div
+                  className="bg-[#8B8378] h-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.round((Math.max(0, summaryStats.totalSent - summaryStats.totalDelivered) / summaryStats.totalRecipients) * 100))}%` }}
+                  title={`Sent: ${Math.round((Math.max(0, summaryStats.totalSent - summaryStats.totalDelivered) / summaryStats.totalRecipients) * 100)}%`}
+                />
+                <div
+                  className="bg-[#F43F5E] h-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.round((summaryStats.totalFailed / summaryStats.totalRecipients) * 100))}%` }}
+                  title={`Failed: ${Math.round((summaryStats.totalFailed / summaryStats.totalRecipients) * 100)}%`}
+                />
+              </div>
+            )}
+
+          </div>
         </div>
       )}
 
@@ -452,214 +549,18 @@ export default function CampaignsLedgerPage() {
         </div>
       </div>
 
-      {/* Campaign history table */}
-      <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
-        <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h2 className="serif-headline text-sm font-medium text-[#3E3B36]">Campaign History</h2>
-            <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mt-0.5">
-              Click any row to view detailed analytics
-            </p>
-          </div>
-          {campaigns.length > 0 && (
-            <div className="relative">
-              <button
-                onClick={() => setExportOpen(!exportOpen)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#E8E3DA] hover:border-[#C4A896] text-[#8B8378] hover:text-[#3E3B36] rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer bg-white"
-              >
-                <span>📥 Export Ledger</span>
-              </button>
-              {exportOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setExportOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-48 bg-white border border-[#E8E3DA] rounded-xl shadow-lg z-20 py-1.5 animate-in fade-in duration-100">
-                    <button
-                      onClick={handleExportCSV}
-                      className="w-full text-left px-4 py-2 text-xs text-[#3E3B36] hover:bg-[#F5F1EA]/50 transition-colors flex items-center gap-2 cursor-pointer"
-                    >
-                      <span>📄 Export as CSV</span>
-                    </button>
-                    <button
-                      onClick={handleExportExcel}
-                      className="w-full text-left px-4 py-2 text-xs text-[#3E3B36] hover:bg-[#F5F1EA]/50 transition-colors flex items-center gap-2 cursor-pointer"
-                    >
-                      <span>📊 Export as Excel</span>
-                    </button>
-                    <button
-                      onClick={handleExportPDF}
-                      disabled={exporting}
-                      className="w-full text-left px-4 py-2 text-xs text-[#3E3B36] hover:bg-[#F5F1EA]/50 transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                    >
-                      {exporting ? (
-                        <>
-                          <RefreshCw size={12} className="animate-spin" />
-                          <span>Generating PDF...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>📕 Download PDF Summary</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+      {/* Campaign history link */}
+      <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <h2 className="serif-headline text-sm font-medium text-[#3E3B36]">Campaign History Ledger</h2>
+          <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mt-0.5">
+            View detailed campaign logs, delivery analytics, and exports.
+          </p>
         </div>
-
-        {campaigns.length === 0 ? (
-          <div className="py-16 text-center">
-            <Radio size={28} className="text-[#E8E3DA] mx-auto mb-4" strokeWidth={1} />
-            <p className="text-xs tracking-[0.2em] text-[#8B8378] uppercase">No campaigns recorded</p>
-          </div>
-        ) : (
-          <div>
-            {/* Table header (desktop only) */}
-            <div className="hidden md:grid grid-cols-5 gap-4 px-6 py-3 border-b border-[#E8E3DA] bg-[#F5F1EA]/40">
-              <p className="col-span-2 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase">Campaign Name</p>
-              <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase">Recipients</p>
-              <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase">Sent / Failed</p>
-              <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase">Status</p>
-            </div>
-
-            {campaigns.map((c) => {
-              const statusCfg = STATUS_CONFIG[c.status] ?? STATUS_CONFIG.pending;
-              const date = new Date(c.created_at).toLocaleDateString('en-GB', {
-                day: 'numeric', month: 'short', year: 'numeric',
-              });
-              // Strip the appended [Tags: …] suffix for display
-              const displayTitle = c.title.replace(/\s+\[Tags:\s*[^\]]+\]/, '');
-              const tagMatch     = c.title.match(/\[Tags:\s*([^\]]+)\]/);
-              const sentCount    = c.total_sent    ?? 0;
-              const failedCount  = c.total_failed  ?? 0;
-
-              return (
-                <div key={c.id} className="border-b border-[#E8E3DA] last:border-0 hover:bg-[#F5F1EA]/50 transition-colors">
-                  {/* Mobile View: Stacked Card */}
-                  <Link
-                    href={`/dashboard/campaigns/${c.id}`}
-                    className="block md:hidden p-5 space-y-4"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-[#3E3B36] truncate hover:text-[#C4A896] transition-colors">
-                          {displayTitle}
-                        </p>
-                        <p className="text-[10px] text-[#8B8378] mt-1">{date}</p>
-                      </div>
-                      <div className="flex flex-col items-end">
-                        <span className={statusCfg.className}>{statusCfg.label}</span>
-                        {c.status === 'failed' && c.failure_reason && (
-                          <span 
-                            className="text-[9px] text-rose-600 bg-rose-50 border border-rose-100 px-1.5 py-0.5 rounded mt-1 block max-w-[150px] truncate" 
-                            title={c.failure_reason}
-                          >
-                            {cleanFailureReason(c.failure_reason)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-[#E8E3DA]/40 text-xs">
-                      <div>
-                        <p className="text-[9px] tracking-[0.1em] text-[#8B8378] uppercase mb-0.5">Recipients</p>
-                        <p className="font-semibold text-[#3E3B36]">{(c.total_recipients ?? 0).toLocaleString()}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] tracking-[0.1em] text-[#8B8378] uppercase mb-0.5">Sent / Failed</p>
-                        <div className="flex items-center gap-1.5 font-semibold">
-                          <span className="text-[#6366f1]">{sentCount.toLocaleString()}</span>
-                          <span className="text-[#E8E3DA]">/</span>
-                          <span className="text-[#f43f5e]">{failedCount.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {c.status === 'processing' && (c.total_recipients ?? 0) > 0 && (
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[9px] text-[#8B8378] uppercase">
-                          <span>Progress</span>
-                          <span>{Math.min(100, Math.round(((sentCount + failedCount) / (c.total_recipients ?? 1)) * 100))}%</span>
-                        </div>
-                        <div className="w-full h-1 bg-[#E8E3DA] rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-[#C4A896] transition-all duration-500"
-                            style={{
-                              width: `${Math.min(100, Math.round(((sentCount + failedCount) / (c.total_recipients ?? 1)) * 100))}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </Link>
-
-                  {/* Desktop View: Grid Row */}
-                  <Link
-                    href={`/dashboard/campaigns/${c.id}`}
-                    className="hidden md:grid grid-cols-5 gap-4 px-6 py-4 items-center hover:bg-[#F5F1EA]/50 transition-colors cursor-pointer group"
-                  >
-                    {/* Name + tag badge */}
-                    <div className="col-span-2 flex items-center gap-2 min-w-0">
-                      <div className="min-w-0">
-                        <p className="text-sm text-[#3E3B36] font-medium truncate group-hover:text-[#C4A896] transition-colors">
-                          {displayTitle}
-                        </p>
-                        <p className="text-[10px] text-[#8B8378] mt-0.5">{date}</p>
-                      </div>
-                      {tagMatch && (
-                        <span className="text-[9px] bg-[#F5F1EA] text-[#8B8378] px-1.5 py-0.5 rounded font-mono uppercase tracking-wider shrink-0 whitespace-nowrap">
-                          {tagMatch[1]}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Recipients */}
-                    <div className="flex items-center">
-                      <span className="text-sm text-[#3E3B36] font-medium">
-                        {(c.total_recipients ?? 0).toLocaleString()}
-                      </span>
-                    </div>
-
-                    {/* Sent / Failed live counters */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-[#6366f1] font-medium">{sentCount.toLocaleString()}</span>
-                      <span className="text-[#E8E3DA]">/</span>
-                      <span className="text-sm text-[#f43f5e] font-medium">{failedCount.toLocaleString()}</span>
-                      {/* Progress bar for in-progress campaigns */}
-                      {c.status === 'processing' && (c.total_recipients ?? 0) > 0 && (
-                        <div className="flex-1 max-w-[60px] h-1 bg-[#E8E3DA] rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-[#C4A896] transition-all duration-500"
-                            style={{
-                              width: `${Math.min(100, Math.round(((sentCount + failedCount) / (c.total_recipients ?? 1)) * 100))}%`,
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Status + arrow */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col items-start">
-                        <span className={statusCfg.className}>{statusCfg.label}</span>
-                        {c.status === 'failed' && c.failure_reason && (
-                          <span 
-                            className="text-[10px] text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded mt-1 block max-w-[150px] truncate" 
-                            title={c.failure_reason}
-                          >
-                            {cleanFailureReason(c.failure_reason)}
-                          </span>
-                        )}
-                      </div>
-                      <ArrowRight size={14} className="text-[#E8E3DA] group-hover:text-[#C4A896] transition-colors" />
-                    </div>
-                  </Link>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <Link href="/dashboard/campaigns/history" className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#3E3B36] text-[#F5F1EA] hover:bg-[#2A2824] rounded-lg text-xs tracking-[0.1em] uppercase transition-colors shadow-sm font-medium whitespace-nowrap">
+          View Campaign History
+          <ArrowRight size={14} />
+        </Link>
       </div>
     </div>
   );

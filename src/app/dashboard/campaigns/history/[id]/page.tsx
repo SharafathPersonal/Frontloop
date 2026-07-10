@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState, use, useCallback } from 'react';
+import { useEffect, useState, use, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import type { Campaign } from '@/types/broadcast';
-import { ArrowLeft, Clock, Info, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Clock, Info, RefreshCw, Download, FileText, FileSpreadsheet, ChevronDown, X } from 'lucide-react';
 import axios from 'axios';
 import { useToast } from '@/contexts/ToastContext';
 
@@ -16,6 +16,7 @@ interface RecipientRow {
   id: string;
   customer_name: string;
   whatsapp_number: string;
+  recipient_phone: string;
   /** Raw status string from message_logs — uppercased for display */
   message_status: string;
 }
@@ -79,11 +80,23 @@ export default function CampaignDrillDownPage({
   const { id: campaignId } = use(params);
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const displayTitle = useMemo(() => {
+    if (!campaign) return '';
+    const titleMatch = campaign.title.match(/^(.*?)\s*\[Tags:\s*([^\]]+)\]$/);
+    return titleMatch ? titleMatch[1].trim() : campaign.title;
+  }, [campaign]);
+
+  const targetTags = useMemo(() => {
+    if (!campaign) return '—';
+    const titleMatch = campaign.title.match(/^(.*?)\s*\[Tags:\s*([^\]]+)\]$/);
+    return titleMatch ? titleMatch[2].trim() : '—';
+  }, [campaign]);
   const [recipients, setRecipients] = useState<RecipientRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [retryingAll, setRetryingAll] = useState(false);
   const [retryingSingle, setRetryingSingle] = useState<string | null>(null);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const handleRetryAll = async () => {
@@ -133,6 +146,8 @@ export default function CampaignDrillDownPage({
   };
 
   const [generatingReport, setGeneratingReport] = useState(false);
+  const [exportOpen, setExportOpen]             = useState(false);
+  const [exportingData, setExportingData]       = useState(false);
 
   const handleDownloadReport = async () => {
     try {
@@ -198,56 +213,173 @@ export default function CampaignDrillDownPage({
     }
   };
 
-  // Phone-to-name lookup map (built once, reused for enrichment)
-  const [phoneToName, setPhoneToName] = useState<Record<string, string>>({});
+  // ── Full-dataset export helpers ─────────────────────────────────────────
+  const fetchAllLogsForExport = useCallback(async () => {
+    const { data: logsData } = await supabase
+      .from('message_logs')
+      .select('id, recipient_phone, status, created_at, customer_name, shop_name')
+      .eq('campaign_id', campaignId)
+      .order('created_at', { ascending: false });
+    return (logsData ?? []).map((log: { id: string; recipient_phone: string | null; status: string | null; created_at: string; customer_name: string | null; shop_name: string | null }) => ({
+      'Customer Name':   log.customer_name || log.recipient_phone || 'Unknown',
+      'Phone Number':    log.recipient_phone || '',
+      'WhatsApp Status': (log.status || 'PENDING').toUpperCase(),
+      'Dispatched At':   new Date(log.created_at).toLocaleString(),
+    }));
+  }, [campaignId]);
 
-  // ── Enrich raw log rows with customer names ─────────────────────────────
-  const enrichLogs = useCallback(
-    (logsList: { id: string; recipient_phone: string; status: string }[]): RecipientRow[] =>
-      logsList.map((log) => {
-        // Strip JID domain if present; normalise to digit-only for lookup
-        const phoneRaw = log.recipient_phone.split('@')[0];
-        const phoneDigits = phoneRaw.replace(/\D/g, '');
-        const customer_name =
-          phoneToName[phoneRaw] ??
-          phoneToName[phoneDigits] ??
-          'Unknown Recipient';
+  const handleExportCSV = useCallback(async () => {
+    try {
+      setExportingData(true);
+      const rows = await fetchAllLogsForExport();
+      const Papa = (await import('papaparse')).default;
+      const csv  = Papa.unparse(rows);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url  = URL.createObjectURL(blob);
+      const a    = Object.assign(document.createElement('a'), { href: url, download: `Campaign_Recipients_${campaignId}.csv` });
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } finally { setExportingData(false); setExportOpen(false); }
+  }, [fetchAllLogsForExport, campaignId]);
 
-        return {
-          id: log.id,
-          customer_name,
-          whatsapp_number: phoneRaw,
-          message_status: log.status.toUpperCase(),
-        };
-      }),
-    [phoneToName],
-  );
+  const handleExportExcel = useCallback(async () => {
+    try {
+      setExportingData(true);
+      const rows = await fetchAllLogsForExport();
+      const XLSX = await import('xlsx');
+      const ws   = XLSX.utils.json_to_sheet(rows);
+      const wb   = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Recipients');
+      XLSX.writeFile(wb, `Campaign_Recipients_${campaignId}.xlsx`);
+    } finally { setExportingData(false); setExportOpen(false); }
+  }, [fetchAllLogsForExport, campaignId]);
+
+  const handleExportTabularPDF = useCallback(async () => {
+    try {
+      setExportingData(true);
+      const rows = await fetchAllLogsForExport();
+      const { jsPDF } = await import('jspdf');
+      const doc  = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+      doc.setFillColor(62, 59, 54);
+      doc.rect(0, 0, 297, 18, 'F');
+      doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+      doc.text(`Campaign Recipients — ${displayTitle || campaignId}`, 10, 12);
+      doc.setFont('helvetica','normal'); doc.setFontSize(9);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 200, 12);
+
+      const headers  = ['Customer Name','Phone Number','Status','Dispatched At'];
+      const colX     = [10, 80, 150, 190];
+      let y = 28;
+
+      doc.setFillColor(245, 241, 234);
+      doc.rect(10, y - 5, 277, 8, 'F');
+      doc.setTextColor(62,59,54); doc.setFont('helvetica','bold'); doc.setFontSize(8);
+      headers.forEach((h, i) => doc.text(h, colX[i], y));
+      y += 6; doc.setFont('helvetica','normal');
+
+      rows.forEach(r => {
+        if (y > 185) { doc.addPage(); y = 15; }
+        const vals = [r['Customer Name'].substring(0,30), r['Phone Number'], r['WhatsApp Status'], r['Dispatched At'].substring(0,20)];
+        vals.forEach((v, i) => doc.text(v, colX[i], y));
+        doc.setDrawColor(232,227,218); doc.line(10, y+2, 287, y+2);
+        y += 7;
+      });
+
+      doc.save(`Campaign_Recipients_${campaignId}.pdf`);
+    } finally { setExportingData(false); setExportOpen(false); }
+  }, [fetchAllLogsForExport, campaignId, displayTitle]);
 
   // ── Fetch / refresh logs ────────────────────────────────────────────────
   const fetchLogs = useCallback(async () => {
-    const { data } = await supabase
-      .from('message_logs')
-      .select('id, recipient_phone, status')
-      .eq('campaign_id', campaignId)
-      .order('created_at', { ascending: false });
+    try {
+      const { data: logsData, error: logsError } = await supabase
+        .from('message_logs')
+        .select('*')
+        .eq('campaign_id', campaignId)
+        .order('created_at', { ascending: false });
 
-    if (data) {
-      setRecipients(enrichLogs(data));
+      if (logsError) {
+        console.error('[Campaign Drill] fetchLogs error:', logsError);
+        return;
+      }
+
+      if (!logsData || logsData.length === 0) {
+        setRecipients([]);
+        return;
+      }
+
+      // Check if we need to lookup names from customers_master (for legacy logs or missing entries)
+      const needsLookupPhones: string[] = [];
+      logsData
+        .filter((log) => !log.customer_name || log.customer_name === 'Customer')
+        .forEach((log) => {
+          if (!log.recipient_phone) return;
+          const clean = log.recipient_phone.split('@')[0];
+          needsLookupPhones.push(clean);
+          needsLookupPhones.push(`${clean}@s.whatsapp.net`);
+        });
+
+      let lookup: Record<string, string> = {};
+      if (needsLookupPhones.length > 0) {
+        const { data: contacts, error: contactsError } = await supabase
+          .from('customers_master')
+          .select('customer_name, whatsapp_number')
+          .in('whatsapp_number', needsLookupPhones);
+
+        if (contactsError) {
+          console.error('[Campaign Drill] Fallback lookup error:', contactsError);
+        } else {
+          (contacts ?? []).forEach((c) => {
+            if (c.whatsapp_number) {
+              const raw = c.whatsapp_number.split('@')[0];
+              const digits = raw.replace(/\D/g, '');
+              lookup[raw] = c.customer_name || '';
+              lookup[digits] = c.customer_name || '';
+            }
+          });
+        }
+      }
+
+      const enriched = logsData.map((log) => {
+        const raw = log.recipient_phone ? log.recipient_phone.split('@')[0] : '';
+        const digits = raw.replace(/\D/g, '');
+        const resolvedName = log.customer_name && log.customer_name !== 'Customer'
+          ? log.customer_name
+          : (lookup[raw] || lookup[digits] || 'Customer');
+
+        return {
+          id: log.id,
+          customer_name: resolvedName,
+          whatsapp_number: raw,
+          recipient_phone: log.recipient_phone || '',
+          message_status: (log.status || 'PENDING').toUpperCase(),
+        };
+      });
+
+      setRecipients(enriched);
+    } catch (err) {
+      console.error('[Campaign Drill] fetchLogs exception:', err);
     }
-  }, [campaignId, enrichLogs]);
+  }, [campaignId]);
 
   // ── Manual refresh ──────────────────────────────────────────────────────
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchLogs();
-    // Also re-fetch campaign row to get updated counters
-    const { data } = await supabase
-      .from('campaigns')
-      .select('*')
-      .eq('id', campaignId)
-      .maybeSingle();
-    if (data) setCampaign(data as Campaign);
-    setRefreshing(false);
+    try {
+      await fetchLogs();
+      // Also re-fetch campaign row to get updated counters
+      const { data } = await supabase
+        .from('campaigns')
+        .select('*')
+        .eq('id', campaignId)
+        .maybeSingle();
+      if (data) setCampaign(data as Campaign);
+    } catch (err) {
+      console.error('[Campaign Drill] handleRefresh error:', err);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   // ── Initial load ────────────────────────────────────────────────────────
@@ -255,119 +387,67 @@ export default function CampaignDrillDownPage({
     let channel: ReturnType<typeof supabase.channel> | null = null;
 
     async function load() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Load campaign record
-      const { data: campaignData } = await supabase
-        .from('campaigns')
-        .select('*')
-        .eq('id', campaignId)
-        .eq('shop_id', user.id)
-        .maybeSingle();
-
-      if (!campaignData) {
-        setLoading(false);
-        return;
-      }
-
-      setCampaign(campaignData as Campaign);
-
-      // Build phone → name lookup from customers_master
-      const { data: contacts } = await supabase
-        .from('customers_master')
-        .select('customer_name, whatsapp_number')
-        .eq('shop_id', user.id);
-
-      const lookup: Record<string, string> = {};
-      (contacts ?? []).forEach((c) => {
-        const raw = c.whatsapp_number.split('@')[0];
-        const digits = raw.replace(/\D/g, '');
-        lookup[raw] = c.customer_name;
-        lookup[digits] = c.customer_name;
-      });
-      setPhoneToName(lookup);
-
-      // Load initial message_logs
-      const { data: logsData } = await supabase
-        .from('message_logs')
-        .select('id, recipient_phone, status')
-        .eq('campaign_id', campaignId)
-        .order('created_at', { ascending: false });
-
-      if (logsData) {
-        // Use the lookup directly here because phoneToName state may not have
-        // flushed yet (React batches state updates).
-        const enrichedNow = logsData.map((log) => {
-          const raw = log.recipient_phone.split('@')[0];
-          const digits = raw.replace(/\D/g, '');
-          return {
-            id: log.id,
-            customer_name: lookup[raw] ?? lookup[digits] ?? 'Unknown Recipient',
-            whatsapp_number: raw,
-            message_status: log.status.toUpperCase(),
-          };
-        });
-        setRecipients(enrichedNow);
-      }
-
-      // ── Real-time subscriptions ─────────────────────────────────────────
-      channel = supabase
-        .channel(`campaign-drill:${campaignId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'campaigns',
-            filter: `id=eq.${campaignId}`,
-          },
-          (evt) => {
-            setCampaign(evt.new as Campaign);
-          },
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'message_logs',
-            filter: `campaign_id=eq.${campaignId}`,
-          },
-          async () => {
-            // Re-fetch the full sorted list when any log changes
-            const { data: latest } = await supabase
-              .from('message_logs')
-              .select('id, recipient_phone, status')
-              .eq('campaign_id', campaignId)
-              .order('created_at', { ascending: false });
-
-            if (latest) {
-              const enriched = latest.map((log) => {
-                const raw = log.recipient_phone.split('@')[0];
-                const digits = raw.replace(/\D/g, '');
-                return {
-                  id: log.id,
-                  customer_name: lookup[raw] ?? lookup[digits] ?? 'Unknown Recipient',
-                  whatsapp_number: raw,
-                  message_status: log.status.toUpperCase(),
-                };
-              });
-              setRecipients(enriched);
-            }
-          },
-        );
-
-      channel.subscribe((status) => {
-        if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          console.warn('[Campaign Drill] Realtime channel error — retrying in 3s…');
-          setTimeout(() => channel?.subscribe(), 3_000);
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) {
+          setLoading(false);
+          return;
         }
-      });
 
-      setLoading(false);
+        // Load campaign record
+        const { data: campaignData } = await supabase
+          .from('campaigns')
+          .select('*')
+          .eq('id', campaignId)
+          .eq('shop_id', user.id)
+          .maybeSingle();
+
+        if (!campaignData) {
+          setLoading(false);
+          return;
+        }
+
+        setCampaign(campaignData as Campaign);
+
+        // Fetch and enrich message logs
+        await fetchLogs();
+
+        // ── Real-time subscriptions ─────────────────────────────────────────
+        channel = supabase
+          .channel(`campaign-drill:${campaignId}-${Date.now()}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'campaigns',
+              filter: `id=eq.${campaignId}`,
+            },
+            (evt) => {
+              setCampaign(evt.new as Campaign);
+            },
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'message_logs',
+              filter: `campaign_id=eq.${campaignId}`,
+            },
+            () => {
+              fetchLogs();
+            },
+          );
+
+        channel.subscribe();
+      } catch (err) {
+        console.error('[Campaign Drill] load error:', err);
+      } finally {
+        setLoading(false);
+      }
     }
 
     load();
@@ -375,7 +455,7 @@ export default function CampaignDrillDownPage({
     return () => {
       if (channel) supabase.removeChannel(channel);
     };
-  }, [campaignId]);
+  }, [campaignId, fetchLogs]);
 
   // ── Loading state ───────────────────────────────────────────────────────
   if (loading) {
@@ -411,11 +491,6 @@ export default function CampaignDrillDownPage({
   const deliveredPct = Math.min(100, Math.round((delivered / safeDivisor) * 100));
   const failedPct    = Math.min(100, Math.round((failed    / safeDivisor) * 100));
 
-  // Extract human-readable title and target tags from stored title
-  const titleMatch = campaign.title.match(/^(.*?)\s*\[Tags:\s*([^\]]+)\]$/);
-  const displayTitle = titleMatch ? titleMatch[1].trim() : campaign.title;
-  const targetTags   = titleMatch ? titleMatch[2].trim() : '—';
-
   const campaignBadge = getCampaignBadge(campaign.status);
 
   // Count live breakdown from the ledger rows (for in-progress campaigns)
@@ -430,10 +505,10 @@ export default function CampaignDrillDownPage({
       <div>
         <Link
           data-html2canvas-ignore="true"
-          href="/dashboard/campaigns"
+          href="/dashboard/campaigns/history"
           className="inline-flex items-center gap-1.5 text-[10px] tracking-[0.15em] text-[#8B8378] hover:text-[#C4A896] transition-colors uppercase mb-4"
         >
-          <ArrowLeft size={12} /> Back to Ledger
+          <ArrowLeft size={12} /> Back to History
         </Link>
 
         <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -478,6 +553,43 @@ export default function CampaignDrillDownPage({
         </div>
       </div>
 
+      {/* Campaign Details (Message Body & Image) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {/* Message Body Card */}
+        <div className={campaign.image_url ? "md:col-span-2 bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-6 flex flex-col justify-between" : "md:col-span-3 bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-6 flex flex-col justify-between"}>
+          <div>
+            <h3 className="lexend-subheading text-xs font-semibold text-[#3E3B36] uppercase tracking-[0.1em] mb-3">
+              Broadcast Message Content
+            </h3>
+            <div className="p-4 bg-[#F5F1EA]/40 rounded-lg border border-[#E8E3DA] whitespace-pre-wrap text-sm text-[#3E3B36] font-sans leading-relaxed">
+              {campaign.message_body || 'No message content defined.'}
+            </div>
+          </div>
+        </div>
+
+        {/* Flyer Image Card (only rendered if image_url exists) */}
+        {campaign.image_url ? (
+          <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-6 flex flex-col items-center justify-center">
+            <h3 className="lexend-subheading text-xs font-semibold text-[#3E3B36] uppercase tracking-[0.1em] mb-3 self-start">
+              Flyer Attachment
+            </h3>
+            <div className="relative group overflow-hidden rounded-lg border border-[#E8E3DA] max-w-xs cursor-zoom-in">
+              <img
+                src={campaign.image_url}
+                alt="Campaign Flyer"
+                className="w-full h-48 object-contain bg-[#F5F1EA]/30 transition-transform duration-300 group-hover:scale-105"
+                onClick={() => setZoomedImage(campaign.image_url)}
+              />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                <span className="text-white text-xs font-medium px-3 py-1.5 bg-black/60 rounded-full">Zoom Image</span>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+      </div>
+
       {/* Payload Breakdown */}
       <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-8">
         <div className="flex justify-between items-start flex-wrap gap-4 mb-8">
@@ -506,16 +618,39 @@ export default function CampaignDrillDownPage({
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-[#E8E3DA] hover:border-[#C4A896] text-[#8B8378] hover:text-[#3E3B36] text-xs font-semibold shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-white"
             >
               {generatingReport ? (
-                <>
-                  <RefreshCw size={14} className="animate-spin" />
-                  Generating Report...
-                </>
+                <><RefreshCw size={14} className="animate-spin" /> Generating Report...</>
               ) : (
-                <>
-                  <span>📄 Download Full PDF Report</span>
-                </>
+                <span>📄 Download Visual PDF</span>
               )}
             </button>
+
+            {/* Export dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setExportOpen(o => !o)}
+                disabled={exportingData}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-[#E8E3DA] hover:border-[#C4A896] text-[#8B8378] hover:text-[#3E3B36] text-xs font-semibold shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer bg-white"
+              >
+                {exportingData ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />}
+                Export Data <ChevronDown size={11} />
+              </button>
+              {exportOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setExportOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-52 bg-white border border-[#E8E3DA] rounded-xl shadow-xl z-20 py-1.5">
+                    <button onClick={handleExportCSV} className="w-full text-left px-4 py-2.5 text-xs text-[#3E3B36] hover:bg-[#F5F1EA]/70 flex items-center gap-2.5 cursor-pointer">
+                      <FileText size={13} className="text-[#C4A896]" /> Export as CSV
+                    </button>
+                    <button onClick={handleExportExcel} className="w-full text-left px-4 py-2.5 text-xs text-[#3E3B36] hover:bg-[#F5F1EA]/70 flex items-center gap-2.5 cursor-pointer">
+                      <FileSpreadsheet size={13} className="text-[#10b981]" /> Export as Excel
+                    </button>
+                    <button onClick={handleExportTabularPDF} className="w-full text-left px-4 py-2.5 text-xs text-[#3E3B36] hover:bg-[#F5F1EA]/70 flex items-center gap-2.5 cursor-pointer">
+                      <Download size={13} className="text-[#f43f5e]" /> Download Tabular PDF
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -652,10 +787,12 @@ export default function CampaignDrillDownPage({
                 className="grid grid-cols-3 gap-4 px-6 py-4 border-b border-[#E8E3DA] last:border-0 hover:bg-[#F5F1EA]/50 transition-colors"
               >
                 <div className="flex items-center">
-                  <span className="text-sm text-[#3E3B36] font-medium">{r.customer_name}</span>
+                  <span className="text-sm text-[#3E3B36] font-medium">
+                    {r.customer_name || r.recipient_phone || 'Unknown'}
+                  </span>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-sm text-[#8B8378] font-mono">{r.whatsapp_number}</span>
+                  <span className="text-sm text-[#8B8378] font-mono">{r.recipient_phone}</span>
                 </div>
                 <div className="flex items-center justify-between w-full pr-4">
                   <span
@@ -717,6 +854,26 @@ export default function CampaignDrillDownPage({
           </>
         )}
       </div>
+
+      {/* Responsive Pop-up Modal */}
+      {zoomedImage && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="relative max-w-full max-h-full flex items-center justify-center">
+            <button
+              onClick={() => setZoomedImage(null)}
+              className="absolute -top-12 right-0 sm:-right-12 p-2 bg-[#3E3B36] text-[#F5F1EA] hover:text-[#C4A896] rounded-full border border-[#E8E3DA]/30 shadow-lg transition-colors cursor-pointer focus:outline-none"
+              title="Close modal"
+            >
+              <X size={20} />
+            </button>
+            <img
+              src={zoomedImage}
+              alt="Flyer Zoom View"
+              className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg border border-[#E8E3DA]/20 shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
 
     </div>
   );

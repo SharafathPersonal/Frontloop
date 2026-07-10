@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, FormEvent, Suspense, useRef } from 'react';
+import { useEffect, useState, FormEvent, Suspense, useRef, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { load } from '@cashfreepayments/cashfree-js';
@@ -40,8 +40,8 @@ function SettingsContent() {
   const [loading, setLoading] = useState(true);
   const [manualProviderOpen, setManualProviderOpen] = useState(false);
   const [isMetaConnected, setIsMetaConnected] = useState(false);
-  const [qrCodeString, setQrCodeString] = useState<string | null>(null);
-  const [qrStatus, setQrStatus] = useState<string>('disconnected');
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<string>('DISCONNECTED');
   const [isQrStarting, setIsQrStarting] = useState(false);
 
   const searchParams = useSearchParams();
@@ -139,7 +139,7 @@ function SettingsContent() {
       }
       if (shopData) {
         setShop(shopData);
-        setQrStatus(shopData.qr_express_status || 'disconnected');
+        setConnectionStatus((shopData.qr_express_status || 'disconnected').toUpperCase());
         setShopForm({
           shop_name: shopData.shop_name || '',
           owner_phone: shopData.owner_phone || '',
@@ -164,39 +164,45 @@ function SettingsContent() {
     load();
   }, []);
 
+  const checkStatus = useCallback(async () => {
+    if (!shop?.id) return;
+    try {
+      const url = process.env.NEXT_PUBLIC_RENDER_SERVER_URL 
+        ? `${process.env.NEXT_PUBLIC_RENDER_SERVER_URL}/api/whatsapp/status?shop_id=${shop.id}`
+        : `/api/whatsapp/status?shop_id=${shop.id}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === 'CONNECTED') {
+          setConnectionStatus('CONNECTED');
+          setQrCode(null); // Instantly drop the QR view canvas
+        } else {
+          setConnectionStatus(data.status);
+          if (data.qr) {
+            setQrCode(data.qr);
+          }
+          if (data.status === 'DISCONNECTED') {
+            setQrCode(null);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error polling WhatsApp connection status:', err);
+    }
+  }, [shop?.id]);
+
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
 
     if (shopForm.whatsapp_mode === 'QR_EXPRESS' && shop?.id) {
-      const pollStatus = async () => {
-        try {
-          const url = process.env.NEXT_PUBLIC_RENDER_SERVER_URL 
-            ? `${process.env.NEXT_PUBLIC_RENDER_SERVER_URL}/api/whatsapp/status?shop_id=${shop.id}`
-            : `/api/whatsapp/status?shop_id=${shop.id}`;
-          const res = await fetch(url);
-          if (res.ok) {
-            const data = await res.json();
-            setQrStatus(data.status);
-            if (data.qr && data.qr !== qrCodeString) {
-              setQrCodeString(data.qr);
-            }
-            if (data.status === 'connected') {
-              setQrCodeString(null);
-            }
-          }
-        } catch (err) {
-          console.error('Error polling WhatsApp connection status:', err);
-        }
-      };
-
-      pollStatus();
-      intervalId = setInterval(pollStatus, 7000);
+      checkStatus();
+      intervalId = setInterval(checkStatus, 4000);
     }
 
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [shopForm.whatsapp_mode, shop?.id]);
+  }, [shopForm.whatsapp_mode, shop?.id, checkStatus]);
 
   const handleGenerateQR = async () => {
     if (!shop?.id) return;
@@ -212,9 +218,14 @@ function SettingsContent() {
       }
       const data = await res.json();
       if (data.qr) {
-        setQrCodeString(data.qr);
+        setQrCode(data.qr);
       }
-      setQrStatus('disconnected');
+      setConnectionStatus('DISCONNECTED');
+      
+      // FORCE IMMEDIATE RE-POLLING UPON SUCCESSFUL CONNECT
+      if (data.status?.toLowerCase() === 'connected' || data.qr === null) {
+        await checkStatus();
+      }
     } catch (err: any) {
       setGlobalError({ title: 'QR Connection Error', message: err.message || 'Failed to start QR session.' });
     } finally {
@@ -238,8 +249,8 @@ function SettingsContent() {
       setShop(prev => prev ? { ...prev, qr_express_status: 'disconnected', whatsapp_mode: 'NONE' } : null);
       setShopForm(prev => ({ ...prev, whatsapp_mode: 'NONE' }));
       setMode('NONE');
-      setQrStatus('disconnected');
-      setQrCodeString(null);
+      setConnectionStatus('DISCONNECTED');
+      setQrCode(null);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 3000);
     } else {
@@ -814,10 +825,15 @@ function SettingsContent() {
               <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Direct WhatsApp Web session</p>
             </div>
             <div className="ml-auto">
-              {qrStatus === 'connected' ? (
+              {connectionStatus === 'CONNECTED' ? (
                 <div className="flex items-center gap-1.5 text-emerald-600">
                   <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                   <span className="text-[10px] tracking-[0.15em] uppercase font-bold">Connected</span>
+                </div>
+              ) : connectionStatus === 'CONNECTING' ? (
+                <div className="flex items-center gap-1.5 text-amber-600">
+                  <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+                  <span className="text-[10px] tracking-[0.15em] uppercase font-bold">Connecting</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 text-[#8B8378]">
@@ -830,7 +846,7 @@ function SettingsContent() {
 
           <div className="p-6 space-y-5">
             <div className="bg-[#F9F7F4] rounded-xl p-5 border border-[#E8E3DA] flex flex-col items-center text-center">
-              {qrStatus === 'connected' ? (
+              {connectionStatus === 'CONNECTED' ? (
                 <div className="py-6 space-y-4">
                   <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto border border-emerald-100">
                     <CheckCircle className="text-emerald-600" size={32} strokeWidth={1.5} />
@@ -848,12 +864,12 @@ function SettingsContent() {
                     Disconnect Device
                   </button>
                 </div>
-              ) : qrCodeString ? (
+              ) : qrCode ? (
                 <div className="py-4 space-y-5 flex flex-col items-center">
                   <div className="p-3 bg-white border border-[#E8E3DA] rounded-xl shadow-inner relative group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrCodeString)}&size=200x200`}
+                      src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrCode)}&size=200x200`}
                       alt="WhatsApp Web QR Code"
                       className="w-48 h-48 block"
                     />

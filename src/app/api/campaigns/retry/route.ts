@@ -185,8 +185,26 @@ export async function POST(req: Request) {
         .eq('whatsapp_number', formattedPhone)
         .maybeSingle();
 
-      const customerName = customer?.customer_name ?? 'Customer';
-      const messageText = campaign.message_body.replace(/\{name\}/gi, customerName);
+      const customerName = customer?.customer_name ?? formattedPhone ?? 'Customer';
+      const shopName = shop?.shop_name || 'Attendly Shop';
+      let messageText = campaign.message_body;
+      
+      // Replace name placeholders
+      messageText = messageText.replace(/\{\{1\}\}/g, customerName);
+      messageText = messageText.replace(/\{\{name\}\}/gi, customerName);
+      messageText = messageText.replace(/\{name\}/gi, customerName);
+
+      // Replace shop name placeholders
+      messageText = messageText.replace(/\{\{2\}\}/g, shopName);
+      messageText = messageText.replace(/\{\{shop_name\}\}/gi, shopName);
+      messageText = messageText.replace(/\{shop_name\}/gi, shopName);
+
+      // Resolve Spintax variations: {A|B|C} → random choice (skipping {name})
+      messageText = messageText.replace(/\{([^{}]+)\}/g, (match: string, contents: string) => {
+        if (contents.toLowerCase() === 'name') return match;
+        const choices = contents.split('|');
+        return choices[Math.floor(Math.random() * choices.length)];
+      });
 
       try {
         if (dispatchMode === 'QR_EXPRESS') {
@@ -200,6 +218,7 @@ export async function POST(req: Request) {
                 shop_id: shopId,
                 to: formattedPhone,
                 message: messageText,
+                image_url: campaign.image_url || null,
               }),
             }),
             15_000,
@@ -412,8 +431,26 @@ export async function POST(req: Request) {
               .eq('whatsapp_number', formattedPhone)
               .maybeSingle();
 
-            const customerName = customer?.customer_name ?? 'Customer';
-            const messageText = campaign.message_body.replace(/\{name\}/gi, customerName);
+            const customerName = customer?.customer_name ?? formattedPhone ?? 'Customer';
+            const shopName = shop?.shop_name || 'Attendly Shop';
+            let messageText = campaign.message_body;
+
+            // Replace name placeholders
+            messageText = messageText.replace(/\{\{1\}\}/g, customerName);
+            messageText = messageText.replace(/\{\{name\}\}/gi, customerName);
+            messageText = messageText.replace(/\{name\}/gi, customerName);
+
+            // Replace shop name placeholders
+            messageText = messageText.replace(/\{\{2\}\}/g, shopName);
+            messageText = messageText.replace(/\{\{shop_name\}\}/gi, shopName);
+            messageText = messageText.replace(/\{shop_name\}/gi, shopName);
+
+            // Resolve Spintax variations: {A|B|C} → random choice (skipping {name})
+            messageText = messageText.replace(/\{([^{}]+)\}/g, (match: string, contents: string) => {
+              if (contents.toLowerCase() === 'name') return match;
+              const choices = contents.split('|');
+              return choices[Math.floor(Math.random() * choices.length)];
+            });
 
             try {
               if (dispatchMode === 'QR_EXPRESS') {
@@ -428,6 +465,7 @@ export async function POST(req: Request) {
                       shop_id: shopId,
                       to: formattedPhone,
                       message: messageText,
+                      image_url: campaign.image_url || null,
                     }),
                   }),
                   15_000,

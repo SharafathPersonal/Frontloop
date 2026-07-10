@@ -40,9 +40,33 @@ export default function DashboardPage() {
       await fetchAllData();
       setLoading(false);
 
+      // Check live WhatsApp connection status if mode is QR_EXPRESS and update DB/UI if needed
+      const renderServerUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
+      try {
+        const { data: currentShop } = await supabase.from('shops').select('whatsapp_mode, qr_express_status').eq('id', user.id).maybeSingle();
+        if (currentShop && currentShop.whatsapp_mode === 'QR_EXPRESS') {
+          const res = await fetch(`${renderServerUrl}/api/whatsapp/status?shop_id=${user.id}`);
+          if (res.ok) {
+            const data = await res.json();
+            const liveConnected = data.status === 'CONNECTED';
+            const dbConnected = currentShop.qr_express_status === 'connected';
+            if (liveConnected !== dbConnected) {
+              const newStatus = liveConnected ? 'connected' : 'disconnected';
+              await supabase
+                .from('shops')
+                .update({ qr_express_status: newStatus })
+                .eq('id', user.id);
+              await fetchAllData();
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching live WhatsApp status on dashboard load:', err);
+      }
+
       // Subscribe to campaigns
       channelCampaigns = supabase
-        .channel(`dashboard-campaigns:${user.id}`)
+        .channel(`dashboard-campaigns:${user.id}-${Date.now()}`)
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'campaigns', filter: `shop_id=eq.${user.id}` },
@@ -52,7 +76,7 @@ export default function DashboardPage() {
 
       // Subscribe to wallets
       channelWallet = supabase
-        .channel(`dashboard-wallet:${user.id}`)
+        .channel(`dashboard-wallet:${user.id}-${Date.now()}`)
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'wallets', filter: `shop_id=eq.${user.id}` },
@@ -62,7 +86,7 @@ export default function DashboardPage() {
 
       // Subscribe to shops
       channelShop = supabase
-        .channel(`dashboard-shop:${user.id}`)
+        .channel(`dashboard-shop:${user.id}-${Date.now()}`)
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'shops', filter: `id=eq.${user.id}` },

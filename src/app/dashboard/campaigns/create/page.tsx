@@ -179,35 +179,73 @@ export default function BroadcastPage() {
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
+  const validateImageFiles = (files: FileList | null): File | null => {
+    if (!files || files.length === 0) return null;
+    if (files.length > 1) {
+      setErrorMsg('Strict validation failed: Exactly one image upload allowed. Multiple files rejected.');
+      console.warn('[Audit Failure] Multi-file selection detected. Rejected.');
+      return null;
+    }
+    const file = files[0];
+    const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+    if (!allowedMimeTypes.includes(file.type)) {
+      setErrorMsg('Strict validation failed: Only PNG and JPG/JPEG files are allowed. PDF/other formats rejected.');
+      console.warn(`[Audit Failure] Invalid MIME-type: ${file.type}. Rejected.`);
+      return null;
+    }
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      setErrorMsg('Strict validation failed: Image file size exceeds 5MB limit.');
+      console.warn(`[Audit Failure] File size: ${(file.size / (1024*1024)).toFixed(2)}MB exceeds limit. Rejected.`);
+      return null;
+    }
+    return file;
+  };
+
   const handleImageDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setImageDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
+    const file = validateImageFiles(e.dataTransfer.files);
+    if (file) {
       setImageFile(file);
       setImagePreviewUrl(URL.createObjectURL(file));
-    } else {
-      setErrorMsg('Please drop a valid image file (jpg, png, webp).');
     }
   }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) { setImageFile(file); setImagePreviewUrl(URL.createObjectURL(file)); }
+    const file = validateImageFiles(e.target.files);
+    if (file) {
+      setImageFile(file);
+      setImagePreviewUrl(URL.createObjectURL(file));
+    }
   };
 
   const uploadImageToStorage = async (): Promise<string | null> => {
     if (!imageFile) return null;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
     setImageUploading(true);
-    const ext = imageFile.name.split('.').pop();
-    const path = `campaign-images/${user.id}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('broadcast-assets').upload(path, imageFile, { upsert: true });
-    setImageUploading(false);
-    if (error) { setErrorMsg(`Image upload failed: ${error.message}`); return null; }
-    const { data: { publicUrl } } = supabase.storage.from('broadcast-assets').getPublicUrl(path);
-    return publicUrl;
+    try {
+      const formData = new FormData();
+      formData.append('file', imageFile);
+
+      const res = await fetch('/api/campaigns/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      setImageUploading(false);
+
+      if (!res.ok || data.error) {
+        setErrorMsg(`Image upload failed: ${data.error || 'Server error'}`);
+        return null;
+      }
+
+      return data.publicUrl;
+    } catch (err: any) {
+      setImageUploading(false);
+      setErrorMsg(`Image upload failed: ${err.message || 'Network error'}`);
+      return null;
+    }
   };
 
   const handleConfirmSubmit = () => {
@@ -400,26 +438,42 @@ export default function BroadcastPage() {
             )}
             
             <p className="text-[10px] text-[#8B8378] mt-2">
-              💡 Quick Guide: Use <code className="bg-[#F5F1EA] px-1 rounded text-[#C4A896]">{'{{1}}'}</code>, <code className="bg-[#F5F1EA] px-1 rounded text-[#C4A896]">{'{{2}}'}</code> to dynamically insert customer name, balance, etc.
+              💡 Quick Guide: Use <code className="bg-[#F5F1EA] px-1 rounded text-[#C4A896]">{'{{1}}'}</code>, <code className="bg-[#F5F1EA] px-1 rounded text-[#C4A896]">{'{{2}}'}</code> to dynamically insert customer name, shop name, etc.
             </p>
           </div>
           
           {Object.keys(templateParams).length > 0 && (
             <div className="bg-[#F9F7F4] border border-[#E8E3DA] rounded-xl p-5 space-y-4">
               <p className="text-xs tracking-[0.1em] text-[#3E3B36] uppercase font-medium">Template Variables</p>
-              {Object.keys(templateParams).sort((a,b) => parseInt(a)-parseInt(b)).map(key => (
-                <div key={key} className="flex flex-col gap-1">
-                  <label className="text-[10px] text-[#8B8378] uppercase">Variable {'{{' + key + '}}'}</label>
-                  <input
-                    type="text"
-                    value={templateParams[key]}
-                    onChange={(e) => setTemplateParams({ ...templateParams, [key]: e.target.value })}
-                    disabled={isSubmitting}
-                    className="w-full px-3 py-2 text-sm bg-white border border-[#E8E3DA] rounded focus:outline-none focus:border-[#C4A896] disabled:opacity-50"
-                    placeholder={`Value for {{${key}}}`}
-                  />
-                </div>
-              ))}
+              {Object.keys(templateParams).sort((a,b) => parseInt(a)-parseInt(b)).map(key => {
+                let labelText = `Variable {{${key}}}`;
+                if (key === '1') {
+                  labelText = 'Customer Name (യൂസറുടെ പേര്)';
+                } else if (key === '2') {
+                  labelText = 'Shop Name (സ്ഥാപനത്തിന്റെ പേര്)';
+                }
+                const isAuto = key === '1' || key === '2';
+                return (
+                  <div key={key} className="flex flex-col gap-1">
+                    <label className="text-[10px] text-[#8B8378] uppercase">{labelText}</label>
+                    <input
+                      type="text"
+                      value={isAuto ? 'Auto-populated for each recipient' : templateParams[key]}
+                      onChange={(e) => {
+                        if (!isAuto) setTemplateParams({ ...templateParams, [key]: e.target.value });
+                      }}
+                      disabled={isSubmitting || isAuto}
+                      readOnly={isAuto}
+                      className={`w-full px-3 py-2 text-sm border rounded focus:outline-none ${
+                        isAuto 
+                          ? 'bg-[#F5F1EA] text-[#8B8378] border-[#E8E3DA] cursor-not-allowed' 
+                          : 'bg-white border-[#E8E3DA] focus:border-[#C4A896]'
+                      } ${isSubmitting ? 'opacity-50' : ''}`}
+                      placeholder={isAuto ? '' : `Value for {{${key}}}`}
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -428,10 +482,17 @@ export default function BroadcastPage() {
               <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-3">Preview</p>
               <div className="bg-[#FFFFFF] rounded-lg p-5 border-l-2 border-[#C4A896] shadow-sm">
                 <p className="text-sm text-[#3E3B36] leading-relaxed whitespace-pre-wrap">
-                  {Object.keys(templateParams).reduce(
-                    (text, key) => text.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), templateParams[key] || `{{${key}}}`),
-                    form.message_body
-                  )}
+                  {(() => {
+                    let preview = form.message_body;
+                    preview = preview
+                      .replace(/\{\{1\}\}/g, "Sharafath")
+                      .replace(/\{\{2\}\}/g, "True Attendly Shop");
+                    Object.keys(templateParams).forEach((key) => {
+                      if (key === '1' || key === '2') return;
+                      preview = preview.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), templateParams[key] || `{{${key}}}`);
+                    });
+                    return preview;
+                  })()}
                 </p>
               </div>
             </div>
@@ -484,12 +545,12 @@ export default function BroadcastPage() {
                 role="button"
                 aria-label="Upload campaign image"
               >
-                <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                <input ref={imageRef} type="file" accept="image/png,image/jpeg,image/jpg" className="hidden" onChange={handleImageChange} />
                 <div className="w-10 h-10 bg-[#F5F1EA] rounded-lg flex items-center justify-center mx-auto mb-3">
                   <ImageIcon size={18} className="text-[#8B8378]" strokeWidth={1.5} />
                 </div>
                 <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mb-1">Drop flyer image here</p>
-                <p className="text-[10px] text-[#8B8378]">JPG, PNG, WebP · Max 5MB</p>
+                <p className="text-[10px] text-[#8B8378]">PNG, JPG, JPEG · Max 5MB</p>
               </div>
             )}
           </div>
