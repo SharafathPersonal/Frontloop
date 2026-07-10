@@ -48,12 +48,7 @@ export default function DashboardPage() {
           { event: '*', schema: 'public', table: 'campaigns', filter: `shop_id=eq.${user.id}` },
           () => fetchAllData()
         )
-        .subscribe((status: string) => {
-          if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-            console.warn('[Dashboard Campaigns] Realtime channel error — retrying…');
-            setTimeout(() => channelCampaigns?.subscribe(), 3000);
-          }
-        });
+        .subscribe();
 
       // Subscribe to wallets
       channelWallet = supabase
@@ -63,12 +58,7 @@ export default function DashboardPage() {
           { event: '*', schema: 'public', table: 'wallets', filter: `shop_id=eq.${user.id}` },
           () => fetchAllData()
         )
-        .subscribe((status: string) => {
-          if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-            console.warn('[Dashboard Wallet] Realtime channel error — retrying…');
-            setTimeout(() => channelWallet?.subscribe(), 3000);
-          }
-        });
+        .subscribe();
 
       // Subscribe to shops
       channelShop = supabase
@@ -78,12 +68,7 @@ export default function DashboardPage() {
           { event: '*', schema: 'public', table: 'shops', filter: `id=eq.${user.id}` },
           () => fetchAllData()
         )
-        .subscribe((status: string) => {
-          if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-            console.warn('[Dashboard Shop] Realtime channel error — retrying…');
-            setTimeout(() => channelShop?.subscribe(), 3000);
-          }
-        });
+        .subscribe();
     }
 
     load();
