@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import type { Campaign } from '@/types/broadcast';
 import { ArrowLeft, Clock, Info, RefreshCw } from 'lucide-react';
+import axios from 'axios';
+import { useToast } from '@/contexts/ToastContext';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -80,6 +82,55 @@ export default function CampaignDrillDownPage({
   const [recipients, setRecipients] = useState<RecipientRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [retryingAll, setRetryingAll] = useState(false);
+  const [retryingSingle, setRetryingSingle] = useState<string | null>(null);
+  const { showToast } = useToast();
+
+  const handleRetryAll = async () => {
+    try {
+      setRetryingAll(true);
+      showToast("Processing retries in background...", "info");
+      
+      const response = await axios.post('/api/campaigns/retry', {
+        campaign_id: campaignId
+      });
+
+      if (response.data.ok) {
+        showToast("Campaign recovery started successfully.", "success");
+      } else {
+        showToast(response.data.error || "Failed to start bulk retry.", "error");
+      }
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.response?.data?.error || err.message || "An error occurred.", "error");
+    } finally {
+      setRetryingAll(false);
+      await handleRefresh();
+    }
+  };
+
+  const handleRetrySingle = async (recipientLedgerId: string) => {
+    try {
+      setRetryingSingle(recipientLedgerId);
+      showToast("Processing retries in background...", "info");
+
+      const response = await axios.post('/api/campaigns/retry', {
+        recipient_ledger_id: recipientLedgerId
+      });
+
+      if (response.data.ok) {
+        showToast("Message retry completed.", "success");
+      } else {
+        showToast(response.data.error || "Failed to retry message.", "error");
+      }
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.response?.data?.error || err.message || "An error occurred.", "error");
+    } finally {
+      setRetryingSingle(null);
+      await handleRefresh();
+    }
+  };
 
   // Phone-to-name lookup map (built once, reused for enrichment)
   const [phoneToName, setPhoneToName] = useState<Record<string, string>>({});
@@ -366,12 +417,26 @@ export default function CampaignDrillDownPage({
 
       {/* Payload Breakdown */}
       <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-8">
-        <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36] mb-1">
-          Payload Breakdown
-        </h2>
-        <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-8">
-          Performance metrics sourced directly from the delivery ledger
-        </p>
+        <div className="flex justify-between items-start flex-wrap gap-4 mb-8">
+          <div>
+            <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36] mb-1">
+              Payload Breakdown
+            </h2>
+            <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">
+              Performance metrics sourced directly from the delivery ledger
+            </p>
+          </div>
+          {failed > 0 && (
+            <button
+              onClick={handleRetryAll}
+              disabled={retryingAll}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-semibold shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <RefreshCw size={14} className={retryingAll ? 'animate-spin' : ''} />
+              Retry All Failed
+            </button>
+          )}
+        </div>
 
         {/* Stacked bar — only shown when campaign has sent some messages */}
         {(readPct + deliveredPct + failedPct) > 0 ? (
@@ -504,12 +569,23 @@ export default function CampaignDrillDownPage({
                 <div className="flex items-center">
                   <span className="text-sm text-[#8B8378] font-mono">{r.whatsapp_number}</span>
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center justify-between w-full pr-4">
                   <span
                     className={`text-[10px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 rounded-full ${pill.classes}`}
                   >
                     {pill.label}
                   </span>
+                  {r.message_status === 'FAILED' && (
+                    <button
+                      onClick={() => handleRetrySingle(r.id)}
+                      disabled={retryingSingle === r.id}
+                      className="inline-flex items-center gap-1 text-xs text-[#8B8378] hover:text-[#C4A896] transition-colors disabled:opacity-50 cursor-pointer"
+                      title="Retry this message"
+                    >
+                      <RefreshCw size={12} className={retryingSingle === r.id ? 'animate-spin' : ''} />
+                      <span className="underline">Retry</span>
+                    </button>
+                  )}
                 </div>
               </div>
             );
