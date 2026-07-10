@@ -111,16 +111,33 @@ const waitForSocketOpen = (shopId, timeoutMs = 20_000) => {
 // ── Baileys Supabase Auth Storage Layer ─────────────────────────────────────
 
 const getSupabaseAuthState = async (shopId) => {
+  const customReplacer = (k, v) => {
+    if (v instanceof Uint8Array || v instanceof Buffer) {
+      return { type: 'Buffer', data: Array.from(v) };
+    }
+    return BufferJSON.replacer(k, v);
+  };
+
+  const customReviver = (k, v) => {
+    if (v && v.type === 'Buffer' && Array.isArray(v.data)) {
+      return Buffer.from(v.data);
+    }
+    return BufferJSON.reviver(k, v);
+  };
+
   const writeData = async (data, key) => {
-    await supabase.from('whatsapp_sessions').upsert(
+    const { error } = await supabase.from('whatsapp_sessions').upsert(
       {
         shop_id: shopId,
         session_key: key,
-        session_value: JSON.parse(JSON.stringify(data, BufferJSON.replacer)),
+        session_value: JSON.parse(JSON.stringify(data, customReplacer)),
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'shop_id,session_key' },
     );
+    if (error) {
+      console.error(`[WA Engine] Failed to write session data for key ${key}:`, error.message);
+    }
   };
 
   const readData = async (key) => {
@@ -132,7 +149,7 @@ const getSupabaseAuthState = async (shopId) => {
       .maybeSingle();
 
     if (data?.session_value) {
-      return JSON.parse(JSON.stringify(data.session_value), BufferJSON.reviver);
+      return JSON.parse(JSON.stringify(data.session_value), customReviver);
     }
     return null;
   };
