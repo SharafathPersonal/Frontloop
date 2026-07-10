@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
-import { startWhatsAppEngine, activeSessions, isSocketLive, ensureSocketLive } from '@/lib/whatsapp-bridge';
+// Deleted local Baileys imports - delegated to Render service
 
 export const maxDuration = 60; // Enforce 60-second execution cushion
 export const dynamic = 'force-dynamic';
@@ -134,21 +134,19 @@ export async function POST(req: Request) {
 
     const dispatchMode = campaign.dispatch_mode;
 
-    // ── IMPLEMENT WHATSAPP SOCKET HEALTH CHECKER FIRST ───────────────────────
+    // ── IMPLEMENT WHATSAPP SOCKET HEALTH CHECKER FIRST (Render Engine) ───────
     if (dispatchMode === 'QR_EXPRESS') {
-      // Sync global.whatsappSock reference with the activeSessions cache if available
-      if (!global.whatsappSock && activeSessions.has(shopId)) {
-        global.whatsappSock = activeSessions.get(shopId);
-      }
-
-      // Connection verification engine
-      if (!global.whatsappSock || global.whatsappSock.ws.isOpen !== true) {
-         console.log("Active messaging socket is dead. Attempting dynamic token recovery from Supabase...");
-         global.whatsappSock = await startWhatsAppEngine(shopId, adminClient);
-         await new Promise(res => setTimeout(res, 2500)); // Handshake cushion
-      }
-      if (!global.whatsappSock || global.whatsappSock.ws.isOpen !== true) {
-         return NextResponse.json({ ok: false, error: "WhatsApp is not actively running. Please go to settings and re-scan the QR code." }, { status: 400 });
+      const renderServerUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
+      const statusRes = await fetch(`${renderServerUrl}/api/whatsapp/status?shop_id=${shopId}`);
+      const statusData = await statusRes.json().catch(() => ({}));
+      
+      if (statusData.status !== 'CONNECTED') {
+         console.log("Active messaging socket is dead. Attempting connect on Render...");
+         const connectRes = await fetch(`${renderServerUrl}/api/whatsapp/connect?shop_id=${shopId}`);
+         const connectText = await connectRes.text();
+         if (connectText !== 'CONNECTED') {
+           return NextResponse.json({ ok: false, error: "WhatsApp is not actively running. Please go to settings and re-scan the QR code." }, { status: 400 });
+         }
       }
     }
 
@@ -192,16 +190,32 @@ export async function POST(req: Request) {
 
       try {
         if (dispatchMode === 'QR_EXPRESS') {
-          // Re-transmit via Baileys
-          const sock = global.whatsappSock;
-          const sendReceipt: any = await withTimeout(
-            sock.sendMessage(recipientJid, { text: messageText }),
-            12_000,
+          // Re-transmit via Render server API
+          const renderServerUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
+          const response = await withTimeout(
+            fetch(`${renderServerUrl}/api/whatsapp/send-message`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                shop_id: shopId,
+                to: formattedPhone,
+                message: messageText,
+              }),
+            }),
+            15_000,
           );
 
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+          }
+
+          const responseData = await response.json();
+          const sendReceipt = responseData.log;
           const confirmedMsgId = sendReceipt?.key?.id;
+
           if (!confirmedMsgId) {
-            throw new Error('No valid message key returned by Baileys for single retry');
+            throw new Error('No valid message key returned by Render API for single retry');
           }
 
           // Deduct credit
@@ -403,21 +417,33 @@ export async function POST(req: Request) {
 
             try {
               if (dispatchMode === 'QR_EXPRESS') {
-                // Ensure socket is live per contact
-                const sock = await ensureSocketLive(shopId, adminClient, 15000);
-                if (!sock || !isSocketLive(shopId)) {
-                  throw new Error('WhatsApp socket lost connection mid-campaign');
-                }
-
-                // Send message via Baileys
-                const sendReceipt: any = await withTimeout(
-                  sock.sendMessage(recipientJid, { text: messageText }),
-                  12_000,
+                const renderServerUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
+                
+                // Send message via Render API
+                const response = await withTimeout(
+                  fetch(`${renderServerUrl}/api/whatsapp/send-message`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      shop_id: shopId,
+                      to: formattedPhone,
+                      message: messageText,
+                    }),
+                  }),
+                  15_000,
                 );
 
+                if (!response.ok) {
+                  const errorData = await response.json().catch(() => ({}));
+                  throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+
+                const responseData = await response.json();
+                const sendReceipt = responseData.log;
                 const confirmedMsgId = sendReceipt?.key?.id;
+
                 if (!confirmedMsgId) {
-                  throw new Error('No valid message key returned by Baileys');
+                  throw new Error('No valid message key returned by Render API');
                 }
 
                 // Deduct credit

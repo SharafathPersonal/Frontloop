@@ -21,7 +21,6 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
-import { getWhatsAppSocket, isSocketLive, activeSessions, ensureSocketLive } from '@/lib/whatsapp-bridge';
 
 export const maxDuration = 60; // Enforce 60-second execution cushion
 export const dynamic = 'force-dynamic';
@@ -408,7 +407,9 @@ export async function POST(req: Request) {
 
     // ── 12. Background dispatch ──────────────────────────────────────────
     if (whatsapp_mode === 'QR_EXPRESS') {
-      // ── QR EXPRESS: anti-ban throttled queue ──────────────────────────
+      // ── QR EXPRESS: anti-ban throttled queue (decoupled delegation to Render server) ──────────────────────────
+      const renderServerUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
+
       waitUntil(
         (async () => {
           let successCount = 0;
@@ -417,17 +418,22 @@ export async function POST(req: Request) {
 
           try {
             // ── PRE-LOOP: active WebSocket connection stream re-verification ──
-            console.log('[QR Express] Preflight: checking and ensuring socket is live...');
-            const sockPreflight = await ensureSocketLive(shopId, adminClient, 15000);
+            console.log('[QR Express] Preflight: checking if socket is live on Render...');
+            const statusRes = await fetch(`${renderServerUrl}/api/whatsapp/status?shop_id=${shopId}`);
+            const statusData = await statusRes.json().catch(() => ({}));
             
-            if (!sockPreflight || !isSocketLive(shopId)) {
-              throw new Error("WhatsApp phone is completely disconnected or offline. Handshake failed.");
+            if (statusData.status !== 'CONNECTED') {
+              console.log('[QR Express] Socket not connected. Bootstrapping connect...');
+              const connectRes = await fetch(`${renderServerUrl}/api/whatsapp/connect?shop_id=${shopId}`);
+              const connectText = await connectRes.text();
+              if (connectText !== 'CONNECTED') {
+                throw new Error("WhatsApp phone is completely disconnected or offline. Handshake failed.");
+              }
             }
 
             for (const recipient of recipientsSnapshot) {
               const formattedPhone = recipient.whatsapp_number.split('@')[0];
-              const recipientJid   = `${formattedPhone}@s.whatsapp.net`;
-              const messageText    = buildMessage(
+              const messageText = buildMessage(
                 messageBodySnapshot,
                 recipient.customer_name,
                 templateParamsSnapshot,
@@ -442,24 +448,33 @@ export async function POST(req: Request) {
                   .eq('recipient_phone', formattedPhone)
                   .eq('status', 'pending_dispatch');
 
-                // Active WebSocket connection re-verification per contact
-                const sock = await ensureSocketLive(shopId, adminClient, 15000);
-
-                if (!sock || !isSocketLive(shopId)) {
-                  throw new Error('WhatsApp socket lost connection mid-campaign');
-                }
-
-                // ── REAL Baileys transmission — 12 s hard timeout ──────────
-                const sendReceipt: any = await withTimeout(
-                  sock.sendMessage(recipientJid, { text: messageText }),
-                  12_000,
+                // ── API relay call via HTTP POST to dedicated Render engine instance ──
+                const response = await withTimeout(
+                  fetch(`${renderServerUrl}/api/whatsapp/send-message`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      shop_id: shopId,
+                      to: formattedPhone,
+                      message: messageText,
+                    }),
+                  }),
+                  15_000,
                 );
 
-                // Validate delivery receipt — Baileys returns a proto message stub
-                const confirmedMsgId: string | undefined = sendReceipt?.key?.id ?? undefined;
+                if (!response.ok) {
+                  const errorData = await response.json().catch(() => ({}));
+                  throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+
+                const responseData = await response.json();
+                const sendReceipt = responseData.log;
+                const confirmedMsgId = sendReceipt?.key?.id;
 
                 if (!confirmedMsgId) {
-                  throw new Error(`No valid message key returned by Baileys for JID ${recipientJid}`);
+                  throw new Error(`Render socket API returned no message JID/id`);
                 }
 
                 // Credit deducted ONLY after confirmed receipt from WhatsApp

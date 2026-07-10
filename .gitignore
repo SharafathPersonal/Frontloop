@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/service/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -39,3 +40,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Block service local variables & build nodes
+service/node_modules/
+service/.env
+service/.env.local

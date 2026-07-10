@@ -1,7 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { startWhatsAppEngine } from '@/lib/whatsapp-bridge';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getSupabaseClient = (cookieStore: any) => {
@@ -35,8 +34,9 @@ export async function POST() {
     // Delete any stale QR codes
     await supabase.from('whatsapp_sessions').delete().eq('shop_id', user.id).eq('session_key', 'qr');
 
-    // Fire and forget the engine startup in the background
-    startWhatsAppEngine(user.id, supabase).catch(err => {
+    // Fire and forget the engine startup in the background on Render server
+    const renderServerUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
+    fetch(`${renderServerUrl}/api/whatsapp/connect?shop_id=${user.id}`).catch(err => {
       console.error('[WHATSAPP_START_ERROR]', err);
     });
 
