@@ -351,7 +351,7 @@ export async function PUT(req: Request) {
 
         const editData = await editRes.json();
         if (!editRes.ok || editData.error) {
-          const errMsg = editData.error?.message || editData.error?.error_user_title || 'Failed to update template on Meta';
+          const errMsg = editData.error?.error_user_msg || editData.error?.error_user_title || editData.error?.message || 'Failed to update template on Meta';
           console.error('Meta API Edit Error:', editData.error);
           return NextResponse.json({ error: errMsg }, { status: 400 });
         }
@@ -374,7 +374,7 @@ export async function PUT(req: Request) {
 
         const createData = await createRes.json();
         if (!createRes.ok || createData.error) {
-          const errMsg = createData.error?.message || createData.error?.error_user_title || 'Failed to submit template to Meta';
+          const errMsg = createData.error?.error_user_msg || createData.error?.error_user_title || createData.error?.message || 'Failed to submit template to Meta';
           console.error('Meta API Fallback Create Error:', createData.error);
           return NextResponse.json({ error: errMsg }, { status: 400 });
         }

@@ -444,8 +444,8 @@ function SettingsContent() {
       const params = new URLSearchParams();
       params.set('client_id', appId);
       params.set('redirect_uri', redirectUri);
-      params.set('scope', 'business_management,whatsapp_business_management');
-      params.set('response_type', 'code');
+      params.set('scope', 'public_profile,email,whatsapp_business_management,whatsapp_business_messaging');
+      params.set('response_type', 'code,granted_scopes');
       if (secureState) {
         params.set('state', secureState);
       }

@@ -214,7 +214,7 @@ export async function POST(req: Request) {
     const metaData = await metaRes.json();
 
     if (!metaRes.ok || metaData.error) {
-      const errMsg = metaData.error?.message || metaData.error?.error_user_title || 'Failed to submit template to Meta';
+      const errMsg = metaData.error?.error_user_msg || metaData.error?.error_user_title || metaData.error?.message || 'Failed to submit template to Meta';
       console.error('Meta API Error:', metaData.error);
       
       // Still save a REJECTED row for the audit trail

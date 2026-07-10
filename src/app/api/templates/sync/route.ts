@@ -67,8 +67,9 @@ export async function GET(req: Request) {
     const metaData = await metaRes.json();
 
     if (!metaRes.ok || metaData.error) {
+      const errMsg = metaData.error?.error_user_msg || metaData.error?.error_user_title || metaData.error?.message || 'Failed to fetch templates from Meta';
       console.error('Meta API Sync Error:', metaData.error);
-      return NextResponse.json({ error: metaData.error?.message || 'Failed to fetch templates from Meta' }, { status: 400 });
+      return NextResponse.json({ error: errMsg }, { status: 400 });
     }
 
     if (!metaData.data || !Array.isArray(metaData.data)) {
