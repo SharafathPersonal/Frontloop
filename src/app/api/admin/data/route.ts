@@ -52,14 +52,14 @@ export async function GET() {
     const totalTokens = walletsData?.reduce((acc, w) => acc + (w.credits_remaining || 0), 0) || 0;
 
     // Gross Revenue
-    const { data: paymentsData, error: paymentsError } = await supabaseAdmin
-      .from('payment_logs')
-      .select('amount, payment_status');
+    const { data: revenueData, error: paymentsError } = await supabaseAdmin
+      .from('transactions')
+      .select('amount')
+      .eq('status', 'success');
 
     if (paymentsError) throw paymentsError;
-    const totalRevenue = paymentsData
-      ?.filter(p => p.payment_status === 'success' || p.payment_status === 'pending')
-      .reduce((sum, p) => sum + parseFloat(p.amount), 0) || 0;
+    const totalRevenue = revenueData
+      ?.reduce((sum, tx) => sum + Number(tx.amount), 0) || 0;
 
     // Fetch Pricing Tiers
     const { data: pricingData, error: pricingError } = await supabaseAdmin

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Activity, DollarSign, Users, ShieldAlert, Zap, Calendar, LayoutDashboard, Store, IndianRupee, Save, AlertTriangle, CheckCircle, MessageSquare, Star, Shield } from 'lucide-react';
+import { X, Activity, DollarSign, Users, ShieldAlert, Zap, Calendar, LayoutDashboard, Store, IndianRupee, Save, AlertTriangle, CheckCircle, MessageSquare, Star, Shield, CreditCard } from 'lucide-react';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 
 export default function AdminDashboard() {
@@ -284,6 +284,13 @@ export default function AdminDashboard() {
           >
             <IndianRupee size={18} />
             Pricing Engine
+          </button>
+          <button 
+            onClick={() => router.push('/admin/transactions')}
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium tracking-wide transition-colors text-[#8E8B85] hover:text-[#3E3B36] hover:bg-[#F5F1EA]/50"
+          >
+            <CreditCard size={18} />
+            Transactions
           </button>
           <button 
             onClick={() => setActiveView('feedbacks')}
