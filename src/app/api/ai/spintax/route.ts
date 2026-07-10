@@ -93,6 +93,7 @@ CRITICAL VARIABLE RULES (Meta Graph API Requirements):
 4. Do NOT use named variables like {{name}} or add spaces like {{ 1 }}.
 5. If the original message has variables, you must retain exactly the same number of variables in the same format.
 6. Make sure to keep {{1}}, {{2}} placeholders intact. DO NOT nest Spintax inside them.
+7. Variables CANNOT be placed at the very beginning or the very end of the message. Always surround them with text.
 
 Input Data Matrices:
 - Business Category / Industry: "${industry_type}"

@@ -101,6 +101,11 @@ export async function POST(req: Request) {
     }
 
     // Validate variables
+    const trimmedBody = body_text.trim();
+    if (/^\{\{\d+\}\}/.test(trimmedBody) || /\{\{\d+\}\}$/.test(trimmedBody)) {
+      return NextResponse.json({ error: "Variables can't be at the start or end of the template. Please add some text before and after." }, { status: 400 });
+    }
+
     const invalidVars = body_text.match(/\{\{(?!\d+\}\}).*?\}\}/g);
     if (invalidVars) {
       return NextResponse.json({ error: `Invalid variable format: ${invalidVars.join(', ')}. Variables must be exactly {{1}}, {{2}}, etc.` }, { status: 400 });

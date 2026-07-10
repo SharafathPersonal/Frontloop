@@ -89,6 +89,7 @@ CRITICAL VARIABLE RULES (Meta Graph API Requirements):
 3. Variables MUST be sequential. (If you use {{1}} and {{3}}, you MUST also use {{2}}).
 4. Do NOT use named variables like {{name}} or add spaces like {{ 1 }}.
 5. If the original message has variables, you must retain exactly the same number of variables in the same format.
+6. Variables CANNOT be placed at the very beginning or the very end of the message. Always surround them with text.
 
 Input Data Matrices:
 - Business Category / Industry: "${industry_type}"
