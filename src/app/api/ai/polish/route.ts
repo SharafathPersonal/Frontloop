@@ -89,7 +89,7 @@ CRITICAL VARIABLE RULES (Meta Graph API Requirements):
 3. Variables MUST be sequential. (If you use {{1}} and {{3}}, you MUST also use {{2}}).
 4. Do NOT use named variables like {{name}} or add spaces like {{ 1 }}. If the user provides invalid variables like {{name}} or [Name], you MUST automatically convert them to the correct format ({{1}}, {{2}}, etc.).
 5. If the original message has variables, you must retain exactly the same number of variables.
-6. Variables CANNOT be placed at the very beginning or the very end of the message. If the user placed a variable at the edge, you MUST add appropriate surrounding text (e.g., 'Hello {{1}}', 'Best regards, {{2}}').
+6. Variables CANNOT be the first or last word of the message. Punctuation (like periods or commas) DOES NOT count as text. For example, 'from {{2}}.' is INVALID because the variable is at the end. You MUST add actual words before the first variable and after the last variable (e.g., 'Hello {{1}},', 'Best regards, {{2}}').
 
 Input Data Matrices:
 - Business Category / Industry: "${industry_type}"
