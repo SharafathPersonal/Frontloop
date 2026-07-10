@@ -355,17 +355,25 @@ const ensureSocketLive = async (shopId, timeoutMs = 20_000) => {
 
 // ── REST API Endpoints ─────────────────────────────────────────────────────
 
+const initializingShops = {};
+
 // Endpoint 1: Connect / Initialize Engine & Return QR Code
 app.get('/api/whatsapp/connect', async (req, res) => {
   const { shop_id } = req.query;
   if (!shop_id) {
-    return res.status(400).send('Missing shop_id parameter');
+    return res.status(400).json({ ok: false, error: 'Missing shop_id parameter' });
+  }
+
+  if (initializingShops[shop_id]) {
+    return res.status(429).json({ ok: false, error: 'Engine initialization already in progress.' });
   }
 
   try {
+    initializingShops[shop_id] = true;
     // If already connected
     if (isSocketLive(shop_id)) {
-      return res.status(200).send("CONNECTED");
+      delete initializingShops[shop_id];
+      return res.status(200).json({ ok: true, status: "connected", qr: null });
     }
 
     // Initialize/Ensure engine starts up
@@ -383,11 +391,12 @@ app.get('/api/whatsapp/connect', async (req, res) => {
 
     const dbQr = qrSession?.session_value?.qr;
     if (dbQr) {
-      return res.status(200).send(dbQr);
+      delete initializingShops[shop_id];
+      return res.status(200).json({ ok: true, status: "disconnected", qr: dbQr });
     }
 
     // Wait up to 10 seconds for the next QR code event to fire
-    const qr = await new Promise((resolve) => {
+    const qrCodeString = await new Promise((resolve) => {
       if (!qrResolvers.has(shop_id)) {
         qrResolvers.set(shop_id, []);
       }
@@ -398,19 +407,23 @@ app.get('/api/whatsapp/connect', async (req, res) => {
       }, 10000);
     });
 
-    if (qr) {
-      return res.status(200).send(qr);
+    if (qrCodeString && qrCodeString !== "CONNECTED" && qrCodeString !== "DISCONNECTED") {
+      delete initializingShops[shop_id];
+      return res.status(200).json({ ok: true, status: "disconnected", qr: qrCodeString });
     }
 
     // Double-check if opened in the meantime
-    if (isSocketLive(shop_id)) {
-      return res.status(200).send("CONNECTED");
+    if (isSocketLive(shop_id) || qrCodeString === "CONNECTED") {
+      delete initializingShops[shop_id];
+      return res.status(200).json({ ok: true, status: "connected", qr: null });
     }
 
-    return res.status(200).send("DISCONNECTED");
+    delete initializingShops[shop_id];
+    return res.status(200).json({ ok: true, status: "disconnected", qr: null });
   } catch (error) {
+    delete initializingShops[shop_id];
     console.error(`[Connect Endpoint Error] shop_id: ${shop_id}, error:`, error);
-    return res.status(500).send(error instanceof Error ? error.message : String(error));
+    return res.status(500).json({ ok: false, error: error instanceof Error ? error.message : String(error) });
   }
 });
 

@@ -202,7 +202,7 @@ function SettingsContent() {
       const url = process.env.NEXT_PUBLIC_RENDER_SERVER_URL 
         ? `${process.env.NEXT_PUBLIC_RENDER_SERVER_URL}/api/whatsapp/connect?shop_id=${shop.id}`
         : `/api/whatsapp/connect?shop_id=${shop.id}`;
-      const res = await fetch(url, { method: 'POST' });
+      const res = await fetch(url);
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Failed to initialize QR session');
