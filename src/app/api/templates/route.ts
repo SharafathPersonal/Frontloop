@@ -2,6 +2,69 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
+async function uploadMediaToMeta(imageUrl: string, wabaId: string, accessToken: string): Promise<string> {
+  const imgRes = await fetch(imageUrl);
+  if (!imgRes.ok) {
+    throw new Error(`Failed to fetch image from URL: ${imageUrl}`);
+  }
+
+  const mimeType = imgRes.headers.get('content-type') || '';
+  if (!['image/png', 'image/jpeg', 'image/jpg'].includes(mimeType)) {
+    throw new Error(`Invalid media type: ${mimeType}. Only PNG, JPG, and JPEG are supported.`);
+  }
+
+  const buffer = Buffer.from(await imgRes.arrayBuffer());
+  const fileLength = buffer.length;
+
+  if (fileLength > 5 * 1024 * 1024) {
+    throw new Error(`File size too large: ${(fileLength / 1024 / 1024).toFixed(2)}MB. Maximum size is 5MB.`);
+  }
+
+  const fileName = imageUrl.split('/').pop() || 'sample.png';
+
+  const initUrl = `https://graph.facebook.com/v20.0/${wabaId}/uploads` +
+    `?file_name=${encodeURIComponent(fileName)}` +
+    `&file_length=${fileLength}` +
+    `&file_type=${encodeURIComponent(mimeType)}`;
+  
+  const initRes = await fetch(initUrl, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`
+    }
+  });
+
+  if (!initRes.ok) {
+    const errData = await initRes.json().catch(() => ({}));
+    throw new Error(`Meta Upload Session Init failed: ${errData.error?.message || initRes.statusText}`);
+  }
+
+  const { id: sessionId } = await initRes.json();
+
+  const uploadUrl = `https://graph.facebook.com/v20.0/${sessionId}`;
+  const uploadRes = await fetch(uploadUrl, {
+    method: 'POST',
+    headers: {
+      'Authorization': `OAuth ${accessToken}`,
+      'file_offset': '0',
+      'Content-Type': 'application/octet-stream'
+    },
+    body: buffer
+  });
+
+  if (!uploadRes.ok) {
+    const errData = await uploadRes.json().catch(() => ({}));
+    throw new Error(`Meta Upload File failed: ${errData.error?.message || uploadRes.statusText}`);
+  }
+
+  const { h: handle } = await uploadRes.json();
+  if (!handle) {
+    throw new Error('Meta Upload returned no file handle ID.');
+  }
+
+  return handle;
+}
+
 export async function POST(req: Request) {
   try {
     const cookieStore = await cookies();
@@ -145,7 +208,7 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
-    const { id, category, header_type, body_text } = body;
+    const { id, category, header_type, body_text, image_url } = body;
 
     if (!id || !category || !body_text) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -203,9 +266,24 @@ export async function PUT(req: Request) {
       ];
 
       if (header_type === 'IMAGE') {
+        if (!image_url) {
+          return NextResponse.json({ error: 'Image URL is required for IMAGE header type templates' }, { status: 400 });
+        }
+
+        let headerHandle: string;
+        try {
+          headerHandle = await uploadMediaToMeta(image_url, shop.meta_business_account_id, shop.meta_access_token);
+        } catch (err: any) {
+          console.error('Meta Resumable Upload Error:', err);
+          return NextResponse.json({ error: err.message || 'Failed to upload example media to Meta' }, { status: 400 });
+        }
+
         components.unshift({
           type: 'HEADER',
           format: 'IMAGE',
+          example: {
+            header_handle: [headerHandle]
+          }
         });
       }
 
@@ -261,6 +339,7 @@ export async function PUT(req: Request) {
         category: category,
         header_type: header_type === 'IMAGE' ? 'IMAGE' : 'NONE',
         body_text: body_text,
+        image_url: header_type === 'IMAGE' ? image_url : null,
         status: 'PENDING', // Instantly change the template status back to 'PENDING'
       })
       .eq('id', id)

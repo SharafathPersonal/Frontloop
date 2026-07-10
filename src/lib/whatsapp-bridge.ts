@@ -223,7 +223,7 @@ export const ensureSocketLive = async (
   supabase: SupabaseClient,
   timeoutMs = 20_000,
 ): Promise<ReturnType<typeof makeWASocket> | null> => {
-  let sock = activeSessions.get(shopId);
+  const sock = activeSessions.get(shopId);
   const isDown = !sock || (sock as any).ws?.isOpen !== true || !connectionOpenSessions.has(shopId);
 
   if (isDown) {
@@ -279,6 +279,82 @@ export const startWhatsAppEngine = async (
 
   // ── Credential persistence ──────────────────────────────────────────────
   sock.ev.on('creds.update', saveCreds);
+
+  const handleMessageRead = async (metaMessageId: string) => {
+    if (!metaMessageId) return;
+
+    try {
+      // 1. Resolve campaign mapping via message_logs
+      const { data: logData, error: fetchError } = await supabase
+        .from('message_logs')
+        .select('campaign_id, status')
+        .eq('meta_message_id', metaMessageId)
+        .maybeSingle();
+
+      if (fetchError || !logData?.campaign_id) return;
+      const campaignId = logData.campaign_id;
+
+      // Prevent duplicate increments if status already matched
+      if (logData.status?.toUpperCase() === 'READ') return;
+
+      // 2. Update the database status to 'READ' instantly
+      const { error: updateError } = await supabase
+        .from('message_logs')
+        .update({ status: 'READ' })
+        .eq('meta_message_id', metaMessageId);
+
+      if (updateError) {
+        console.error(`[DB Receipt Error] Failed to update read state:`, updateError.message);
+        return;
+      }
+
+      console.log(`[DB Receipt Success] Message ${metaMessageId} successfully updated to READ.`);
+
+      // 3. Increment Campaign Aggregates atomically via RPC
+      const { error: rpcError } = await supabase.rpc('increment_campaign_metric', {
+        campaign_row_id: campaignId,
+        metric_name: 'read',
+        quantity: 1
+      });
+
+      if (rpcError) {
+        console.error(`[WA Engine] Failed to increment read metric for campaign ${campaignId}:`, rpcError.message);
+      }
+    } catch (err) {
+      console.error(`[WA Engine] Exception handling message receipt update:`, err);
+    }
+  };
+
+  // ── Message receipts (Blue Ticks tracking) ──────────────────────────────
+  sock.ev.on('message-receipt.update', async (receipts) => {
+    for (const receipt of receipts) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const r = receipt as any;
+      if (r.receiptType === 'read' || r.receipt?.readTimestamp) {
+        const id = receipt.key.id;
+        if (id) {
+          console.log(`[BAILEYS AUDIT] Message read by user. Message ID: ${id}`);
+          await handleMessageRead(id);
+        }
+      }
+    }
+  });
+
+  // ── Messages status updates (individual read receipts) ──────────────────
+  sock.ev.on('messages.update', async (updates) => {
+    for (const update of updates) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const status = update.update.status as any;
+      // 4 is WebMessageInfo.Status.READ
+      if (status === 4 || status === 'read') {
+        const id = update.key.id;
+        if (id) {
+          console.log(`[BAILEYS AUDIT] Message read by user. Message ID: ${id}`);
+          await handleMessageRead(id);
+        }
+      }
+    }
+  });
 
   // ── Connection lifecycle ────────────────────────────────────────────────
   sock.ev.on('connection.update', async (update) => {

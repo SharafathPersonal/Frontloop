@@ -172,6 +172,7 @@ export interface MessageTemplate {
   header_type?: 'IMAGE' | 'NONE' | null;
   body_text: string;
   status: TemplateStatus;
+  image_url?: string | null;
   created_at: string;
 }
 

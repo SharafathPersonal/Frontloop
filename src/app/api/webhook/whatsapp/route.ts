@@ -57,6 +57,23 @@ export async function POST(req: Request) {
       for (const entry of payload.entry) {
         for (const change of entry.changes) {
           
+          // Parse template status updates
+          if (change.field === 'message_template_status_update' && change.value) {
+            const templateName = change.value.message_template_name;
+            const metaEvent = change.value.event;
+            let dbStatus: 'PENDING' | 'APPROVED' | 'REJECTED' = 'PENDING';
+            if (metaEvent === 'APPROVED') {
+              dbStatus = 'APPROVED';
+            } else if (metaEvent === 'REJECTED' || metaEvent === 'PAUSED' || metaEvent === 'DISABLED') {
+              dbStatus = 'REJECTED';
+            }
+
+            await adminSupabase
+              .from('message_templates')
+              .update({ status: dbStatus })
+              .eq('template_name', templateName);
+          }
+          
           // Parse status updates (sent -> delivered -> read)
           if (change.value && change.value.statuses) {
             for (const status of change.value.statuses) {

@@ -41,6 +41,8 @@ export default function TemplatesPage() {
   const [category, setCategory] = useState<'MARKETING' | 'UTILITY'>('MARKETING');
   const [headerType, setHeaderType] = useState<'NONE' | 'IMAGE'>('NONE');
   const [bodyText, setBodyText] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -161,6 +163,31 @@ export default function TemplatesPage() {
     setSubmitError('');
 
     try {
+      let uploadedImageUrl = editingTemplate?.image_url || null;
+
+      if (headerType === 'IMAGE') {
+        if (imageFile) {
+          setImageUploading(true);
+          try {
+            const formData = new FormData();
+            formData.append('file', imageFile);
+            const uploadRes = await fetch('/api/campaigns/upload-image', {
+              method: 'POST',
+              body: formData,
+            });
+            const uploadData = await uploadRes.json();
+            if (!uploadRes.ok || uploadData.error) {
+              throw new Error(uploadData.error || 'Failed to upload header image');
+            }
+            uploadedImageUrl = uploadData.publicUrl;
+          } finally {
+            setImageUploading(false);
+          }
+        } else if (!uploadedImageUrl) {
+          throw new Error('Please select a header image.');
+        }
+      }
+
       if (editingTemplate) {
         const res = await fetch('/api/templates', {
           method: 'PUT',
@@ -170,6 +197,7 @@ export default function TemplatesPage() {
             category,
             header_type: headerType,
             body_text: bodyText,
+            image_url: uploadedImageUrl,
           }),
         });
 
@@ -183,7 +211,7 @@ export default function TemplatesPage() {
         );
         showToast('Template updated successfully and sent for Meta approval', 'success');
       } else {
-        const res = await fetch('/api/templates', {
+        const res = await fetch('/api/templates/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -191,6 +219,7 @@ export default function TemplatesPage() {
             category,
             header_type: headerType,
             body_text: bodyText,
+            image_url: uploadedImageUrl,
           }),
         });
 
@@ -260,6 +289,7 @@ export default function TemplatesPage() {
     setHeaderType('NONE');
     setBodyText('');
     setSubmitError('');
+    setImageFile(null);
     setEditingTemplate(null);
   };
 
@@ -298,16 +328,24 @@ export default function TemplatesPage() {
           <h1 className="serif-headline text-2xl text-[#3E3B36] mb-1">Message Templates</h1>
           <p className="text-sm text-[#8B8378]">Manage and submit WhatsApp message templates for Meta approval.</p>
         </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setIsModalOpen(true);
-          }}
-          className="bg-[#3E3B36] hover:bg-[#2A2825] text-white px-5 py-2.5 rounded-lg text-xs tracking-[0.1em] uppercase transition-colors flex items-center gap-2 cursor-pointer"
-        >
-          <Plus size={16} />
-          New Template
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/templates/history"
+            className="border border-[#C4A896] hover:bg-[#F5F1EA] text-[#3E3B36] px-5 py-2.5 rounded-lg text-xs tracking-[0.1em] uppercase transition-all flex items-center gap-2 cursor-pointer font-medium"
+          >
+            History Ledger
+          </Link>
+          <button
+            onClick={() => {
+              resetForm();
+              setIsModalOpen(true);
+            }}
+            className="bg-[#3E3B36] hover:bg-[#2A2825] text-white px-5 py-2.5 rounded-lg text-xs tracking-[0.1em] uppercase transition-colors flex items-center gap-2 cursor-pointer"
+          >
+            <Plus size={16} />
+            New Template
+          </button>
+        </div>
       </div>
 
       <div className="bg-white border border-[#E8E3DA] rounded-xl overflow-hidden">
@@ -483,6 +521,78 @@ export default function TemplatesPage() {
                   </select>
                 </div>
               </div>
+
+              {headerType === 'IMAGE' && (
+                <div className="border border-dashed border-[#E8E3DA] rounded-lg p-4 bg-[#F9F7F4] flex flex-col items-center justify-center gap-2">
+                  {imageFile ? (
+                    <div className="relative w-24 h-24 bg-white border border-[#E8E3DA] rounded overflow-hidden">
+                      <img src={URL.createObjectURL(imageFile)} alt="Selected Image" className="w-full h-full object-contain" />
+                      <button
+                        type="button"
+                        onClick={() => setImageFile(null)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 cursor-pointer flex items-center justify-center w-5 h-5"
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  ) : editingTemplate?.image_url ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="relative w-24 h-24 bg-white border border-[#E8E3DA] rounded overflow-hidden">
+                        <img src={editingTemplate.image_url} alt="Current Image" className="w-full h-full object-contain" />
+                      </div>
+                      <label className="text-[10px] text-[#C4A896] font-medium hover:underline cursor-pointer">
+                        Change Image
+                        <input
+                          type="file"
+                          accept="image/png, image/jpeg, image/jpg"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+                                setSubmitError('Invalid file format. Only PNG, JPG, and JPEG are supported.');
+                                return;
+                              }
+                              if (file.size > 5 * 1024 * 1024) {
+                                setSubmitError('File too large. Maximum size is 5MB.');
+                                    return;
+                              }
+                              setSubmitError('');
+                              setImageFile(file);
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center gap-1 cursor-pointer w-full py-4 text-center">
+                      <ImageIcon className="text-[#C4A896]" size={24} />
+                      <span className="text-[11px] text-[#3E3B36] font-medium">Select Header Image</span>
+                      <span className="text-[9px] text-[#8B8378]">PNG/JPG only, max 5MB</span>
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/jpg"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+                              setSubmitError('Invalid file format. Only PNG, JPG, and JPEG are supported.');
+                              return;
+                            }
+                            if (file.size > 5 * 1024 * 1024) {
+                              setSubmitError('File too large. Maximum size is 5MB.');
+                              return;
+                            }
+                            setSubmitError('');
+                            setImageFile(file);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label className="block text-[10px] tracking-[0.1em] uppercase text-[#8B8378] mb-2">Message Body</label>

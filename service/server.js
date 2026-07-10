@@ -250,57 +250,68 @@ const startWhatsAppEngine = async (shopId) => {
 
   sock.ev.on('creds.update', saveCreds);
 
+  const handleMessageRead = async (metaMessageId) => {
+    if (!metaMessageId) return;
+    try {
+      // 1. Resolve campaign mapping via message_logs
+      const { data: logData, error: fetchError } = await supabase
+        .from('message_logs')
+        .select('campaign_id, status')
+        .eq('meta_message_id', metaMessageId)
+        .maybeSingle();
+
+      if (fetchError || !logData?.campaign_id) return;
+      const campaignId = logData.campaign_id;
+
+      // Prevent duplicate increments if status already matched
+      if (logData.status?.toUpperCase() === 'READ') return;
+
+      // 2. Update the database status to 'READ' instantly
+      const { error: updateError } = await supabase
+        .from('message_logs')
+        .update({ status: 'READ' })
+        .eq('meta_message_id', metaMessageId);
+
+      if (updateError) {
+        console.error(`[DB Receipt Error] Failed to update read state:`, updateError.message);
+        return;
+      }
+
+      console.log(`[DB Receipt Success] Message ${metaMessageId} successfully updated to READ.`);
+
+      // 3. Increment Campaign Aggregates atomically via RPC
+      const { error: rpcError } = await supabase.rpc('increment_campaign_metric', {
+        campaign_row_id: campaignId,
+        metric_name: 'read',
+        quantity: 1
+      });
+
+      if (rpcError) {
+        console.error(`[WA Engine] Failed to increment read metric for campaign ${campaignId}:`, rpcError.message);
+      }
+    } catch (err) {
+      console.error(`[WA Engine] Exception handling message receipt update:`, err);
+    }
+  };
+
+  // ── Message receipts (Blue Ticks tracking) ──────────────────────────────
   sock.ev.on('message-receipt.update', async (receipts) => {
     for (const receipt of receipts) {
       if (receipt.receiptType === 'read') {
-        const metaMessageId = receipt.key.id;
-        const remoteJid = receipt.key.remoteJid || '';
-        const cleanPhone = remoteJid.split('@')[0];
+        console.log(`[BAILEYS AUDIT] Message read by user. Message ID: ${receipt.key.id}`);
+        await handleMessageRead(receipt.key.id);
+      }
+    }
+  });
 
-        if (!metaMessageId) continue;
-
-        console.log(`[WA Engine] Live Blue Tick captured for message: ${metaMessageId} from phone: ${cleanPhone}`);
-
-        try {
-          // 1. Resolve campaign mapping via message_logs
-          const { data: logData, error: fetchError } = await supabase
-            .from('message_logs')
-            .select('campaign_id, status')
-            .eq('meta_message_id', metaMessageId)
-            .maybeSingle();
-
-          if (fetchError || !logData?.campaign_id) continue;
-          const campaignId = logData.campaign_id;
-
-          // Prevent duplicate increments if status already matched
-          if (logData.status === 'read') continue;
-
-          // 2. Update status to 'read' in public.message_logs table
-          const { error: updateError } = await supabase
-            .from('message_logs')
-            .update({ status: 'read' })
-            .eq('meta_message_id', metaMessageId);
-
-          if (updateError) {
-            console.error(`[DB Receipt Error] Failed to update read state:`, updateError.message);
-            continue;
-          }
-
-          console.log(`[DB Receipt Success] Message ${metaMessageId} successfully updated to READ.`);
-
-          // 3. Increment Campaign Aggregates atomically via RPC
-          const { error: rpcError } = await supabase.rpc('increment_campaign_metric', {
-            campaign_row_id: campaignId,
-            metric_name: 'read',
-            quantity: 1
-          });
-
-          if (rpcError) {
-            console.error(`[WA Engine] Failed to increment read metric for campaign ${campaignId}:`, rpcError.message);
-          }
-        } catch (err) {
-          console.error(`[WA Engine] Exception handling message receipt update:`, err);
-        }
+  // ── Messages status updates (individual read receipts) ──────────────────
+  sock.ev.on('messages.update', async (updates) => {
+    for (const update of updates) {
+      const status = update.update.status;
+      // 4 is WebMessageInfo.Status.READ (read / blue tick)
+      if (status === 4 || status === 'read') {
+        console.log(`[BAILEYS AUDIT] Message read by user. Message ID: ${update.key.id}`);
+        await handleMessageRead(update.key.id);
       }
     }
   });
