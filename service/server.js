@@ -278,9 +278,13 @@ const startWhatsAppEngine = async (shopId) => {
       const error = lastDisconnect?.error;
       const statusCode = error?.output?.statusCode || error?.output?.payload?.statusCode;
 
-      if (statusCode === DisconnectReason.loggedOut) {
-        // Explicit logout -> Purge all auth tokens & reset shop fields
-        console.error(`[WA Engine] Shop ${shopId} logged out. Purging session.`);
+      if (
+        statusCode === DisconnectReason.loggedOut || 
+        statusCode === 405 || 
+        statusCode === 403
+      ) {
+        // Explicit logout or Corrupt Session (405/403) -> Purge all auth tokens & reset shop fields
+        console.error(`[WA Engine] Shop ${shopId} session expired or corrupt (code ${statusCode}). Purging session.`);
 
         activeSessions.delete(shopId);
         connectionOpenSessions.delete(shopId);
