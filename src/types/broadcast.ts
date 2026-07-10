@@ -118,6 +118,7 @@ export interface Campaign {
   total_delivered: number;
   total_read: number;
   total_failed: number;
+  failure_reason?: string | null;
   dispatch_mode: WhatsAppConnectionMode;
   created_at: string;
 }

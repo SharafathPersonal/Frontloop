@@ -25,6 +25,7 @@ export default function AdminDashboard() {
   const [logsPage, setLogsPage] = useState(1);
   const [hasMoreLogs, setHasMoreLogs] = useState(true);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [logType, setLogType] = useState<'activity' | 'system'>('activity');
 
   // Login State
   const [username, setUsername] = useState('');
@@ -49,18 +50,18 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  const fetchLogs = async (page = 1) => {
+  const fetchLogs = async (page = 0, type = logType, reset = false) => {
     setIsLoadingLogs(true);
     try {
-      const res = await fetch(`/api/admin/logs?page=${page}`);
+      const res = await fetch(`/api/admin/logs?page=${page}&type=${type}`);
       if (res.ok) {
         const json = await res.json();
-        if (page === 1) {
+        if (page === 0 || reset) {
           setLogs(json.logs || []);
         } else {
           setLogs(prev => [...prev, ...(json.logs || [])]);
         }
-        setHasMoreLogs((json.logs || []).length === 50);
+        setHasMoreLogs(json.hasMore ?? false);
         setLogsPage(page);
       }
     } catch (e) {
@@ -71,10 +72,10 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    if (isAuthenticated && activeView === 'logs' && logs.length === 0) {
-      fetchLogs(1);
+    if (isAuthenticated && activeView === 'logs') {
+      fetchLogs(0, logType, true);
     }
-  }, [isAuthenticated, activeView]);
+  }, [isAuthenticated, activeView, logType]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -555,40 +556,99 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* VIEW 5: SECURITY & AUDIT LOGS */}
+        {/* VIEW 5: SECURITY & SYSTEM LOGS */}
         {activeView === 'logs' && (
           <div className="space-y-8 animate-in fade-in duration-300">
-            <h2 className="text-xl font-bold uppercase tracking-widest border-b border-[#E8E3DA] pb-4">Security & Audit Logs</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#E8E3DA] pb-4 gap-4">
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-bold uppercase tracking-widest">Security & Audit Logs</h2>
+                <button
+                  onClick={() => router.push('/admin/logs')}
+                  className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-[#3E3B36] text-[#F5F1EA] hover:bg-[#000000] rounded transition-colors"
+                >
+                  🗂️ View Dedicated Infinite Scroll Layout
+                </button>
+              </div>
+              <div className="flex items-center gap-1.5 bg-[#F5F1EA] p-1 rounded border border-[#E8E3DA] self-start sm:self-auto">
+                <button
+                  onClick={() => { setLogType('activity'); setLogs([]); }}
+                  className={`px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors rounded ${logType === 'activity' ? 'bg-[#3E3B36] text-[#F5F1EA]' : 'text-[#8E8B85] hover:text-[#3E3B36]'}`}
+                >
+                  User Actions
+                </button>
+                <button
+                  onClick={() => { setLogType('system'); setLogs([]); }}
+                  className={`px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors rounded ${logType === 'system' ? 'bg-[#3E3B36] text-[#F5F1EA]' : 'text-[#8E8B85] hover:text-[#3E3B36]'}`}
+                >
+                  System Errors
+                </button>
+              </div>
+            </div>
             
             <div className="bg-[#FFFFFF] border border-[#E8E3DA] overflow-x-auto shadow-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-[#F5F1EA] text-[10px] uppercase tracking-widest text-[#8E8B85]">
-                    <th className="p-4 font-semibold">Account Email</th>
-                    <th className="p-4 font-semibold">Action Performed</th>
-                    <th className="p-4 font-semibold">Timestamp</th>
-                    <th className="p-4 font-semibold">Shop ID</th>
+                    {logType === 'activity' ? (
+                      <>
+                        <th className="p-4 font-semibold">Account Email</th>
+                        <th className="p-4 font-semibold">Action Performed</th>
+                        <th className="p-4 font-semibold">Timestamp</th>
+                        <th className="p-4 font-semibold">Shop ID</th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="p-4 font-semibold">Merchant / Shop</th>
+                        <th className="p-4 font-semibold">Error Category</th>
+                        <th className="p-4 font-semibold">Diagnostic / Failure Reason</th>
+                        <th className="p-4 font-semibold">Timestamp</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="text-sm divide-y divide-[#E8E3DA]">
-                  {logs.map((log, i) => (
-                    <tr key={log.id || i} className="hover:bg-[#FCFAFC] transition-colors">
-                      <td className="p-4 font-medium">{log.account_email}</td>
-                      <td className="p-4">
-                        <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-widest rounded-sm ${log.action_type === 'LOGIN' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
-                          {log.action_type}
-                        </span>
-                      </td>
-                      <td className="p-4 text-[10px] text-[#8E8B85] font-mono">
-                        {new Date(log.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                      </td>
-                      <td className="p-4 text-[10px] text-[#8E8B85] font-mono max-w-[150px] truncate">{log.shop_id}</td>
-                    </tr>
-                  ))}
+                  {logType === 'activity' ? (
+                    logs.map((log, i) => (
+                      <tr key={log.id || i} className="hover:bg-[#FCFAFC] transition-colors">
+                        <td className="p-4 font-medium">{log.account_email}</td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-widest rounded-sm ${log.action_type === 'LOGIN' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                            {log.action_type}
+                          </span>
+                        </td>
+                        <td className="p-4 text-[10px] text-[#8E8B85] font-mono">
+                          {new Date(log.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </td>
+                        <td className="p-4 text-[10px] text-[#8E8B85] font-mono max-w-[150px] truncate">{log.shop_id}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    logs.map((log, i) => (
+                      <tr key={log.id || i} className="hover:bg-[#FCFAFC] transition-colors">
+                        <td className="p-4">
+                          <div className="font-semibold text-sm">{log.shops?.shop_name || 'N/A'}</div>
+                          <div className="text-[10px] text-[#8E8B85] font-mono">{log.shop_id}</div>
+                        </td>
+                        <td className="p-4">
+                          <span className="bg-rose-50 text-rose-700 border border-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded">
+                            {log.error_type}
+                          </span>
+                        </td>
+                        <td className="p-4 text-xs font-mono text-[#3E3B36] max-w-xs break-words whitespace-pre-wrap">
+                          {log.failure_reason}
+                        </td>
+                        <td className="p-4 text-[10px] text-[#8E8B85] font-mono">
+                          {new Date(log.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
               {logs.length === 0 && !isLoadingLogs && (
-                <div className="p-8 text-center text-[#8E8B85] text-sm tracking-widest uppercase">No activity logs found.</div>
+                <div className="p-8 text-center text-[#8E8B85] text-sm tracking-widest uppercase">
+                  {logType === 'activity' ? 'No activity logs found.' : 'No system error logs found.'}
+                </div>
               )}
             </div>
 

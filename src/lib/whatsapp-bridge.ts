@@ -214,6 +214,43 @@ export const getWhatsAppSocket = async (
   return opened ? activeSessions.get(shopId)! : null;
 };
 
+/**
+ * Ensures that a socket is active, open, and fully authenticated.
+ * If not, it will bootstrap/reconnect the socket, blocking until connection open.
+ */
+export const ensureSocketLive = async (
+  shopId: string,
+  supabase: SupabaseClient,
+  timeoutMs = 20_000,
+): Promise<ReturnType<typeof makeWASocket> | null> => {
+  let sock = activeSessions.get(shopId);
+  const isDown = !sock || (sock as any).ws?.isOpen !== true || !connectionOpenSessions.has(shopId);
+
+  if (isDown) {
+    console.log(`[WA Engine] Socket for shop ${shopId} is down/disconnected (isOpen !== true or not authenticated). Re-authenticating...`);
+    
+    // Evict old session to avoid stale handlers/state
+    if (sock) {
+      try { sock.ev.removeAllListeners('connection.update'); } catch {}
+      try { sock.ws.close(); } catch {}
+      activeSessions.delete(shopId);
+      connectionOpenSessions.delete(shopId);
+    }
+    
+    // Initialize new socket (reads credentials and calls makeWASocket)
+    await startWhatsAppEngine(shopId, supabase);
+    
+    // Block until connection.update event fires a successful 'open' state
+    const opened = await waitForSocketOpen(shopId, timeoutMs);
+    if (!opened) {
+      console.error(`[WA Engine] Re-connection handshake timed out for shop ${shopId} after ${timeoutMs}ms`);
+      return null;
+    }
+  }
+  return activeSessions.get(shopId) || null;
+};
+
+
 // ── Engine bootstrap ────────────────────────────────────────────────────────
 
 /**

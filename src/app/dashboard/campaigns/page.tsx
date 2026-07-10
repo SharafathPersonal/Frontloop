@@ -28,6 +28,18 @@ const CHART_COLOURS = {
   Failed:    '#f43f5e',
 } as const;
 
+function cleanFailureReason(reason?: string | null): string {
+  if (!reason) return '';
+  if (reason.includes('\n') || reason.includes('stack') || reason.includes('Error:') || reason.includes(' at ')) {
+    const firstLine = reason.split('\n')[0].replace(/^Error:\s*/, '').trim();
+    if (firstLine.length > 80) {
+      return firstLine.substring(0, 80) + '...';
+    }
+    return firstLine;
+  }
+  return reason;
+}
+
 export default function CampaignsLedgerPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -325,7 +337,17 @@ export default function CampaignsLedgerPage() {
                         </p>
                         <p className="text-[10px] text-[#8B8378] mt-1">{date}</p>
                       </div>
-                      <span className={statusCfg.className}>{statusCfg.label}</span>
+                      <div className="flex flex-col items-end">
+                        <span className={statusCfg.className}>{statusCfg.label}</span>
+                        {c.status === 'failed' && c.failure_reason && (
+                          <span 
+                            className="text-[9px] text-rose-600 bg-rose-50 border border-rose-100 px-1.5 py-0.5 rounded mt-1 block max-w-[150px] truncate" 
+                            title={c.failure_reason}
+                          >
+                            {cleanFailureReason(c.failure_reason)}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 pt-2 border-t border-[#E8E3DA]/40 text-xs">
@@ -408,7 +430,17 @@ export default function CampaignsLedgerPage() {
 
                     {/* Status + arrow */}
                     <div className="flex items-center justify-between">
-                      <span className={statusCfg.className}>{statusCfg.label}</span>
+                      <div className="flex flex-col items-start">
+                        <span className={statusCfg.className}>{statusCfg.label}</span>
+                        {c.status === 'failed' && c.failure_reason && (
+                          <span 
+                            className="text-[10px] text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded mt-1 block max-w-[150px] truncate" 
+                            title={c.failure_reason}
+                          >
+                            {cleanFailureReason(c.failure_reason)}
+                          </span>
+                        )}
+                      </div>
                       <ArrowRight size={14} className="text-[#E8E3DA] group-hover:text-[#C4A896] transition-colors" />
                     </div>
                   </Link>

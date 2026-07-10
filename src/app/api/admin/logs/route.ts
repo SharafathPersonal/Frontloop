@@ -9,22 +9,52 @@ const supabaseAdmin = createClient(
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = 50;
-    const start = (page - 1) * limit;
-    const end = start + limit - 1;
+    const page = parseInt(searchParams.get('page') || '0', 10);
+    const type = searchParams.get('type') || 'activity';
+    const limit = 20;
+    const from = page * limit;
+    const to = from + limit - 1;
 
-    const { data: logs, error } = await supabaseAdmin
-      .from('user_activity_logs')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .range(start, end);
+    if (type === 'system') {
+      const { data, error } = await supabaseAdmin
+        .from('system_logs')
+        .select(`
+          id,
+          error_type,
+          failure_reason,
+          created_at,
+          campaign_id,
+          shops ( shop_name )
+        `)
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      
+      const hasMore = data ? data.length === limit : false;
+      return NextResponse.json({ logs: data || [], hasMore });
+    } else {
+      const { data, error } = await supabaseAdmin
+        .from('user_activity_logs')
+        .select(`
+          id,
+          account_email,
+          action_type,
+          created_at,
+          shop_id
+        `)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      const hasMore = data ? data.length === limit : false;
+      return NextResponse.json({ logs: data || [], hasMore });
     }
-
-    return NextResponse.json({ logs });
   } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }

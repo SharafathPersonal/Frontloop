@@ -100,12 +100,10 @@ export default function DashboardPage() {
     const timeline: Record<string, { date: string; sent: number; delivered: number; read: number; failed: number }> = {};
 
     campaigns.forEach(c => {
-      if (c.status !== 'completed') return;
-      
-      const sent = c.total_recipients;
-      const failed = Math.floor(sent * 0.03);
-      const read = Math.floor(sent * 0.85);
-      const delivered = sent - failed;
+      const sent = c.total_sent ?? 0;
+      const failed = c.total_failed ?? 0;
+      const read = c.total_read ?? 0;
+      const delivered = c.total_delivered ?? 0;
 
       s += sent;
       d += delivered;
@@ -144,7 +142,9 @@ export default function DashboardPage() {
     completed: { label: 'Completed', className: 'status-pill status-completed' },
     processing: { label: 'Processing', className: 'status-pill status-processing' },
     pending: { label: 'Pending', className: 'status-pill status-pending' },
+    failed: { label: 'Failed', className: 'status-pill status-failed' },
     insufficient_credits: { label: 'Insufficient Credits', className: 'status-pill status-insufficient_credits' },
+    paused_logout: { label: 'Paused — Session Expired', className: 'status-pill text-orange-600 bg-orange-50 border border-orange-200' },
   };
 
   if (loading) {

@@ -21,7 +21,10 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
-import { getWhatsAppSocket, isSocketLive, activeSessions } from '@/lib/whatsapp-bridge';
+import { getWhatsAppSocket, isSocketLive, activeSessions, ensureSocketLive } from '@/lib/whatsapp-bridge';
+
+export const maxDuration = 300; // regional serverless runtime config to prevent premature socket timeout
+
 import type { BroadcastPayload, Shop, Wallet, CustomerTag } from '@/types/broadcast';
 
 interface CustomerRecord {
@@ -329,19 +332,15 @@ export async function POST(req: Request) {
         (async () => {
           let successCount = 0;
           let failedCount = 0;
+          let loopErrorCaptured = '';
 
           try {
             // ── PRE-LOOP: active WebSocket connection stream re-verification ──
-            let sockPreflight: any = activeSessions.get(shopId);
-            const isPreflightSocketDown = !sockPreflight || !sockPreflight.ws || sockPreflight.ws.isOpen !== true;
-            if (isPreflightSocketDown) {
-              console.log('[QR Express] Preflight: socket is dropped or idle. Silently re-authenticating connection within 2 seconds...');
-              sockPreflight = await getWhatsAppSocket(shopId, adminClient, 2000);
-            }
+            console.log('[QR Express] Preflight: checking and ensuring socket is live...');
+            const sockPreflight = await ensureSocketLive(shopId, adminClient, 15000);
             
-            const socketIsLive = sockPreflight != null && isSocketLive(shopId);
-            if (!socketIsLive) {
-              throw new Error("WhatsApp phone is completely disconnected or offline.");
+            if (!sockPreflight || !isSocketLive(shopId)) {
+              throw new Error("WhatsApp phone is completely disconnected or offline. Handshake failed.");
             }
 
             for (const recipient of recipientsSnapshot) {
@@ -363,13 +362,7 @@ export async function POST(req: Request) {
                   .eq('status', 'pending_dispatch');
 
                 // Active WebSocket connection re-verification per contact
-                let sock: any = activeSessions.get(shopId);
-                const isSocketDown = !sock || !sock.ws || sock.ws.isOpen !== true;
-
-                if (isSocketDown) {
-                  console.log(`[QR Express] Mid-campaign: socket is dropped or idle for ${formattedPhone}. Silently re-authenticating within 2 seconds...`);
-                  sock = await getWhatsAppSocket(shopId, adminClient, 2000);
-                }
+                const sock = await ensureSocketLive(shopId, adminClient, 15000);
 
                 if (!sock || !isSocketLive(shopId)) {
                   throw new Error('WhatsApp socket lost connection mid-campaign');
@@ -419,9 +412,24 @@ export async function POST(req: Request) {
                   quantity: 1,
                 });
 
-              } catch (perContactError) {
+              } catch (perContactError: any) {
                 console.error(`[QR Express] Failed for ${formattedPhone}:`, perContactError);
                 failedCount++;
+
+                const contactErrMsg = perContactError instanceof Error ? perContactError.message : String(perContactError);
+
+                // Log per-contact error to system_logs for premium transparency
+                try {
+                  await adminClient.from('system_logs').insert({
+                    shop_id: shopId,
+                    campaign_id: campaignId,
+                    error_type: 'WHATSAPP_TRANSMISSION_ERROR',
+                    failure_reason: `Recipient ${formattedPhone} failed: ${contactErrMsg}`,
+                    meta_data: { recipient_phone: formattedPhone }
+                  });
+                } catch (logErr) {
+                  console.error('[QR Express] Failed to write per-contact log to system_logs:', logErr);
+                }
 
                 // Ledger: update processing or pending_dispatch to failed (no credit deducted)
                 await adminClient
@@ -447,9 +455,33 @@ export async function POST(req: Request) {
               const throttleMs = Math.max(30_000, Math.min(60_000, baseMs + jitterMs));
               await delay(throttleMs);
             }
-          } catch (loopError) {
+          } catch (loopError: any) {
             console.error('[QR Express] Unexpected loop-level or preflight error:', loopError);
             failedCount = recipientsSnapshot.length - successCount;
+            loopErrorCaptured = loopError instanceof Error ? loopError.message : String(loopError);
+
+            // Write global runtime failure to system_logs
+            try {
+              await adminClient.from('system_logs').insert({
+                shop_id: shopId,
+                campaign_id: campaignId,
+                error_type: 'WHATSAPP_SOCKET_ERROR',
+                failure_reason: loopErrorCaptured,
+                meta_data: { success_count: successCount, failed_count: failedCount }
+              });
+            } catch (logErr) {
+              console.error('[QR Express] Failed to write to system_logs:', logErr);
+            }
+
+            // Update campaigns table with failure reason
+            try {
+              await adminClient
+                .from('campaigns')
+                .update({ failure_reason: loopErrorCaptured })
+                .eq('id', campaignId);
+            } catch (campaignErr) {
+              console.error('[QR Express] Failed to update campaigns table:', campaignErr);
+            }
           } finally {
             try {
               // Clean up any stuck pending_dispatch or processing rows
@@ -469,12 +501,16 @@ export async function POST(req: Request) {
             const finalStatus = successCount > 0 ? 'completed' : 'failed';
 
             try {
+              const updatePayload: any = {
+                status: finalStatus,
+                total_failed: failedCount,
+              };
+              if (loopErrorCaptured) {
+                updatePayload.failure_reason = loopErrorCaptured;
+              }
               await adminClient
                 .from('campaigns')
-                .update({
-                  status: finalStatus,
-                  total_failed: failedCount,
-                })
+                .update(updatePayload)
                 .eq('id', campaignId);
             } catch (err) {
               console.error('[QR Express] Failed to update campaign status:', err);
@@ -509,6 +545,7 @@ export async function POST(req: Request) {
         (async () => {
           let successCount = 0;
           let failedCount = 0;
+          let loopErrorCaptured = '';
 
           try {
             for (const recipient of recipientsSnapshot) {
@@ -595,9 +632,24 @@ export async function POST(req: Request) {
                   quantity: 1,
                 });
 
-              } catch (perContactError) {
+              } catch (perContactError: any) {
                 console.error(`[Meta API] Failed for ${formattedPhone}:`, perContactError);
                 failedCount++;
+
+                const contactErrMsg = perContactError instanceof Error ? perContactError.message : String(perContactError);
+
+                // Log per-contact error to system_logs for premium transparency
+                try {
+                  await adminClient.from('system_logs').insert({
+                    shop_id: shopId,
+                    campaign_id: campaignId,
+                    error_type: 'META_API_TRANSMISSION_ERROR',
+                    failure_reason: `Recipient ${formattedPhone} failed: ${contactErrMsg}`,
+                    meta_data: { recipient_phone: formattedPhone }
+                  });
+                } catch (logErr) {
+                  console.error('[Meta API] Failed to write per-contact log to system_logs:', logErr);
+                }
 
                 // Ledger: pending_dispatch → failed (no credit deducted)
                 await adminClient
@@ -617,9 +669,33 @@ export async function POST(req: Request) {
                 });
               }
             }
-          } catch (loopError) {
+          } catch (loopError: any) {
             console.error('[Meta API] Unexpected loop-level error:', loopError);
             failedCount = recipientsSnapshot.length - successCount;
+            loopErrorCaptured = loopError instanceof Error ? loopError.message : String(loopError);
+
+            // Write global runtime failure to system_logs
+            try {
+              await adminClient.from('system_logs').insert({
+                shop_id: shopId,
+                campaign_id: campaignId,
+                error_type: 'META_API_ERROR',
+                failure_reason: loopErrorCaptured,
+                meta_data: { success_count: successCount, failed_count: failedCount }
+              });
+            } catch (logErr) {
+              console.error('[Meta API] Failed to write to system_logs:', logErr);
+            }
+
+            // Update campaigns table with failure reason
+            try {
+              await adminClient
+                .from('campaigns')
+                .update({ failure_reason: loopErrorCaptured })
+                .eq('id', campaignId);
+            } catch (campaignErr) {
+              console.error('[Meta API] Failed to update campaigns table:', campaignErr);
+            }
           } finally {
             try {
               // Clean up any stuck pending_dispatch rows
@@ -639,12 +715,16 @@ export async function POST(req: Request) {
             const finalStatus = successCount > 0 ? 'completed' : 'failed';
 
             try {
+              const updatePayload: any = {
+                status: finalStatus,
+                total_failed: failedCount,
+              };
+              if (loopErrorCaptured) {
+                updatePayload.failure_reason = loopErrorCaptured;
+              }
               await adminClient
                 .from('campaigns')
-                .update({
-                  status: finalStatus,
-                  total_failed: failedCount,
-                })
+                .update(updatePayload)
                 .eq('id', campaignId);
             } catch (err) {
               console.error('[Meta API] Failed to update campaign status:', err);

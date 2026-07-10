@@ -14,6 +14,18 @@ const STATUS_FILTERS: { label: string; value: CampaignStatus | 'all' }[] = [
   { label: 'Insufficient Credits', value: 'insufficient_credits' },
 ];
 
+function cleanFailureReason(reason?: string | null): string {
+  if (!reason) return '';
+  if (reason.includes('\n') || reason.includes('stack') || reason.includes('Error:') || reason.includes(' at ')) {
+    const firstLine = reason.split('\n')[0].replace(/^Error:\s*/, '').trim();
+    if (firstLine.length > 80) {
+      return firstLine.substring(0, 80) + '...';
+    }
+    return firstLine;
+  }
+  return reason;
+}
+
 export default function HistoryPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [filtered, setFiltered] = useState<Campaign[]>([]);
@@ -239,8 +251,16 @@ export default function HistoryPage() {
                   <div className="flex items-center">
                     <span className="text-sm text-[#3E3B36]">{campaign.total_recipients.toLocaleString()}</span>
                   </div>
-                  <div className="flex items-center">
+                  <div className="flex flex-col items-start justify-center">
                     <span className={status.className}>{status.label}</span>
+                    {campaign.status === 'failed' && campaign.failure_reason && (
+                      <span 
+                        className="text-[9px] text-rose-600 bg-rose-50 border border-rose-100 px-1.5 py-0.5 rounded mt-1 block max-w-[150px] truncate" 
+                        title={campaign.failure_reason}
+                      >
+                        {cleanFailureReason(campaign.failure_reason)}
+                      </span>
+                    )}
                   </div>
                   <div className="flex flex-col justify-center">
                     <span className="text-xs text-[#3E3B36]">{date}</span>

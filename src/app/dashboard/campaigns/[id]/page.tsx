@@ -57,6 +57,18 @@ const getCampaignBadge = (status: string) =>
 // Component
 // ---------------------------------------------------------------------------
 
+function cleanFailureReason(reason?: string | null): string {
+  if (!reason) return '';
+  if (reason.includes('\n') || reason.includes('stack') || reason.includes('Error:') || reason.includes(' at ')) {
+    const firstLine = reason.split('\n')[0].replace(/^Error:\s*/, '').trim();
+    if (firstLine.length > 80) {
+      return firstLine.substring(0, 80) + '...';
+    }
+    return firstLine;
+  }
+  return reason;
+}
+
 export default function CampaignDrillDownPage({
   params,
 }: {
@@ -326,6 +338,11 @@ export default function CampaignDrillDownPage({
                 Target: {targetTags}
               </span>
             </div>
+            {campaign.status === 'failed' && campaign.failure_reason && (
+              <div className="text-xs text-rose-600 bg-rose-50 border border-rose-200 px-3 py-2.5 rounded-lg mt-3 block max-w-xl break-words">
+                <strong>Failure Diagnostic:</strong> {cleanFailureReason(campaign.failure_reason)}
+              </div>
+            )}
           </div>
 
           {/* Campaign status badge + refresh */}
