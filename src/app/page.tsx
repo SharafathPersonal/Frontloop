@@ -319,6 +319,109 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════
+          SECTION 2.5 — SEE IT IN ACTION
+      ══════════════════════════════════════════════════════════ */}
+      <section className="py-24 scroll-reveal-section bg-white border-b border-[#E8E3DA]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-2xl mx-auto text-center mb-16 gsap-reveal">
+            <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#C4A896' }}>
+              See It In Action
+            </p>
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-4">
+              Engage Customers Instantly.
+            </h2>
+            <p className="text-base leading-relaxed text-[#8B8378]">
+              Preview how your messages appear on your customers&apos; devices. High-converting layouts tailored for every industry.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            {/* Card 1: E-commerce */}
+            <div className="gsap-reveal group bg-[#EFEAE2] rounded-[2rem] border-[6px] border-[#3E3B36] p-4 shadow-xl overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col justify-end min-h-[360px]">
+              <div className="absolute inset-0 bg-[#EFEAE2] opacity-50 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C4A896 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
+              <div className="bg-white rounded-lg shadow-sm p-1 flex flex-col relative max-w-[100%] mx-auto mt-4 rounded-tl-sm z-10 w-full">
+                <div className="relative w-full h-40 rounded-t-md overflow-hidden bg-gray-100">
+                  <Image src="/images/showcase-1.png" alt="E-commerce Showcase" fill className="object-cover" />
+                </div>
+                <div className="px-2 pt-2 pb-1 relative">
+                  <p className="text-[13px] text-[#111B21] leading-[18px]">
+                    <strong>*Exclusive Drop!*</strong><br/>
+                    Get 20% off on our limited edition series today. Reply BUY to order.
+                  </p>
+                  <div className="float-right flex items-center gap-1 mt-1 ml-2 pb-0.5">
+                    <span className="text-[10px] text-[#667781]">10:42 AM</span>
+                    <svg viewBox="0 0 16 15" width="16" height="15" className="text-[#53bdeb] fill-current"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path><path d="M10.151 3.316l-.478-.372a.365.365 0 0 0-.51.063L3.806 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Real Estate */}
+            <div className="gsap-reveal group bg-[#EFEAE2] rounded-[2rem] border-[6px] border-[#3E3B36] p-4 shadow-xl overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col justify-end min-h-[360px]" style={{ transitionDelay: '100ms' }}>
+              <div className="absolute inset-0 bg-[#EFEAE2] opacity-50 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C4A896 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
+              <div className="bg-white rounded-lg shadow-sm p-1 flex flex-col relative max-w-[100%] mx-auto mt-4 rounded-tl-sm z-10 w-full">
+                <div className="relative w-full h-40 rounded-t-md overflow-hidden bg-gray-100">
+                  <Image src="/images/showcase-2.png" alt="Real Estate Showcase" fill className="object-cover" />
+                </div>
+                <div className="px-2 pt-2 pb-1 relative">
+                  <p className="text-[13px] text-[#111B21] leading-[18px]">
+                    <strong>*New Property Alert!*</strong><br/>
+                    3 BHK luxury villas available at Prime Location. Click below to download the brochure.
+                  </p>
+                  <div className="float-right flex items-center gap-1 mt-1 ml-2 pb-0.5">
+                    <span className="text-[10px] text-[#667781]">11:15 AM</span>
+                    <svg viewBox="0 0 16 15" width="16" height="15" className="text-[#53bdeb] fill-current"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path><path d="M10.151 3.316l-.478-.372a.365.365 0 0 0-.51.063L3.806 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Food & Restaurant */}
+            <div className="gsap-reveal group bg-[#EFEAE2] rounded-[2rem] border-[6px] border-[#3E3B36] p-4 shadow-xl overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col justify-end min-h-[360px]" style={{ transitionDelay: '200ms' }}>
+              <div className="absolute inset-0 bg-[#EFEAE2] opacity-50 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C4A896 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
+              <div className="bg-white rounded-lg shadow-sm p-1 flex flex-col relative max-w-[100%] mx-auto mt-4 rounded-tl-sm z-10 w-full">
+                <div className="relative w-full h-40 rounded-t-md overflow-hidden bg-gray-100">
+                  <Image src="/images/showcase-3.png" alt="Restaurant Showcase" fill className="object-cover" />
+                </div>
+                <div className="px-2 pt-2 pb-1 relative">
+                  <p className="text-[13px] text-[#111B21] leading-[18px]">
+                    <strong>*Weekend Feast!*</strong><br/>
+                    Buy 1 Get 1 Free on all premium items. Valid till Sunday midnight.
+                  </p>
+                  <div className="float-right flex items-center gap-1 mt-1 ml-2 pb-0.5">
+                    <span className="text-[10px] text-[#667781]">01:30 PM</span>
+                    <svg viewBox="0 0 16 15" width="16" height="15" className="text-[#53bdeb] fill-current"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path><path d="M10.151 3.316l-.478-.372a.365.365 0 0 0-.51.063L3.806 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 4: Event Ticket */}
+            <div className="gsap-reveal group bg-[#EFEAE2] rounded-[2rem] border-[6px] border-[#3E3B36] p-4 shadow-xl overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col justify-end min-h-[360px]" style={{ transitionDelay: '300ms' }}>
+              <div className="absolute inset-0 bg-[#EFEAE2] opacity-50 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C4A896 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
+              <div className="bg-white rounded-lg shadow-sm p-1 flex flex-col relative max-w-[100%] mx-auto mt-4 rounded-tl-sm z-10 w-full">
+                <div className="relative w-full h-40 rounded-t-md overflow-hidden bg-gray-100">
+                  <Image src="/images/showcase-4.png" alt="Event Showcase" fill className="object-cover" />
+                </div>
+                <div className="px-2 pt-2 pb-1 relative">
+                  <p className="text-[13px] text-[#111B21] leading-[18px]">
+                    <strong>*Seat Confirmed!*</strong><br/>
+                    Your masterclass starts tomorrow at 7 PM. Click the link to join the live stream.
+                  </p>
+                  <div className="float-right flex items-center gap-1 mt-1 ml-2 pb-0.5">
+                    <span className="text-[10px] text-[#667781]">04:45 PM</span>
+                    <svg viewBox="0 0 16 15" width="16" height="15" className="text-[#53bdeb] fill-current"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path><path d="M10.151 3.316l-.478-.372a.365.365 0 0 0-.51.063L3.806 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
           SECTION 3 — FEATURES GRID (Light Cream)
       ══════════════════════════════════════════════════════════ */}
       <section
@@ -850,11 +953,11 @@ export default function LandingPage() {
 
             <div className="p-10 md:w-1/2 bg-[#FCFCFC] flex flex-col justify-center space-y-4">
               <a 
-                href="mailto:support@trueattendly.online"
+                href="mailto:trueattendly@gmail.com"
                 className="flex items-center justify-center gap-2 w-full py-5 border border-[#3E3B36] text-[#3E3B36] hover:bg-[#3E3B36] hover:text-[#FFFFFF] transition-colors rounded-lg text-xs font-semibold tracking-[0.15em] uppercase"
               >
                 <Mail size={16} />
-                support@trueattendly.online
+                trueattendly@gmail.com
               </a>
               <a 
                 href="tel:+916282560928" 

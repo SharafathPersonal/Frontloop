@@ -1,0 +1,85 @@
+{"level":30,"time":1783695220909,"pid":483074,"hostname":"sharafath","msg":"WhatsApp Edge Engine running flawlessly on port 3001"}
+[WA Engine] Starting auto-hydration...
+{"level":30,"time":1783695222939,"pid":483074,"hostname":"sharafath","browser":["Ubuntu","Chrome","22.04.4"],"helloMsg":{"clientHello":{"ephemeral":"wMV+FO38nX447hCNEiqlNf/9tWN/dH2oRGZ/ogXaGms="}},"msg":"connected to WA"}
+{"level":30,"time":1783695223128,"pid":483074,"hostname":"sharafath","node":{"username":"916282560928","passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1035194821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","device":40,"pull":true},"msg":"logging in..."}
+{"level":30,"time":1783695223822,"pid":483074,"hostname":"sharafath","msg":"offline preview received"}
+{"level":30,"time":1783695223992,"pid":483074,"hostname":"sharafath","msg":"14 pre-keys found on server"}
+{"level":30,"time":1783695224167,"pid":483074,"hostname":"sharafath","msg":"handled 15 offline messages/notifications"}
+{"level":30,"time":1783695224168,"pid":483074,"hostname":"sharafath","msg":"Connection is now AwaitingInitialSync, buffering events"}
+{"level":30,"time":1783695224168,"pid":483074,"hostname":"sharafath","msg":"History sync is disabled by config, not waiting for notification. Transitioning to Online."}
+[WA Engine] Connection OPEN for shop 4ada7745-4bb5-47eb-9e2b-a6fc38ba6238. Synchronizing to Supabase DB...
+{"level":30,"time":1783695224170,"pid":483074,"hostname":"sharafath","msg":"opened connection to WA"}
+{"level":50,"time":1783695224321,"pid":483074,"hostname":"sharafath","key":{"remoteJid":"95528796876964@lid","fromMe":true,"id":"3AF66B5F1E398C4734B1"},"err":{"type":"MessageCounterError","message":"Key used already or never filled","stack":"MessageCounterError: Key used already or never filled\n    at SessionCipher.doDecryptWhisperMessage (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/session_cipher.js:236:19)\n    at 221796573937897.0 [as awaitable] (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/session_cipher.js:207:42)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async _asyncQueueExecutor (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/queue_job.js:20:29)","name":"MessageCounterError"},"msg":"failed to decrypt message"}
+[DB SUCCESS] shops table successfully updated to 'connected' for shop 4ada7745-4bb5-47eb-9e2b-a6fc38ba6238
+{"level":50,"time":1783695224473,"pid":483074,"hostname":"sharafath","key":{"remoteJid":"95528796876964@lid","fromMe":true,"id":"4A6E600EE8893F6DF569"},"err":{"type":"MessageCounterError","message":"Key used already or never filled","stack":"MessageCounterError: Key used already or never filled\n    at SessionCipher.doDecryptWhisperMessage (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/session_cipher.js:236:19)\n    at 221796573937897.0 [as awaitable] (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/session_cipher.js:207:42)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async _asyncQueueExecutor (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/queue_job.js:20:29)","name":"MessageCounterError"},"msg":"failed to decrypt message"}
+{"level":50,"time":1783695224619,"pid":483074,"hostname":"sharafath","key":{"remoteJid":"95528796876964@lid","fromMe":true,"id":"3A71A8A1E3757585B9C0"},"err":{"type":"MessageCounterError","message":"Key used already or never filled","stack":"MessageCounterError: Key used already or never filled\n    at SessionCipher.doDecryptWhisperMessage (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/session_cipher.js:236:19)\n    at 221796573937897.0 [as awaitable] (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/session_cipher.js:207:42)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async _asyncQueueExecutor (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/queue_job.js:20:29)","name":"MessageCounterError"},"msg":"failed to decrypt message"}
+{"level":50,"time":1783695224757,"pid":483074,"hostname":"sharafath","key":{"remoteJid":"95528796876964@lid","fromMe":true,"id":"3A440A0F6910D522FC5F"},"err":{"type":"MessageCounterError","message":"Key used already or never filled","stack":"MessageCounterError: Key used already or never filled\n    at SessionCipher.doDecryptWhisperMessage (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/session_cipher.js:236:19)\n    at 221796573937897.0 [as awaitable] (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/session_cipher.js:207:42)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async _asyncQueueExecutor (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/queue_job.js:20:29)","name":"MessageCounterError"},"msg":"failed to decrypt message"}
+{"level":50,"time":1783695224891,"pid":483074,"hostname":"sharafath","key":{"remoteJid":"95528796876964@lid","fromMe":true,"id":"3AD32015CC62AB381EEF"},"err":{"type":"MessageCounterError","message":"Key used already or never filled","stack":"MessageCounterError: Key used already or never filled\n    at SessionCipher.doDecryptWhisperMessage (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/session_cipher.js:236:19)\n    at 221796573937897.0 [as awaitable] (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/session_cipher.js:207:42)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async _asyncQueueExecutor (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/queue_job.js:20:29)","name":"MessageCounterError"},"msg":"failed to decrypt message"}
+{"level":50,"time":1783695225035,"pid":483074,"hostname":"sharafath","key":{"remoteJid":"95528796876964@lid","fromMe":true,"id":"3A79EB1A643DB7545178"},"err":{"type":"MessageCounterError","message":"Key used already or never filled","stack":"MessageCounterError: Key used already or never filled\n    at SessionCipher.doDecryptWhisperMessage (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/session_cipher.js:236:19)\n    at 221796573937897.0 [as awaitable] (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/session_cipher.js:207:42)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async _asyncQueueExecutor (/home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/libsignal/src/queue_job.js:20:29)","name":"MessageCounterError"},"msg":"failed to decrypt message"}
+{"level":30,"time":1783695229342,"pid":483074,"hostname":"sharafath","msgAttrs":{"from":"120363175353161583@newsletter","type":"text","edit":"8","id":"3EB036666BF12A8279303C","offline":"5","server_id":"61416","t":"1783688696"},"retryCount":1,"msg":"sent retry receipt"}
+Closing session: SessionEntry {
+  _chains: {
+    'BQWHTqhTHzfH9U0iFvqFb2U1/idQMaFjEgZWlmfRKkN4': { chainKey: [Object], chainType: 2, messageKeys: {} },
+    'BR0+hO+7tGYkHkXjevzh9c2j9OnqMhiB+YR2poNhyNJI': { chainKey: [Object], chainType: 2, messageKeys: {} },
+    'BR10Q9jjJaayFCpZd8+x8XMhQ6vI0mhj9kpoFv94HS89': { chainKey: [Object], chainType: 2, messageKeys: {} },
+    BRZzPfbPWqu63OEKgh8WpZeIsKD7dLJSG10HesIkzXwg: { chainKey: [Object], chainType: 2, messageKeys: {} },
+    'BRm/xAD07sCv2RL7raZYaoL3/fTmjuosqrlGy0jdNukU': { chainKey: [Object], chainType: 2, messageKeys: {} },
+    'BRyhO8Dqr+x8DFQ17TdsOQotqmyRzsiIzlk42UlsEvJU': { chainKey: [Object], chainType: 2, messageKeys: {} },
+    BSLBMTIFcLtoK46x0rIpavVa5my153wHc4ElUlwE17wJ: { chainKey: [Object], chainType: 2, messageKeys: {} },
+    'BSsEYnA3I+s+3DsavgB1c0tMVJSX1uMEM4Ex3Ysw9z5y': { chainKey: [Object], chainType: 2, messageKeys: {} },
+    BTjUSXj1C0ZMXuIbLM2aW5YaK0oDmuMiUqJTzp6HnJAY: { chainKey: [Object], chainType: 2, messageKeys: {} },
+    'BTjk/pwOUFHCBV0o949ESwrgFfCVPBm4Ji5xLi2HP/RW': { chainKey: [Object], chainType: 2, messageKeys: {} },
+    'BXi24xAuUwHA1k9M2Ui8VZscYcVCauJ5h+PJ90KtfAAR': { chainKey: [Object], chainType: 2, messageKeys: {} },
+    'BY7iQAyfbw3QhNRYWTdDbKzLZ5K1XQQZCYuR7IL8kCg+': { chainKey: [Object], chainType: 2, messageKeys: {} },
+    'BZ1gN4UXUZokR3pmmcaJon+L0x4cOwYM0Gfu0VpzNyMg': { chainKey: [Object], chainType: 2, messageKeys: {} },
+    'BZa5DHB/pu1O3gIb5zYzLQATMBvZAaLp1eNYUd+kGvpe': { chainKey: [Object], chainType: 2, messageKeys: {} },
+    'Bbn1hEAKiKyMVw2KsYWr8QqYeO7p+ZASSUTg4b2dc5QR': { chainKey: [Object], chainType: 1, messageKeys: {} },
+    'BdTgT/2x+wg954ympW7Uk3JtmcGuSDYyCCUJ1bolNZoV': { chainKey: [Object], chainType: 2, messageKeys: {} },
+    'Bebsm8hN+74BKQRSnvvHeeJ0Nl0mwakvqjJ5taQGKhpd': { chainKey: [Object], chainType: 2, messageKeys: {} }
+  },
+  registrationId: 2072026891,
+  currentRatchet: {
+    ephemeralKeyPair: {
+      pubKey: <Buffer 05 b9 f5 84 40 0a 88 ac 8c 57 0d 8a b1 85 ab f1 0a 98 78 ee e9 f9 90 12 49 44 e0 e1 bd 9d 73 94 11>,
+      privKey: <Buffer 30 85 8f 2d d4 51 c7 b3 d1 f5 94 f5 aa 67 4b 76 cc cb 4a 13 50 84 80 f2 3f 82 23 0c 97 b6 98 70>
+    },
+    lastRemoteEphemeralKey: <Buffer 05 d4 e0 4f fd b1 fb 08 3d e7 8c a6 a5 6e d4 93 72 6d 99 c1 ae 48 36 32 08 25 09 d5 ba 25 35 9a 15>,
+    previousCounter: 0,
+    rootKey: <Buffer 47 a3 0b 52 a5 46 11 e4 43 50 fd e6 7b 69 5e 82 97 63 51 07 69 6e 9a 8f b6 7b ad 8e 30 2f ce 1c>
+  },
+  indexInfo: {
+    baseKey: <Buffer 05 5f f2 dd 29 5c 75 58 b0 3e dc fc 41 76 ca aa 0d 53 14 df 10 b4 62 e2 b8 14 15 d2 25 1a df 9e 6c>,
+    baseKeyType: 2,
+    closed: -1,
+    used: 1783694993520,
+    created: 1783678831149,
+    remoteIdentityKey: <Buffer 05 64 e6 03 e1 29 99 74 9c a3 8c a8 95 c1 01 57 03 05 f5 29 cf e2 8c 8c 1f 53 2d 06 19 55 e3 05 2c>
+  }
+}
+{"level":30,"time":1783695235686,"pid":483074,"hostname":"sharafath","msgAttrs":{"from":"120363175353161583@newsletter","type":"text","edit":"8","id":"3EB08F16F6C8965BA044DC","offline":"5","server_id":"61418","t":"1783688971"},"retryCount":1,"msg":"sent retry receipt"}
+Closing session: SessionEntry {
+  _chains: {
+    'BUyRo/pPciLIVoowvqSKZIjZQNXi4D66OdcS1I7sNGBu': { chainKey: [Object], chainType: 2, messageKeys: {} },
+    'Be3bLnO2ae4nDsoSUbaoruSd+TOZ4hRsxAwxjkkaKI5h': { chainKey: [Object], chainType: 1, messageKeys: {} }
+  },
+  registrationId: 2072026891,
+  currentRatchet: {
+    ephemeralKeyPair: {
+      pubKey: <Buffer 05 ed db 2e 73 b6 69 ee 27 0e ca 12 51 b6 a8 ae e4 9d f9 33 99 e2 14 6c c4 0c 31 8e 49 1a 28 8e 61>,
+      privKey: <Buffer a0 bc ae e9 1e 48 7f 2c 3b 34 fa 31 07 61 9c 3c d7 7e 1c 5a 55 4f 6f d5 3e 91 6a 29 37 af d7 5e>
+    },
+    lastRemoteEphemeralKey: <Buffer 05 4c 91 a3 fa 4f 72 22 c8 56 8a 30 be a4 8a 64 88 d9 40 d5 e2 e0 3e ba 39 d7 12 d4 8e ec 34 60 6e>,
+    previousCounter: 0,
+    rootKey: <Buffer 47 b1 36 4a 40 13 96 e8 0f 83 91 8c d6 c9 2f 8c ea b7 8d a8 3c de fc 8a 7d 46 b2 9d 3e 94 d9 fb>
+  },
+  indexInfo: {
+    baseKey: <Buffer 05 6f 3c e0 b1 89 05 8d 58 5c dc 32 f7 ee 0e b6 1f 4d 00 f7 68 75 97 a6 8e 15 d5 13 53 79 03 40 49>,
+    baseKeyType: 1,
+    closed: -1,
+    used: 1783695237531,
+    created: 1783695231797,
+    remoteIdentityKey: <Buffer 05 64 e6 03 e1 29 99 74 9c a3 8c a8 95 c1 01 57 03 05 f5 29 cf e2 8c 8c 1f 53 2d 06 19 55 e3 05 2c>
+  }
+}
+{"level":30,"time":1783695241819,"pid":483074,"hostname":"sharafath","msgAttrs":{"from":"120363175353161583@newsletter","type":"text","edit":"8","id":"3EB0310AD51D1B8B44E429","offline":"4","server_id":"61423","t":"1783692591"},"retryCount":1,"msg":"sent retry receipt"}
+{"level":50,"time":1783695344173,"pid":483074,"hostname":"sharafath","err":{"type":"Error","message":"Timed Out","stack":"Error: Timed Out\n    at file:///home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/@whiskeysockets/baileys/lib/Utils/generics.js:131:32","data":{"stack":"Error\n    at promiseTimeout (file:///home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/@whiskeysockets/baileys/lib/Utils/generics.js:126:19)\n    at waitForMessage (file:///home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:115:34)\n    at query (file:///home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:138:45)\n    at fetchProps (file:///home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/@whiskeysockets/baileys/lib/Socket/chats.js:631:34)\n    at executeInitQueries (file:///home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/@whiskeysockets/baileys/lib/Socket/chats.js:762:28)\n    at EventEmitter.<anonymous> (file:///home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/@whiskeysockets/baileys/lib/Socket/chats.js:859:17)\n    at EventEmitter.emit (node:events:519:35)\n    at EventEmitter.<anonymous> (file:///home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/@whiskeysockets/baileys/lib/Utils/event-buffer.js:35:16)\n    at EventEmitter.emit (node:events:507:28)\n    at Object.emit (file:///home/st/Desktop/dev/true-attendly-broadcast/service/node_modules/@whiskeysockets/baileys/lib/Utils/event-buffer.js:83:23)"},"isBoom":true,"isServer":false,"output":{"statusCode":408,"payload":{"statusCode":408,"error":"Request Time-out","message":"Timed Out"},"headers":{}}},"msg":"unexpected error in 'init queries'"}
