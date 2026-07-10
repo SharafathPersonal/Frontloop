@@ -53,9 +53,9 @@ export async function GET() {
 
     // Gross Revenue
     const { data: revenueData, error: paymentsError } = await supabaseAdmin
-      .from('transactions')
+      .from('payment_logs')
       .select('amount')
-      .eq('status', 'success');
+      .in('payment_status', ['SUCCESS', 'CHARGED', 'success', 'charged']);
 
     if (paymentsError) throw paymentsError;
     const totalRevenue = revenueData

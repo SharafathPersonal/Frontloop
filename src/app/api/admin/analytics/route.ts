@@ -47,11 +47,11 @@ export async function GET() {
     if (walletsError) throw walletsError;
     const totalTokens = walletsData?.reduce((acc, w) => acc + (w.credits_remaining || 0), 0) || 0;
 
-    // Gross Revenue from transactions
+    // Gross Revenue from payment_logs
     const { data: revenueData, error: paymentsError } = await supabaseAdmin
-      .from('transactions')
+      .from('payment_logs')
       .select('amount')
-      .eq('status', 'success');
+      .in('payment_status', ['SUCCESS', 'CHARGED', 'success', 'charged']);
 
     if (paymentsError) throw paymentsError;
     const grossRevenue = revenueData

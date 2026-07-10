@@ -31,8 +31,8 @@ export async function GET(req: Request) {
     const from = page * limit;
     const to = from + limit - 1;
 
-    const { data: transactions, error } = await supabaseAdmin
-      .from('transactions')
+    const { data: paymentLogs, error } = await supabaseAdmin
+      .from('payment_logs')
       .select(`
         *,
         shop:shops ( shop_name )
@@ -44,8 +44,19 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const hasMore = transactions ? transactions.length === limit : false;
-    return NextResponse.json({ transactions: transactions || [], hasMore });
+    const mappedTransactions = (paymentLogs || []).map((log: any) => ({
+      id: log.id,
+      shop: log.shop,
+      payer_email: null,
+      amount: log.amount,
+      credits_added: log.credits_credited,
+      payment_gateway_id: log.order_id,
+      status: (log.payment_status || 'pending').toLowerCase(),
+      created_at: log.created_at
+    }));
+
+    const hasMore = paymentLogs ? paymentLogs.length === limit : false;
+    return NextResponse.json({ transactions: mappedTransactions, hasMore });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
   }
