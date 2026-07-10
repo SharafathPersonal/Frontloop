@@ -177,6 +177,9 @@ function SettingsContent() {
           if (res.ok) {
             const data = await res.json();
             setQrStatus(data.status);
+            if (data.qr && data.qr !== qrCodeString) {
+              setQrCodeString(data.qr);
+            }
             if (data.status === 'connected') {
               setQrCodeString(null);
             }

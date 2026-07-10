@@ -33,11 +33,14 @@ app.use(cors({
 }));
 
 // 2. Strict Supabase Client Guard
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
   logger.error("FATAL: Missing critical Supabase environment properties.");
   process.exit(1);
 }
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // ── In-Memory Registries ───────────────────────────────────────────────────
 
@@ -428,7 +431,7 @@ app.get('/api/whatsapp/connect', async (req, res) => {
 });
 
 // Endpoint 2: Connection Status
-app.get('/api/whatsapp/status', (req, res) => {
+app.get('/api/whatsapp/status', async (req, res) => {
   const { shop_id } = req.query;
   if (!shop_id) {
     return res.status(400).json({ error: 'Missing shop_id parameter' });
@@ -441,7 +444,24 @@ app.get('/api/whatsapp/status', (req, res) => {
     status = 'CONNECTING';
   }
 
-  return res.json({ status });
+  let qr = null;
+  if (status !== 'CONNECTED') {
+    try {
+      const { data: qrSession } = await supabase
+        .from('whatsapp_sessions')
+        .select('session_value')
+        .eq('shop_id', shop_id)
+        .eq('session_key', 'qr')
+        .maybeSingle();
+      if (qrSession?.session_value?.qr) {
+        qr = qrSession.session_value.qr;
+      }
+    } catch (err) {
+      console.error('Error fetching fallback QR:', err);
+    }
+  }
+
+  return res.json({ status, qr });
 });
 
 // Endpoint 3: Send Message Gateway Relay
