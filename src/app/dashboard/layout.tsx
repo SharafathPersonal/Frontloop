@@ -20,6 +20,7 @@ import {
   HelpCircle,
   MessageSquareText,
   Lock,
+  Receipt,
 } from 'lucide-react';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 import { ToastProvider } from '@/contexts/ToastContext';
@@ -37,6 +38,7 @@ const navLinks: NavLink[] = [
   { label: 'Campaigns', href: '/dashboard/campaigns', icon: <Radio size={14} strokeWidth={1.5} /> },
   { label: 'Templates', href: '/dashboard/templates', icon: <MessageSquareText size={14} strokeWidth={1.5} /> },
   { label: 'History', href: '/dashboard/history', icon: <Clock size={14} strokeWidth={1.5} /> },
+  { label: 'Transactions', href: '/dashboard/transactions', icon: <Receipt size={14} strokeWidth={1.5} /> },
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings size={14} strokeWidth={1.5} /> },
   { label: 'Support', href: '/dashboard/support', icon: <HelpCircle size={14} strokeWidth={1.5} /> },
 ];
