@@ -38,6 +38,7 @@ export default function AdminDashboard() {
 
   // Pricing State
   const [pricingTiers, setPricingTiers] = useState<any[]>([]);
+  const [systemSettings, setSystemSettings] = useState({ whatsapp_credit_cost: 1.0, email_credit_cost: 0.5 });
   const [isSavingPricing, setIsSavingPricing] = useState(false);
   const [pricingStatusMsg, setPricingStatusMsg] = useState('');
   const [pricingConfirmOpen, setPricingConfirmOpen] = useState(false);
@@ -88,6 +89,12 @@ export default function AdminDashboard() {
         setData(json);
         if (json.pricing) {
           setPricingTiers(json.pricing);
+        }
+        if (json.settings) {
+          setSystemSettings({
+            whatsapp_credit_cost: Number(json.settings.whatsapp_credit_cost) || 1.0,
+            email_credit_cost: Number(json.settings.email_credit_cost) || 0.5
+          });
         }
         setIsAuthenticated(true);
         fetchMerchants(0, true);
@@ -184,7 +191,7 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/pricing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pricing_tiers: pricingTiers })
+        body: JSON.stringify({ pricing_tiers: pricingTiers, settings: systemSettings })
       });
       if (res.ok) {
         setPricingStatusMsg('SUCCESS: Global pricing engine synchronized.');
@@ -475,7 +482,35 @@ export default function AdminDashboard() {
                 {pricingStatusMsg}
               </div>
             )}
+            
+            {/* System Cost Configurations */}
+            <div className="bg-[#FFFFFF] border border-[#E8E3DA] p-6 shadow-sm mb-8">
+              <h3 className="text-xs font-bold uppercase tracking-widest mb-6 pb-2 border-b border-[#E8E3DA]">System Credit Deduction Rates</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest text-[#8E8B85] mb-2">WhatsApp Credit Cost (per message)</label>
+                  <input 
+                    type="number" step="0.1"
+                    value={systemSettings.whatsapp_credit_cost}
+                    onChange={(e) => setSystemSettings(prev => ({ ...prev, whatsapp_credit_cost: Number(e.target.value) }))}
+                    className="w-full bg-[#F5F1EA] border-none text-[#3E3B36] px-4 py-3 text-lg focus:outline-none focus:ring-1 focus:ring-[#3E3B36] transition-all font-medium"
+                  />
+                  <p className="text-[9px] text-[#8E8B85] mt-1.5 uppercase tracking-widest">Base rate for Meta & QR Express dispatch</p>
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest text-[#8E8B85] mb-2">Email Credit Cost (per email)</label>
+                  <input 
+                    type="number" step="0.1"
+                    value={systemSettings.email_credit_cost}
+                    onChange={(e) => setSystemSettings(prev => ({ ...prev, email_credit_cost: Number(e.target.value) }))}
+                    className="w-full bg-[#F5F1EA] border-none text-[#3E3B36] px-4 py-3 text-lg focus:outline-none focus:ring-1 focus:ring-[#3E3B36] transition-all font-medium"
+                  />
+                  <p className="text-[9px] text-[#8E8B85] mt-1.5 uppercase tracking-widest">Base rate for Email Engine dispatch</p>
+                </div>
+              </div>
+            </div>
 
+            <h3 className="text-xs font-bold uppercase tracking-widest mb-6 pb-2 border-b border-[#E8E3DA]">Consumer Purchase Tiers</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {pricingTiers.map(tier => (
                 <div key={tier.id} className="bg-[#FFFFFF] border border-[#E8E3DA] p-6 shadow-sm flex flex-col gap-4">

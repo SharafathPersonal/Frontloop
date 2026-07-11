@@ -12,7 +12,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { pricing_tiers } = await req.json();
+    const { pricing_tiers, settings } = await req.json();
 
     if (!Array.isArray(pricing_tiers)) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
@@ -49,6 +49,20 @@ export async function POST(req: Request) {
 
     if (upsertError) {
       return NextResponse.json({ error: upsertError.message }, { status: 500 });
+    }
+
+    if (settings) {
+      const settingsUpsert = [
+        { key: 'whatsapp_credit_cost', value: Number(settings.whatsapp_credit_cost), updated_at: new Date().toISOString() },
+        { key: 'email_credit_cost', value: Number(settings.email_credit_cost), updated_at: new Date().toISOString() }
+      ];
+      const { error: settingsError } = await supabaseAdmin
+        .from('system_settings')
+        .upsert(settingsUpsert, { onConflict: 'key' });
+        
+      if (settingsError) {
+        return NextResponse.json({ error: settingsError.message }, { status: 500 });
+      }
     }
 
     return NextResponse.json({ success: true });

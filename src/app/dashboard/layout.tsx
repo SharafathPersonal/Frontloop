@@ -21,6 +21,7 @@ import {
   MessageSquareText,
   Lock,
   Receipt,
+  Mail,
 } from 'lucide-react';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 import { ToastProvider } from '@/contexts/ToastContext';
@@ -35,7 +36,8 @@ interface NavLink {
 const navLinks: NavLink[] = [
   { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={14} strokeWidth={1.5} /> },
   { label: 'Audience', href: '/dashboard/customers', icon: <Users size={14} strokeWidth={1.5} /> },
-  { label: 'Campaigns', href: '/dashboard/campaigns', icon: <Radio size={14} strokeWidth={1.5} /> },
+  { label: 'WhatsApp Campaigns', href: '/dashboard/campaigns', icon: <Radio size={14} strokeWidth={1.5} /> },
+  { label: 'Email Campaigns', href: '/dashboard/email', icon: <Mail size={14} strokeWidth={1.5} /> },
   { label: 'Templates', href: '/dashboard/templates', icon: <MessageSquareText size={14} strokeWidth={1.5} /> },
   { label: 'Transactions', href: '/dashboard/transactions', icon: <Receipt size={14} strokeWidth={1.5} /> },
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings size={14} strokeWidth={1.5} /> },
@@ -108,7 +110,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="px-6 py-8 border-b border-[#E8E3DA]">
         <div className="flex items-center gap-2.5 mb-1">
           <div className="relative w-7 h-7 flex items-center justify-center flex-shrink-0">
-             <Image src="/images/logo-dark.png" alt="Attendly Logo" fill className="object-contain" />
+             <Image src="/images/logo-dark.png" alt="Attendly Logo" fill sizes="28px" className="object-contain" />
           </div>
           <h1 className="serif-headline text-base text-[#3E3B36] leading-tight">
             Attendly<br />Broadcast

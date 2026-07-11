@@ -234,7 +234,7 @@ export default function LandingPage() {
                 <h1
                   className="serif-headline text-4xl sm:text-5xl lg:text-[52px] text-white leading-[1.1]"
                 >
-                  The Editorial WhatsApp Marketing Platform for High-Retention Retail.
+                  The Omnichannel AI Marketing Platform for High-Retention Retail.
                 </h1>
               </div>
 
@@ -243,8 +243,7 @@ export default function LandingPage() {
                   className="text-base max-w-lg leading-relaxed"
                   style={{ color: 'rgba(255,255,255,0.75)' }}
                 >
-                  Transform passive buyers into lifetime patrons. Launch high-converting story updates,
-                  broadcast dynamic offers, and manage credit-driven pipelines with sub-second global execution.
+                  Launch high-converting WhatsApp updates and Premium Email campaigns simultaneously. Broadcast dynamic offers, generate AI copies that write for you, and manage credit-driven pipelines with sub-second global execution.
                 </p>
               </div>
 
@@ -261,7 +260,8 @@ export default function LandingPage() {
               {/* USP Bullets */}
               <div className="gsap-reveal space-y-2.5">
                 {[
-                  'Zero monthly subscriptions - pay only per message sent',
+                  'AI Powered: We write your copy & optimization templates instantly.',
+                  'Zero monthly subscriptions - pay only per message/email sent.',
                   'Real-time credit deduction with wallet transparency',
                   'CSV-based contact management for instant list loading',
                   'Anti-spam throttle engine protects your sender numbers',
@@ -337,82 +337,154 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             
-            {/* Card 1: E-commerce */}
-            <div className="gsap-reveal group bg-[#EFEAE2] rounded-[2rem] border-[6px] border-[#3E3B36] p-4 shadow-xl overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col justify-end min-h-[360px]">
-              <div className="absolute inset-0 bg-[#EFEAE2] opacity-50 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C4A896 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
-              <div className="bg-white rounded-lg shadow-sm p-1 flex flex-col relative max-w-[100%] mx-auto mt-4 rounded-tl-sm z-10 w-full">
-                <div className="relative w-full h-40 rounded-t-md overflow-hidden bg-gray-100">
-                  <Image src="/images/showcase-1.png" alt="E-commerce Showcase" fill className="object-cover" />
-                </div>
-                <div className="px-2 pt-2 pb-1 relative">
-                  <p className="text-[13px] text-[#111B21] leading-[18px]">
-                    <strong>*Exclusive Drop!*</strong><br/>
-                    Get 20% off on our limited edition series today. Reply BUY to order.
-                  </p>
-                  <div className="float-right flex items-center gap-1 mt-1 ml-2 pb-0.5">
-                    <span className="text-[10px] text-[#667781]">10:42 AM</span>
-                    <svg viewBox="0 0 16 15" width="16" height="15" className="text-[#53bdeb] fill-current"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path><path d="M10.151 3.316l-.478-.372a.365.365 0 0 0-.51.063L3.806 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path></svg>
+            {/* Card 1: Retail (E-commerce) Twin Block */}
+            <div className="flex flex-col gap-6">
+              <div className="gsap-reveal group bg-[#EFEAE2] rounded-[2rem] border-[6px] border-[#3E3B36] p-4 shadow-xl overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col justify-end min-h-[360px]">
+                <div className="absolute inset-0 bg-[#EFEAE2] opacity-50 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C4A896 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
+                <div className="bg-white rounded-lg shadow-sm p-1 flex flex-col relative max-w-[100%] mx-auto mt-4 rounded-tl-sm z-10 w-full">
+                  <div className="relative w-full h-40 rounded-t-md overflow-hidden bg-gray-100">
+                    <Image src="/images/showcase-1.png" alt="E-commerce Showcase" fill className="object-cover" />
                   </div>
+                  <div className="px-2 pt-2 pb-1 relative">
+                    <p className="text-[13px] text-[#111B21] leading-[18px]">
+                      <strong>*Exclusive Drop!*</strong><br/>
+                      Get 20% off on our limited edition series today. Reply BUY to order.
+                    </p>
+                    <div className="float-right flex items-center gap-1 mt-1 ml-2 pb-0.5">
+                      <span className="text-[10px] text-[#667781]">10:42 AM</span>
+                      <svg viewBox="0 0 16 15" width="16" height="15" className="text-[#53bdeb] fill-current"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path><path d="M10.151 3.316l-.478-.372a.365.365 0 0 0-.51.063L3.806 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path></svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Email Twin */}
+              <div className="gsap-reveal group bg-white rounded-xl border border-[#E8E3DA] shadow-sm overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-xl flex flex-col h-[320px]">
+                <div className="bg-[#F5F1EA] px-4 py-2 border-b border-[#E8E3DA] flex items-center justify-between text-[10px] text-[#8B8378] uppercase tracking-widest font-semibold">
+                  <span>Inbox</span><span className="text-[9px]">10:42 AM</span>
+                </div>
+                <div className="px-4 py-3 border-b border-[#E8E3DA] bg-white">
+                   <p className="text-xs font-semibold text-[#3E3B36] truncate">🎁 Exclusive Eid Drop: 20% Off Just For You!</p>
+                </div>
+                <div className="flex-1 p-4 flex flex-col items-center justify-center text-center bg-[#F9F7F4] relative">
+                   <div className="w-full h-24 bg-gray-200 rounded-md mb-3 overflow-hidden relative shadow-sm">
+                      <Image src="/images/showcase-1.png" alt="Email Banner" fill className="object-cover" />
+                   </div>
+                   <p className="text-[11px] text-[#3E3B36] leading-relaxed mb-3">Dear Valued VIP Customer, our limited-edition festival series is live. Premium quality, crafted just for you.</p>
+                   <button className="bg-[#3E3B36] text-white text-[9px] uppercase tracking-widest px-4 py-2 rounded-md font-medium">Shop Collection Now</button>
                 </div>
               </div>
             </div>
 
-            {/* Card 2: Real Estate */}
-            <div className="gsap-reveal group bg-[#EFEAE2] rounded-[2rem] border-[6px] border-[#3E3B36] p-4 shadow-xl overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col justify-end min-h-[360px]" style={{ transitionDelay: '100ms' }}>
-              <div className="absolute inset-0 bg-[#EFEAE2] opacity-50 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C4A896 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
-              <div className="bg-white rounded-lg shadow-sm p-1 flex flex-col relative max-w-[100%] mx-auto mt-4 rounded-tl-sm z-10 w-full">
-                <div className="relative w-full h-40 rounded-t-md overflow-hidden bg-gray-100">
-                  <Image src="/images/showcase-2.png" alt="Real Estate Showcase" fill className="object-cover" />
-                </div>
-                <div className="px-2 pt-2 pb-1 relative">
-                  <p className="text-[13px] text-[#111B21] leading-[18px]">
-                    <strong>*New Property Alert!*</strong><br/>
-                    3 BHK luxury villas available at Prime Location. Click below to download the brochure.
-                  </p>
-                  <div className="float-right flex items-center gap-1 mt-1 ml-2 pb-0.5">
-                    <span className="text-[10px] text-[#667781]">11:15 AM</span>
-                    <svg viewBox="0 0 16 15" width="16" height="15" className="text-[#53bdeb] fill-current"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path><path d="M10.151 3.316l-.478-.372a.365.365 0 0 0-.51.063L3.806 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path></svg>
+            {/* Card 2: Real Estate Twin Block */}
+            <div className="flex flex-col gap-6">
+              <div className="gsap-reveal group bg-[#EFEAE2] rounded-[2rem] border-[6px] border-[#3E3B36] p-4 shadow-xl overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col justify-end min-h-[360px]" style={{ transitionDelay: '100ms' }}>
+                <div className="absolute inset-0 bg-[#EFEAE2] opacity-50 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C4A896 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
+                <div className="bg-white rounded-lg shadow-sm p-1 flex flex-col relative max-w-[100%] mx-auto mt-4 rounded-tl-sm z-10 w-full">
+                  <div className="relative w-full h-40 rounded-t-md overflow-hidden bg-gray-100">
+                    <Image src="/images/showcase-2.png" alt="Real Estate Showcase" fill className="object-cover" />
                   </div>
+                  <div className="px-2 pt-2 pb-1 relative">
+                    <p className="text-[13px] text-[#111B21] leading-[18px]">
+                      <strong>*New Property Alert!*</strong><br/>
+                      3 BHK luxury villas available at Prime Location. Click below to download the brochure.
+                    </p>
+                    <div className="float-right flex items-center gap-1 mt-1 ml-2 pb-0.5">
+                      <span className="text-[10px] text-[#667781]">11:15 AM</span>
+                      <svg viewBox="0 0 16 15" width="16" height="15" className="text-[#53bdeb] fill-current"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path><path d="M10.151 3.316l-.478-.372a.365.365 0 0 0-.51.063L3.806 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path></svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Email Twin */}
+              <div className="gsap-reveal group bg-white rounded-xl border border-[#E8E3DA] shadow-sm overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-xl flex flex-col h-[320px]" style={{ transitionDelay: '100ms' }}>
+                <div className="bg-[#F5F1EA] px-4 py-2 border-b border-[#E8E3DA] flex items-center justify-between text-[10px] text-[#8B8378] uppercase tracking-widest font-semibold">
+                  <span>Inbox</span><span className="text-[9px]">11:15 AM</span>
+                </div>
+                <div className="px-4 py-3 border-b border-[#E8E3DA] bg-white">
+                   <p className="text-xs font-semibold text-[#3E3B36] truncate">✨ New Luxury Property Alert: Prime 3 BHK Villas Selection</p>
+                </div>
+                <div className="flex-1 p-4 flex flex-col items-center justify-center text-center bg-[#F9F7F4] relative">
+                   <div className="w-full h-24 bg-gray-200 rounded-md mb-3 overflow-hidden relative shadow-sm">
+                      <Image src="/images/showcase-2.png" alt="Email Banner" fill className="object-cover" />
+                   </div>
+                   <p className="text-[11px] text-[#3E3B36] leading-relaxed mb-3">Presented by True Realities. View architectural blueprints and flexible pricing structures attached inside.</p>
+                   <button className="bg-[#3E3B36] text-white text-[9px] uppercase tracking-widest px-4 py-2 rounded-md font-medium">Download Brochure (PDF)</button>
                 </div>
               </div>
             </div>
 
-            {/* Card 3: Food & Restaurant */}
-            <div className="gsap-reveal group bg-[#EFEAE2] rounded-[2rem] border-[6px] border-[#3E3B36] p-4 shadow-xl overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col justify-end min-h-[360px]" style={{ transitionDelay: '200ms' }}>
-              <div className="absolute inset-0 bg-[#EFEAE2] opacity-50 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C4A896 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
-              <div className="bg-white rounded-lg shadow-sm p-1 flex flex-col relative max-w-[100%] mx-auto mt-4 rounded-tl-sm z-10 w-full">
-                <div className="relative w-full h-40 rounded-t-md overflow-hidden bg-gray-100">
-                  <Image src="/images/showcase-3.png" alt="Restaurant Showcase" fill className="object-cover" />
-                </div>
-                <div className="px-2 pt-2 pb-1 relative">
-                  <p className="text-[13px] text-[#111B21] leading-[18px]">
-                    <strong>*Weekend Feast!*</strong><br/>
-                    Buy 1 Get 1 Free on all premium items. Valid till Sunday midnight.
-                  </p>
-                  <div className="float-right flex items-center gap-1 mt-1 ml-2 pb-0.5">
-                    <span className="text-[10px] text-[#667781]">01:30 PM</span>
-                    <svg viewBox="0 0 16 15" width="16" height="15" className="text-[#53bdeb] fill-current"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path><path d="M10.151 3.316l-.478-.372a.365.365 0 0 0-.51.063L3.806 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path></svg>
+            {/* Card 3: Retail Feast Twin Block */}
+            <div className="flex flex-col gap-6">
+              <div className="gsap-reveal group bg-[#EFEAE2] rounded-[2rem] border-[6px] border-[#3E3B36] p-4 shadow-xl overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col justify-end min-h-[360px]" style={{ transitionDelay: '200ms' }}>
+                <div className="absolute inset-0 bg-[#EFEAE2] opacity-50 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C4A896 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
+                <div className="bg-white rounded-lg shadow-sm p-1 flex flex-col relative max-w-[100%] mx-auto mt-4 rounded-tl-sm z-10 w-full">
+                  <div className="relative w-full h-40 rounded-t-md overflow-hidden bg-gray-100">
+                    <Image src="/images/showcase-3.png" alt="Restaurant Showcase" fill className="object-cover" />
                   </div>
+                  <div className="px-2 pt-2 pb-1 relative">
+                    <p className="text-[13px] text-[#111B21] leading-[18px]">
+                      <strong>*Weekend Feast!*</strong><br/>
+                      Buy 1 Get 1 Free on all premium items. Valid till Sunday midnight.
+                    </p>
+                    <div className="float-right flex items-center gap-1 mt-1 ml-2 pb-0.5">
+                      <span className="text-[10px] text-[#667781]">01:30 PM</span>
+                      <svg viewBox="0 0 16 15" width="16" height="15" className="text-[#53bdeb] fill-current"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path><path d="M10.151 3.316l-.478-.372a.365.365 0 0 0-.51.063L3.806 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path></svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Email Twin */}
+              <div className="gsap-reveal group bg-white rounded-xl border border-[#E8E3DA] shadow-sm overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-xl flex flex-col h-[320px]" style={{ transitionDelay: '200ms' }}>
+                <div className="bg-[#F5F1EA] px-4 py-2 border-b border-[#E8E3DA] flex items-center justify-between text-[10px] text-[#8B8378] uppercase tracking-widest font-semibold">
+                  <span>Inbox</span><span className="text-[9px]">01:30 PM</span>
+                </div>
+                <div className="px-4 py-3 border-b border-[#E8E3DA] bg-white">
+                   <p className="text-xs font-semibold text-[#3E3B36] truncate">🍕 Weekend Feast Active: Buy 1 Get 1 Free Tonight!</p>
+                </div>
+                <div className="flex-1 p-4 flex flex-col items-center justify-center text-center bg-[#F9F7F4] relative">
+                   <div className="w-full h-24 bg-gray-200 rounded-md mb-3 overflow-hidden relative shadow-sm">
+                      <Image src="/images/showcase-3.png" alt="Email Banner" fill className="object-cover" />
+                   </div>
+                   <p className="text-[11px] text-[#3E3B36] leading-relaxed mb-3">Order any of our signature wood-fired pizzas and get the second free. Valid till Sunday midnight.</p>
+                   <button className="bg-[#3E3B36] text-white text-[9px] uppercase tracking-widest px-4 py-2 rounded-md font-medium">Claim Free Pizza</button>
                 </div>
               </div>
             </div>
 
-            {/* Card 4: Event Ticket */}
-            <div className="gsap-reveal group bg-[#EFEAE2] rounded-[2rem] border-[6px] border-[#3E3B36] p-4 shadow-xl overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col justify-end min-h-[360px]" style={{ transitionDelay: '300ms' }}>
-              <div className="absolute inset-0 bg-[#EFEAE2] opacity-50 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C4A896 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
-              <div className="bg-white rounded-lg shadow-sm p-1 flex flex-col relative max-w-[100%] mx-auto mt-4 rounded-tl-sm z-10 w-full">
-                <div className="relative w-full h-40 rounded-t-md overflow-hidden bg-gray-100">
-                  <Image src="/images/showcase-4.png" alt="Event Showcase" fill className="object-cover" />
-                </div>
-                <div className="px-2 pt-2 pb-1 relative">
-                  <p className="text-[13px] text-[#111B21] leading-[18px]">
-                    <strong>*Seat Confirmed!*</strong><br/>
-                    Your masterclass starts tomorrow at 7 PM. Click the link to join the live stream.
-                  </p>
-                  <div className="float-right flex items-center gap-1 mt-1 ml-2 pb-0.5">
-                    <span className="text-[10px] text-[#667781]">04:45 PM</span>
-                    <svg viewBox="0 0 16 15" width="16" height="15" className="text-[#53bdeb] fill-current"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path><path d="M10.151 3.316l-.478-.372a.365.365 0 0 0-.51.063L3.806 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path></svg>
+            {/* Card 4: Education Twin Block */}
+            <div className="flex flex-col gap-6">
+              <div className="gsap-reveal group bg-[#EFEAE2] rounded-[2rem] border-[6px] border-[#3E3B36] p-4 shadow-xl overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col justify-end min-h-[360px]" style={{ transitionDelay: '300ms' }}>
+                <div className="absolute inset-0 bg-[#EFEAE2] opacity-50 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C4A896 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
+                <div className="bg-white rounded-lg shadow-sm p-1 flex flex-col relative max-w-[100%] mx-auto mt-4 rounded-tl-sm z-10 w-full">
+                  <div className="relative w-full h-40 rounded-t-md overflow-hidden bg-gray-100">
+                    <Image src="/images/showcase-4.png" alt="Event Showcase" fill className="object-cover" />
                   </div>
+                  <div className="px-2 pt-2 pb-1 relative">
+                    <p className="text-[13px] text-[#111B21] leading-[18px]">
+                      <strong>*Seat Confirmed!*</strong><br/>
+                      Your masterclass starts tomorrow at 7 PM. Click the link to join the live stream.
+                    </p>
+                    <div className="float-right flex items-center gap-1 mt-1 ml-2 pb-0.5">
+                      <span className="text-[10px] text-[#667781]">04:45 PM</span>
+                      <svg viewBox="0 0 16 15" width="16" height="15" className="text-[#53bdeb] fill-current"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path><path d="M10.151 3.316l-.478-.372a.365.365 0 0 0-.51.063L3.806 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path></svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Email Twin */}
+              <div className="gsap-reveal group bg-white rounded-xl border border-[#E8E3DA] shadow-sm overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-xl flex flex-col h-[320px]" style={{ transitionDelay: '300ms' }}>
+                <div className="bg-[#F5F1EA] px-4 py-2 border-b border-[#E8E3DA] flex items-center justify-between text-[10px] text-[#8B8378] uppercase tracking-widest font-semibold">
+                  <span>Inbox</span><span className="text-[9px]">04:45 PM</span>
+                </div>
+                <div className="px-4 py-3 border-b border-[#E8E3DA] bg-white">
+                   <p className="text-xs font-semibold text-[#3E3B36] truncate">🚀 Masterclass Confirmed: Your Live Access Link Inside</p>
+                </div>
+                <div className="flex-1 p-4 flex flex-col items-center justify-center text-center bg-[#F9F7F4] relative">
+                   <div className="w-full h-24 bg-gray-200 rounded-md mb-3 overflow-hidden relative shadow-sm">
+                      <Image src="/images/showcase-4.png" alt="Email Banner" fill className="object-cover" />
+                   </div>
+                   <p className="text-[11px] text-[#3E3B36] leading-relaxed mb-3">Your seats are locked for tomorrow's exclusive scale-up session at 7 PM. Join 10 minutes early.</p>
+                   <button className="bg-[#3E3B36] text-white text-[9px] uppercase tracking-widest px-4 py-2 rounded-md font-medium">Join Live Stream</button>
                 </div>
               </div>
             </div>
@@ -549,7 +621,7 @@ export default function LandingPage() {
               <h3 className="lexend-subheading text-base font-semibold text-[#F5F1EA] mb-2">True Attendly Broadcast</h3>
               <p className="text-lg font-bold text-[#C4A896] mb-4">98% Guaranteed Read Rate</p>
               <p className="text-sm text-[rgba(245,241,234,0.8)] leading-relaxed">
-                Delivered straight as a personal WhatsApp notification. Customers see it, open it, and read it instantly. Zero subscription fees—pay 1 credit only per successful send.
+                Guaranteed High-Impact Inbox Reach: Delivered straight as a personal WhatsApp notification or an AI-polished premium corporate email. Customers see it, open it, and engage instantly.
               </p>
             </div>
 
@@ -570,23 +642,23 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════
-          SECTION 3.8 — DUAL INFRASTRUCTURE ARCHITECTURE
+          SECTION 3.8 — OMNICHANNEL INFRASTRUCTURE ARCHITECTURE
       ══════════════════════════════════════════════════════════ */}
       <section className="bg-white py-24 scroll-reveal-section border-t border-[#E8E3DA]">
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
              <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#C4A896' }}>
-              Dual Routing Infrastructure
+              Omnichannel Routing Infrastructure
             </p>
             <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-4">
-              Two Powerful Broadcast Engines. One Unified Dashboard.
+              Three Powerful Broadcast Engines. One Unified Dashboard.
             </h2>
             <p className="text-base leading-relaxed text-[#8B8378]">
-              Whether you represent an Enterprise brand needing guaranteed delivery at scale, or a local shop looking for a quick, template-free setup, our Dual-Channel Architecture adapts instantly.
+              Whether you represent an Enterprise brand needing guaranteed delivery at scale, a local shop looking for a quick, template-free setup, or an Omnichannel presence requiring AI-polished emails, our Tri-Channel Architecture adapts instantly.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 gsap-reveal">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 gsap-reveal">
             {/* Meta Official API */}
             <div className="border border-[#E8E3DA] rounded-2xl p-8 bg-[#F9F7F4] flex flex-col justify-between hover:border-[#C4A896]/50 transition-colors">
               <div>
@@ -648,6 +720,39 @@ export default function LandingPage() {
                   <li className="flex items-start gap-3">
                     <CheckCircle size={16} className="text-[#8B8378] mt-0.5 flex-shrink-0" />
                     <p className="text-sm text-[#8B8378] leading-relaxed">Recommended &lt; 500 messages per day to maintain sender reputation.</p>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Automated AI Email Engine Mode */}
+            <div className="border border-[#E8E3DA] rounded-2xl p-8 bg-[#F9F7F4] flex flex-col justify-between hover:border-[#6366f1]/30 transition-colors">
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                   <div className="w-10 h-10 bg-[#6366f1] text-[#FFFFFF] rounded-xl flex items-center justify-center">
+                     <Mail size={20} />
+                   </div>
+                   <div>
+                     <h3 className="lexend-subheading text-lg font-bold text-[#3E3B36]">Automated AI Email Engine Mode</h3>
+                     <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">For Omni-Channel Retention</p>
+                   </div>
+                </div>
+                <ul className="space-y-4 mb-8">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Instant Serverless Setup:</strong> Zero configuration required. Ready out of the box.</p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Multi-Tier Copy Generation:</strong> AI automatically transforms drafts into premium copy.</p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Target Safety Validations:</strong> Built-in credit and recipient audits prevent accidental sends.</p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Dynamic Export Utilities:</strong> Filtered and full-dataset reporting directly to CSV/Excel.</p>
                   </li>
                 </ul>
               </div>
@@ -837,11 +942,11 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Feature 3: Small Business QR Mode: Anti-Ban Dynamic AI Generator */}
+            {/* Feature 3: Small Business QR Mode: AI Ready-For-You Mode */}
             <div className="flex flex-col lg:flex-row items-center gap-12 gsap-reveal">
               <div className="lg:w-1/2 space-y-4">
-                <h3 className="lexend-subheading text-xl font-medium text-[#3E3B36]">Small Business QR Mode: Anti-Ban Dynamic AI Generator</h3>
-                <p className="text-sm leading-relaxed text-[#8B8378]">Maximize inbox delivery with built-in Anti-Ban Spintax technology. Write one broadcast message, and our AI dynamically spins it into hundreds of unique variations sent across the QR bridge—all staggered with smart human-like delays.</p>
+                <h3 className="lexend-subheading text-xl font-medium text-[#3E3B36]">Small Business QR Mode: AI Ready-For-You Generator</h3>
+                <p className="text-sm leading-relaxed text-[#8B8378]">Maximize inbox delivery with built-in Anti-Ban Spintax technology. Write one broadcast message, and our AI dynamically spins it into hundreds of unique variations sent across the QR bridge—all safeguarded by our dynamic human-like anti-ban delay safety configurations (5 to 12-second randomized throttling).</p>
               </div>
               <div className="lg:w-1/2 w-full p-8 bg-[#F5F1EA] rounded-2xl flex items-center justify-center">
                 <div className="w-full max-w-md p-6 bg-white rounded-xl border border-[#E8E3DA] shadow-sm relative">
@@ -885,6 +990,181 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 4.9 — EMAIL CAMPAIGN + AI POLISH SHOWCASE
+      ══════════════════════════════════════════════════════════ */}
+      <section className="bg-[#F5F1EA] border-t border-[#E8E3DA] py-24 scroll-reveal-section">
+        <div className="max-w-6xl mx-auto px-6">
+
+          {/* Header */}
+          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
+            <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#6366f1' }}>
+              New · Email Marketing
+            </p>
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-4">
+              Now Broadcast via Email — With AI That Writes For You.
+            </h2>
+            <p className="text-base leading-relaxed text-[#8B8378]">
+              Launch full-scale email campaigns to your segmented audience. Our built-in AI Polish engine transforms rough drafts into premium, conversion-optimised copy in a single click.
+            </p>
+          </div>
+
+          {/* Two-column: mockup left, features right */}
+          <div className="flex flex-col lg:flex-row items-stretch gap-8 gsap-reveal">
+
+            {/* LEFT — Email Composer Mockup */}
+            <div className="lg:w-1/2 w-full">
+              <div className="bg-white rounded-2xl border border-[#E8E3DA] shadow-lg overflow-hidden h-full flex flex-col">
+
+                {/* Fake browser chrome */}
+                <div className="bg-[#F5F1EA] border-b border-[#E8E3DA] px-4 py-3 flex items-center gap-2 flex-shrink-0">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-[#f43f5e]/60" />
+                    <div className="w-3 h-3 rounded-full bg-[#f59e0b]/60" />
+                    <div className="w-3 h-3 rounded-full bg-[#10b981]/60" />
+                  </div>
+                  <div className="flex-1 mx-3 bg-white border border-[#E8E3DA] rounded-md px-3 py-1">
+                    <p className="text-[10px] text-[#8B8378] font-mono">dashboard/email/create</p>
+                  </div>
+                </div>
+
+                <div className="p-5 flex-1 flex flex-col gap-4">
+                  {/* Campaign Title & Banner Area */}
+                  <div>
+                    <p className="text-[9px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Banner Image Preview</p>
+                    <div className="w-full h-16 bg-[#F9F7F4] border-2 border-dashed border-[#E8E3DA] rounded-lg flex items-center justify-center">
+                       <span className="text-[10px] text-[#8B8378]">Attach Header Banner Area</span>
+                    </div>
+                  </div>
+
+                  {/* Subject */}
+                  <div>
+                    <p className="text-[9px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5 flex justify-between">
+                       <span>Subject Line</span>
+                       <span className="text-[#6366f1] font-bold">🪄 AI Polish</span>
+                    </p>
+                    <div className="w-full bg-[#F5F1EA] border border-[#E8E3DA] rounded-md px-3 py-2 text-xs text-[#3E3B36]">
+                      🎁 Exclusive Offer Just For You — Limited Stock!
+                    </div>
+                  </div>
+
+                  {/* AI Polish Before/After */}
+                  <div>
+                    <p className="text-[9px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5 flex justify-between">
+                       <span>Email Body</span>
+                       <span className="text-[#6366f1] font-bold">🤖 Ask AI to Write (Gemini/Groq)</span>
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Before */}
+                      <div className="p-3 bg-[#F9F7F4] border-2 border-dashed border-[#E8E3DA] rounded-lg relative">
+                        <span className="absolute -top-2 left-2 bg-[#F9F7F4] px-1.5 text-[8px] uppercase tracking-widest font-bold text-[#8B8378]">Raw Draft</span>
+                        <p className="text-[10px] text-[#8B8378] font-mono leading-relaxed">
+                          hi customer we have sale going on. come and buy. very good quality.
+                        </p>
+                      </div>
+                      {/* After */}
+                      <div className="p-3 bg-white border-2 border-[#6366f1]/30 rounded-lg relative shadow-sm">
+                        <span className="absolute -top-2 left-2 bg-white px-1.5 text-[8px] uppercase tracking-widest font-bold text-[#6366f1]">✦ AI Polished</span>
+                        <p className="text-[10px] text-[#3E3B36] font-medium leading-relaxed">
+                          Dear valued customer, our exclusive Eid collection is here — premium quality, limited pieces. Shop now before it sells out. ✨
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Audience tags */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-[9px] text-[#8B8378] tracking-widest uppercase">Targeting Segment:</p>
+                    {['VIP', 'Regular', 'New'].map((t, i) => (
+                      <span key={t} className={`text-[9px] px-2.5 py-1 ${i < 2 ? 'bg-[#6366f1]/10 text-[#6366f1] border border-[#6366f1]/20' : 'bg-gray-100 text-gray-500 border border-gray-200'} rounded-full font-semibold tracking-wide`}>
+                        {t}
+                      </span>
+                    ))}
+                    <span className="ml-auto text-[9px] text-[#8B8378]">1,240 recipients</span>
+                  </div>
+
+                  {/* Dispatch button */}
+                  <div className="flex items-center justify-between bg-[#3E3B36] rounded-xl px-4 py-3 mt-auto">
+                    <div>
+                      <p className="text-[10px] text-white font-semibold">Ready to send to 1,240 recipients</p>
+                      <p className="text-[9px] text-white/50 uppercase tracking-wider">1 credit per email</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-[#6366f1] px-3 py-1.5 rounded-lg text-white text-[10px] font-bold tracking-wider uppercase">
+                      <Mail size={11} /> Dispatch
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT — Feature Pillars */}
+            <div className="lg:w-1/2 w-full flex flex-col gap-4">
+
+              {[
+                {
+                  icon: '✦',
+                  color: '#6366f1',
+                  bg: 'rgba(99,102,241,0.08)',
+                  title: 'Layout & Ask AI to Write Framework',
+                  desc: 'Attach a top banner preview, write a dynamic subject line with the "🪄 AI Polish" controller, and use the Email Body Rich textarea reinforced by our "🤖 Ask AI to Write (Gemini/Groq Failover Engine)" capability to instantly generate premium copy.',
+                },
+                {
+                  icon: '◎',
+                  color: '#10b981',
+                  bg: 'rgba(16,185,129,0.08)',
+                  title: 'Tag-Based Audience Targeting',
+                  desc: 'Trigger precision sends using dynamic targeting tags for VIP, Regular, and New segments. Recipient counts update instantly as you refine your audience.',
+                },
+                {
+                  icon: '◈',
+                  color: '#C4A896',
+                  bg: 'rgba(196,168,150,0.12)',
+                  title: 'Dedicated History & Analytics Routing',
+                  desc: 'Access a specialized History Routing page with an aggregate block (Total Sent | Success Ratio | Delivered | Failed) at the top, equipped with Search, Sort, Filtering, and Infinite Scrolling.',
+                },
+                {
+                  icon: '⬇',
+                  color: '#8B7BA8',
+                  bg: 'rgba(139,123,168,0.08)',
+                  title: 'Dual-Mode Exporting Manifests',
+                  desc: 'Instantly download your intelligence with two side-by-side mechanisms: "Export All Data" or "Export Filtered View" for instant CSV/Excel manifests—configured on both WhatsApp and Email histories.',
+                },
+                {
+                  icon: '🛡️',
+                  color: '#f43f5e',
+                  bg: 'rgba(244,63,94,0.08)',
+                  title: 'Safety Transaction Popup Modal',
+                  desc: 'Operate with zero fear. A mandatory secure firewall popup requires manual user verification before triggering any dispatch loop, eliminating accidental launches.',
+                },
+              ].map(f => (
+                <div
+                  key={f.title}
+                  className="bg-white rounded-xl border border-[#E8E3DA] p-4 flex items-start gap-4 hover:border-[#E8E3DA] transition-colors group"
+                  style={{ '--hover-border': f.color } as React.CSSProperties}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = f.color + '50')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = '#E8E3DA')}
+                >
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-base font-bold"
+                    style={{ backgroundColor: f.bg, color: f.color }}
+                  >
+                    {f.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="lexend-subheading text-sm font-semibold text-[#3E3B36] mb-1.5" style={{ color: '#3E3B36' }}>
+                      {f.title}
+                    </h3>
+                    <p className="text-xs leading-relaxed text-[#8B8378]">{f.desc}</p>
+                  </div>
+                </div>
+              ))}
+
+            </div>
+
           </div>
         </div>
       </section>

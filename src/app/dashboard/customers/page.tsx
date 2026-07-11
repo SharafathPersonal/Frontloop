@@ -15,6 +15,7 @@ type CustomerTag = 'VIP' | 'Regular' | 'New';
 interface CustomerRow {
   customer_name: string;
   whatsapp_number: string;
+  email?: string;
   tags: CustomerTag[];
 }
 
@@ -38,6 +39,7 @@ export default function CustomersUploadPage() {
   // Manual insertion state
   const [manualName, setManualName] = useState('');
   const [manualPhone, setManualPhone] = useState('');
+  const [manualEmail, setManualEmail] = useState('');
   const [manualTag, setManualTag] = useState<CustomerTag>('New');
   const [manualStatus, setManualStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [globalError, setGlobalError] = useState<{title: string, message: string} | null>(null);
@@ -82,9 +84,10 @@ export default function CustomersUploadPage() {
       data.forEach(row => {
         const name = (row['name'] || row['Name'] || row['NAME'] || '').trim();
         const rawPhone = (row['phone'] || row['Phone'] || row['PHONE'] || row['mobile'] || row['Mobile'] || '').toString().trim();
+        const email = (row['email'] || row['Email'] || row['EMAIL'] || '').toString().trim();
         const validPhone = validatePhone(rawPhone);
         if (validPhone) {
-          parsed.push({ customer_name: name, whatsapp_number: validPhone, tags: [selectedTag] });
+          parsed.push({ customer_name: name, whatsapp_number: validPhone, email, tags: [selectedTag] });
         } else if (rawPhone.length > 0) {
           rejected++;
         }
@@ -147,6 +150,7 @@ export default function CustomersUploadPage() {
         shop_id: user.id,
         customer_name: c.customer_name,
         whatsapp_number: c.whatsapp_number,
+        email: c.email || null,
         tags: c.tags,
       }));
       const { error } = await supabase.from('customers_master').upsert(chunk, { onConflict: 'shop_id,whatsapp_number' });
@@ -177,7 +181,7 @@ export default function CustomersUploadPage() {
 
     setManualStatus('saving');
     const { error } = await supabase.from('customers_master').upsert(
-      [{ shop_id: user.id, customer_name: manualName.trim(), whatsapp_number: validPhone, tags: [manualTag] }],
+      [{ shop_id: user.id, customer_name: manualName.trim(), whatsapp_number: validPhone, email: manualEmail.trim() || null, tags: [manualTag] }],
       { onConflict: 'shop_id,whatsapp_number' }
     );
 
@@ -187,6 +191,7 @@ export default function CustomersUploadPage() {
       setManualStatus('saved');
       setManualName('');
       setManualPhone('');
+      setManualEmail('');
       await fetchDbTotal();
       setTimeout(() => setManualStatus('idle'), 2500);
     }
@@ -266,7 +271,7 @@ export default function CustomersUploadPage() {
             <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mb-1">
               {isDragging ? 'Release to upload' : 'Drop .csv or .xlsx file here'}
             </p>
-            <p className="text-[10px] text-[#8B8378]">or click to browse · Columns: name, phone</p>
+            <p className="text-[10px] text-[#8B8378]">or click to browse · Columns: name, phone, email</p>
             <div className="mt-4 inline-flex items-center gap-2 border border-[#E8E3DA] rounded-lg px-3 py-1.5">
               <Tag size={10} className="text-[#C4A896]" />
               <span className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">Will be tagged as: {selectedTag}</span>
@@ -333,6 +338,16 @@ export default function CustomersUploadPage() {
                   onChange={(e) => setManualPhone(e.target.value)}
                   className="input-editorial"
                   placeholder="10 digit number"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Email Address (Optional)</label>
+                <input
+                  type="email"
+                  value={manualEmail}
+                  onChange={(e) => setManualEmail(e.target.value)}
+                  className="input-editorial"
+                  placeholder="name@example.com"
                 />
               </div>
               <div>

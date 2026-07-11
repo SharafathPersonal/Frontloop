@@ -80,6 +80,14 @@ export async function GET() {
 
     if (feedbacksError) throw feedbacksError;
 
+    // Fetch System Settings
+    const { data: settingsData, error: settingsError } = await supabaseAdmin
+      .from('system_settings')
+      .select('*');
+
+    if (settingsError) throw settingsError;
+    const settingsMap = settingsData.reduce((acc, row) => ({ ...acc, [row.key]: row.value }), {});
+
     return NextResponse.json({
       metrics: {
         totalShops: totalShops || 0,
@@ -88,7 +96,8 @@ export async function GET() {
         totalRevenue
       },
       pricing: pricingData,
-      feedbacks: feedbacksData
+      feedbacks: feedbacksData,
+      settings: settingsMap
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

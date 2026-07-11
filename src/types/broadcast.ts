@@ -132,6 +132,30 @@ export type CampaignInsert = Omit<Campaign, 'id' | 'created_at' | 'status' | 'di
 
 export type CampaignUpdate = Partial<Omit<Campaign, 'id' | 'shop_id'>>;
 
+export type EmailCampaignStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
+export interface EmailCampaign {
+  id: string;
+  shop_id: string;
+  title: string;
+  subject: string;
+  html_body: string;
+  status: EmailCampaignStatus;
+  total_recipients: number;
+  total_sent: number;
+  total_delivered: number;
+  total_failed: number;
+  failure_reason?: string | null;
+  target_tags: string[];
+  created_at: string;
+}
+
+export interface EmailCampaignFormValues {
+  title: string;
+  subject: string;
+  html_body: string;
+}
+
 export interface Customer {
   id: string;           // uuid
   shop_id: string;      // FK → shops.id

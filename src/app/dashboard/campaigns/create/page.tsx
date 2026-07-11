@@ -26,6 +26,7 @@ export default function BroadcastPage() {
   const [creditCheck, setCreditCheck] = useState<CreditCheckResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [whatsappCreditCost, setWhatsappCreditCost] = useState(1.0);
 
   // QR Express Connection Status
   const [qrExpressStatus, setQrExpressStatus] = useState<string | null>(null);
@@ -90,7 +91,7 @@ export default function BroadcastPage() {
     async function loadWallet() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const [{ data: w }, { data: s }, tagCounts, { data: tmplData }] = await Promise.all([
+      const [{ data: w }, { data: s }, tagCounts, { data: tmplData }, { data: configData }] = await Promise.all([
         supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle(),
         supabase.from('shops').select('shop_name, qr_express_status').eq('id', user.id).maybeSingle(),
         Promise.all(['VIP', 'Regular', 'New'].map(async (tag) => {
@@ -101,7 +102,8 @@ export default function BroadcastPage() {
             .contains('tags', [tag]);
           return { value: tag as CustomerTag, label: tag, count: count ?? 0 };
         })),
-        supabase.from('message_templates').select('*').eq('shop_id', user.id).eq('status', 'APPROVED')
+        supabase.from('message_templates').select('*').eq('shop_id', user.id).eq('status', 'APPROVED'),
+        supabase.from('system_settings').select('value').eq('key', 'whatsapp_credit_cost').maybeSingle()
       ]);
       if (w) setWallet(w);
       if (s) {
@@ -110,6 +112,7 @@ export default function BroadcastPage() {
       }
       setTagOptions(tagCounts);
       if (tmplData) setTemplates(tmplData as MessageTemplate[]);
+      if (configData?.value) setWhatsappCreditCost(Number(configData.value));
     }
     loadWallet();
   }, []);
@@ -164,16 +167,17 @@ export default function BroadcastPage() {
       setRecipientCount(total);
       if (!wallet) { setCreditCheck(null); return; }
       const available = wallet.credits_remaining;
+      const totalCost = total * whatsappCreditCost;
       setCreditCheck({ 
-        sufficient: available >= total, 
+        sufficient: available >= totalCost, 
         creditsAvailable: available, 
-        creditsRequired: total, 
-        deficit: Math.max(0, total - available) 
+        creditsRequired: totalCost, 
+        deficit: Math.max(0, totalCost - available) 
       });
     }
 
     updateCount();
-  }, [wallet, selectedTags]);
+  }, [wallet, selectedTags, whatsappCreditCost]);
 
   const toggleTag = (tag: CustomerTag) => {
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
@@ -614,7 +618,7 @@ export default function BroadcastPage() {
               : 'Select audience tags to proceed'}
           </p>
           <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase mt-0.5">
-            1 credit per message · No subscription required
+            {whatsappCreditCost} credit{whatsappCreditCost !== 1 ? 's' : ''} per message · No subscription required
           </p>
         </div>
         <button
@@ -639,7 +643,7 @@ export default function BroadcastPage() {
       <CustomConfirm
         isOpen={isConfirmOpen}
         title="Execute Broadcast"
-        message={`Are you sure you want to broadcast this campaign? This will permanently deduct ${recipientCount.toLocaleString()} credits from your active wallet ledger.`}
+        message={`Are you sure you want to broadcast this campaign? This will permanently deduct ${(recipientCount * whatsappCreditCost).toLocaleString()} credits from your active wallet ledger.`}
         confirmText="LAUNCH CAMPAIGN"
         onConfirm={executeSubmit}
         onCancel={() => setIsConfirmOpen(false)}

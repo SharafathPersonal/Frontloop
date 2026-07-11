@@ -327,6 +327,14 @@ export async function POST(req: Request) {
     }
 
     // ── 7. Wallet / credit check ─────────────────────────────────────────
+    const { data: configData } = await userClient
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'whatsapp_credit_cost')
+      .maybeSingle();
+      
+    const whatsappCreditCost = configData?.value ? Number(configData.value) : 1.0;
+
     const { data: walletRow, error: walletError } = await userClient
       .from('wallets')
       .select('credits_remaining')
@@ -338,13 +346,13 @@ export async function POST(req: Request) {
     }
 
     const { credits_remaining } = walletRow as Wallet;
-    const requiredCredits = recipients.length;
+    const requiredCredits = recipients.length * whatsappCreditCost;
 
     if (credits_remaining < requiredCredits) {
       return NextResponse.json(
         {
           ok: false,
-          error: `Insufficient credits. Need ${requiredCredits}, have ${credits_remaining}.`,
+          error: `Insufficient credits. Need ${requiredCredits.toFixed(2)}, have ${Number(credits_remaining).toFixed(2)}.`,
         },
         { status: 402 },
       );
@@ -357,7 +365,7 @@ export async function POST(req: Request) {
       .select('id')
       .eq('shop_id', user.id)
       .eq('title', payload.campaign.title)
-      .eq('total_recipients', requiredCredits)
+      .eq('total_recipients', recipients.length)
       .eq('status', 'processing')
       .gte('created_at', fiveMinsAgo)
       .maybeSingle();
@@ -391,7 +399,7 @@ export async function POST(req: Request) {
         message_body: dbMessageBody,
         image_url: payload.campaign.image_url || null,
         status: 'processing',
-        total_recipients: requiredCredits,
+        total_recipients: recipients.length,
         total_sent: 0,
         total_failed: 0,
         dispatch_mode: whatsapp_mode,
@@ -444,6 +452,7 @@ export async function POST(req: Request) {
     const messageBodySnapshot = payload.campaign.message_body;
     const templateNameSnapshot = payload.campaign.template_name ?? meta_template_name ?? '';
     const antiBanDelaySeconds = Math.max(30, Math.min(60, anti_ban_delay ?? 45));
+    const creditCostSnapshot = whatsappCreditCost;
 
     // ── 12. Background dispatch ──────────────────────────────────────────
     if (whatsapp_mode === 'QR_EXPRESS') {
@@ -522,7 +531,7 @@ export async function POST(req: Request) {
                 // Credit deducted ONLY after confirmed receipt from WhatsApp
                 const { error: deductError } = await adminClient.rpc('deduct_credits', {
                   p_shop_id: shopId,
-                  p_amount: 1,
+                  p_amount: creditCostSnapshot,
                 });
 
                 if (deductError) {
@@ -679,9 +688,9 @@ export async function POST(req: Request) {
             status: 'queued',
             mode: 'QR_EXPRESS',
             campaign_id: campaignId,
-            total_recipients: requiredCredits,
+            total_recipients: recipients.length,
             estimated_time_minutes: Math.ceil(
-              (requiredCredits * antiBanDelaySeconds) / 60,
+              (recipients.length * antiBanDelaySeconds) / 60,
             ),
           },
         },
@@ -765,7 +774,7 @@ export async function POST(req: Request) {
                 // Deduct credit ONLY after confirmed Meta message ID received
                 const { error: deductError } = await adminClient.rpc('deduct_credits', {
                   p_shop_id: shopId,
-                  p_amount: 1,
+                  p_amount: creditCostSnapshot,
                 });
 
                 if (deductError) {

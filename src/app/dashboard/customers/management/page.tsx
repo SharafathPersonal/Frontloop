@@ -14,6 +14,7 @@ type CustomerTag = 'VIP' | 'Regular' | 'New';
 interface CustomerRow {
   customer_name: string;
   whatsapp_number: string;
+  email?: string;
   tags: CustomerTag[];
 }
 
@@ -61,7 +62,7 @@ export default function AudienceManagementPage() {
       .eq('shop_id', user.id);
       
     if (searchQuery.trim()) {
-      query = query.or(`customer_name.ilike.%${searchQuery}%,whatsapp_number.ilike.%${searchQuery}%`);
+      query = query.or(`customer_name.ilike.%${searchQuery}%,whatsapp_number.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`);
     }
     
     if (filterTag !== 'All') {
@@ -168,7 +169,7 @@ export default function AudienceManagementPage() {
     if (!user) return;
 
     const { error } = await supabase.from('customers_master').upsert(
-      [{ shop_id: user.id, customer_name: editCustomer.customer_name.trim(), whatsapp_number: validPhone, tags: editCustomer.tags }],
+      [{ shop_id: user.id, customer_name: editCustomer.customer_name.trim(), whatsapp_number: validPhone, email: editCustomer.email?.trim() || null, tags: editCustomer.tags }],
       { onConflict: 'shop_id,whatsapp_number' }
     );
 
@@ -283,6 +284,7 @@ export default function AudienceManagementPage() {
                 <tr>
                   <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Customer Name</th>
                   <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">WhatsApp Number</th>
+                  <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Email Address</th>
                   <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Tags</th>
                   <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium text-right">Actions</th>
                 </tr>
@@ -292,6 +294,7 @@ export default function AudienceManagementPage() {
                   <tr key={i} className="border-b border-[#E8E3DA]/60 last:border-0 hover:bg-[#F5F1EA]/30 transition-colors group">
                     <td className="px-5 py-3 text-xs text-[#3E3B36]">{c.customer_name || '-'}</td>
                     <td className="px-5 py-3 text-xs text-[#8B8378] font-mono">{c.whatsapp_number.split('@')[0]}</td>
+                    <td className="px-5 py-3 text-xs text-[#8B8378]">{c.email || '-'}</td>
                     <td className="px-5 py-3">
                       {c.tags?.map(t => (
                         <span key={t} className="inline-block bg-[#F5F1EA] border border-[#E8E3DA] text-[#8B8378] text-[10px] px-2 py-0.5 rounded-md mr-1">{t}</span>
@@ -335,6 +338,10 @@ export default function AudienceManagementPage() {
                 <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Phone Number</label>
                 <input type="text" value={editCustomer.whatsapp_number.split('@')[0]} onChange={e => setEditCustomer({...editCustomer, whatsapp_number: e.target.value})} className="input-editorial" disabled />
                 <p className="text-[10px] text-[#8B8378] mt-1">Primary key. Delete and re-create to change.</p>
+              </div>
+              <div>
+                <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Email Address</label>
+                <input type="email" value={editCustomer.email || ''} onChange={e => setEditCustomer({...editCustomer, email: e.target.value})} className="input-editorial" />
               </div>
               <div className="flex items-center gap-3 mt-6">
                 <button onClick={executeEdit} disabled={editStatus === 'saving'} className="btn-primary flex-1 rounded-lg flex items-center justify-center gap-2">
