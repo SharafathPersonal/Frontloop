@@ -61,3 +61,14 @@
 - Clear instructions on pasting the code into the Supabase SQL Editor must accompany the update to ensure zero drift between the codebase layers and the database environment.
 
 *Last reviewed: 2026-07-08 · Maintained by: Core Systems*
+
+
+[RULE: SUPABASE_SQL_EMISSION]
+description = "Strictly emit manual Supabase SQL scripts for every DB schema or data change"
+trigger_on = "Any modification to Prisma schema, database models, tags table logic, or contact source variables"
+
+INSTRUCTION:
+- You must be 100% responsible for keeping the remote Supabase DB in sync.
+- For EVERY single code change that affects the database layer, you are REQUIRED to automatically generate a dedicated markdown block at the very end of your response labeled: "📋 SUPABASE SQL EDITOR SCRIPT".
+- Inside this block, provide the exact, production-ready PostgreSQL queries (e.g., CREATE TABLE, ALTER TABLE, ADD COLUMN, INSERT INTO) needed for the update.
+- The SQL must be fully concrete with explicit data types, foreign keys, and safe checks (e.g., IF NOT EXISTS) so that Sharafath can copy-paste and execute it instantly in the Supabase dashboard without manual coding or debugging.

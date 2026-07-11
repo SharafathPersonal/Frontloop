@@ -130,6 +130,100 @@ export async function POST(req: Request) {
               }
             }
           }
+
+          // Parse INBOUND messages (e.g. "Add me to Broadcast" QR Lead capture)
+          if (change.value && change.value.messages) {
+            const wabaId = entry.id;
+            const phoneNumberId = change.value.metadata?.phone_number_id;
+
+            const { data: metaConfigRow } = await adminSupabase
+              .from('meta_configs')
+              .select('shop_id, meta_access_token')
+              .eq('meta_business_id', wabaId)
+              .maybeSingle();
+
+            if (metaConfigRow?.shop_id) {
+              const shopId = metaConfigRow.shop_id;
+
+              for (const msg of change.value.messages) {
+                if (msg.type !== 'text') continue;
+
+                const messageText = msg.text?.body || '';
+                if (messageText.trim().toLowerCase() === 'add me to broadcast') {
+                  const customerPhone = msg.from;
+                  const pushName = change.value.contacts?.[0]?.profile?.name || 'QR Walk-in Lead';
+
+                  try {
+                    // 1. Check wallet
+                    const { data: walletData } = await adminSupabase
+                      .from('wallets')
+                      .select('credits_remaining')
+                      .eq('shop_id', shopId)
+                      .single();
+
+                    const hasCredits = walletData && walletData.credits_remaining >= 10;
+                    const tagToAssign = hasCredits ? 'IN_STORE_QR_LEAD' : 'MISSED_LEAD';
+
+                    // 2. Save Contact
+                    try {
+                      const { data: existingContact } = await adminSupabase
+                        .from('customers_master')
+                        .select('id, tags')
+                        .eq('shop_id', shopId)
+                        .eq('whatsapp_number', customerPhone)
+                        .maybeSingle();
+
+                      let tagsArray = [tagToAssign];
+                      if (existingContact) {
+                        tagsArray = Array.from(new Set([...(existingContact.tags || []).filter((t: string) => t !== 'VIP_InStore'), tagToAssign]));
+                        await adminSupabase.from('customers_master').update({ tags: tagsArray, source: 'QR_SCAN' }).eq('id', existingContact.id);
+                      } else {
+                        await adminSupabase.from('customers_master').insert({
+                          shop_id: shopId,
+                          customer_name: pushName,
+                          whatsapp_number: customerPhone,
+                          tags: tagsArray,
+                          source: 'QR_SCAN'
+                        });
+                      }
+                      console.log("💾 [DB SUCCESS] Lead successfully captured and isolated under IN_STORE_QR_LEAD tag!");
+                    } catch (dbError) {
+                      console.error("🚨 [DB ERROR] Failed to save contact to the isolated QR tag:", dbError);
+                    }
+
+                    if (hasCredits) {
+                      // 3. Deduct credits
+                      await adminSupabase.rpc('deduct_credits', { p_shop_id: shopId, p_amount: 10 });
+                      
+                      // 4. Update Analytics
+                      await adminSupabase.rpc('increment_qr_analytics', { p_shop_id: shopId, p_credits: 10 });
+
+                      // 5. Send Welcome Voucher via Meta API
+                      if (metaConfigRow.meta_access_token && phoneNumberId) {
+                         const welcomeMessage = `Hello ${pushName}! 🎉\n\nThanks for subscribing to our VIP Broadcast. Here is your exclusive welcome voucher: *VIP10* for 10% off your next purchase!`;
+                         await fetch(`https://graph.facebook.com/v17.0/${phoneNumberId}/messages`, {
+                           method: 'POST',
+                           headers: {
+                             'Authorization': `Bearer ${metaConfigRow.meta_access_token}`,
+                             'Content-Type': 'application/json'
+                           },
+                           body: JSON.stringify({
+                             messaging_product: "whatsapp",
+                             recipient_type: "individual",
+                             to: customerPhone,
+                             type: "text",
+                             text: { body: welcomeMessage }
+                           })
+                         });
+                      }
+                    }
+                  } catch (err) {
+                    console.error('[META QR LEAD ERROR]', err);
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

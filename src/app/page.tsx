@@ -258,59 +258,97 @@ export default function LandingPage() {
               </div>
 
               {/* USP Bullets */}
-              <div className="gsap-reveal space-y-2.5">
-                {[
-                  'AI Powered: We write your copy & optimization templates instantly.',
-                  'Zero monthly subscriptions - pay only per message/email sent.',
-                  'Real-time credit deduction with wallet transparency',
-                  'CSV-based contact management for instant list loading',
-                  'Anti-spam throttle engine protects your sender numbers',
-                ].map((point) => (
-                  <div key={point} className="flex items-start gap-3">
-                    <span
-                      className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: '#C4A896' }}
-                    />
-                    <p
-                      className="text-sm leading-relaxed"
-                      style={{ color: 'rgba(255,255,255,0.65)' }}
-                    >
-                      {point}
-                    </p>
+              <div className="gsap-reveal space-y-5 mt-6">
+                <div className="flex items-start gap-4">
+                  <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-[#C4A896] text-[#3E3B36] flex items-center justify-center text-xs font-bold">1</div>
+                  <div>
+                    <strong className="text-white text-[15px]">Step 1: Print & Place</strong>
+                    <p className="text-sm leading-relaxed mt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>Generate a dedicated QR code from the app and place it at your billing counter.</p>
                   </div>
-                ))}
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-[#C4A896] text-[#3E3B36] flex items-center justify-center text-xs font-bold">2</div>
+                  <div>
+                    <strong className="text-white text-[15px]">Step 2: Instant Customer Scan</strong>
+                    <p className="text-sm leading-relaxed mt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>Shoppers scan the QR, automatically opening their native WhatsApp with the pre-filled "✨ Add me to Broadcast" text trigger.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-[#10B981] text-white flex items-center justify-center text-xs font-bold">3</div>
+                  <div>
+                    <strong className="text-white text-[15px]">Step 3: 100% Anti-Ban Auto-Sync</strong>
+                    <p className="text-sm leading-relaxed mt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>Our secure cloud platform instantly captures the real name and number, syncs it safely to your DB (consuming 10 credits), and sends a dynamic welcome voucher while keeping your official phone number completely safe from bans.</p>
+                  </div>
+                </div>
               </div>
 
               {/* Advanced Tech Tags */}
               <div className="gsap-reveal flex flex-col gap-2 pt-4 mt-2 border-t border-white/10">
                 <p className="tracking-[0.2em] text-xs text-[#8B8378] uppercase font-medium">Multi-Tier AI Engine Failover Protection (Gemini/Groq Powered)</p>
                 <p className="tracking-[0.2em] text-xs text-[#8B8378] uppercase font-medium">Real-Time Local Connection Packet Intercept Guard</p>
+                
+                {/* HERO HIGHLIGHT pill */}
+                <div className="mt-3 bg-[#C4A896]/10 border border-[#C4A896]/20 p-4 rounded-xl flex flex-col gap-1.5 transition-colors hover:bg-[#C4A896]/20">
+                  <p className="text-sm font-bold text-[#C4A896] flex items-center gap-2">🎯 Dynamic QR Lead Generation</p>
+                  <p className="text-sm leading-relaxed text-white/80">Instant, zero-friction in-store lead capture that securely logs walk-in customers into your CRM dashboard automatically via a single scan.</p>
+                </div>
               </div>
 
             </div>
 
-            {/* ── Right Column — Logo Mockup Card (desktop only) ── */}
-            <div className="hidden lg:flex items-center justify-center gsap-reveal">
-              <div
-                className="w-48 h-48 rounded-2xl flex flex-col items-center justify-center gap-5"
-                style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.10)',
-                  backdropFilter: 'blur(12px)',
-                }}
-              >
-                <div
-                  className="relative w-28 h-28 rounded-xl flex items-center justify-center p-4"
-                  style={{ background: 'rgba(255,255,255,0.10)' }}
-                >
-                  <Image src="/images/logo-light.png" alt="Attendly Logo" fill sizes="112px" className="object-contain p-4" />
+            {/* ── Right Column — QR Mockup Card (desktop only) ── */}
+            <div className="hidden lg:flex items-center justify-center gsap-reveal relative w-full h-[500px]">
+              {/* Stand / QR Display */}
+              <div className="absolute left-0 bottom-10 w-64 bg-white rounded-xl shadow-2xl p-6 transform -rotate-6 border-[6px] border-[#E8E3DA] flex flex-col items-center">
+                <div className="w-full text-center mb-4">
+                  <h3 className="text-lg font-bold text-[#3E3B36] uppercase tracking-wide">Scan & Join</h3>
+                  <p className="text-xs text-[#8B8378]">Unlock 10% Off Instantly</p>
                 </div>
-                <p
-                  className="text-[10px] tracking-[0.25em] uppercase"
-                  style={{ color: 'rgba(255,255,255,0.50)' }}
-                >
-                  Attendly Broadcast
-                </p>
+                <div className="w-40 h-40 bg-black rounded-lg p-2 flex items-center justify-center relative">
+                  <div className="absolute inset-2 bg-white flex flex-wrap" style={{backgroundImage: 'repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), repeating-linear-gradient(45deg, #000 25%, #fff 25%, #fff 75%, #000 75%, #000)', backgroundPosition: '0 0, 10px 10px', backgroundSize: '20px 20px'}} />
+                </div>
+                <div className="mt-4 w-full h-8 bg-[#3E3B36] rounded-md flex items-center justify-center">
+                  <span className="text-white text-xs font-medium">True Attendly In-Store</span>
+                </div>
+              </div>
+
+              {/* Smartphone Preview */}
+              <div className="absolute right-0 top-10 w-[260px] h-[480px] bg-white rounded-[2.5rem] shadow-2xl border-[8px] border-[#1f2937] overflow-hidden flex flex-col transform rotate-3">
+                {/* Phone Header */}
+                <div className="bg-[#075e54] text-white px-4 pt-8 pb-3 flex items-center gap-3 relative">
+                  <div className="w-20 h-5 bg-black absolute top-0 left-1/2 -translate-x-1/2 rounded-b-xl"></div>
+                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center shrink-0">
+                    <span className="font-bold text-sm">B</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Broadcast Bot</p>
+                    <p className="text-[10px] text-white/70">Online</p>
+                  </div>
+                </div>
+                {/* Phone Body */}
+                <div className="flex-1 bg-[#efeae2] p-4 flex flex-col justify-end gap-3" style={{backgroundImage: 'radial-gradient(#d1cbbd 1px, transparent 1px)', backgroundSize: '16px 16px'}}>
+                  {/* Sent Message Bubble */}
+                  <div className="self-end bg-[#dcf8c6] max-w-[85%] rounded-lg rounded-tr-none p-3 shadow-sm relative">
+                    <p className="text-[13px] text-[#111B21]">✨ Add me to Broadcast</p>
+                    <div className="text-right mt-1">
+                      <span className="text-[9px] text-[#667781]">Just now</span>
+                    </div>
+                  </div>
+                  {/* Reply Bubble */}
+                  <div className="self-start bg-white max-w-[90%] rounded-lg rounded-tl-none p-3 shadow-sm relative animate-pulse">
+                    <div className="w-8 h-2 bg-gray-200 rounded mb-1"></div>
+                    <div className="w-16 h-2 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+                {/* Phone Footer */}
+                <div className="bg-white p-3 flex items-center gap-2 border-t border-gray-200">
+                  <div className="flex-1 bg-gray-100 h-9 rounded-full px-4 flex items-center text-xs text-gray-400">
+                    Type a message...
+                  </div>
+                  <div className="w-9 h-9 bg-[#128c7e] rounded-full flex items-center justify-center shrink-0 text-white">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -543,6 +581,11 @@ export default function LandingPage() {
                 title: 'Unified CSV & Excel Parser',
                 desc: 'Ingest massive retail contact lists using our high-speed spreadsheet parser. Supports both CSV and raw .xlsx Excel manifests with automatic 10-digit phone regex masking and serverless-safe duplicate upsert filtering.',
               },
+              {
+                icon: '🎯',
+                title: 'Capture Foot Traffic Instantly with Dynamic QR Leads',
+                desc: "Turn physical visitors into digital leads with zero setup friction. When customers scan your dynamic QR code and send a quick WhatsApp message, their profile is instantly captured and added to your dashboard in seconds. Backed by advanced real-time search, robust sorting, and ultra-smooth infinite scrolling, managing your shop's growth has never been this simple.",
+              },
             ].map((card) => (
               <div
                 key={card.title}
@@ -658,74 +701,41 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 gsap-reveal">
-            {/* Meta Official API */}
-            <div className="border border-[#E8E3DA] rounded-2xl p-8 bg-[#F9F7F4] flex flex-col justify-between hover:border-[#C4A896]/50 transition-colors">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto gsap-reveal">
+            {/* Premium In-Store QR Lead Engine */}
+            <div className="border border-[#E8E3DA] rounded-2xl p-8 bg-white flex flex-col justify-between hover:border-[#10B981]/50 transition-colors shadow-sm">
               <div>
                 <div className="flex items-center gap-3 mb-6">
-                   <div className="w-10 h-10 bg-[#3E3B36] text-[#FFFFFF] rounded-xl flex items-center justify-center">
-                     <span className="font-bold text-lg">M</span>
-                   </div>
-                   <div>
-                     <h3 className="lexend-subheading text-lg font-bold text-[#3E3B36]">Meta Official API Mode</h3>
-                     <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">For Enterprise & Large Brands</p>
-                   </div>
-                </div>
-                <ul className="space-y-4 mb-8">
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>100% Verified Delivery:</strong> Official Cloud API gateway with zero blocking risk.</p>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Green Badge Eligibility:</strong> Verified business profile presence.</p>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Infinite Scale:</strong> Send up to 100,000+ messages per day instantly.</p>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#8B8378] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#8B8378] leading-relaxed">Requires Meta Template Approvals.</p>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* QR Express Mode */}
-            <div className="border border-[#E8E3DA] rounded-2xl p-8 bg-white flex flex-col justify-between hover:border-[#C4A896]/50 transition-colors shadow-sm">
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                   <div className="w-10 h-10 bg-[#3E3B36] text-[#F5F1EA] rounded-xl flex items-center justify-center">
+                   <div className="w-10 h-10 bg-[#10B981] text-[#FFFFFF] rounded-xl flex items-center justify-center">
                      <Smartphone size={20} />
                    </div>
                    <div>
-                     <h3 className="lexend-subheading text-lg font-bold text-[#3E3B36]">TrueAttendly Express Mode</h3>
-                     <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">For Local Shops & SMEs</p>
+                     <h3 className="lexend-subheading text-lg font-bold text-[#3E3B36]">Feature A: Premium In-Store QR Lead Engine</h3>
+                     <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">Zero Meta Approvals, Zero Number Bans</p>
                    </div>
                 </div>
                 <ul className="space-y-4 mb-8">
                   <li className="flex items-start gap-3">
                     <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Zero Template Approvals:</strong> Write any message and dispatch immediately.</p>
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>100% Safe Intake:</strong> Uses inbound customer texts ("Add me to Broadcast") to safely whitelist numbers instantly.</p>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Instant Connection:</strong> Quick QR scan setup powered by WhatsApp Web.</p>
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Zero Meta Approvals:</strong> No cumbersome template reviews. Instant local activation via QR.</p>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Smart Throttled Dispatch:</strong> Our built-in AI introduces a human-like 30-second delay between broadcasts, reducing your WhatsApp account ban risk to under 10% automatically.</p>
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Automated Vouchers:</strong> Cloud hooks automatically reply with a Welcome Promo (10 Credits per lead).</p>
                   </li>
                   <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#8B8378] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#8B8378] leading-relaxed">Recommended &lt; 500 messages per day to maintain sender reputation.</p>
+                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Risk-Free Sender Safety:</strong> Eliminate web-socket scraping and ban hazards entirely.</p>
                   </li>
                 </ul>
               </div>
             </div>
 
-            {/* Automated AI Email Engine Mode */}
+            {/* White-Label Branded Email Campaigns */}
             <div className="border border-[#E8E3DA] rounded-2xl p-8 bg-[#F9F7F4] flex flex-col justify-between hover:border-[#6366f1]/30 transition-colors">
               <div>
                 <div className="flex items-center gap-3 mb-6">
@@ -733,26 +743,26 @@ export default function LandingPage() {
                      <Mail size={20} />
                    </div>
                    <div>
-                     <h3 className="lexend-subheading text-lg font-bold text-[#3E3B36]">Automated AI Email Engine Mode</h3>
-                     <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">For Omni-Channel Retention</p>
+                     <h3 className="lexend-subheading text-lg font-bold text-[#3E3B36]">Feature B: White-Label Email Campaigns</h3>
+                     <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">Powered By Resend (0.5 Credits)</p>
                    </div>
                 </div>
                 <ul className="space-y-4 mb-8">
                   <li className="flex items-start gap-3">
                     <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Instant Serverless Setup:</strong> Zero configuration required. Ready out of the box.</p>
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Premium Corporate Styling:</strong> Clean, minimalistic HTML templates customized to your brand identity.</p>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Multi-Tier Copy Generation:</strong> AI automatically transforms drafts into premium copy.</p>
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Ultra-Low Cost Structure:</strong> Dispatch thousands of emails seamlessly for only 0.5 wallet credits per recipient.</p>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Target Safety Validations:</strong> Built-in credit and recipient audits prevent accidental sends.</p>
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>AI-Assisted Drafting:</strong> Leverage cutting-edge language models to write high-converting copy in seconds.</p>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Dynamic Export Utilities:</strong> Filtered and full-dataset reporting directly to CSV/Excel.</p>
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Dynamic CSV Parsing:</strong> Instant 10k+ audience generation and list segmentation uploads.</p>
                   </li>
                 </ul>
               </div>

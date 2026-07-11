@@ -166,7 +166,7 @@ export async function POST(req: Request) {
 
           const { error: resendError } = await resend.emails.send({
             from: `${shopNameSnapshot} <${rawEmail}>`,
-            reply_to: replyToSnapshot,
+            replyTo: replyToSnapshot,
             to: recipient.email,
             subject: subjectSnapshot,
             html: htmlSnapshot,

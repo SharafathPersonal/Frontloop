@@ -6,7 +6,6 @@ import { supabase } from '@/lib/supabaseClient';
 import { load } from '@cashfreepayments/cashfree-js';
 import type { Shop, Wallet, WhatsAppConnectionMode } from '@/types/broadcast';
 import { CheckCircle, AlertTriangle, CreditCard, User, Building, ChevronDown, ExternalLink, Zap, Lock, Smartphone, Globe, QrCode, RefreshCw, Wifi, Loader2 } from 'lucide-react';
-import { useWhatsAppMode } from '@/contexts/WhatsAppModeContext';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Spinner } from '@/components/ui/Spinner';
@@ -40,13 +39,12 @@ function SettingsContent() {
   const [loading, setLoading] = useState(true);
   const [manualProviderOpen, setManualProviderOpen] = useState(false);
   const [isMetaConnected, setIsMetaConnected] = useState(false);
-  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [connectionStatus, setConnectionStatus] = useState<string>('DISCONNECTED');
-  const [isQrStarting, setIsQrStarting] = useState(false);
 
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { setMode } = useWhatsAppMode();
 
   // Modal States
   const [isShopConfirmOpen, setIsShopConfirmOpen] = useState(false);
@@ -54,14 +52,123 @@ function SettingsContent() {
   const [isMetaDisconnectConfirmOpen, setIsMetaDisconnectConfirmOpen] = useState(false);
   const [globalError, setGlobalError] = useState<{title: string, message: string} | null>(null);
 
-  // Custom QR Modals
-  const [showConnectModal, setShowConnectModal] = useState(false);
-  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
-  const [showMetaConfirmModal, setShowMetaConfirmModal] = useState(false);
-  const [showExpressWarningModal, setShowExpressWarningModal] = useState(false);
 
-  // Password Reset States
-  const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
+
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
+
+  // Canonical status normalizer — maps all backend status variants to a single uppercase key
+  // used by the JSX render conditions below.
+  //   CONNECTED         → 'CONNECTED'
+  //   qr_ready          → 'QR_READY'
+  //   WAITING_FOR_SCAN  → 'QR_READY'   (same visual: show the QR image)
+  //   DISCONNECTED      → 'DISCONNECTED'
+  //   everything else   → 'DISCONNECTED'
+  const normalizeStatus = (raw: string): string => {
+    const s = (raw || '').toUpperCase();
+    if (s === 'CONNECTED') return 'CONNECTED';
+    if (s === 'PAIRING_CODE_READY') return 'PAIRING_CODE_READY';
+    return 'DISCONNECTED';
+  };
+
+  const fetchLiveStatus = useCallback(async () => {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
+      const explicitShopId = shop?.id;
+      if (!explicitShopId) return;
+      const res = await fetch(`${backendUrl}/api/whatsapp/status?shop_id=${explicitShopId}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      }).catch(() => null);
+      if (res && res.ok) {
+        const data = await res.json();
+        const normalized = normalizeStatus(data.status);
+        setConnectionStatus(normalized);
+
+        if (normalized === 'PAIRING_CODE_READY') {
+          if (data.pairingCode) {
+            setPairingCode(data.pairingCode);
+          }
+        } else if (normalized === 'CONNECTED' || normalized === 'DISCONNECTED') {
+          setPairingCode(null);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [shop]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (connectionStatus !== 'CONNECTED') {
+      interval = setInterval(fetchLiveStatus, 1500);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [connectionStatus, fetchLiveStatus]);
+
+  const handleGeneratePairingCode = async (forceRefresh: boolean = false) => {
+    if (!shop || !shop.id) return;
+    if (!phoneNumber) {
+      if (forceRefresh) {
+        // If they click "Generate a New One" but the phone number was lost (e.g. page reload),
+        // we forcefully disconnect the stale backend session to return them to the clean input form.
+        await handleDisconnectQrConnection();
+        return;
+      }
+      setGlobalError({ title: 'Validation Error', message: 'Please enter a valid phone number with country code.' });
+      return;
+    }
+    setConnectionStatus('INITIALIZING');
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
+      const res = await fetch(`${backendUrl}/api/whatsapp/connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop_id: shop.id, phoneNumber, force_refresh: forceRefresh })
+      }).catch(() => null);
+      if (res && res.ok) {
+        const data = await res.json();
+        const normalized = normalizeStatus(data.status);
+        setConnectionStatus(normalized);
+        if (data.pairingCode) {
+          setPairingCode(data.pairingCode);
+        }
+      } else if (res) {
+        const errData = await res.json().catch(() => ({}));
+        setGlobalError({ title: 'Connection Error', message: errData.error || 'Failed to generate pairing code. Please check your phone number format.' });
+        setConnectionStatus('DISCONNECTED');
+      } else {
+        setGlobalError({ title: 'Network Error', message: 'Could not connect to the backend server.' });
+        setConnectionStatus('DISCONNECTED');
+      }
+    } catch (err) {
+      console.error(err);
+      setGlobalError({ title: 'Network Error', message: 'An unexpected error occurred.' });
+      setConnectionStatus('DISCONNECTED');
+    }
+  };
+
+  const handleDisconnectQrConnection = async () => {
+    if (!shop || !shop.id) return;
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
+      await fetch(`${backendUrl}/api/whatsapp/disconnect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop_id: shop.id })
+      }).catch(e => console.warn('Backend unavailable, forcing UI disconnect.', e));
+      setConnectionStatus('DISCONNECTED');
+      setPairingCode(null);
+      await fetchLiveStatus();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
   const [passwordStatus, setPasswordStatus] = useState<SaveStatus>('idle');
   const [passwordMsg, setPasswordMsg] = useState('');
 
@@ -139,7 +246,7 @@ function SettingsContent() {
       }
       if (shopData) {
         setShop(shopData);
-        setConnectionStatus((shopData.qr_express_status || 'disconnected').toUpperCase());
+        setConnectionStatus(normalizeStatus(shopData.qr_express_status || 'disconnected'));
         setShopForm({
           shop_name: shopData.shop_name || '',
           owner_phone: shopData.owner_phone || '',
@@ -164,100 +271,6 @@ function SettingsContent() {
     load();
   }, []);
 
-  const checkStatus = useCallback(async () => {
-    if (!shop?.id) return;
-    try {
-      const url = process.env.NEXT_PUBLIC_RENDER_SERVER_URL 
-        ? `${process.env.NEXT_PUBLIC_RENDER_SERVER_URL}/api/whatsapp/status?shop_id=${shop.id}`
-        : `/api/whatsapp/status?shop_id=${shop.id}`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.status === 'CONNECTED') {
-          setConnectionStatus('CONNECTED');
-          setQrCode(null); // Instantly drop the QR view canvas
-        } else {
-          setConnectionStatus(data.status);
-          if (data.qr) {
-            setQrCode(data.qr);
-          }
-          if (data.status === 'DISCONNECTED') {
-            setQrCode(null);
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Error polling WhatsApp connection status:', err);
-    }
-  }, [shop?.id]);
-
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-
-    if (shopForm.whatsapp_mode === 'QR_EXPRESS' && shop?.id) {
-      checkStatus();
-      intervalId = setInterval(checkStatus, 4000);
-    }
-
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [shopForm.whatsapp_mode, shop?.id, checkStatus]);
-
-  const handleGenerateQR = async () => {
-    if (!shop?.id) return;
-    setIsQrStarting(true);
-    try {
-      const url = process.env.NEXT_PUBLIC_RENDER_SERVER_URL 
-        ? `${process.env.NEXT_PUBLIC_RENDER_SERVER_URL}/api/whatsapp/connect?shop_id=${shop.id}`
-        : `/api/whatsapp/connect?shop_id=${shop.id}`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to initialize QR session');
-      }
-      const data = await res.json();
-      if (data.qr) {
-        setQrCode(data.qr);
-      }
-      setConnectionStatus('DISCONNECTED');
-      
-      // FORCE IMMEDIATE RE-POLLING UPON SUCCESSFUL CONNECT
-      if (data.status?.toLowerCase() === 'connected' || data.qr === null) {
-        await checkStatus();
-      }
-    } catch (err: any) {
-      setGlobalError({ title: 'QR Connection Error', message: err.message || 'Failed to start QR session.' });
-    } finally {
-      setIsQrStarting(false);
-    }
-  };
-
-  const handleDisconnectQrConnection = async () => {
-    setSaveStatus('saving');
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { error } = await supabase.from('shops').update({
-      qr_express_status: 'disconnected',
-      whatsapp_mode: 'NONE'
-    }).eq('id', user.id);
-
-    await supabase.from('whatsapp_sessions').delete().eq('id', 'default');
-    await supabase.from('whatsapp_sessions').delete().eq('id', 'qr');
-
-    if (!error) {
-      setShop(prev => prev ? { ...prev, qr_express_status: 'disconnected', whatsapp_mode: 'NONE' } : null);
-      setShopForm(prev => ({ ...prev, whatsapp_mode: 'NONE' }));
-      setMode('NONE');
-      setConnectionStatus('DISCONNECTED');
-      setQrCode(null);
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 3000);
-    } else {
-      setSaveStatus('error');
-    }
-  };
 
   const handleConfirmSaveProfile = (e: FormEvent) => {
     e.preventDefault();
@@ -290,7 +303,6 @@ function SettingsContent() {
     setSaveStatus(error ? 'error' : 'saved');
     if (!error) {
       setShop((prev) => prev ? { ...prev, ...shopForm } : prev);
-      setMode(shopForm.whatsapp_mode);
       setTimeout(() => setSaveStatus('idle'), 3000);
     }
   };
@@ -343,7 +355,6 @@ function SettingsContent() {
       }));
       
       setIsMetaConnected(true);
-      setMode('META_API');
       
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 3000);
@@ -619,106 +630,8 @@ function SettingsContent() {
         </div>
       </section>
 
-      {/* ── CONNECTION MODE SETTINGS ──────────────────────────────── */}
-      <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
-        <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
-          <div className="w-8 h-8 bg-[#F5F1EA] rounded-lg flex items-center justify-center">
-            <Globe size={14} className="text-[#C4A896]" strokeWidth={1.5} />
-          </div>
-          <div>
-            <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">WhatsApp Connection Mode</h2>
-            <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Configure your broadcast infrastructure engine</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleConfirmSaveProfile} className="p-6 space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            {/* META API OPTION */}
-            <label className={`relative block border rounded-xl p-5 cursor-pointer transition-all ${
-              shopForm.whatsapp_mode === 'META_API' ? 'border-[#C4A896] bg-[#F9F7F4]' : 'border-[#E8E3DA] hover:border-[#C4A896]/50'
-            }`}>
-              <div className="flex items-start gap-3">
-                  <input 
-                    type="radio" 
-                    name="whatsapp_mode" 
-                    value="META_API" 
-                    checked={shopForm.whatsapp_mode === 'META_API'} 
-                    onChange={() => {
-                      if (shopForm.whatsapp_mode !== 'META_API') {
-                        setShowMetaConfirmModal(true);
-                      }
-                    }} 
-                    className="mt-1 accent-[#C4A896] w-4 h-4" 
-                  />
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <FacebookIcon size={14} />
-                    <span className="text-sm font-medium text-[#3E3B36]">Meta Official API</span>
-                  </div>
-                  <p className="text-[11px] text-[#8B8378] leading-relaxed mb-3">100% Verified Gateway, Zero Ban Risk, Template Approvals Required. Best for large scale Enterprise.</p>
-                </div>
-              </div>
-            </label>
-
-            {/* QR EXPRESS OPTION */}
-            <label className={`relative block border rounded-xl p-5 cursor-pointer transition-all ${
-              shopForm.whatsapp_mode === 'QR_EXPRESS' ? 'border-[#C4A896] bg-[#F9F7F4]' : 'border-[#E8E3DA] hover:border-[#C4A896]/50'
-            }`}>
-              <div className="flex items-start gap-3">
-                  <input 
-                    type="radio" 
-                    name="whatsapp_mode" 
-                    value="QR_EXPRESS" 
-                    checked={shopForm.whatsapp_mode === 'QR_EXPRESS'} 
-                    onChange={() => {
-                      if (shopForm.whatsapp_mode !== 'QR_EXPRESS') {
-                        setShowExpressWarningModal(true);
-                      }
-                    }} 
-                    className="mt-1 accent-[#C4A896] w-4 h-4" 
-                  />
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Smartphone size={14} className="text-[#3E3B36]" />
-                    <span className="text-sm font-medium text-[#3E3B36]">TrueAttendly Express Mode</span>
-                  </div>
-                  <p className="text-[11px] text-[#8B8378] leading-relaxed mb-3">Quick QR Scan Connection, No Approvals, Fully Throttled Anti-Ban Spintax engine. Ideal for local SMEs.</p>
-                </div>
-              </div>
-            </label>
-
-          </div>
-
-          {shopForm.whatsapp_mode === 'QR_EXPRESS' && (
-            <div className="bg-[#3E3B36] rounded-xl p-5 mt-4">
-              <label className="block text-xs tracking-[0.2em] text-[#F5F1EA]/80 uppercase mb-2">Anti-Ban Dispatch Delay (Seconds)</label>
-              <div className="flex items-center gap-3">
-                <input 
-                  type="number" 
-                  min={30} 
-                  max={120} 
-                  value={shopForm.anti_ban_delay} 
-                  onChange={(e) => setShopForm({ ...shopForm, anti_ban_delay: parseInt(e.target.value) || 45 })} 
-                  className="bg-[#2A2825] border border-[#F5F1EA]/20 py-2 px-3 text-sm text-[#F5F1EA] rounded-lg w-24 outline-none focus:border-[#C4A896]" 
-                />
-                <p className="text-[10px] text-[#F5F1EA]/60">Minimum 30s recommended to avoid bulk detection.</p>
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center gap-4 pt-4 border-t border-[#E8E3DA] mt-4">
-            <button type="submit" disabled={saveStatus === 'saving'} className="btn-primary rounded-lg disabled:opacity-50">
-              {saveStatus === 'saving' ? 'Saving...' : 'Save Connection Mode'}
-            </button>
-            {saveStatus === 'saved' && <div className="flex items-center gap-1.5 text-[#C4A896]"><CheckCircle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Saved!</span></div>}
-          </div>
-        </form>
-      </section>
-
       {/* ── PROVIDER HUB — Facebook Embedded Signup ─────────────── */}
-      {shopForm.whatsapp_mode === 'META_API' && (
-        <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden transition-all duration-300 animate-fade-in">
+      <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden transition-all duration-300 animate-fade-in">
           <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
             <div className="w-8 h-8 bg-[#F5F1EA] rounded-lg flex items-center justify-center">
               <FacebookIcon size={14} />
@@ -812,124 +725,111 @@ function SettingsContent() {
             </div>
           </div>
         </section>
-      )}
 
-      {/* ── PROVIDER HUB — QR Express Connection Node ─────────────── */}
-      {shopForm.whatsapp_mode === 'QR_EXPRESS' && (
-        <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden transition-all duration-300 animate-fade-in">
-          <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#F5F1EA] rounded-lg flex items-center justify-center">
-              <QrCode size={14} className="text-[#C4A896]" strokeWidth={1.5} />
-            </div>
-            <div>
-              <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">TrueAttendly QR Express Connection Node</h2>
-              <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Direct WhatsApp Web session</p>
-            </div>
-            <div className="ml-auto">
-              {connectionStatus === 'CONNECTED' ? (
-                <div className="flex items-center gap-1.5 text-emerald-600">
-                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                  <span className="text-[10px] tracking-[0.15em] uppercase font-bold">Connected</span>
-                </div>
-              ) : connectionStatus === 'CONNECTING' ? (
-                <div className="flex items-center gap-1.5 text-amber-600">
-                  <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
-                  <span className="text-[10px] tracking-[0.15em] uppercase font-bold">Connecting</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 text-[#8B8378]">
-                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
-                  <span className="text-[10px] tracking-[0.15em] uppercase font-bold">Disconnected</span>
-                </div>
-              )}
-            </div>
+      
+      {/* ── QR LEADS INBOUND LISTENER ──────────────────────────────── */}
+      <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
+        <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
+          <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+            <Smartphone size={14} className="text-amber-600" strokeWidth={1.5} />
           </div>
-
-          <div className="p-6 space-y-5">
-            <div className="bg-[#F9F7F4] rounded-xl p-5 border border-[#E8E3DA] flex flex-col items-center text-center">
-              {connectionStatus === 'CONNECTED' ? (
-                <div className="py-6 space-y-4">
-                  <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto border border-emerald-100">
-                    <CheckCircle className="text-emerald-600" size={32} strokeWidth={1.5} />
-                  </div>
-                  <div>
-                    <h3 className="serif-headline text-[#3E3B36] text-base font-semibold">Device Linked Successfully</h3>
-                    <p className="text-xs text-[#8B8378] mt-1 max-w-sm">
-                      Your phone is currently connected to the QR Express broadcast queue. You can send messages instantly.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowDisconnectModal(true)}
-                    className="border border-[#E8E3DA] hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-xs text-[#8B8378] tracking-[0.1em] px-4 py-2 rounded-lg transition-colors uppercase font-medium mt-2"
+          <div>
+            <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">🔌 Connect your WhatsApp to get In-store QR Leads</h2>
+            <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Zero ban-risk listener for inbound traffic</p>
+          </div>
+          <div className="ml-auto">
+            {connectionStatus === 'CONNECTED' ? (
+               <div className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                 <span className="text-[10px] font-bold tracking-[0.15em] uppercase">Listening</span>
+               </div>
+            ) : (
+               <div className="flex items-center gap-1.5 text-[#8B8378] bg-[#F5F1EA] px-3 py-1 rounded-full border border-[#E8E3DA]">
+                 <span className="text-[10px] font-bold tracking-[0.15em] uppercase">Offline</span>
+               </div>
+            )}
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="bg-[#F9F7F4] border border-[#E8E3DA] rounded-xl p-5 mb-5 flex flex-col items-center justify-center min-h-[250px] transition-all">
+            {connectionStatus === 'CONNECTED' ? (
+              <div className="text-center">
+                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle size={32} />
+                </div>
+                <h3 className="text-lg font-bold text-[#3E3B36] mb-2">Listener Active</h3>
+                <p className="text-xs text-[#8B8378] max-w-sm mx-auto leading-relaxed">
+                  Your WhatsApp is actively listening for "Add me to Broadcast" messages. Outbound marketing is disabled on this socket to guarantee sender safety.
+                </p>
+                <button
+                  onClick={() => setShowDisconnectModal(true)}
+                  className="mt-6 text-[10px] font-bold text-rose-600 tracking-[0.1em] uppercase hover:underline"
+                >
+                  Disconnect Listener
+                </button>
+              </div>
+            ) : pairingCode && connectionStatus === 'PAIRING_CODE_READY' ? (
+              <div className="text-center animate-fade-in">
+                <p className="text-xs font-bold text-[#3E3B36] mb-4 uppercase tracking-[0.1em]">Link with Phone Number</p>
+                <div className="bg-white p-6 rounded-xl shadow-sm inline-block border border-[#E8E3DA]">
+                  <p className="text-3xl font-mono tracking-[0.2em] font-bold text-[#3E3B36]">{pairingCode}</p>
+                </div>
+                <div className="mt-6 space-y-2 text-left bg-white p-4 rounded-lg border border-[#E8E3DA] max-w-sm mx-auto">
+                  <p className="text-xs text-[#8B8378] font-medium"><span className="text-emerald-600 font-bold">1.</span> Open WhatsApp on your phone.</p>
+                  <p className="text-xs text-[#8B8378] font-medium"><span className="text-emerald-600 font-bold">2.</span> Tap Settings or the 3 dots.</p>
+                  <p className="text-xs text-[#8B8378] font-medium"><span className="text-emerald-600 font-bold">3.</span> Tap <strong>Linked Devices</strong> &gt; <strong>Link a device</strong>.</p>
+                  <p className="text-xs text-[#8B8378] font-medium"><span className="text-emerald-600 font-bold">4.</span> Tap <strong>Link with phone number instead</strong> at the bottom.</p>
+                  <p className="text-xs text-[#8B8378] font-medium"><span className="text-emerald-600 font-bold">5.</span> Enter the 8-digit code shown above.</p>
+                </div>
+                <div className="flex flex-col items-center gap-2 mt-4">
+                  <p className="text-[10px] text-[#8B8378] uppercase tracking-wider animate-pulse flex items-center gap-2">
+                    <RefreshCw size={10} className="animate-spin" /> Awaiting pairing confirmation...
+                  </p>
+                  <button 
+                    onClick={() => handleGeneratePairingCode(true)}
+                    className="text-[10px] font-bold text-[#C4A896] uppercase tracking-wider hover:text-[#A88B79] hover:underline transition-colors mt-2"
                   >
-                    Disconnect Device
+                    Code Expired? Generate a New One
                   </button>
                 </div>
-              ) : qrCode ? (
-                <div className="py-4 space-y-5 flex flex-col items-center">
-                  <div className="p-3 bg-white border border-[#E8E3DA] rounded-xl shadow-inner relative group">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrCode)}&size=200x200`}
-                      alt="WhatsApp Web QR Code"
-                      className="w-48 h-48 block"
-                    />
-                  </div>
-                  <div className="space-y-1.5 max-w-sm">
-                    <p className="text-xs text-[#3E3B36] font-bold uppercase tracking-wider">Scan QR Code</p>
-                    <p className="text-[11px] text-[#8B8378] leading-relaxed">
-                      Open WhatsApp on your phone &gt; tap Menu or Settings &gt; Linked Devices &gt; Link a Device, and point your camera to this screen.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 text-[10px] text-amber-600 bg-amber-50 border border-amber-100 rounded-full px-3 py-1 animate-pulse">
-                    <Loader2 size={10} className="animate-spin" />
-                    <span>Polling connection status...</span>
-                  </div>
+              </div>
+            ) : (
+              <div className="text-center w-full max-w-sm mx-auto">
+                <Smartphone size={32} className="text-[#C4A896] mx-auto mb-4 opacity-50" />
+                <h3 className="text-sm font-bold text-[#3E3B36] mb-2 uppercase tracking-wide">Socket Disconnected</h3>
+                <p className="text-xs text-[#8B8378] mb-6 leading-relaxed">
+                  Enter your phone number with country code (e.g. 919876543210) to generate an 8-digit activation code and securely link your WhatsApp.
+                </p>
+                
+                <div className="mb-4 text-left">
+                  <label className="block text-[10px] font-bold text-[#8B8378] uppercase tracking-[0.1em] mb-1">Phone Number (with Country Code)</label>
+                  <input
+                    type="text"
+                    placeholder="919876543210"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="w-full h-11 px-4 bg-white border border-[#E8E3DA] rounded-lg text-sm text-[#3E3B36] focus:outline-none focus:border-[#C4A896] transition-colors"
+                  />
                 </div>
-              ) : (
-                <div className="py-8 space-y-4 max-w-md">
-                  <div className="w-12 h-12 bg-[#F5F1EA] rounded-full flex items-center justify-center mx-auto">
-                    <Wifi size={20} className="text-[#C4A896]" strokeWidth={1.5} />
-                  </div>
-                  <div>
-                    <h3 className="serif-headline text-[#3E3B36] text-sm font-semibold">Start Connection Channel</h3>
-                    <p className="text-xs text-[#8B8378] mt-1">
-                      Initialize the Baileys engine to generate a secure real-time QR code scanner interface.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowConnectModal(true)}
-                    disabled={isQrStarting}
-                    className="btn-primary rounded-lg flex items-center gap-2 mx-auto"
-                  >
-                    {isQrStarting ? (
-                      <>
-                        <Loader2 size={12} className="animate-spin" />
-                        INITIALIZING ENGINE...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw size={12} />
-                        GENERATE QR CODE
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
 
-            {/* Prominent Premium Recommendation Banner */}
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-              <AlertTriangle size={18} className="text-amber-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
-              <p className="text-amber-800 text-[11px] leading-relaxed">
-                <strong>⚠️ Pro Recommendation:</strong> For high-volume retail campaigns, zero ban-risk, and 100% official scale, we highly recommend switching to the Meta Official Cloud API mode.
-              </p>
-            </div>
+                <button
+                  onClick={() => handleGeneratePairingCode(false)}
+                  disabled={connectionStatus === 'INITIALIZING'}
+                  className="btn-primary w-full rounded-lg flex items-center justify-center gap-2 h-11 disabled:opacity-50"
+                >
+                  {connectionStatus === 'INITIALIZING' ? (
+                    <><Spinner /> Initializing...</>
+                  ) : (
+                    <><QrCode size={14} /> Generate Activation Code</>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
-      {/* ── SHOP PROFILE ─────────────────────────────────────────── */}
+{/* ── SHOP PROFILE ─────────────────────────────────────────── */}
       <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
         <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
           <div className="w-8 h-8 bg-[#F5F1EA] rounded-lg flex items-center justify-center">
@@ -1059,7 +959,21 @@ function SettingsContent() {
         </div>
       </section>
 
-      {/* MODALS */}
+      
+      {showDisconnectModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 transition-opacity duration-300">
+          <div className="bg-white rounded-2xl p-6 max-w-md shadow-xl border-t-4 border-red-500 scale-100 transition-transform duration-300">
+            <h3 className="text-lg font-bold text-red-600 mb-3">🚨 Disconnect Listener?</h3>
+            <p className="text-sm text-[#8B8378] mb-6">This will stop processing incoming QR lead scans immediately.</p>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setShowDisconnectModal(false)} className="px-4 py-2 bg-[#3E3B36] text-white rounded-lg hover:bg-black transition-colors text-sm font-medium shadow-sm">Keep Connected</button>
+              <button onClick={() => { setShowDisconnectModal(false); handleDisconnectQrConnection(); }} className="px-4 py-2 border border-red-200 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium">Force Disconnect</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+{/* MODALS */}
       <CustomConfirm
         isOpen={isShopConfirmOpen}
         title="Update Shop Profile"
@@ -1096,126 +1010,7 @@ function SettingsContent() {
         onCancel={() => setGlobalError(null)}
       />
 
-      {/* ── CUSTOM QR MODALS ────────────────────────────────────────── */}
-      {showConnectModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 transition-opacity duration-300">
-          <div className="bg-white rounded-2xl p-6 max-w-md shadow-xl scale-100 transition-transform duration-300">
-            <h3 className="text-lg font-bold text-[#3E3B36] mb-3">⚠️ Important Connection Requirements:</h3>
-            <ul className="list-disc pl-5 text-sm text-[#8B8378] space-y-2 mb-6">
-              <li>Ensure your mobile device has an active, uninterrupted internet connection.</li>
-              <li>Keep your WhatsApp application open during the initial QR handshake.</li>
-              <li>Do not close or refresh this browser tab until the status badge updates to 'CONNECTED'.</li>
-            </ul>
-            <div className="flex justify-end gap-3">
-              <button 
-                onClick={() => setShowConnectModal(false)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => {
-                  setShowConnectModal(false);
-                  handleGenerateQR();
-                }}
-                className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium shadow-sm"
-              >
-                Yes, Proceed to Scan
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {showDisconnectModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 transition-opacity duration-300">
-          <div className="bg-white rounded-2xl p-6 max-w-md shadow-xl border-t-4 border-red-500 scale-100 transition-transform duration-300">
-            <h3 className="text-lg font-bold text-red-600 mb-3">🚨 Are you sure you want to disconnect?</h3>
-            <p className="text-sm text-[#8B8378] mb-6">
-              Disconnecting will immediately stop all active outbound campaign dispatches and queue processes for this shop. You will need to re-scan the QR code to re-activate the engine.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button 
-                onClick={() => setShowDisconnectModal(false)}
-                className="px-4 py-2 bg-[#3E3B36] text-white rounded-lg hover:bg-black transition-colors text-sm font-medium shadow-sm"
-              >
-                No, Keep Connected
-              </button>
-              <button 
-                onClick={() => {
-                  setShowDisconnectModal(false);
-                  handleDisconnectQrConnection();
-                }}
-                className="px-4 py-2 border border-red-200 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
-              >
-                Yes, Force Disconnect
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showMetaConfirmModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 transition-opacity duration-300">
-          <div className="bg-white rounded-2xl p-6 max-w-md shadow-xl scale-100 transition-transform duration-300">
-            <h3 className="text-lg font-bold text-[#3E3B36] mb-3">Confirm Mode Switch</h3>
-            <p className="text-sm text-[#8B8378] mb-6">
-              You are switching to the Meta Cloud API. Ensure your permanent Meta Business Phone Number and Access Tokens are correctly configured in the settings registry.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button 
-                onClick={() => setShowMetaConfirmModal(false)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => {
-                  setShowMetaConfirmModal(false);
-                  setShopForm({ ...shopForm, whatsapp_mode: 'META_API' });
-                }}
-                className="px-4 py-2 bg-[#3E3B36] text-white rounded-lg hover:bg-black transition-colors text-sm font-medium shadow-sm"
-              >
-                Confirm Switch
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showExpressWarningModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 transition-opacity duration-300">
-          <div className="bg-white rounded-2xl p-6 max-w-md shadow-xl scale-100 transition-transform duration-300">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-amber-50 rounded-full p-2 flex-shrink-0">
-                <AlertTriangle className="text-amber-500" size={24} strokeWidth={1.5} />
-              </div>
-              <h3 className="text-lg font-bold text-[#3E3B36]">⚠️ True Attendly Express Mode Activation</h3>
-            </div>
-            <div className="space-y-3 text-sm text-[#8B8378] mb-6">
-              <p>Please note: This mode operates via a persistent WhatsApp web socket. It requires your scanning device to remain connected to a stable internet network 24/7.</p>
-              <p>Make sure no other web/desktop clients are actively fighting for this specific session instance.</p>
-            </div>
-            <div className="flex justify-end gap-3">
-              <button 
-                onClick={() => setShowExpressWarningModal(false)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => {
-                  setShowExpressWarningModal(false);
-                  setShopForm({ ...shopForm, whatsapp_mode: 'QR_EXPRESS' });
-                }}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-colors text-sm shadow-sm"
-              >
-                I Understand, Proceed
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );

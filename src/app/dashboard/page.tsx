@@ -40,29 +40,6 @@ export default function DashboardPage() {
       await fetchAllData();
       setLoading(false);
 
-      // Check live WhatsApp connection status if mode is QR_EXPRESS and update DB/UI if needed
-      const renderServerUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
-      try {
-        const { data: currentShop } = await supabase.from('shops').select('whatsapp_mode, qr_express_status').eq('id', user.id).maybeSingle();
-        if (currentShop && currentShop.whatsapp_mode === 'QR_EXPRESS') {
-          const res = await fetch(`${renderServerUrl}/api/whatsapp/status?shop_id=${user.id}`);
-          if (res.ok) {
-            const data = await res.json();
-            const liveConnected = data.status === 'CONNECTED';
-            const dbConnected = currentShop.qr_express_status === 'connected';
-            if (liveConnected !== dbConnected) {
-              const newStatus = liveConnected ? 'connected' : 'disconnected';
-              await supabase
-                .from('shops')
-                .update({ qr_express_status: newStatus })
-                .eq('id', user.id);
-              await fetchAllData();
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching live WhatsApp status on dashboard load:', err);
-      }
 
       // Subscribe to campaigns
       channelCampaigns = supabase
@@ -181,18 +158,7 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {shop?.whatsapp_mode === 'QR_EXPRESS' && shop?.qr_express_status === 'disconnected' && (
-        <div className="bg-rose-50 border border-rose-200 rounded-xl p-5 flex items-start gap-4 shadow-sm animate-pulse">
-          <AlertTriangle size={20} className="text-rose-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
-          <div>
-            <p className="text-rose-800 text-sm font-bold mb-1 uppercase tracking-widest">Action Required: Session Expired</p>
-            <p className="text-rose-700 text-xs leading-relaxed">
-              Your WhatsApp Session was disconnected from your phone. Campaign queue has been safely paused. Please click here to re-scan the QR code and resume your broadcasts.
-            </p>
-          </div>
-          <Link href="/dashboard/settings" className="ml-auto text-xs tracking-[0.15em] text-rose-600 font-bold bg-white px-3 py-1.5 rounded-full shadow-sm hover:bg-rose-600 hover:text-white transition-colors uppercase flex-shrink-0 border border-rose-200">Re-Connect →</Link>
-        </div>
-      )}
+
 
       {wallet && wallet.credits_remaining < 50 && (
         <div className="bg-[#3E3B36] rounded-xl p-5 flex items-start gap-4">
