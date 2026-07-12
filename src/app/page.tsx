@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { APP_VERSION } from '@/lib/config';
-import { Phone, MessageCircle, XCircle, CheckCircle, ArrowRight, Mail, Smartphone, ShieldCheck, Bot, Contact, Zap, Wand2, Upload, Image as ImageIcon } from 'lucide-react';
+import { Phone, MessageCircle, XCircle, CheckCircle, ArrowRight, Mail, Smartphone, ShieldCheck, Bot, Contact, Zap, Wand2, Upload, Image as ImageIcon, AlertTriangle, X } from 'lucide-react';
 
 // ──────────────────────────────────────────────────────────────────
 // LANDING PAGE — True Attendly Broadcast
@@ -1171,6 +1171,135 @@ export default function LandingPage() {
                     </table>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 3.97 — THE RETAIL REALITY CHECK (Append 1)
+      ══════════════════════════════════════════════════════════ */}
+      <section className="py-24 scroll-reveal-section bg-white border-t border-[#E8E3DA]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
+            <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#C4A896' }}>The Retail Reality Check</p>
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-6">
+              Why Manual Marketing is Breaking Your Growth
+            </h2>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="gsap-reveal bg-[#F5F1EA] rounded-2xl p-8 border border-[#E8E3DA] flex flex-col h-full">
+              <div className="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shadow-sm mb-6 shrink-0">
+                <XCircle size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-[#3E3B36] mb-4">The Daily Struggle</h3>
+              <p className="text-sm leading-relaxed text-[#8B8378] flex-1">
+                Merchants spend hours manually copying customer numbers or risking their permanent business line with cheap unofficial bots that get banned in seconds.
+              </p>
+            </div>
+
+            <div className="gsap-reveal bg-[#F5F1EA] rounded-2xl p-8 border border-[#E8E3DA] flex flex-col h-full">
+              <div className="w-12 h-12 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center shadow-sm mb-6 shrink-0">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-[#3E3B36] mb-4">The Friction</h3>
+              <p className="text-sm leading-relaxed text-[#8B8378] flex-1">
+                Customers refuse to manually type and save a store's 10-digit number. If they don't save it, all broadcast web links remain unclickable, and messages go straight to the archive block.
+              </p>
+            </div>
+
+            <div className="gsap-reveal bg-[#3E3B36] rounded-2xl p-8 border border-[#C4A896]/30 flex flex-col h-full shadow-xl transform lg:-translate-y-4">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-sm mb-6 shrink-0 border border-emerald-500/20">
+                <CheckCircle size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-4">The Attendly Fix</h3>
+              <p className="text-sm leading-relaxed text-white/70 flex-1">
+                Total freedom. One quick counter QR scan automatically logs the customer, pushes an auto-save business name details package, and legally whitelists the number with zero block risk.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 3.98 — THE OMNICHANNEL DIFFERENCE (Append 2)
+      ══════════════════════════════════════════════════════════ */}
+      <section className="py-24 scroll-reveal-section bg-[#F9F7F4] border-t border-[#E8E3DA]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
+            <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#C4A896' }}>The Omnichannel Difference</p>
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36]">
+              True Attendly vs. Traditional Tools
+            </h2>
+          </div>
+
+          <div className="max-w-5xl mx-auto bg-white rounded-3xl border border-[#E8E3DA] shadow-xl overflow-hidden gsap-reveal">
+            <div className="grid md:grid-cols-2">
+              {/* Traditional Tools */}
+              <div className="p-10 border-b md:border-b-0 md:border-r border-[#E8E3DA] bg-[#F5F1EA]/50">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 shrink-0">
+                    <XCircle size={20} />
+                  </div>
+                  <h3 className="text-xl font-bold text-[#3E3B36]">Traditional Bulk Platforms</h3>
+                </div>
+                <ul className="space-y-6">
+                  <li className="flex items-start gap-3">
+                    <X size={18} className="text-red-400 mt-0.5 shrink-0" />
+                    <span className="text-sm text-[#8B8378] leading-relaxed">Complex setup processes requiring developer skills.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <X size={18} className="text-red-400 mt-0.5 shrink-0" />
+                    <span className="text-sm text-[#8B8378] leading-relaxed">High recurring monthly lock-in subscriptions even if you send zero texts.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <X size={18} className="text-red-400 mt-0.5 shrink-0" />
+                    <span className="text-sm text-[#8B8378] leading-relaxed">Complex template registration rules.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <X size={18} className="text-red-400 mt-0.5 shrink-0" />
+                    <span className="text-sm text-[#8B8378] leading-relaxed">Zero in-store customer capturing tools.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <X size={18} className="text-red-400 mt-0.5 shrink-0" />
+                    <span className="text-sm text-[#8B8378] leading-relaxed">High risks of account suspension.</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* True Attendly */}
+              <div className="p-10 bg-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#C4A896]/10 rounded-bl-full -z-10"></div>
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 rounded-full bg-[#3E3B36] flex items-center justify-center text-[#C4A896] shrink-0">
+                    <CheckCircle size={20} />
+                  </div>
+                  <h3 className="text-xl font-bold text-[#3E3B36]">True Attendly Broadcast</h3>
+                </div>
+                <ul className="space-y-6">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={18} className="text-emerald-500 mt-0.5 shrink-0" />
+                    <span className="text-sm text-[#3E3B36] font-medium leading-relaxed">Absolute simplicity for non-programmers.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={18} className="text-emerald-500 mt-0.5 shrink-0" />
+                    <span className="text-sm text-[#3E3B36] font-medium leading-relaxed">Zero monthly subscription traps via our pay-as-you-send credit engine.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={18} className="text-emerald-500 mt-0.5 shrink-0" />
+                    <span className="text-sm text-[#3E3B36] font-medium leading-relaxed">Automated AI assistant text generation designed for premium marketing.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={18} className="text-emerald-500 mt-0.5 shrink-0" />
+                    <span className="text-sm text-[#3E3B36] font-medium leading-relaxed">Instant smart QR lead capturing right at the billing counter.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={18} className="text-emerald-500 mt-0.5 shrink-0" />
+                    <span className="text-sm text-[#3E3B36] font-medium leading-relaxed">Dual-safe routing model designed exclusively to protect small retail stores.</span>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
