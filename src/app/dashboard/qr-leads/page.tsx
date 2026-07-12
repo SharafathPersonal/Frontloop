@@ -125,7 +125,7 @@ export default function QRLeadsPage() {
         if (syncCount !== null) setSyncedCount(syncCount);
 
         const channel = supabase
-          .channel(`qr-leads-updates-${user.id}`)
+          .channel(`qr-leads-updates-${user.id}-${Date.now()}`)
           .on(
             'postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'customers_master', filter: `shop_id=eq.${user.id}` },
@@ -302,7 +302,14 @@ export default function QRLeadsPage() {
               onClick={async () => {
                 try {
                   const res = await fetch('/api/whatsapp/export-vcf');
-                  if (!res.ok) throw new Error('Download failed');
+                  if (res.status === 204) {
+                    showToast('No new leads to export', 'info');
+                    return;
+                  }
+                  if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(data.error || 'Download failed (Server Error). Please ensure database migrations are applied.');
+                  }
                   
                   const blob = await res.blob();
                   const url = window.URL.createObjectURL(blob);
