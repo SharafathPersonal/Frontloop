@@ -331,7 +331,7 @@ export default function LandingPage() {
                 </div>
                 <div className="flex-1 p-3 flex flex-col gap-3 relative bg-[#ece5dd]" style={{backgroundImage: 'radial-gradient(#d1cbbd 1px, transparent 1px)', backgroundSize: '12px 12px'}}>
                   <div className="self-end bg-[#dcf8c6] max-w-[85%] rounded-lg rounded-tr-none p-2 shadow-sm mt-3 border border-gray-200/50">
-                    <p className="text-[11px] text-[#111B21]">✨ Add me to Broadcast</p>
+                    <p className="text-[11px] text-[#111B21]">✨ Send me real-time offers and updates!</p>
                   </div>
                   <div className="self-start bg-white max-w-[90%] rounded-lg rounded-tl-none p-2.5 shadow-sm border-l-2 border-emerald-500 mt-2">
                     <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
@@ -344,7 +344,7 @@ export default function LandingPage() {
                     <button className="w-full text-center text-[10px] font-bold text-blue-500 py-1 hover:text-blue-600 transition-colors">Save Contact</button>
                   </div>
                   <div className="self-start bg-white max-w-[90%] rounded-lg rounded-tl-none p-2.5 shadow-sm mt-1">
-                    <p className="text-[11px] text-[#111B21] leading-relaxed">Welcome! You've been granted <strong className="text-emerald-600 font-mono">5 Loyalty Credits</strong>.</p>
+                    <p className="text-[11px] text-[#111B21] leading-relaxed">Scan to Save Contact &amp; Get Real-Time Offers</p>
                   </div>
                 </div>
               </div>
@@ -840,7 +840,7 @@ export default function LandingPage() {
                 <ul className="space-y-4 mb-8">
                   <li className="flex items-start gap-3">
                     <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>100% Safe Intake:</strong> Uses inbound customer texts ("Add me to Broadcast") to safely whitelist numbers instantly.</p>
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>100% Safe Intake:</strong> Uses inbound customer texts ("✨ Send me real-time offers and updates!") to safely whitelist numbers instantly.</p>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
@@ -848,7 +848,7 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Automated Vouchers:</strong> Cloud hooks automatically reply with a Welcome Promo (10 Credits per lead).</p>
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Step 3: Instant Live Sync &amp; Auto-Save —</strong> The platform instantly logs the customer's name and number onto your dashboard in real-time. The customer is immediately prompted to save your business profile card. Once saved, they are seamlessly whitelisted to receive all your upcoming real-time shop offers with zero upfront wallet discounts required from the merchant.</p>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
@@ -1135,8 +1135,8 @@ export default function LandingPage() {
               </div>
               <div className="gsap-reveal bg-white p-6 rounded-2xl border border-[#E8E3DA] shadow-sm hover:border-[#C4A896]/50 transition-colors">
                 <div className="w-10 h-10 bg-[#C4A896]/10 rounded-lg flex items-center justify-center text-[#C4A896] mb-4 border border-[#C4A896]/20"><Zap size={20} /></div>
-                <h3 className="font-bold text-[#3E3B36] mb-2">Infinite Scroll Leads Dashboard</h3>
-                <p className="text-sm text-[#8B8378] leading-relaxed">Manage thousands of leads effortlessly. The QR Leads manager supports real-time sync, deep search, and high-performance infinite scrolling natively.</p>
+                <h3 className="font-bold text-[#3E3B36] mb-2">Step 3: Instant Live Sync &amp; Auto-Save</h3>
+                <p className="text-sm text-[#8B8378] leading-relaxed">The platform instantly logs the customer's name and number onto your dashboard in real-time. The customer is immediately prompted to save your business profile card. Once saved, they are seamlessly whitelisted to receive all your upcoming real-time shop offers with zero upfront wallet discounts required from the merchant.</p>
               </div>
             </div>
             <div className="md:col-span-2 gsap-reveal">
