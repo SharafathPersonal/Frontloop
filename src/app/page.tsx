@@ -108,7 +108,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <>
+    <main className="w-full max-w-full min-h-screen overflow-x-hidden relative">
       {/* ── Injected header scroll styles ─────────────────────── */}
       <style jsx global>{`
         .header-scrolled {
@@ -283,7 +283,7 @@ export default function LandingPage() {
             </div>
 
             {/* ── Right Column — 5-Block Cluster Mockup ── */}
-            <div className="gsap-reveal relative w-full h-[400px] sm:h-[500px] lg:h-[540px] perspective-1000 scale-[0.7] sm:scale-90 lg:scale-100 origin-top flex-shrink-0 mt-8 lg:mt-0">
+            <div className="gsap-reveal relative w-full max-w-full h-[400px] sm:h-[500px] lg:h-[540px] perspective-1000 scale-[0.7] sm:scale-90 lg:scale-100 origin-top flex-shrink-0 mt-8 lg:mt-0 overflow-hidden sm:overflow-visible">
               
               {/* Block 1: Campaign Dashboard (Meta API) */}
               <div className="absolute left-0 top-12 w-[260px] bg-white rounded-xl shadow-2xl border border-[#E8E3DA] p-4 transform -rotate-6 hover:rotate-0 transition-all duration-500 z-10">
@@ -398,7 +398,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════════
           SECTION 2.5 — PROBLEM VS SOLUTION MATRIX
       ══════════════════════════════════════════════════════════ */}
-      <section id="solutions" className="py-24 scroll-reveal-section bg-white border-b border-[#E8E3DA]">
+      <section id="solutions" className="py-24 overflow-hidden bg-white border-b border-[#E8E3DA]">
         <div className="max-w-6xl mx-auto px-6">
           <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
             <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#C4A896' }}>The Industry Trap</p>
@@ -1879,6 +1879,6 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-    </>
+    </main>
   );
 }
