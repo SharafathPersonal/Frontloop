@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { Download, Users, Flame, QrCode, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Download, Users, Flame, QrCode, CheckCircle2, ArrowRight, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -11,6 +11,8 @@ interface ShopData {
   id: string;
   owner_phone: string;
   shop_name: string;
+  whatsapp_mode: string;
+  qr_express_status: string;
 }
 
 interface QRAnalytics {
@@ -53,7 +55,7 @@ export default function QRLeadsPage() {
 
         const { data: shopData } = await supabase
           .from('shops')
-          .select('id, owner_phone, shop_name')
+          .select('id, owner_phone, shop_name, whatsapp_mode, qr_express_status')
           .eq('id', user.id)
           .single();
 
@@ -196,6 +198,21 @@ export default function QRLeadsPage() {
           <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
         </Link>
       </div>
+
+      {shop?.whatsapp_mode === 'QR_EXPRESS' && shop?.qr_express_status !== 'CONNECTED' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="text-amber-500" size={20} />
+            <div>
+              <p className="text-sm text-amber-900 font-bold">WhatsApp Disconnected</p>
+              <p className="text-xs text-amber-700 mt-0.5">Please reconnect WhatsApp to activate your QR code and capture real-time leads.</p>
+            </div>
+          </div>
+          <Link href="/dashboard/settings" className="bg-amber-100 hover:bg-amber-200 text-amber-900 px-4 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap border border-amber-300">
+            Connect WhatsApp
+          </Link>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
         {/* QR Hero Section (Left Pane) */}
