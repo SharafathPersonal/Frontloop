@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { APP_VERSION } from '@/lib/config';
-import { Phone, MessageCircle, XCircle, CheckCircle, ArrowRight, Mail, Smartphone, ShieldCheck, Bot, Contact, Zap } from 'lucide-react';
+import { Phone, MessageCircle, XCircle, CheckCircle, ArrowRight, Mail, Smartphone, ShieldCheck, Bot, Contact, Zap, Wand2, Upload, Image as ImageIcon } from 'lucide-react';
 
 // ──────────────────────────────────────────────────────────────────
 // LANDING PAGE — True Attendly Broadcast
@@ -282,67 +282,110 @@ export default function LandingPage() {
 
             </div>
 
-            {/* ── Right Column — Dual Mockup Grid ── */}
+            {/* ── Right Column — 5-Block Cluster Mockup ── */}
             <div className="hidden lg:block gsap-reveal relative w-full h-[540px] perspective-1000">
               
-              {/* Left Mockup: Meta API Dashboard & Email Editor */}
-              <div className="absolute left-0 top-12 w-[340px] bg-[#F5F1EA] rounded-2xl shadow-2xl border-[4px] border-[#E8E3DA] overflow-hidden transform -rotate-y-6 rotate-z-2 translate-x-4 z-10 flex flex-col">
-                <div className="bg-white px-4 py-3 border-b border-[#E8E3DA] flex justify-between items-center">
-                  <span className="text-xs font-bold text-[#3E3B36]">Campaign Dashboard</span>
-                  <span className="bg-emerald-100 text-emerald-700 text-[9px] uppercase px-2 py-1 rounded font-bold">Meta API</span>
+              {/* Block 1: Campaign Dashboard (Meta API) */}
+              <div className="absolute left-0 top-12 w-[260px] bg-white rounded-xl shadow-2xl border border-[#E8E3DA] p-4 transform -rotate-6 hover:rotate-0 transition-all duration-500 z-10">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-[11px] font-bold text-[#3E3B36]">Meta API Broadcast</span>
+                  <span className="bg-emerald-100 text-emerald-700 text-[9px] uppercase px-2 py-0.5 rounded font-bold">Live</span>
                 </div>
-                <div className="p-4 space-y-4">
-                  <div className="flex gap-2">
-                    <div className="flex-1 bg-white border border-[#E8E3DA] p-3 rounded-lg text-center shadow-sm">
-                      <p className="text-[10px] text-[#8B8378] font-bold uppercase tracking-wider mb-1">Sent</p>
-                      <p className="text-xl font-black text-[#3E3B36]">45,210</p>
-                    </div>
-                    <div className="flex-1 bg-white border border-[#E8E3DA] p-3 rounded-lg text-center shadow-sm">
-                      <p className="text-[10px] text-[#8B8378] font-bold uppercase tracking-wider mb-1">Delivered</p>
-                      <p className="text-xl font-black text-[#10B981]">44,890</p>
-                    </div>
+                <div className="flex gap-2">
+                  <div className="flex-1 bg-[#F5F1EA] p-2.5 rounded-lg text-center border border-[#E8E3DA]">
+                    <p className="text-[9px] text-[#8B8378] uppercase font-bold tracking-wider mb-1">Sent</p>
+                    <p className="text-xl font-black text-[#3E3B36]">45k</p>
                   </div>
-                  <div className="bg-white p-3 rounded-lg border border-[#E8E3DA] shadow-sm">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Bot size={14} style={{ color: '#C4A896' }} />
-                      <span className="text-[10px] font-bold text-[#3E3B36] uppercase tracking-wider">AI Email Editor</span>
-                    </div>
-                    <div className="h-20 bg-[#F5F1EA] rounded border border-[#E8E3DA] border-dashed flex items-center justify-center">
-                      <span className="text-[10px] text-[#8B8378]">Visual Layout Engine</span>
-                    </div>
+                  <div className="flex-1 bg-emerald-50 p-2.5 rounded-lg text-center border border-emerald-100">
+                    <p className="text-[9px] text-emerald-600 uppercase font-bold tracking-wider mb-1">Delivered</p>
+                    <p className="text-xl font-black text-emerald-600">44.8k</p>
                   </div>
                 </div>
               </div>
 
-              {/* Right Mockup: Smartphone QR Journey */}
-              <div className="absolute right-0 top-4 w-[260px] h-[480px] bg-[#EFEAE2] rounded-[2.5rem] shadow-2xl border-[8px] border-[#1f2937] overflow-hidden flex flex-col transform rotate-y-12 -rotate-z-3 -translate-x-2 z-20">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-[#1f2937] rounded-b-xl z-30"></div>
-                <div className="bg-[#075e54] text-white pt-10 pb-3 px-4 flex items-center gap-3">
+              {/* Block 2: AI Template Polisher */}
+              <div className="absolute right-4 top-4 w-[240px] bg-[#3E3B36] rounded-xl shadow-2xl border border-[#C4A896]/30 p-4 transform rotate-3 hover:rotate-0 hover:-translate-y-2 transition-all duration-500 z-20">
+                <div className="flex items-center gap-2 mb-3">
+                  <Wand2 size={12} className="text-[#C4A896]" />
+                  <span className="text-[10px] font-bold text-white uppercase tracking-wider">AI Template Polisher</span>
+                </div>
+                <div className="bg-white/5 p-2.5 rounded text-[10px] text-white/50 line-through mb-2 border border-white/5">
+                  hi sir pls buy our stock
+                </div>
+                <div className="bg-emerald-500/10 border border-emerald-500/30 p-2.5 rounded text-[11px] text-emerald-400 font-medium leading-relaxed">
+                  Hi {`{{1}}`}! Exclusive stock arrived at {`{{2}}`}. ✨
+                </div>
+              </div>
+
+              {/* Block 3: In-Store QR Engine (Smartphone) */}
+              <div className="absolute left-1/2 -translate-x-1/2 top-10 w-[240px] h-[440px] bg-[#EFEAE2] rounded-[2rem] shadow-2xl border-[6px] border-[#1f2937] overflow-hidden flex flex-col transform rotate-0 hover:-translate-y-4 transition-all duration-500 z-30">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-4 bg-[#1f2937] rounded-b-xl z-30"></div>
+                <div className="bg-[#075e54] text-white pt-8 pb-3 px-4 flex items-center gap-3">
                   <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center shrink-0">
-                    <span className="font-bold text-sm">TB</span>
+                    <span className="font-bold text-[11px]">TB</span>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold">True Broadcast</p>
-                    <p className="text-[9px] text-white/70 uppercase tracking-widest">Business Account</p>
+                    <p className="text-xs font-bold leading-tight">True Broadcast</p>
+                    <p className="text-[9px] text-white/70 uppercase tracking-widest mt-0.5">Business Account</p>
                   </div>
                 </div>
-                <div className="flex-1 p-4 flex flex-col gap-3 relative" style={{backgroundImage: 'radial-gradient(#d1cbbd 1px, transparent 1px)', backgroundSize: '16px 16px'}}>
-                  <div className="self-end bg-[#dcf8c6] max-w-[85%] rounded-lg rounded-tr-none p-2.5 shadow-sm mt-2">
-                    <p className="text-[12px] text-[#111B21]">✨ Add me to Broadcast</p>
+                <div className="flex-1 p-3 flex flex-col gap-3 relative bg-[#ece5dd]" style={{backgroundImage: 'radial-gradient(#d1cbbd 1px, transparent 1px)', backgroundSize: '12px 12px'}}>
+                  <div className="self-end bg-[#dcf8c6] max-w-[85%] rounded-lg rounded-tr-none p-2 shadow-sm mt-3 border border-gray-200/50">
+                    <p className="text-[11px] text-[#111B21]">✨ Add me to Broadcast</p>
                   </div>
-                  <div className="self-start bg-white max-w-[90%] rounded-lg rounded-tl-none p-3 shadow-sm border-l-4 border-emerald-500 mt-2">
-                    <div className="flex items-center gap-3 mb-2 pb-2 border-b border-gray-100">
-                      <div className="w-8 h-8 bg-[#F5F1EA] rounded-full flex items-center justify-center"><Contact size={16} className="text-[#3E3B36]"/></div>
+                  <div className="self-start bg-white max-w-[90%] rounded-lg rounded-tl-none p-2.5 shadow-sm border-l-2 border-emerald-500 mt-2">
+                    <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
+                      <div className="w-6 h-6 bg-[#F5F1EA] rounded-full flex items-center justify-center"><Contact size={12} className="text-[#3E3B36]"/></div>
                       <div>
-                        <p className="text-[12px] font-bold text-[#3E3B36]">True Attendly</p>
-                        <p className="text-[10px] text-[#8B8378]">Business Contact</p>
+                        <p className="text-[11px] font-bold text-[#3E3B36]">True Attendly</p>
+                        <p className="text-[9px] text-[#8B8378]">Business Contact</p>
                       </div>
                     </div>
-                    <button className="w-full text-center text-[11px] font-bold text-blue-500 py-1">Save Contact</button>
+                    <button className="w-full text-center text-[10px] font-bold text-blue-500 py-1 hover:text-blue-600 transition-colors">Save Contact</button>
                   </div>
                   <div className="self-start bg-white max-w-[90%] rounded-lg rounded-tl-none p-2.5 shadow-sm mt-1">
-                    <p className="text-[12px] text-[#111B21]">Welcome! You've been granted <strong className="text-emerald-600">5 Loyalty Credits</strong>.</p>
+                    <p className="text-[11px] text-[#111B21] leading-relaxed">Welcome! You've been granted <strong className="text-emerald-600 font-mono">5 Loyalty Credits</strong>.</p>
                   </div>
+                </div>
+              </div>
+
+              {/* Block 4: Premium AI Email Suite */}
+              <div className="absolute left-6 bottom-8 w-[220px] bg-white rounded-xl shadow-2xl border border-[#E8E3DA] overflow-hidden transform rotate-3 hover:rotate-0 hover:-translate-y-2 transition-all duration-500 z-40">
+                <div className="bg-[#F9F7F4] px-3 py-2 border-b border-[#E8E3DA] flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Mail size={12} className="text-[#6366f1]" />
+                    <span className="text-[10px] font-bold text-[#3E3B36] uppercase tracking-wider">AI Email Suite</span>
+                  </div>
+                </div>
+                <div className="p-4 bg-white">
+                  <div className="h-16 bg-gray-100 rounded-lg border border-dashed border-gray-300 flex items-center justify-center mb-3">
+                    <ImageIcon size={16} className="text-gray-400" />
+                  </div>
+                  <div className="space-y-1.5 mb-4">
+                    <div className="h-2 w-3/4 bg-gray-200 rounded"></div>
+                    <div className="h-2 w-1/2 bg-gray-200 rounded"></div>
+                  </div>
+                  <button className="w-full bg-[#111827] text-white text-[9px] py-2 rounded-lg uppercase font-bold tracking-widest">Dispatch</button>
+                </div>
+              </div>
+
+              {/* Block 5: Bulk Messaging with AI (CSV Table) */}
+              <div className="absolute right-0 bottom-24 w-[240px] bg-white rounded-xl shadow-2xl border border-[#E8E3DA] p-4 transform -rotate-2 hover:rotate-0 hover:-translate-y-2 transition-all duration-500 z-20">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-[10px] font-bold text-[#3E3B36] uppercase tracking-wider">Bulk CSV Ingest</span>
+                  <Upload size={14} className="text-[#10B981]" />
+                </div>
+                <div className="bg-[#F5F1EA] rounded-lg border border-[#E8E3DA] overflow-hidden">
+                  <table className="w-full text-[9px] text-left">
+                    <thead className="bg-[#E8E3DA] text-[#8B8378]">
+                      <tr><th className="p-2 font-semibold">Name</th><th className="p-2 font-semibold">Phone</th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E8E3DA] text-[#3E3B36]">
+                      <tr className="bg-white"><td className="p-2 font-bold">Aliya K.</td><td className="p-2 font-mono">91987...</td></tr>
+                      <tr className="bg-white"><td className="p-2 font-bold">Rahul M.</td><td className="p-2 font-mono">91987...</td></tr>
+                      <tr className="bg-white"><td className="p-2 font-bold">Priya S.</td><td className="p-2 font-mono">91999...</td></tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
