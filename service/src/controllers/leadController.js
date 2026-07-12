@@ -74,13 +74,31 @@ const processInboundLead = async (msg, shopId, sock) => {
           }
 
           // 5. Send automated reply via WhatsApp Socket
-          const { data: shopInfo } = await supabase.from('shops').select('shop_name').eq('id', shopId).maybeSingle();
+          const { data: shopInfo } = await supabase.from('shops').select('shop_name, owner_phone').eq('id', shopId).maybeSingle();
           const shopName = shopInfo?.shop_name || 'Our Store';
+          const merchantPhone = shopInfo?.owner_phone ? shopInfo.owner_phone.replace(/\D/g, '') : '';
+          
+          const promoCopy = `Welcome to ${shopName}! 🎁 Please save our number right now to receive exclusive, real-time weekly offers and flash updates directly to your WhatsApp number. Click the official business contact card below to save us instantly to your phone book!`;
           
           await sock.sendMessage(rawSender, {
-              text: `Welcome to ${shopName}! Your ₹50 Instant Voucher is unlocked. ⚠️ Save our number to keep it active!`
+              text: promoCopy
           });
-          console.log(`✅ [QR LEAD SUCCESS] Voucher dispatched to ${sanitizedNumber}`);
+
+          if (merchantPhone) {
+              const vcard = 'BEGIN:VCARD\n'
+                + 'VERSION:3.0\n'
+                + `FN:${shopName}\n`
+                + `TEL;type=CELL;type=VOICE;waid=${merchantPhone}:+${merchantPhone}\n`
+                + 'END:VCARD';
+
+              await sock.sendMessage(rawSender, {
+                  contacts: {
+                      displayName: shopName,
+                      contacts: [{ vcard }]
+                  }
+              });
+          }
+          console.log(`✅ [QR LEAD SUCCESS] Welcome sequence dispatched to ${sanitizedNumber}`);
 
       } catch (err) {
           console.error(`[QR LEAD CRASH] Processing error:`, err);

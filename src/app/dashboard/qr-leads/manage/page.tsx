@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { Download, AlertCircle, CheckCircle2, Search, ArrowUpDown, X, Loader2, Filter, Zap } from 'lucide-react';
+import { Download, AlertCircle, CheckCircle2, Search, ArrowUpDown, X, Loader2, Filter, Zap, RefreshCw } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
 import { useRouter } from 'next/navigation';
 
@@ -260,16 +260,31 @@ export default function ManageQRLeadsPage() {
             <p className="text-[10px] text-[#8B8378] tracking-[0.1em] uppercase">{totalAudience} Total Records</p>
           </div>
           
-          <button
-            onClick={() => setShowSyncModal(true)}
-            className="ml-4 btn-primary rounded-lg !py-2 !px-4 group"
-          >
-            <Zap size={16} className="text-[#C4A896] group-hover:scale-110 transition-transform mr-2" />
-            ⚡ Save New Contacts to Phone
-            {unsavedCount > 0 && (
-              <span className="ml-2 bg-[#F5F1EA] text-[#3E3B36] px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm">{unsavedCount}</span>
-            )}
-          </button>
+          <div className="ml-4 flex items-center gap-2">
+            <button
+              onClick={() => setShowSyncModal(true)}
+              className="btn-primary rounded-lg !py-2 !px-4 group"
+            >
+              <Zap size={16} className="text-[#C4A896] group-hover:scale-110 transition-transform mr-2" />
+               Save New Contacts to Phone
+              {unsavedCount > 0 && (
+                <span className="ml-2 bg-[#F5F1EA] text-[#3E3B36] px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm">{unsavedCount}</span>
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setAllLeads([]);
+                setPage(0);
+                setHasMore(true);
+                hasMoreRef.current = true;
+                fetchLeadsBatch(0, true);
+              }}
+              className="p-2 hover:bg-[#F5F1EA] rounded-lg transition-colors border border-[#E8E3DA] bg-white group"
+              title="Refresh Leads"
+            >
+              <RefreshCw size={18} className={`text-[#8B8378] group-hover:text-[#3E3B36] ${isFetchingBatch ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
         
         <div className="flex items-center gap-3 w-full md:w-auto flex-wrap md:flex-nowrap">
