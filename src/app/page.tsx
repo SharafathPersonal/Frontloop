@@ -781,7 +781,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto gsap-reveal">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto gsap-reveal">
             {/* Premium In-Store QR Lead Engine */}
             <div className="border border-[#E8E3DA] rounded-2xl p-8 bg-white flex flex-col justify-between hover:border-[#10B981]/50 transition-colors shadow-sm">
               <div>
@@ -843,6 +843,39 @@ export default function LandingPage() {
                   <li className="flex items-start gap-3">
                     <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
                     <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Dynamic CSV Parsing:</strong> Instant 10k+ audience generation and list segmentation uploads.</p>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Meta Official WhatsApp Campaign */}
+            <div className="border border-[#E8E3DA] rounded-2xl p-8 bg-[#F5F1EA] flex flex-col justify-between hover:border-[#3b82f6]/40 transition-colors shadow-sm">
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                   <div className="w-10 h-10 bg-[#3b82f6] text-[#FFFFFF] rounded-xl flex items-center justify-center">
+                     <ShieldCheck size={20} />
+                   </div>
+                   <div>
+                     <h3 className="lexend-subheading text-lg font-bold text-[#3E3B36]">Feature C: Official Meta API Broadcasts</h3>
+                     <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">Zero Risk, Verified Enterprise Architecture</p>
+                   </div>
+                </div>
+                <ul className="space-y-4 mb-8">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Verified Brand Trust:</strong> Connect your official WhatsApp Business API to broadcast to tens of thousands of contacts seamlessly with 0% risk of bans.</p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>AI Template Polisher:</strong> Automatically draft, format, and push your dynamic message templates directly to Meta for instant approval.</p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Dynamic Variables:</strong> Seamlessly inject personalized names and custom fields using Meta's robust native token system.</p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Granular Analytics:</strong> Track real-time Sent, Delivered, and Read receipts explicitly verified and synced from Meta's global webhooks.</p>
                   </li>
                 </ul>
               </div>
