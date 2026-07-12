@@ -651,6 +651,21 @@ export default function LandingPage() {
                 title: 'Capture Foot Traffic Instantly with Dynamic QR Leads',
                 desc: "Turn physical visitors into digital leads with zero setup friction. When customers scan your dynamic QR code and send a quick WhatsApp message, their profile is instantly captured and added to your dashboard in seconds. Backed by advanced real-time search, robust sorting, and ultra-smooth infinite scrolling, managing your shop's growth has never been this simple.",
               },
+              {
+                icon: '📇',
+                title: 'Smart vCard Address Book Push',
+                desc: "Automatically push native vCard (VCF) payloads upon the initial QR inbound message. Legally whitelist your official contact number inside their local phonebook for optimal future campaign read rates.",
+              },
+              {
+                icon: '📊',
+                title: 'Omnichannel Analytics Ledger',
+                desc: "Unified tracking dashboards bridging Meta WhatsApp receipts and Resend Email telemetry. Instantly view delivery metrics, deep-link click rates, and failure cascades across multiple campaigns from one single source of truth.",
+              },
+              {
+                icon: '💳',
+                title: 'Automated Loyalty Engine & Cashfree Gateways',
+                desc: "Instantly drop 5 dynamic Loyalty Credits into a new prospect's account upon QR scan. Top-up global wallets seamlessly via our dynamic Cashfree integration, enabling transparent, pay-as-you-go broadcasting.",
+              },
             ].map((card) => (
               <div
                 key={card.title}
