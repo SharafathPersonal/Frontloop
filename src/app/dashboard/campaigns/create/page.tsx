@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import type { CampaignFormValues, CreditCheckResult, Wallet, MessageTemplate } from '@/types/broadcast';
 import { Upload, X, CheckCircle, AlertTriangle, Send, FileText, Image as ImageIcon, Tag, ChevronDown, Wand2, MessageSquareText, ShieldCheck } from 'lucide-react';
@@ -13,8 +13,9 @@ type CustomerTag = 'VIP' | 'Regular' | 'New';
 
 interface RecipientTag { value: CustomerTag; label: string; count: number; }
 
-export default function BroadcastPage() {
+function BroadcastPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [shopName, setShopName] = useState('Your Shop');
   const [form, setForm] = useState<CampaignFormValues>({ title: '', message_body: '', image_url: '' });
@@ -111,9 +112,18 @@ export default function BroadcastPage() {
       setTagOptions(tagCounts);
       if (tmplData) setTemplates(tmplData as MessageTemplate[]);
       if (configData?.value) setWhatsappCreditCost(Number(configData.value));
+      
+      const prefillTId = searchParams.get('template');
+      if (prefillTId && tmplData) {
+        const t = (tmplData as MessageTemplate[]).find(x => x.id === prefillTId);
+        if (t) {
+          setSelectedTemplateId(t.id);
+          setForm(prev => ({ ...prev, message_body: t.body_text }));
+        }
+      }
     }
     loadWallet();
-  }, []);
+  }, [searchParams]);
 
   // Extract placeholders dynamically
   useEffect(() => {
@@ -640,5 +650,13 @@ export default function BroadcastPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function BroadcastPage() {
+  return (
+    <Suspense fallback={<div className="flex h-[80vh] items-center justify-center"><Spinner /></div>}>
+      <BroadcastPageInner />
+    </Suspense>
   );
 }
