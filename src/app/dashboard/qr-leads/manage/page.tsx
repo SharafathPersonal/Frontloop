@@ -262,12 +262,12 @@ export default function ManageQRLeadsPage() {
           
           <button
             onClick={() => setShowSyncModal(true)}
-            className="ml-4 flex items-center gap-2 bg-[#10B981] text-white px-4 py-2 rounded-lg text-xs tracking-wide font-bold shadow-sm hover:bg-[#059669] transition-all group"
+            className="ml-4 btn-primary rounded-lg !py-2 !px-4 group"
           >
-            <Zap size={16} className="text-emerald-100 group-hover:scale-110 transition-transform" />
+            <Zap size={16} className="text-[#C4A896] group-hover:scale-110 transition-transform mr-2" />
             ⚡ Save New Contacts to Phone
             {unsavedCount > 0 && (
-              <span className="ml-1 bg-white text-[#10B981] px-1.5 py-0.5 rounded-full text-[10px] font-black">{unsavedCount}</span>
+              <span className="ml-2 bg-[#F5F1EA] text-[#3E3B36] px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm">{unsavedCount}</span>
             )}
           </button>
         </div>
