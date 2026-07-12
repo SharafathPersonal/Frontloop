@@ -1290,7 +1290,7 @@ export default function LandingPage() {
           <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
             <span className="bg-[#6366f1]/10 text-[#6366f1] text-[10px] font-bold px-3 py-1 uppercase tracking-widest rounded-full mb-4 inline-block">New · Email Marketing</span>
             <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-6">
-              Now Broadcast via Email — With AI That Writes For You.
+              Now Broadcast via Email - With AI That Writes For You.
             </h2>
             <p className="text-base leading-relaxed text-[#8B8378]">
               Launch full-scale email campaigns to your segmented audience. Our built-in AI Polish engine transforms rough drafts into premium, conversion-optimised copy in a single click.
@@ -1877,7 +1877,7 @@ export default function LandingPage() {
               New · Email Marketing
             </p>
             <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-4">
-              Now Broadcast via Email — With AI That Writes For You.
+              Now Broadcast via Email - With AI That Writes For You.
             </h2>
             <p className="text-base leading-relaxed text-[#8B8378]">
               Launch full-scale email campaigns to your segmented audience. Our built-in AI Polish engine transforms rough drafts into premium, conversion-optimised copy in a single click.
