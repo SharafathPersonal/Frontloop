@@ -604,10 +604,10 @@ export default function QRLeadsPage() {
           {/* Metric Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-[1.5rem] border border-[#E8E3DA] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-[4rem] -z-0 transition-transform group-hover:scale-110"></div>
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#F5F1EA] rounded-bl-[4rem] -z-0 transition-transform group-hover:scale-110"></div>
               <div className="flex items-center gap-4 mb-6 relative z-10">
-                <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100">
-                  <Users size={20} className="text-blue-500" />
+                <div className="w-12 h-12 rounded-xl bg-[#F5F1EA] flex items-center justify-center border border-[#E8E3DA]">
+                  <Users size={20} className="text-[#3E3B36]" />
                 </div>
                 <p className="text-[10px] tracking-[0.2em] uppercase text-[#8B8378] font-bold">Total Audience</p>
               </div>
@@ -615,10 +615,10 @@ export default function QRLeadsPage() {
             </div>
             
             <div className="bg-white p-6 rounded-[1.5rem] border border-[#E8E3DA] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-bl-[4rem] -z-0 transition-transform group-hover:scale-110"></div>
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#C4A896]/10 rounded-bl-[4rem] -z-0 transition-transform group-hover:scale-110"></div>
               <div className="flex items-center gap-4 mb-6 relative z-10">
-                <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center border border-orange-100">
-                  <Flame size={20} className="text-orange-500" />
+                <div className="w-12 h-12 rounded-xl bg-[#C4A896]/10 flex items-center justify-center border border-[#C4A896]/20">
+                  <Flame size={20} className="text-[#C4A896]" />
                 </div>
                 <p className="text-[10px] tracking-[0.2em] uppercase text-[#8B8378] font-bold">Today's Scans</p>
               </div>
