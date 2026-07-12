@@ -43,16 +43,17 @@ export async function POST(req: Request) {
   }
 
   const payload = await req.json();
-  const { campaign, targetTags } = payload as {
+  const { campaign, targetTags, targetEmails } = payload as {
     campaign: { title: string; subject: string; html_body: string };
-    targetTags: string[];
+    targetTags?: string[];
+    targetEmails?: string[];
   };
 
   if (!campaign?.title?.trim() || !campaign?.subject?.trim() || !campaign?.html_body?.trim()) {
     return NextResponse.json({ ok: false, error: 'Missing required campaign fields.' }, { status: 400 });
   }
-  if (!targetTags || targetTags.length === 0) {
-    return NextResponse.json({ ok: false, error: 'No target audience tags provided.' }, { status: 400 });
+  if ((!targetTags || targetTags.length === 0) && (!targetEmails || targetEmails.length === 0)) {
+    return NextResponse.json({ ok: false, error: 'No target audience selected (tags or custom emails required).' }, { status: 400 });
   }
 
   // Fetch shop details to personalize the email sender profile
@@ -75,18 +76,35 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'Failed to load contacts.' }, { status: 500 });
   }
 
-  const targetTagsLower = targetTags.map(t => t.toLowerCase().trim());
+  const targetTagsLower = (targetTags || []).map(t => t.toLowerCase().trim());
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recipients = (contacts ?? []).filter((c: any) => {
+  let recipients = (contacts ?? []).filter((c: any) => {
     const tags: string[] = Array.isArray(c.tags) ? c.tags : [];
     return tags.some((t: string) => targetTagsLower.includes(t.toLowerCase().trim()));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  }).filter((c: any) => c.email && c.email.trim().length > 0);
+  }).filter((c: any) => c.email && c.email.trim().length > 0)
+    .map(c => ({ email: c.email.toLowerCase().trim() }));
+
+  // Add CSV/Custom emails and deduplicate
+  if (targetEmails && targetEmails.length > 0) {
+    const customRecipients = targetEmails
+      .filter(e => e && e.trim().length > 0)
+      .map(e => ({ email: e.toLowerCase().trim() }));
+    recipients = [...recipients, ...customRecipients];
+  }
+
+  // Remove duplicates by email
+  const uniqueEmails = new Set();
+  recipients = recipients.filter(c => {
+    if (uniqueEmails.has(c.email)) return false;
+    uniqueEmails.add(c.email);
+    return true;
+  });
 
   if (recipients.length === 0) {
     return NextResponse.json(
-      { ok: false, error: 'No contacts with valid email addresses found for the selected tags.' },
+      { ok: false, error: 'No valid email addresses found for the selected audience.' },
       { status: 400 },
     );
   }
@@ -128,7 +146,7 @@ export async function POST(req: Request) {
       total_recipients: recipients.length,
       total_sent: 0,
       total_failed: 0,
-      target_tags: targetTags,
+      target_tags: targetTags || [],
     })
     .select()
     .single();

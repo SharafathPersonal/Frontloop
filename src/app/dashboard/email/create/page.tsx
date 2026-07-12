@@ -16,6 +16,9 @@ export default function EmailCreatePage() {
   const [form, setForm] = useState({ title: '', subject: '', html_body: '' });
   const [selectedTags, setSelectedTags] = useState<CustomerTag[]>([]);
   const [tagOptions, setTagOptions] = useState<RecipientTag[]>([]);
+  const [csvEmails, setCsvEmails] = useState<string[]>([]);
+  const [csvFileName, setCsvFileName] = useState<string | null>(null);
+  const csvFileRef = useRef<HTMLInputElement>(null);
   const [recipientCount, setRecipientCount] = useState(0);
   const [creditsAvailable, setCreditsAvailable] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -57,18 +60,41 @@ export default function EmailCreatePage() {
 
   useEffect(() => {
     async function updateCount() {
-      if (selectedTags.length === 0) { setRecipientCount(0); return; }
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { count } = await supabase
-        .from('customers_master')
-        .select('*', { count: 'exact', head: true })
-        .eq('shop_id', user.id)
-        .overlaps('tags', selectedTags);
-      setRecipientCount(count ?? 0);
+      let dbCount = 0;
+      if (selectedTags.length > 0) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { count } = await supabase
+            .from('customers_master')
+            .select('*', { count: 'exact', head: true })
+            .eq('shop_id', user.id)
+            .overlaps('tags', selectedTags);
+          dbCount = count ?? 0;
+        }
+      }
+      setRecipientCount(dbCount + csvEmails.length);
     }
     updateCount();
-  }, [selectedTags]);
+  }, [selectedTags, csvEmails]);
+
+  const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setCsvFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+      
+      const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+      const matches = text.match(emailRegex) || [];
+      const uniqueEmails = Array.from(new Set(matches.map(m => m.toLowerCase())));
+      
+      setCsvEmails(uniqueEmails);
+    };
+    reader.readAsText(file);
+  };
 
   const validateImageFiles = (files: FileList | null): File | null => {
     if (!files || files.length === 0) return null;
@@ -176,8 +202,8 @@ export default function EmailCreatePage() {
       setErrorMsg('Please fill in all fields: title, subject, and email body.');
       return;
     }
-    if (selectedTags.length === 0) {
-      setErrorMsg('Please select at least one target audience tag.');
+    if (selectedTags.length === 0 && csvEmails.length === 0) {
+      setErrorMsg('Please select at least one target audience tag or upload a CSV file.');
       return;
     }
     const totalCost = recipientCount * emailCreditCost;
@@ -196,7 +222,7 @@ export default function EmailCreatePage() {
       const res = await fetch('/api/email/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaign: form, targetTags: selectedTags }),
+        body: JSON.stringify({ campaign: form, targetTags: selectedTags, targetEmails: csvEmails }),
       });
       const data = await res.json();
       if (!res.ok) { setErrorMsg(data.error || 'Failed to dispatch email campaign.'); setIsSubmitting(false); return; }
@@ -323,7 +349,7 @@ export default function EmailCreatePage() {
 
         <div>
           <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-3">Target Audience Tags</label>
-          <div className="space-y-2">
+          <div className="space-y-2 mb-6">
             {tagOptions.map(t => (
               <label key={t.value} className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                 selectedTags.includes(t.value) ? 'border-[#6366f1]/40 bg-[#6366f1]/5' : 'border-[#E8E3DA] hover:border-[#6366f1]/30'
@@ -337,6 +363,26 @@ export default function EmailCreatePage() {
               </label>
             ))}
           </div>
+
+          <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-3">Custom Audience (CSV/Excel)</label>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => csvFileRef.current?.click()}
+              className="flex items-center gap-2 px-4 py-2 bg-[#F9F7F4] border border-[#E8E3DA] hover:border-[#6366f1]/30 rounded-lg text-sm text-[#3E3B36] font-medium transition-colors"
+            >
+              <Upload size={14} className="text-[#8B8378]" />
+              Upload Contacts
+            </button>
+            <input type="file" accept=".csv,.txt" ref={csvFileRef} onChange={handleCsvUpload} className="hidden" />
+            
+            {csvFileName && (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="bg-[#10B981]/10 text-[#10B981] px-2 py-1 rounded font-bold">{csvEmails.length.toLocaleString()} emails found</span>
+                <span className="text-[#8B8378] truncate max-w-[200px]">{csvFileName}</span>
+                <button onClick={() => { setCsvFileName(null); setCsvEmails([]); }} className="text-red-400 hover:text-red-600"><X size={14} /></button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -344,13 +390,13 @@ export default function EmailCreatePage() {
       <div className="flex items-center justify-between bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-5">
         <div>
           <p className="text-sm text-[#3E3B36] font-medium">
-            {recipientCount > 0 ? `Ready to send to ${recipientCount.toLocaleString()} recipients` : 'Select tags to see recipient count'}
+            {recipientCount > 0 ? `Ready to send to ${recipientCount.toLocaleString()} recipients` : 'Select tags or upload CSV to see recipient count'}
           </p>
-          <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase mt-0.5">{emailCreditCost} credit{emailCreditCost !== 1 ? 's' : ''} per email · Instant delivery</p>
+          <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase mt-0.5">{emailCreditCost} credit{emailCreditCost !== 1 ? 's' : ''} per email · Deduplicates automatically</p>
         </div>
         <button
           onClick={handleConfirmSubmit}
-          disabled={selectedTags.length === 0 || recipientCount === 0 || !sufficient || isSubmitting}
+          disabled={(selectedTags.length === 0 && csvEmails.length === 0) || recipientCount === 0 || !sufficient || isSubmitting}
           className="btn-primary rounded-lg flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ backgroundColor: sufficient ? '#6366f1' : undefined }}
         >
