@@ -143,12 +143,13 @@ Strict Output Layout Rules:
 
     // Tier 2: Groq
     try {
-      if (process.env.GROQ_API_KEY) {
+      const groqKey = process.env.GROQ_API_KEY || process.env.GROK_API_KEY;
+      if (groqKey) {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+            'Authorization': `Bearer ${groqKey}`
           },
           body: JSON.stringify({ ...openaiPayload, model: 'llama-3.1-8b-instant' })
         }, 6000);
@@ -200,7 +201,7 @@ Strict Output Layout Rules:
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.CEREBRAS_API_KEY}`
           },
-          body: JSON.stringify({ ...openaiPayload, model: 'llama3.1-70b' })
+          body: JSON.stringify({ ...openaiPayload, model: 'gemma-4-31b' })
         }, 6000);
 
         if (res.ok) {
