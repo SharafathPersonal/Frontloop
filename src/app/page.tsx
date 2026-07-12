@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { APP_VERSION } from '@/lib/config';
-import { Phone, MessageCircle, XCircle, CheckCircle, ArrowRight, Mail, Smartphone, ShieldCheck, Bot, Contact } from 'lucide-react';
+import { Phone, MessageCircle, XCircle, CheckCircle, ArrowRight, Mail, Smartphone, ShieldCheck, Bot, Contact, Zap } from 'lucide-react';
 
 // ──────────────────────────────────────────────────────────────────
 // LANDING PAGE — True Attendly Broadcast
@@ -881,6 +881,255 @@ export default function LandingPage() {
               </div>
             </div>
 
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 3.9 — PLATFORM DEEP DIVE
+      ══════════════════════════════════════════════════════════ */}
+      <section className="bg-[#F5F1EA] py-24 scroll-reveal-section border-t border-[#E8E3DA]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
+            <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#C4A896' }}>Platform Deep Dive</p>
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-6">
+              Advanced Capabilities.
+            </h2>
+          </div>
+
+          <div className="space-y-12">
+            
+            {/* Feature 1 & 2 */}
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Bulk Campaign Broadcasting */}
+              <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-2xl p-8 shadow-sm">
+                <h3 className="text-xl font-bold text-[#3E3B36] mb-3">Bulk Campaign Broadcasting</h3>
+                <p className="text-sm text-[#8B8378] leading-relaxed mb-6">
+                  Broadcast Offers to 100k+ Opt-In Users instantly. Upload massive CSV or XLSX spreadsheets with zero processing lag. Set dynamic attributes like <code>{`{{1}}`}</code> and <code>{`{{2}}`}</code> to personalize each message.
+                </p>
+                <div className="bg-[#F9F7F4] rounded-xl overflow-hidden border border-[#E8E3DA]">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#E8E3DA] text-[#3E3B36] uppercase tracking-wider">
+                      <tr><th className="p-3">Customer Name</th><th className="p-3">Phone</th><th className="p-3">Tag</th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E8E3DA] text-[#8B8378]">
+                      <tr><td className="p-3 font-semibold text-[#3E3B36]">Aliya K.</td><td className="p-3 font-mono">919876543210</td><td className="p-3"><span className="bg-[#C4A896]/20 text-[#C4A896] px-2 py-0.5 rounded font-bold">VIP</span></td></tr>
+                      <tr><td className="p-3 font-semibold text-[#3E3B36]">Rahul M.</td><td className="p-3 font-mono">919876543211</td><td className="p-3"><span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded font-bold">NEW</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Enterprise Meta Mode */}
+              <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-2xl p-8 shadow-sm">
+                <h3 className="text-xl font-bold text-[#3E3B36] mb-3">Enterprise Meta Mode: Smart Template Polish AI</h3>
+                <p className="text-sm text-[#8B8378] leading-relaxed mb-6">
+                  Turn raw business notes into luxury customer copy designed specifically for official Meta approvals. Our AI optimizes spacing, tone, and grammar while strictly preserving essential compliance placeholders like <code>{`{{1}}`}</code>.
+                </p>
+                <div className="space-y-3">
+                  <div className="bg-red-50 border border-red-100 p-3 rounded-lg">
+                    <p className="text-[10px] uppercase font-bold text-red-500 mb-1">Raw Input</p>
+                    <p className="text-sm text-[#3E3B36]">hi sir we have new stock pls buy come to shop.</p>
+                  </div>
+                  <div className="bg-emerald-50 border border-emerald-100 p-3 rounded-lg">
+                    <p className="text-[10px] uppercase font-bold text-emerald-600 mb-1">✦ Polished (Meta API)</p>
+                    <p className="text-sm text-[#3E3B36]">Hi {`{{1}}`}! Exclusive new stock has just arrived at {`{{2}}`}. Visit us today to secure yours before it's gone. ✨</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 3 & 4 */}
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Small Business QR Mode */}
+              <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-2xl p-8 shadow-sm">
+                <h3 className="text-xl font-bold text-[#3E3B36] mb-3">Small Business QR Mode: AI Ready-For-You</h3>
+                <p className="text-sm text-[#8B8378] leading-relaxed mb-6">
+                  Maximize inbox delivery with built-in Anti-Ban Spintax technology. Write one broadcast message, and our AI dynamically spins it into hundreds of unique variations sent across the QR bridge—safeguarded by 5 to 12-second randomized throttling.
+                </p>
+                <div className="bg-[#1f2937] border border-gray-700 p-4 rounded-xl text-green-400 font-mono text-xs">
+                  <p className="text-gray-400 mb-2">// Anti-Ban Spintax Engine</p>
+                  <p>"{`{Hello|Hi|Hey}`}" Aliya! We missed you.</p>
+                  <p>"{`{Greetings|Welcome back}`}" Rahul! Check out our new stock.</p>
+                </div>
+              </div>
+
+              {/* Deep Real-Time Analytics Dashboard */}
+              <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-2xl p-8 shadow-sm">
+                <h3 className="text-xl font-bold text-[#3E3B36] mb-3">Deep Real-Time Analytics Dashboard</h3>
+                <p className="text-sm text-[#8B8378] leading-relaxed mb-6">
+                  Track Sent, Delivered (Double-Tick), and Read (Blue-Tick) status logs in absolute real-time. Know exactly who read your campaign and optimize your retail marketing spend.
+                </p>
+                <div className="bg-[#F9F7F4] p-4 rounded-xl border border-[#E8E3DA] flex items-center justify-between">
+                  <div className="relative w-24 h-24 rounded-full border-8 border-[#10B981] flex items-center justify-center bg-white shadow-sm">
+                    <span className="text-2xl font-black text-[#3E3B36]">85%</span>
+                  </div>
+                  <div className="flex-1 ml-6 space-y-2">
+                    <div className="flex justify-between text-xs font-bold"><span className="text-[#10B981]">Read (85%)</span></div>
+                    <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden"><div className="bg-[#10B981] h-full w-[85%]"></div></div>
+                    <div className="flex justify-between text-xs font-bold"><span className="text-blue-500">Delivered (12%)</span></div>
+                    <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden"><div className="bg-blue-500 h-full w-[12%]"></div></div>
+                    <div className="flex justify-between text-xs font-bold"><span className="text-red-500">Failed (3%)</span></div>
+                    <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden"><div className="bg-red-500 h-full w-[3%]"></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 3.95 — EMAIL MARKETING
+      ══════════════════════════════════════════════════════════ */}
+      <section className="bg-white py-24 scroll-reveal-section border-t border-[#E8E3DA]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
+            <span className="bg-[#6366f1]/10 text-[#6366f1] text-[10px] font-bold px-3 py-1 uppercase tracking-widest rounded-full mb-4 inline-block">New · Email Marketing</span>
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-6">
+              Now Broadcast via Email — With AI That Writes For You.
+            </h2>
+            <p className="text-base leading-relaxed text-[#8B8378]">
+              Launch full-scale email campaigns to your segmented audience. Our built-in AI Polish engine transforms rough drafts into premium, conversion-optimised copy in a single click.
+            </p>
+          </div>
+
+          <div className="bg-[#F5F1EA] rounded-[2rem] border border-[#E8E3DA] p-4 md:p-8 mb-16 shadow-lg gsap-reveal">
+            <div className="bg-white rounded-xl shadow-sm border border-[#E8E3DA] overflow-hidden flex flex-col md:flex-row">
+              <div className="flex-1 p-6 border-b md:border-b-0 md:border-r border-[#E8E3DA]">
+                <div className="flex items-center justify-between mb-6">
+                  <p className="text-xs font-bold text-[#8B8378] uppercase font-mono">dashboard/email/create</p>
+                  <button className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-[10px] px-3 py-1.5 rounded shadow-sm font-bold flex items-center gap-1">🪄 AI Polish</button>
+                </div>
+                <div className="w-full h-24 bg-[#F9F7F4] rounded-lg border-2 border-dashed border-[#E8E3DA] flex items-center justify-center text-[#8B8378] text-xs font-bold mb-6">
+                  Attach Header Banner Area
+                </div>
+                <div className="mb-6">
+                  <p className="text-[10px] font-bold text-[#8B8378] uppercase mb-2">Subject Line</p>
+                  <div className="w-full border border-[#E8E3DA] bg-gray-50 rounded p-2.5 text-sm text-[#3E3B36] font-semibold shadow-inner">🎁 Exclusive Offer Just For You — Limited Stock!</div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-[#8B8378] uppercase mb-2 flex items-center gap-2">Email Body <span className="bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded text-[9px]">🤖 Ask AI to Write (Gemini/Groq)</span></p>
+                  <div className="w-full border border-[#E8E3DA] bg-gray-50 rounded p-3 text-sm text-gray-400 line-through">hi customer we have sale going on. come and buy. very good quality.</div>
+                  <div className="w-full border-l-4 border-indigo-400 bg-indigo-50 rounded-r p-4 text-sm text-indigo-900 font-medium mt-3 shadow-sm">
+                    <span className="text-indigo-600 font-black block mb-1">✦ AI Polished</span> Dear valued customer, our exclusive Eid collection is here — premium quality, limited pieces. Shop now before it sells out. ✨
+                  </div>
+                </div>
+              </div>
+              <div className="w-full md:w-72 bg-[#F9F7F4] p-6 flex flex-col">
+                <p className="text-[10px] font-bold text-[#8B8378] uppercase mb-4 border-b border-[#E8E3DA] pb-2">Targeting Segment:</p>
+                <div className="space-y-3 mb-6">
+                  <label className="flex items-center gap-2 text-sm text-[#3E3B36] font-medium"><input type="checkbox" checked readOnly className="rounded text-indigo-600 w-4 h-4" /> VIP</label>
+                  <label className="flex items-center gap-2 text-sm text-[#3E3B36] font-medium"><input type="checkbox" checked readOnly className="rounded text-indigo-600 w-4 h-4" /> Regular</label>
+                  <label className="flex items-center gap-2 text-sm text-[#3E3B36] font-medium"><input type="checkbox" readOnly className="rounded text-gray-300 w-4 h-4" /> New</label>
+                </div>
+                <div className="mt-auto bg-white p-4 rounded-xl border border-[#E8E3DA] text-center shadow-sm">
+                  <p className="text-2xl font-black text-[#3E3B36]">1,240 <span className="text-[10px] font-normal text-[#8B8378] block">Ready to send recipients</span></p>
+                  <p className="text-[9px] text-[#C4A896] font-bold uppercase mt-2">1 credit per email</p>
+                </div>
+                <button className="w-full bg-[#111827] text-white font-bold text-sm py-3 rounded-lg shadow mt-4 hover:bg-black transition-colors uppercase tracking-widest">Dispatch</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 gsap-reveal">
+            <div className="bg-[#F5F1EA] p-5 rounded-xl border border-[#E8E3DA] hover:border-indigo-200 transition-colors">
+              <div className="text-indigo-500 font-bold mb-2 text-lg">✦</div>
+              <h4 className="font-bold text-sm text-[#3E3B36] mb-2 leading-tight">Layout & Ask AI Framework</h4>
+              <p className="text-[11px] text-[#8B8378] leading-relaxed">Attach banners, write dynamic subjects, and use the "🤖 Ask AI to Write" to instantly generate premium copy.</p>
+            </div>
+            <div className="bg-[#F5F1EA] p-5 rounded-xl border border-[#E8E3DA] hover:border-[#C4A896]/50 transition-colors">
+              <div className="text-[#C4A896] font-bold mb-2 text-lg">◎</div>
+              <h4 className="font-bold text-sm text-[#3E3B36] mb-2 leading-tight">Tag-Based Audience Targeting</h4>
+              <p className="text-[11px] text-[#8B8378] leading-relaxed">Trigger precision sends using dynamic targeting tags for VIP, Regular, and New segments. Counts update instantly.</p>
+            </div>
+            <div className="bg-[#F5F1EA] p-5 rounded-xl border border-[#E8E3DA] hover:border-[#10B981]/50 transition-colors">
+              <div className="text-[#10B981] font-bold mb-2 text-lg">◈</div>
+              <h4 className="font-bold text-sm text-[#3E3B36] mb-2 leading-tight">Dedicated Analytics Routing</h4>
+              <p className="text-[11px] text-[#8B8378] leading-relaxed">Access History with aggregate blocks (Total Sent | Success | Delivered | Failed) equipped with Search, Sort, and Infinite Scrolling.</p>
+            </div>
+            <div className="bg-[#F5F1EA] p-5 rounded-xl border border-[#E8E3DA] hover:border-blue-300 transition-colors">
+              <div className="text-blue-500 font-bold mb-2 text-lg">⬇</div>
+              <h4 className="font-bold text-sm text-[#3E3B36] mb-2 leading-tight">Dual-Mode Exporting Manifests</h4>
+              <p className="text-[11px] text-[#8B8378] leading-relaxed">Download intelligence with "Export All Data" or "Export Filtered View" for instant CSV/Excel manifests.</p>
+            </div>
+            <div className="bg-[#F5F1EA] p-5 rounded-xl border border-[#E8E3DA] hover:border-red-300 transition-colors">
+              <div className="text-red-500 font-bold mb-2 text-lg">🛡️</div>
+              <h4 className="font-bold text-sm text-[#3E3B36] mb-2 leading-tight">Safety Transaction Popup Modal</h4>
+              <p className="text-[11px] text-[#8B8378] leading-relaxed">Operate with zero fear. A mandatory secure firewall popup requires manual verification before triggering any dispatch.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 3.96 — QR LEADS MANAGEMENT
+      ══════════════════════════════════════════════════════════ */}
+      <section className="bg-[#F9F7F4] py-24 scroll-reveal-section border-t border-[#E8E3DA]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
+            <span className="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-3 py-1 uppercase tracking-widest rounded-full mb-4 inline-block">Walk-In Audience Growth</span>
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-6">
+              In-Store Scan Leads & vCard Pipeline.
+            </h2>
+            <p className="text-base leading-relaxed text-[#8B8378]">
+              Never let a walk-in customer leave unnoticed. Instantly capture their WhatsApp, drop Loyalty Credits, and sync them securely into a real-time CRM with one scan.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="md:col-span-1 space-y-6">
+              <div className="gsap-reveal bg-white p-6 rounded-2xl border border-[#E8E3DA] shadow-sm hover:border-emerald-200 transition-colors">
+                <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600 mb-4 border border-emerald-100"><Smartphone size={20} /></div>
+                <h3 className="font-bold text-[#3E3B36] mb-2">Instant Walk-In Capture</h3>
+                <p className="text-sm text-[#8B8378] leading-relaxed">The moment they scan your counter QR code and send the trigger text, their verified WhatsApp number is securely added to your unified Dashboard.</p>
+              </div>
+              <div className="gsap-reveal bg-white p-6 rounded-2xl border border-[#E8E3DA] shadow-sm hover:border-blue-200 transition-colors">
+                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 mb-4 border border-blue-100"><Contact size={20} /></div>
+                <h3 className="font-bold text-[#3E3B36] mb-2">Automated vCard Address Book Sync</h3>
+                <p className="text-sm text-[#8B8378] leading-relaxed">Our cloud immediately replies with a native vCard. The customer saves your exact business details to their phonebook with one tap—bypassing future spam folders.</p>
+              </div>
+              <div className="gsap-reveal bg-white p-6 rounded-2xl border border-[#E8E3DA] shadow-sm hover:border-[#C4A896]/50 transition-colors">
+                <div className="w-10 h-10 bg-[#C4A896]/10 rounded-lg flex items-center justify-center text-[#C4A896] mb-4 border border-[#C4A896]/20"><Zap size={20} /></div>
+                <h3 className="font-bold text-[#3E3B36] mb-2">Infinite Scroll Leads Dashboard</h3>
+                <p className="text-sm text-[#8B8378] leading-relaxed">Manage thousands of leads effortlessly. The QR Leads manager supports real-time sync, deep search, and high-performance infinite scrolling natively.</p>
+              </div>
+            </div>
+            <div className="md:col-span-2 gsap-reveal">
+              <div className="w-full h-full bg-[#111827] rounded-3xl p-2 shadow-2xl relative overflow-hidden flex flex-col">
+                <div className="bg-[#1f2937] h-12 rounded-t-2xl flex items-center px-4 justify-between border-b border-gray-700">
+                  <div className="flex gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500"></div><div className="w-3 h-3 rounded-full bg-yellow-500"></div><div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  </div>
+                  <span className="text-gray-400 text-xs font-mono">dashboard/qr-leads</span>
+                </div>
+                <div className="flex-1 bg-[#F9F7F4] rounded-b-2xl p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h4 className="text-lg font-bold text-[#3E3B36]">Scan Leads Database</h4>
+                      <p className="text-xs text-[#8B8378]">Tracking new walk-in acquisitions.</p>
+                    </div>
+                    <button className="bg-emerald-100 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-lg text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 shadow-sm">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      Listening for Scans...
+                    </button>
+                  </div>
+                  <div className="bg-white rounded-xl border border-[#E8E3DA] overflow-hidden shadow-sm">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-[#F5F1EA] text-[#8B8378] text-xs uppercase tracking-wider border-b border-[#E8E3DA]">
+                        <tr><th className="p-4">Customer Lead</th><th className="p-4">Source</th><th className="p-4">Loyalty Credits</th><th className="p-4">Status</th></tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E8E3DA]">
+                        <tr className="hover:bg-gray-50 transition-colors"><td className="p-4"><p className="font-bold text-[#3E3B36]">+91 98765 43210</p><p className="text-[10px] text-gray-400 mt-1">Just now</p></td><td className="p-4"><span className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-[10px] font-bold border border-blue-100">QR Counter #1</span></td><td className="p-4 font-mono font-bold text-emerald-600 bg-emerald-50/50 rounded m-2 inline-block px-2">+5 Credits</td><td className="p-4"><span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold">vCard Sent</span></td></tr>
+                        <tr className="hover:bg-gray-50 transition-colors"><td className="p-4"><p className="font-bold text-[#3E3B36]">+91 98765 11111</p><p className="text-[10px] text-gray-400 mt-1">10 mins ago</p></td><td className="p-4"><span className="bg-indigo-50 text-indigo-600 px-2 py-1 rounded text-[10px] font-bold border border-indigo-100">QR Display Window</span></td><td className="p-4 font-mono font-bold text-emerald-600 bg-emerald-50/50 rounded m-2 inline-block px-2">+5 Credits</td><td className="p-4"><span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold">vCard Sent</span></td></tr>
+                        <tr className="hover:bg-gray-50 transition-colors"><td className="p-4"><p className="font-bold text-[#3E3B36]">+91 99999 88888</p><p className="text-[10px] text-gray-400 mt-1">2 hours ago</p></td><td className="p-4"><span className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-[10px] font-bold border border-blue-100">QR Counter #1</span></td><td className="p-4 font-mono font-bold text-emerald-600 bg-emerald-50/50 rounded m-2 inline-block px-2">+5 Credits</td><td className="p-4"><span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-[10px] font-bold">Processed</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
