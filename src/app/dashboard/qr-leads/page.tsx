@@ -23,6 +23,8 @@ interface QRLead {
   whatsapp_number: string;
   tags: string[];
   created_at: string;
+  serial_number: number;
+  is_exported_to_vcf: boolean;
 }
 
 export default function QRLeadsPage() {
@@ -30,6 +32,7 @@ export default function QRLeadsPage() {
   const [latestLeads, setLatestLeads] = useState<QRLead[]>([]);
   const [todayStats, setTodayStats] = useState<QRAnalytics>({ scans: 0, credits_consumed: 0 });
   const [totalAudience, setTotalAudience] = useState(0);
+  const [creditsUsed, setCreditsUsed] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const { showToast } = useToast();
 
@@ -46,6 +49,8 @@ export default function QRLeadsPage() {
   const [isFetchingBatch, setIsFetchingBatch] = useState(false);
   const observerTarget = useRef<HTMLDivElement>(null);
   const PAGE_SIZE = 20;
+
+  const [syncedCount, setSyncedCount] = useState(0);
 
   // Refs for stable callbacks
   const isFetchingRef = useRef(false);
@@ -69,6 +74,17 @@ export default function QRLeadsPage() {
           .single();
 
         if (shopData) setShop(shopData);
+
+        // Fetch credits_used from wallets
+        const { data: walletData } = await supabase
+          .from('wallets')
+          .select('credits_used')
+          .eq('shop_id', user.id)
+          .maybeSingle();
+
+        if (walletData && walletData.credits_used) {
+          setCreditsUsed(Number(walletData.credits_used));
+        }
 
         const todayStr = new Date().toISOString().split('T')[0];
         const { data: analyticsData } = await supabase
@@ -95,7 +111,18 @@ export default function QRLeadsPage() {
           .limit(5);
 
         if (count !== null) setTotalAudience(count);
-        if (latestData) setLatestLeads(latestData);
+        if (latestData) {
+           setLatestLeads(latestData);
+        }
+
+        // Fetch Synced Count
+        const { count: syncCount } = await supabase
+          .from('customers_master')
+          .select('*', { count: 'exact', head: true })
+          .eq('shop_id', user.id)
+          .contains('tags', ['IN_STORE_QR_LEAD'])
+          .eq('is_exported_to_vcf', true);
+        if (syncCount !== null) setSyncedCount(syncCount);
 
         const channel = supabase
           .channel(`qr-leads-updates-${user.id}`)
@@ -103,11 +130,11 @@ export default function QRLeadsPage() {
             'postgres_changes',
             { event: 'INSERT', schema: 'public', table: 'customers_master', filter: `shop_id=eq.${user.id}` },
             (payload) => {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const newLead = payload.new as any;
               if (newLead.tags && newLead.tags.includes('IN_STORE_QR_LEAD')) {
                 setLatestLeads(prev => [newLead, ...prev].slice(0, 5));
                 setTotalAudience(prev => prev + 1);
+                setCreditsUsed(prev => prev + 1);
                 setTodayStats(prev => ({
                   scans: prev.scans + 1,
                   credits_consumed: prev.credits_consumed + 10
@@ -270,6 +297,36 @@ export default function QRLeadsPage() {
               <h1 className="text-xl serif-headline text-[#3E3B36]">Manage QR Leads</h1>
               <p className="text-[10px] text-[#8B8378] tracking-[0.1em] uppercase">{totalAudience} Total Records</p>
             </div>
+            
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch('/api/whatsapp/export-vcf');
+                  if (!res.ok) throw new Error('Download failed');
+                  
+                  const blob = await res.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'contacts.vcf';
+                  document.body.appendChild(a);
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  
+                  // Instantly mutate local state
+                  setAllLeads(prev => prev.map(lead => ({ ...lead, is_exported_to_vcf: true })));
+                  setSyncedCount(totalAudience);
+                  showToast('Contacts exported successfully!', 'success');
+                } catch (err) {
+                  console.error(err);
+                  showToast('Error exporting contacts', 'error');
+                }
+              }}
+              className="ml-4 flex items-center gap-2 bg-[#3E3B36] text-[#F5F1EA] px-4 py-2 rounded-lg text-xs tracking-wide font-medium shadow-sm hover:bg-[#2A2825] transition-all"
+            >
+              <Download size={16} />
+              📥 Download New Leads for WhatsApp Broadcast
+            </button>
           </div>
           
           <div className="flex items-center gap-3 w-full md:w-auto flex-wrap md:flex-nowrap">
@@ -318,10 +375,10 @@ export default function QRLeadsPage() {
              <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 bg-[#F5F1EA] z-10 shadow-sm">
                   <tr>
+                    <th className="px-6 py-4 text-[10px] tracking-[0.15em] uppercase text-[#8B8378] font-semibold border-b border-[#E8E3DA]">Broadcast ID</th>
                     <th className="px-6 py-4 text-[10px] tracking-[0.15em] uppercase text-[#8B8378] font-semibold border-b border-[#E8E3DA]">Customer Details</th>
-                    <th className="px-6 py-4 text-[10px] tracking-[0.15em] uppercase text-[#8B8378] font-semibold border-b border-[#E8E3DA]">Phone Number</th>
                     <th className="px-6 py-4 text-[10px] tracking-[0.15em] uppercase text-[#8B8378] font-semibold border-b border-[#E8E3DA]">Capture Date</th>
-                    <th className="px-6 py-4 text-[10px] tracking-[0.15em] uppercase text-[#8B8378] font-semibold border-b border-[#E8E3DA]">Lead Status</th>
+                    <th className="px-6 py-4 text-[10px] tracking-[0.15em] uppercase text-[#8B8378] font-semibold border-b border-[#E8E3DA]">Sync Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E8E3DA]">
@@ -337,15 +394,13 @@ export default function QRLeadsPage() {
                       return (
                         <tr key={lead.id} className="hover:bg-[#F5F1EA]/30 transition-colors">
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-[#3E3B36] text-[#F5F1EA] flex items-center justify-center font-bold text-xs uppercase">
-                                {lead.customer_name ? lead.customer_name.charAt(0) : '?'}
-                              </div>
-                              <span className="text-sm font-medium text-[#3E3B36]">{lead.customer_name}</span>
-                            </div>
+                            <span className="text-sm font-bold text-[#3E3B36]">C{lead.serial_number || '-'}</span>
                           </td>
                           <td className="px-6 py-4">
-                            <span className="text-sm text-[#8B8378] font-mono">{lead.whatsapp_number}</span>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-[#3E3B36]">{lead.customer_name}</span>
+                              <span className="text-xs text-[#8B8378] font-mono">{lead.whatsapp_number}</span>
+                            </div>
                           </td>
                           <td className="px-6 py-4">
                             <span className="text-sm text-[#8B8378]">
@@ -355,15 +410,15 @@ export default function QRLeadsPage() {
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            {isMissed ? (
-                              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-50 text-red-600 border border-red-100 text-[10px] font-bold tracking-wide">
+                            {!lead.is_exported_to_vcf ? (
+                              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-bold tracking-wide">
                                 <AlertCircle size={14} />
-                                PENDING / MISSED
+                                🆕 New / Unsaved
                               </div>
                             ) : (
                               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold tracking-wide">
                                 <CheckCircle2 size={14} />
-                                ACTIVE
+                                ✅ Saved to Phone
                               </div>
                             )}
                           </td>
@@ -449,9 +504,25 @@ export default function QRLeadsPage() {
                 <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center">
                   <Flame size={16} className="text-orange-500" />
                 </div>
-                <p className="text-xs tracking-[0.15em] uppercase text-[#8B8378]">QR Audience</p>
+                <p className="text-xs tracking-[0.15em] uppercase text-[#8B8378]">VCF Syncing Progress</p>
               </div>
-              <p className="text-3xl serif-headline text-[#3E3B36]">{totalAudience}</p>
+              <p className="text-3xl serif-headline text-[#3E3B36] mb-3">
+                {syncedCount} / {totalAudience} <span className="text-lg text-[#8B8378]">Saved</span>
+              </p>
+              
+              {/* Progress Bar Chart */}
+              <div className="space-y-1.5">
+                 <div className="flex justify-between text-[10px] uppercase tracking-wider text-[#8B8378] font-semibold">
+                   <span>Sync Progress</span>
+                   <span>{totalAudience > 0 ? Math.round((syncedCount / totalAudience) * 100) : 0}%</span>
+                 </div>
+                 <div className="w-full h-1.5 bg-[#F5F1EA] rounded-full overflow-hidden">
+                   <div 
+                     className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out"
+                     style={{ width: `${totalAudience > 0 ? (syncedCount / totalAudience) * 100 : 0}%` }}
+                   />
+                 </div>
+              </div>
             </div>
 
             <div className="bg-white p-6 rounded-2xl border border-[#E8E3DA] shadow-sm hover:border-[#C4A896] transition-colors">
@@ -461,7 +532,7 @@ export default function QRLeadsPage() {
                 </div>
                 <p className="text-xs tracking-[0.15em] uppercase text-[#8B8378]">Credits Used</p>
               </div>
-              <p className="text-3xl serif-headline text-[#3E3B36]">{todayStats.credits_consumed}</p>
+              <p className="text-3xl serif-headline text-[#3E3B36]">{creditsUsed}</p>
             </div>
           </div>
 

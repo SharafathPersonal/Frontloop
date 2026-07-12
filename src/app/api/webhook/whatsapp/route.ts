@@ -198,6 +198,9 @@ export async function POST(req: Request) {
                           source: 'QR_SCAN',
                           loyalty_credits: 5
                         });
+                        
+                        // Increment credits_used for a NEW unique lead
+                        await adminSupabase.rpc('increment_credits_used', { p_shop_id: shopId });
                       }
                       console.log("💾 [DB SUCCESS] Lead successfully captured and isolated under IN_STORE_QR_LEAD tag!");
                     } catch (dbError) {

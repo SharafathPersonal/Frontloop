@@ -100,6 +100,7 @@ export type ShopUpdate = Partial<ShopInsert>;
 export interface Wallet {
   shop_id: string;            // FK → shops.id
   credits_remaining: number;  // bigint, always >= 0
+  credits_used: number;       // bigint, tracks used credits
   updated_at: string;
 }
 
