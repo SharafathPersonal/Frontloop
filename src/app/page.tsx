@@ -201,7 +201,7 @@ export default function LandingPage() {
       ══════════════════════════════════════════════════════════ */}
       <section
         ref={heroRef}
-        className="w-full min-h-screen relative flex flex-col justify-center py-20 lg:py-32 bg-[#3E3B36] overflow-hidden"
+        className="w-full relative flex flex-col justify-center pt-24 pb-12 lg:pt-32 lg:pb-24 bg-[#3E3B36]"
       >
         {/* Ambient glow layers */}
         <div
@@ -214,7 +214,7 @@ export default function LandingPage() {
           }}
         />
 
-        <div className="relative max-w-7xl mx-auto px-6 w-full h-auto mt-20">
+        <div className="relative max-w-7xl mx-auto px-6 w-full h-auto mt-12 lg:mt-20">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
             {/* ── Left Column ──────────────────────────────────── */}
@@ -282,7 +282,7 @@ export default function LandingPage() {
             </div>
 
             {/* ── Right Column — 5-Block Cluster Mockup ── */}
-            <div className="gsap-reveal relative w-full max-w-full h-[400px] sm:h-[500px] lg:h-[540px] perspective-1000 scale-[0.7] sm:scale-90 lg:scale-100 origin-top flex-shrink-0 mt-8 lg:mt-0 overflow-hidden sm:overflow-visible">
+            <div className="gsap-reveal relative w-full h-[400px] sm:h-[500px] lg:h-[540px] perspective-1000 scale-[0.75] sm:scale-90 lg:scale-100 origin-top flex-shrink-0 mt-8 lg:mt-0">
               
               {/* Block 1: Campaign Dashboard (Meta API) */}
               <div className="absolute left-0 top-12 w-[260px] bg-white rounded-xl shadow-2xl border border-[#E8E3DA] p-4 transform -rotate-6 hover:rotate-0 transition-all duration-500 z-10">
@@ -397,7 +397,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════════
           SECTION 2.5 — PROBLEM VS SOLUTION MATRIX
       ══════════════════════════════════════════════════════════ */}
-      <section id="solutions" className="py-24 overflow-hidden bg-white border-b border-[#E8E3DA]">
+      <section id="solutions" className="pt-16 pb-20 sm:py-24 overflow-hidden bg-white border-b border-[#E8E3DA]">
         <div className="max-w-6xl mx-auto px-6">
           <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
             <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#C4A896' }}>The Industry Trap</p>
@@ -1157,8 +1157,9 @@ export default function LandingPage() {
                       Listening for Scans...
                     </button>
                   </div>
-                  <div className="bg-white rounded-xl border border-[#E8E3DA] overflow-hidden shadow-sm">
-                    <table className="w-full text-left text-sm">
+                  <div className="bg-white rounded-xl border border-[#E8E3DA] shadow-sm">
+                    <div className="w-full overflow-x-auto scrollbar-none">
+                    <table className="w-full text-left text-sm min-w-[600px]">
                       <thead className="bg-[#F5F1EA] text-[#8B8378] text-xs uppercase tracking-wider border-b border-[#E8E3DA]">
                         <tr><th className="p-4">Customer Lead</th><th className="p-4">Source</th><th className="p-4">Loyalty Credits</th><th className="p-4">Status</th></tr>
                       </thead>
@@ -1168,6 +1169,7 @@ export default function LandingPage() {
                         <tr className="hover:bg-gray-50 transition-colors"><td className="p-4"><p className="font-bold text-[#3E3B36]">+91 99999 88888</p><p className="text-[10px] text-gray-400 mt-1">2 hours ago</p></td><td className="p-4"><span className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-[10px] font-bold border border-blue-100">QR Counter #1</span></td><td className="p-4 font-mono font-bold text-emerald-600 bg-emerald-50/50 rounded m-2 inline-block px-2">+5 Credits</td><td className="p-4"><span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-[10px] font-bold">Processed</span></td></tr>
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 </div>
               </div>
