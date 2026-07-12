@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import type { Campaign } from '@/types/broadcast';
-import { Radio, ArrowRight, RefreshCw } from 'lucide-react';
+import { Radio, ArrowRight, RefreshCw, Lock } from 'lucide-react';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import {
@@ -45,6 +45,7 @@ function cleanFailureReason(reason?: string | null): string {
 export default function CampaignsLedgerPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading]     = useState(true);
+  const [mode, setMode]           = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -220,12 +221,16 @@ export default function CampaignsLedgerPage() {
 
       // Re-usable fetch closure — called on mount and on each realtime event
       const fetchCampaigns = async () => {
-        const { data, error } = await supabase
-          .from('campaigns')
-          .select('*')
-          .eq('shop_id', user.id)
-          .order('created_at', { ascending: false });
+        const [{ data: shopData }, { data, error }] = await Promise.all([
+          supabase.from('shops').select('whatsapp_mode').eq('id', user.id).maybeSingle(),
+          supabase
+            .from('campaigns')
+            .select('*')
+            .eq('shop_id', user.id)
+            .order('created_at', { ascending: false })
+        ]);
 
+        if (shopData) setMode(shopData.whatsapp_mode || 'NONE');
         if (!error && data) setCampaigns(data as Campaign[]);
       };
 
@@ -332,6 +337,26 @@ export default function CampaignsLedgerPage() {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="w-8 h-8 border-2 border-[#E8E3DA] border-t-[#C4A896] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (mode !== 'META_API') {
+    return (
+      <div className="max-w-md mx-auto text-center py-20 bg-white border border-[#E8E3DA] rounded-xl p-8 shadow-sm mt-12">
+        <div className="w-12 h-12 rounded-full bg-[#F5F1EA] flex items-center justify-center mx-auto mb-4">
+          <Lock className="text-[#C4A896]" size={20} />
+        </div>
+        <h2 className="serif-headline text-lg text-[#3E3B36] mb-2">Meta API Feature Only</h2>
+        <p className="text-xs text-[#8B8378] leading-relaxed mb-6">
+          Message templates and Meta approvals are only available when using the Meta Official API mode.
+        </p>
+        <Link
+          href="/dashboard/settings"
+          className="btn-primary rounded-lg text-xs inline-block"
+        >
+          Go to Settings
+        </Link>
       </div>
     );
   }
