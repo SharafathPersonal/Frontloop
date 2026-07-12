@@ -239,8 +239,8 @@ export default function ManageQRLeadsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-[80vh] items-center justify-center bg-[#111827]">
-        <div className="w-8 h-8 border-2 border-neutral-700 border-t-emerald-500 rounded-full animate-spin" />
+      <div className="flex h-[80vh] items-center justify-center bg-[#F5F1EA]">
+        <div className="w-8 h-8 border-2 border-[#E8E3DA] border-t-[#C4A896] rounded-full animate-spin" />
       </div>
     );
   }
@@ -248,16 +248,16 @@ export default function ManageQRLeadsPage() {
   const unsavedCount = allLeads.filter(l => !l.is_saved_to_phone).length;
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#111827] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-[#F5F1EA] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
       {/* Top Control Bar */}
-      <div className="bg-[#1f2937] border-b border-neutral-800 px-6 py-4 flex flex-col md:flex-row gap-4 items-center justify-between shrink-0 shadow-sm z-10">
+      <div className="bg-white border-b border-[#E8E3DA] px-6 py-4 flex flex-col md:flex-row gap-4 items-center justify-between shrink-0 shadow-sm z-10">
         <div className="flex items-center gap-4 w-full md:w-auto">
-          <button onClick={() => router.push('/dashboard/qr-leads')} className="p-2 hover:bg-neutral-800 rounded-lg transition-colors text-neutral-400">
+          <button onClick={() => router.push('/dashboard/qr-leads')} className="p-2 hover:bg-[#F5F1EA] rounded-lg transition-colors text-[#8B8378]">
             <X size={20} />
           </button>
           <div>
-            <h1 className="text-xl serif-headline text-white">Manage QR Leads</h1>
-            <p className="text-[10px] text-neutral-400 tracking-[0.1em] uppercase">{totalAudience} Total Records</p>
+            <h1 className="text-xl serif-headline text-[#3E3B36]">Manage QR Leads</h1>
+            <p className="text-[10px] text-[#8B8378] tracking-[0.1em] uppercase">{totalAudience} Total Records</p>
           </div>
           
           <button
@@ -274,22 +274,22 @@ export default function ManageQRLeadsPage() {
         
         <div className="flex items-center gap-3 w-full md:w-auto flex-wrap md:flex-nowrap">
           <div className="relative w-full md:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B8378]" size={16} />
             <input 
               type="text" 
               placeholder="Search name or phone..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-sm text-white focus:outline-none focus:border-neutral-500 transition-all placeholder:text-neutral-500"
+              className="w-full pl-9 pr-4 py-2 rounded-lg border border-[#E8E3DA] bg-white text-sm text-[#3E3B36] focus:outline-none focus:border-[#C4A896] transition-all placeholder:text-[#8B8378]"
             />
           </div>
           
-          <div className="flex items-center gap-2 border border-neutral-700 rounded-lg p-1 bg-neutral-800">
-            <Filter size={14} className="text-neutral-400 ml-2" />
+          <div className="flex items-center gap-2 border border-[#E8E3DA] rounded-lg p-1 bg-white">
+            <Filter size={14} className="text-[#8B8378] ml-2" />
             <select 
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-transparent text-xs font-medium text-white py-1.5 pr-2 focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs font-medium text-[#3E3B36] py-1.5 pr-2 focus:outline-none cursor-pointer"
             >
               <option value="all">All Status</option>
               <option value="active">Active Leads</option>
@@ -297,12 +297,12 @@ export default function ManageQRLeadsPage() {
             </select>
           </div>
 
-          <div className="flex items-center gap-2 border border-neutral-700 rounded-lg p-1 bg-neutral-800">
-            <ArrowUpDown size={14} className="text-neutral-400 ml-2" />
+          <div className="flex items-center gap-2 border border-[#E8E3DA] rounded-lg p-1 bg-white">
+            <ArrowUpDown size={14} className="text-[#8B8378] ml-2" />
             <select 
               value={sortOption}
               onChange={(e) => setSortOption(e.target.value)}
-              className="bg-transparent text-xs font-medium text-white py-1.5 pr-2 focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs font-medium text-[#3E3B36] py-1.5 pr-2 focus:outline-none cursor-pointer"
             >
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
@@ -314,39 +314,39 @@ export default function ManageQRLeadsPage() {
 
       {/* Scrollable Table Area */}
       <div className="flex-1 overflow-y-auto p-6 md:p-8">
-        <div className="max-w-7xl mx-auto bg-[#1f2937] rounded-[1.5rem] border border-neutral-800 shadow-2xl overflow-hidden">
+        <div className="max-w-7xl mx-auto bg-white rounded-[1.5rem] border border-[#E8E3DA] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
            <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 bg-[#111827] z-10 shadow-sm border-b border-neutral-800">
+              <thead className="sticky top-0 bg-[#F9F7F4] z-10 shadow-sm border-b border-[#E8E3DA]">
                 <tr>
-                  <th className="px-6 py-5 text-[10px] tracking-[0.15em] uppercase text-neutral-400 font-semibold border-b border-neutral-800">Broadcast ID</th>
-                  <th className="px-6 py-5 text-[10px] tracking-[0.15em] uppercase text-neutral-400 font-semibold border-b border-neutral-800">Customer Details</th>
-                  <th className="px-6 py-5 text-[10px] tracking-[0.15em] uppercase text-neutral-400 font-semibold border-b border-neutral-800">Capture Date</th>
-                  <th className="px-6 py-5 text-[10px] tracking-[0.15em] uppercase text-neutral-400 font-semibold border-b border-neutral-800">Sync Status</th>
-                  <th className="px-6 py-5 text-[10px] tracking-[0.15em] uppercase text-neutral-400 font-semibold border-b border-neutral-800">Added to Broadcast</th>
+                  <th className="px-6 py-5 text-[10px] tracking-[0.15em] uppercase text-[#8B8378] font-bold border-b border-[#E8E3DA]">Broadcast ID</th>
+                  <th className="px-6 py-5 text-[10px] tracking-[0.15em] uppercase text-[#8B8378] font-bold border-b border-[#E8E3DA]">Customer Details</th>
+                  <th className="px-6 py-5 text-[10px] tracking-[0.15em] uppercase text-[#8B8378] font-bold border-b border-[#E8E3DA]">Capture Date</th>
+                  <th className="px-6 py-5 text-[10px] tracking-[0.15em] uppercase text-[#8B8378] font-bold border-b border-[#E8E3DA]">Sync Status</th>
+                  <th className="px-6 py-5 text-[10px] tracking-[0.15em] uppercase text-[#8B8378] font-bold border-b border-[#E8E3DA]">Added to Broadcast</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-800">
+              <tbody className="divide-y divide-[#E8E3DA]">
                 {allLeads.length === 0 && !isFetchingBatch ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-neutral-500 text-sm">
+                    <td colSpan={5} className="px-6 py-12 text-center text-[#8B8378] text-sm">
                       No leads found matching your criteria.
                     </td>
                   </tr>
                 ) : (
                   allLeads.map((lead) => {
                     return (
-                      <tr key={lead.id} className="hover:bg-neutral-800/50 transition-colors">
+                      <tr key={lead.id} className="hover:bg-[#F5F1EA]/50 transition-colors">
                         <td className="px-6 py-5">
-                          <span className="text-sm font-bold text-neutral-300">C-</span>
+                          <span className="text-sm font-bold text-[#3E3B36]">C-</span>
                         </td>
                         <td className="px-6 py-5">
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium text-white">{lead.customer_name}</span>
-                            <span className="text-xs text-neutral-400 font-mono">{lead.whatsapp_number}</span>
+                            <span className="text-sm font-medium text-[#3E3B36]">{lead.customer_name}</span>
+                            <span className="text-xs text-[#8B8378] font-mono">{lead.whatsapp_number}</span>
                           </div>
                         </td>
                         <td className="px-6 py-5">
-                          <span className="text-sm text-neutral-400">
+                          <span className="text-sm text-[#8B8378]">
                             {new Date(lead.created_at).toLocaleDateString(undefined, {
                               month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
                             })}
@@ -354,13 +354,13 @@ export default function ManageQRLeadsPage() {
                         </td>
                         <td className="px-6 py-5">
                           {lead.is_saved_to_phone ? (
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold tracking-wide shadow-[0_0_10px_rgba(16,185,129,0.2)]">
-                              <CheckCircle2 size={12} className="text-emerald-400" />
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold tracking-wide shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                              <CheckCircle2 size={12} className="text-emerald-500" />
                               ✓ Synced to Phone
                             </div>
                           ) : (
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold tracking-wide">
-                              <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></div>
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100 text-[10px] font-bold tracking-wide">
+                              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div>
                               Pending Sync
                             </div>
                           )}
@@ -374,7 +374,7 @@ export default function ManageQRLeadsPage() {
                                 checked={lead.is_saved_to_phone || false}
                                 onChange={() => toggleAddedToBroadcast(lead.id, lead.is_saved_to_phone || false)}
                               />
-                              <div className="w-9 h-5 bg-neutral-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                              <div className="w-9 h-5 bg-[#E8E3DA] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
                             </label>
                           </div>
                         </td>
@@ -386,15 +386,15 @@ export default function ManageQRLeadsPage() {
            </table>
            
            {/* Infinite Scroll Trigger & Loader */}
-           <div ref={observerTarget} className="py-6 flex justify-center items-center h-16 bg-[#111827] border-t border-neutral-800">
+           <div ref={observerTarget} className="py-6 flex justify-center items-center h-16 bg-[#F9F7F4] border-t border-[#E8E3DA]">
               {isFetchingBatch && (
-                <div className="flex items-center gap-2 text-emerald-400">
+                <div className="flex items-center gap-2 text-[#C4A896]">
                   <Loader2 size={16} className="animate-spin" />
-                  <span className="text-xs font-medium uppercase tracking-wider">Loading records...</span>
+                  <span className="text-xs font-medium uppercase tracking-wider text-[#8B8378]">Loading records...</span>
                 </div>
               )}
               {!hasMore && allLeads.length > 0 && (
-                <span className="text-xs text-neutral-500 uppercase tracking-wider">End of records</span>
+                <span className="text-xs text-[#8B8378] uppercase tracking-wider">End of records</span>
               )}
            </div>
         </div>
@@ -402,26 +402,26 @@ export default function ManageQRLeadsPage() {
 
       {/* Pre-Confirmation Firewall Modal */}
       {showSyncModal && (
-        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#1f2937] border border-neutral-800 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4 border border-emerald-500/20">
-              <AlertCircle className="text-emerald-400" size={24} />
+        <div className="fixed inset-0 z-[60] bg-[#3E3B36]/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-[#E8E3DA] rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mb-4 border border-emerald-100">
+              <AlertCircle className="text-emerald-500" size={24} />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Sync Contacts to Device Mobile Phone?</h2>
-            <p className="text-sm text-neutral-300 leading-relaxed mb-6">
+            <h2 className="text-xl font-bold text-[#3E3B36] mb-2">Sync Contacts to Device Mobile Phone?</h2>
+            <p className="text-sm text-[#8B8378] leading-relaxed mb-6">
               If you are opening this website on your mobile phone, this action will download a secure smart contact file. Opening the file will automatically batch-save all new customer contacts as C1, C2, C3 directly into your native phone book. This seamlessly whitelists your number on their device for your upcoming broadcast campaigns. Do you wish to proceed?
             </p>
             <div className="flex items-center gap-3 justify-end">
               <button
                 onClick={() => setShowSyncModal(false)}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-neutral-300 hover:bg-neutral-800 transition-colors"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-[#8B8378] hover:bg-[#F5F1EA] transition-colors"
                 disabled={isSyncing}
               >
                 Cancel
               </button>
               <button
                 onClick={handleBulkSync}
-                className="px-4 py-2 rounded-lg text-sm font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors flex items-center gap-2"
+                className="px-4 py-2 rounded-lg text-sm font-bold bg-[#3E3B36] text-[#F5F1EA] hover:bg-[#2A2825] transition-colors flex items-center gap-2 shadow-xl"
                 disabled={isSyncing}
               >
                 {isSyncing ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
