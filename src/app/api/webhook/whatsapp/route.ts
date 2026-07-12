@@ -1,8 +1,89 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import axios from 'axios';
+import crypto from 'crypto';
 
 const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || 'trueattendly_secure_webhook_token';
+
+// ── GATE 1: ACTIVE IN-MEMORY DE-DUPLICATION CACHE ────────────────────────────
+const processedMessageIds = new Map<string, number>();
+
+const isInMemoryDuplicate = (messageId: string): boolean => {
+  if (!messageId) return false;
+  const now = Date.now();
+  
+  // Clean up older keys (TTL: 5 minutes)
+  for (const [id, timestamp] of processedMessageIds.entries()) {
+    if (now - timestamp > 5 * 60 * 1000) {
+      processedMessageIds.delete(id);
+    }
+  }
+  
+  if (processedMessageIds.has(messageId)) {
+    return true;
+  }
+  processedMessageIds.set(messageId, now);
+  return false;
+};
+
+const extractMetaText = (msg: any): string => {
+  if (!msg) return "";
+  
+  if (msg.type === 'text' && msg.text?.body) {
+    return msg.text.body;
+  }
+  if (msg.type === 'image' && msg.image?.caption) {
+    return msg.image.caption;
+  }
+  if (msg.type === 'video' && msg.video?.caption) {
+    return msg.video.caption;
+  }
+  if (msg.type === 'document' && msg.document?.caption) {
+    return msg.document.caption;
+  }
+  
+  // Fallbacks for nested media captions
+  const m = msg.message || msg;
+  if (m.imageMessage?.caption) return m.imageMessage.caption;
+  if (m.videoMessage?.caption) return m.videoMessage.caption;
+  if (m.documentMessage?.caption) return m.documentMessage.caption;
+
+  if (msg.type === 'interactive') {
+    const interactive = msg.interactive;
+    if (interactive?.type === 'button_reply' && interactive.button_reply?.title) {
+      return interactive.button_reply.title;
+    }
+    if (interactive?.type === 'button_reply' && interactive.button_reply?.id) {
+      return interactive.button_reply.id;
+    }
+    if (interactive?.type === 'list_reply' && interactive.list_reply?.title) {
+      return interactive.list_reply.title;
+    }
+    if (interactive?.type === 'list_reply' && interactive.list_reply?.id) {
+      return interactive.list_reply.id;
+    }
+  }
+  if (msg.type === 'button' && msg.button?.text) {
+    return msg.button.text;
+  }
+  
+  return "";
+};
+
+const sanitizeText = (text: string): string => {
+  if (!text) return "";
+  
+  // Remove markdown formatting: *, _, ~
+  let clean = String(text).replace(/[\*\_~]/g, '');
+  
+  // Remove emojis using unicode regex
+  clean = clean.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+  
+  // Replace multiple spaces/tabs/newlines with a single space
+  clean = clean.replace(/\s+/g, ' ');
+  
+  return clean.toLowerCase().trim();
+};
 
 // ============================================================
 // 1. META WEBHOOK VERIFICATION (App Review / Setup)
@@ -21,10 +102,8 @@ export async function GET(req: Request) {
 }
 
 // ============================================================
-// 2. INBOUND MESSAGE STATUS TRACKING
+// 2. INBOUND MESSAGE STATUS TRACKING & PROCESSING
 // ============================================================
-import crypto from 'crypto';
-
 export async function POST(req: Request) {
   try {
     const rawBody = await req.text();
@@ -48,239 +127,63 @@ export async function POST(req: Request) {
 
     const payload = JSON.parse(rawBody);
 
-    // Isolated admin client to bypass RLS for background webhook updates securely
-    const adminSupabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const allowedKeywordsSanitized = [
+      "add me to broadcast",
+      "true attendly connect",
+      "addmetobroadcast",
+      "trueattendlyconnect"
+    ];
+
+    let hasMessages = false;
+    let hasValidMessage = false;
 
     if (payload.object === 'whatsapp_business_account' && payload.entry) {
       for (const entry of payload.entry) {
-        for (const change of entry.changes) {
-          
-          // Parse template status updates
-          if (change.field === 'message_template_status_update' && change.value) {
-            const templateName = change.value.message_template_name;
-            const wabaId = entry.id; // Use WABA ID to scope to the correct shop
-            const metaEvent = change.value.event;
-            const rejectionReason = change.value.reason || null;
-            const metaTemplateId = change.value.message_template_id;
+        if (entry.changes) {
+          for (const change of entry.changes) {
+            const changeValue = change.value;
 
-            let dbStatus: 'PENDING' | 'APPROVED' | 'REJECTED' = 'PENDING';
-            if (metaEvent === 'APPROVED') {
-              dbStatus = 'APPROVED';
-            } else if (['REJECTED', 'PAUSED', 'DISABLED'].includes(metaEvent)) {
-              dbStatus = 'REJECTED';
+            // Block Status/Read Receipts immediately
+            if (changeValue?.statuses) {
+              continue;
             }
 
-            // Scope update by shop via meta_configs WABA ID
-            const { data: metaConfigRow } = await adminSupabase
-              .from('meta_configs')
-              .select('shop_id')
-              .eq('meta_business_id', wabaId)
-              .maybeSingle();
+            if (changeValue?.messages && Array.isArray(changeValue.messages)) {
+              hasMessages = true;
+              for (const msg of changeValue.messages) {
+                const messageId = msg.id;
 
-            if (metaConfigRow?.shop_id) {
-              const updatePayload: any = {
-                status: dbStatus,
-                rejection_reason: rejectionReason,
-                updated_at: new Date().toISOString(),
-              };
-              if (metaTemplateId) updatePayload.meta_template_id = String(metaTemplateId);
-
-              await adminSupabase
-                .from('message_templates')
-                .update(updatePayload)
-                .eq('template_name', templateName)
-                .eq('shop_id', metaConfigRow.shop_id); // SCOPED BY SHOP
-            }
-          }
-          
-          // Parse status updates (sent -> delivered -> read)
-          if (change.value && change.value.statuses) {
-            for (const status of change.value.statuses) {
-              const messageId = status.id;
-              const deliveryStatus = status.status; // 'delivered', 'read', 'failed'
-
-              // 1. Resolve campaign mapping via message_logs
-              const { data: logData } = await adminSupabase
-                .from('message_logs')
-                .select('campaign_id, status')
-                .eq('meta_message_id', messageId)
-                .maybeSingle();
-
-              if (!logData?.campaign_id) continue;
-              const campaignId = logData.campaign_id;
-
-              // Prevent duplicate increments if status already matched (e.g. read event firing twice)
-              if (logData.status === deliveryStatus) continue;
-
-              // 2. Update individual node status in message_logs
-              await adminSupabase
-                .from('message_logs')
-                .update({ status: deliveryStatus })
-                .eq('meta_message_id', messageId);
-
-              // 3. Increment Campaign Aggregates atomically via RPC
-              if (deliveryStatus === 'delivered' || deliveryStatus === 'read' || deliveryStatus === 'failed') {
-                await adminSupabase.rpc('increment_campaign_metric', { 
-                  campaign_row_id: campaignId, 
-                  metric_name: deliveryStatus, 
-                  quantity: 1 
-                });
-              }
-            }
-          }
-
-          // Parse INBOUND messages (e.g. "Add me to Broadcast" QR Lead capture)
-          if (change.value && change.value.messages) {
-            const wabaId = entry.id;
-            const phoneNumberId = change.value.metadata?.phone_number_id;
-
-            const { data: metaConfigRow } = await adminSupabase
-              .from('meta_configs')
-              .select('shop_id, meta_access_token')
-              .eq('meta_business_id', wabaId)
-              .maybeSingle();
-
-            if (metaConfigRow?.shop_id) {
-              const shopId = metaConfigRow.shop_id;
-
-              for (const msg of change.value.messages) {
-                if (msg.type !== 'text') continue;
-
-                const messageText = msg.text?.body || '';
-                if (messageText.trim().toLowerCase() === 'add me to broadcast') {
-                  const customerPhone = msg.from;
-                  const pushName = change.value.contacts?.[0]?.profile?.name || 'QR Walk-in Lead';
-
-                  try {
-                    // 1. Check wallet and fetch shop details
-                    const { data: walletData } = await adminSupabase
-                      .from('wallets')
-                      .select('credits_remaining')
-                      .eq('shop_id', shopId)
-                      .single();
-
-                    const { data: shopInfo } = await adminSupabase
-                      .from('shops')
-                      .select('shop_name, owner_phone')
-                      .eq('id', shopId)
-                      .single();
-
-                    // Fetch dynamic QR cost
-                    const { data: settingData } = await adminSupabase
-                      .from('system_settings')
-                      .select('value')
-                      .eq('key', 'qr_leads_credit_cost')
-                      .maybeSingle();
-                    const qrCost = settingData && settingData.value ? Number(settingData.value) : 10;
-
-                    const hasCredits = walletData && walletData.credits_remaining >= qrCost;
-                    const tagToAssign = hasCredits ? 'IN_STORE_QR_LEAD' : 'MISSED_LEAD';
-
-                    // 2. Save Contact
-                    try {
-                      const { data: existingContact } = await adminSupabase
-                        .from('customers_master')
-                        .select('id, tags, loyalty_credits')
-                        .eq('shop_id', shopId)
-                        .eq('whatsapp_number', customerPhone)
-                        .maybeSingle();
-
-                      let tagsArray = [tagToAssign];
-                      if (existingContact) {
-                        tagsArray = Array.from(new Set([...(existingContact.tags || []).filter((t: string) => t !== 'VIP_InStore'), tagToAssign]));
-                        // Update existing contact
-                        await adminSupabase.from('customers_master').update({ 
-                          tags: tagsArray, 
-                          source: 'QR_SCAN',
-                          loyalty_credits: existingContact.loyalty_credits ? existingContact.loyalty_credits + 5 : 5
-                        }).eq('id', existingContact.id);
-                      } else {
-                        await adminSupabase.from('customers_master').insert({
-                          shop_id: shopId,
-                          customer_name: pushName,
-                          whatsapp_number: customerPhone,
-                          tags: tagsArray,
-                          source: 'QR_SCAN',
-                          loyalty_credits: 5
-                        });
-                        
-                        // Increment credits_used for a NEW unique lead
-                        await adminSupabase.rpc('increment_credits_used', { p_shop_id: shopId });
-                      }
-                    } catch (dbError) {
-                      console.error("🚨 [DB ERROR] Failed to save contact to the isolated QR tag:", dbError);
-                    }
-
-                    if (hasCredits) {
-                      // 3. Deduct credits
-                      await adminSupabase.rpc('deduct_credits', { p_shop_id: shopId, p_amount: qrCost });
-                      
-                      // 4. Update Analytics
-                      await adminSupabase.rpc('increment_qr_analytics', { p_shop_id: shopId, p_credits: qrCost });
-
-                      // 5. Send Automated Response Sequence via Meta API
-                      if (metaConfigRow.meta_access_token && phoneNumberId && shopInfo) {
-                         const merchantName = shopInfo.shop_name || 'Merchant Shop Name';
-                         const merchantPhone = shopInfo.owner_phone ? shopInfo.owner_phone.replace(/\D/g, '') : phoneNumberId;
-
-                         // ELEMENT 1: Loyalty Promotional Copy
-                         const promoCopy = `Welcome to ${merchantName}! 🎁 Please save our number right now to receive exclusive, real-time weekly offers directly on WhatsApp.`;
-                         await axios.post(
-                           `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
-                           {
-                             messaging_product: "whatsapp",
-                             recipient_type: "individual",
-                             to: customerPhone,
-                             type: "text",
-                             text: { body: promoCopy }
-                           },
-                           {
-                             headers: {
-                               'Authorization': `Bearer ${metaConfigRow.meta_access_token}`,
-                               'Content-Type': 'application/json'
-                             }
-                           }
-                         );
-
-                         // Small delay to ensure sequential delivery
-                         await new Promise(resolve => setTimeout(resolve, 500));
-
-                         // ELEMENT 2: Interactive Contact Card (vCard payload)
-                         await axios.post(
-                           `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
-                           {
-                             messaging_product: "whatsapp",
-                             recipient_type: "individual",
-                             to: customerPhone,
-                             type: "contacts",
-                             contacts: [{
-                               name: {
-                                 formatted_name: merchantName,
-                                 first_name: merchantName
-                               },
-                               phones: [{
-                                 phone: `+${merchantPhone}`,
-                                 type: "CELL",
-                                 wa_id: merchantPhone
-                               }]
-                             }]
-                           },
-                           {
-                             headers: {
-                               'Authorization': `Bearer ${metaConfigRow.meta_access_token}`,
-                               'Content-Type': 'application/json'
-                             }
-                           }
-                         );
-                      }
-                    }
-                  } catch (err) {
-                    console.error('[META QR LEAD ERROR]', err);
-                  }
+                // 🚦 GATE 1: IMMEDIATE SYNC BOUNDARY (IN-MEMORY CACHE)
+                if (messageId && isInMemoryDuplicate(messageId)) {
+                  console.log(`[GATE 1] Meta Message ${messageId} already processed (in-memory).`);
+                  continue;
                 }
+
+                // 🚦 GATE 2: RIGOROUS INGRESS & SENDER SCOPE FILTER
+                if (msg.group_id || msg.participant || msg.context?.group_id || changeValue.metadata?.group_id) {
+                  console.log(`[GATE 2] Blocking non-individual context in Meta webhook for msg: ${messageId}`);
+                  continue;
+                }
+
+                // 🚦 GATE 3: SENDER JID MASK VALIDATION
+                const from = msg.from || '';
+                const senderJid = from.includes('@') ? from : `${from}@s.whatsapp.net`;
+                if (!/^\d+@s\.whatsapp\.net$/.test(senderJid) && !/^\d+@lid$/.test(senderJid)) {
+                  console.log(`[GATE 3] Blocking non-individual JID format in Meta webhook: ${senderJid}`);
+                  continue;
+                }
+
+                // 🚦 GATE 4: MARKOV-SAFE MEDIA & CAPTION INTENT GATEWAY
+                const rawText = extractMetaText(msg);
+                const cleanText = sanitizeText(rawText);
+
+                const isExactMatch = allowedKeywordsSanitized.some(k => k === cleanText);
+                if (!isExactMatch) {
+                  console.log(`[GATE 4] Meta message ${messageId} rejected due to non-matching keyword: "${cleanText}"`);
+                  continue;
+                }
+
+                hasValidMessage = true;
               }
             }
           }
@@ -288,10 +191,458 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({ ok: true }, { status: 200 });
+    // If there were messages in this payload but none of them passed the validations, block early.
+    if (hasMessages && !hasValidMessage) {
+      return NextResponse.json({ status: 'ok' }, { status: 200 });
+    }
+
+    // Execute business logic asynchronously in the background
+    processWebhookPayload(payload).catch(err => {
+      console.error('[BACKGROUND_WEBHOOK_ERROR]', err);
+    });
+
+    // Immediate 200 OK Response
+    return NextResponse.json({ status: 'ok' }, { status: 200 });
   } catch (error) {
-    // Return 200 even on error to prevent Meta from disabling the webhook via retries
     console.error('[META_WEBHOOK_ERROR]', error);
     return NextResponse.json({ ok: true }, { status: 200 });
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function processWebhookPayload(payload: any) {
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  if (payload.object === 'whatsapp_business_account' && payload.entry) {
+    for (const entry of payload.entry) {
+      for (const change of entry.changes) {
+        
+        // Parse template status updates
+        if (change.field === 'message_template_status_update' && change.value) {
+          const templateName = change.value.message_template_name;
+          const wabaId = entry.id; // Use WABA ID to scope to the correct shop
+          const metaEvent = change.value.event;
+          const rejectionReason = change.value.reason || null;
+          const metaTemplateId = change.value.message_template_id;
+
+          let dbStatus: 'PENDING' | 'APPROVED' | 'REJECTED' = 'PENDING';
+          if (metaEvent === 'APPROVED') {
+            dbStatus = 'APPROVED';
+          } else if (['REJECTED', 'PAUSED', 'DISABLED'].includes(metaEvent)) {
+            dbStatus = 'REJECTED';
+          }
+
+          // Scope update by shop via meta_configs WABA ID
+          const { data: metaConfigRow } = await adminSupabase
+            .from('meta_configs')
+            .select('shop_id')
+            .eq('meta_business_id', wabaId)
+            .maybeSingle();
+
+          if (metaConfigRow?.shop_id) {
+            const updatePayload: Record<string, string | null> = {
+              status: dbStatus,
+              rejection_reason: rejectionReason,
+              updated_at: new Date().toISOString(),
+            };
+            if (metaTemplateId) updatePayload.meta_template_id = String(metaTemplateId);
+
+            await adminSupabase
+              .from('message_templates')
+              .update(updatePayload)
+              .eq('template_name', templateName)
+              .eq('shop_id', metaConfigRow.shop_id); // SCOPED BY SHOP
+          }
+        }
+        
+        // Parse status updates (sent -> delivered -> read)
+        if (change.value && change.value.statuses) {
+          for (const status of change.value.statuses) {
+            const messageId = status.id;
+            const deliveryStatus = status.status; // 'delivered', 'read', 'failed'
+
+            // Resolve campaign mapping via message_logs
+            const { data: logData } = await adminSupabase
+              .from('message_logs')
+              .select('campaign_id, status')
+              .eq('meta_message_id', messageId)
+              .maybeSingle();
+
+            if (!logData?.campaign_id) continue;
+            const campaignId = logData.campaign_id;
+
+            // Prevent duplicate increments if status already matched
+            if (logData.status === deliveryStatus) continue;
+
+            // Update individual node status in message_logs
+            await adminSupabase
+              .from('message_logs')
+              .update({ status: deliveryStatus })
+              .eq('meta_message_id', messageId);
+
+            // Increment Campaign Aggregates atomically via RPC
+            if (deliveryStatus === 'delivered' || deliveryStatus === 'read' || deliveryStatus === 'failed') {
+              await adminSupabase.rpc('increment_campaign_metric', { 
+                campaign_row_id: campaignId, 
+                metric_name: deliveryStatus, 
+                quantity: 1 
+              });
+            }
+          }
+        }
+
+        // Parse INBOUND messages (e.g. "Add me to Broadcast" QR Lead capture)
+        if (change.value && change.value.messages) {
+          const wabaId = entry.id;
+          const phoneNumberId = change.value.metadata?.phone_number_id;
+
+          const { data: metaConfigRow } = await adminSupabase
+            .from('meta_configs')
+            .select('shop_id, meta_access_token')
+            .eq('meta_business_id', wabaId)
+            .maybeSingle();
+
+          if (metaConfigRow?.shop_id) {
+            const shopId = metaConfigRow.shop_id;
+
+            for (const msg of change.value.messages) {
+              const msgId = msg.id;
+
+              // 🚦 GATE 1: IMMEDIATE SYNC BOUNDARY (IN-MEMORY CACHE)
+              if (msgId && isInMemoryDuplicate(msgId)) {
+                console.log(`[GATE 1] Meta Message ${msgId} already processed (in-memory). Aborting.`);
+                continue;
+              }
+
+              // 🚦 GATE 2: RIGOROUS INGRESS & SENDER SCOPE FILTER
+              if (msg.group_id || msg.participant || msg.context?.group_id || change.value.metadata?.group_id) {
+                console.log(`[GATE 2] Blocking non-individual context in background process.`);
+                continue;
+              }
+
+              // 🚦 GATE 3: SENDER JID MASK VALIDATION
+              const from = msg.from || '';
+              const senderJid = from.includes('@') ? from : `${from}@s.whatsapp.net`;
+              if (!/^\d+@s\.whatsapp\.net$/.test(senderJid) && !/^\d+@lid$/.test(senderJid)) {
+                console.log(`[GATE 3] Blocking non-individual JID in background process: ${senderJid}`);
+                continue;
+              }
+
+              // 🚦 GATE 4: MARKOV-SAFE MEDIA & CAPTION INTENT GATEWAY
+              const rawText = extractMetaText(msg);
+              const cleanText = sanitizeText(rawText);
+
+              const allowedKeywordsSanitized = [
+                "add me to broadcast",
+                "true attendly connect",
+                "addmetobroadcast",
+                "trueattendlyconnect"
+              ];
+              const isExactMatch = allowedKeywordsSanitized.some(k => k === cleanText);
+              if (!isExactMatch) {
+                console.log(`[GATE 4] Background process: keyword mismatch: "${cleanText}"`);
+                continue;
+              }
+
+              // 🚦 GATE 6: ADVANCED LID-TO-MSISDN FOOTPRINT RESOLUTION
+              let customerPhone = msg.from || '';
+              const waId = change.value.contacts && change.value.contacts[0] ? change.value.contacts[0].wa_id : null;
+              
+              if (waId) {
+                const waIdClean = waId.replace(/\D/g, '');
+                const fromClean = (msg.from || '').replace(/\D/g, '');
+                
+                // LID format: 15 digits starting with '1'
+                const isWaIdLid = waIdClean.length === 15 && waIdClean.startsWith('1');
+                
+                if (isWaIdLid && fromClean && fromClean.length >= 10 && fromClean.length <= 15) {
+                  customerPhone = fromClean;
+                  console.log(`[GATE 6] Resolved LID ${waId} to MSISDN ${customerPhone} via payload metadata`);
+                } else {
+                  customerPhone = waIdClean || fromClean;
+                }
+              }
+
+              if (customerPhone.length === 10) {
+                customerPhone = '91' + customerPhone;
+              }
+
+              // Block LID format (15 digits starting with '1') to prevent DB poisoning
+              const isFinalLid = customerPhone.length === 15 && customerPhone.startsWith('1');
+              if (isFinalLid || customerPhone.length < 10 || customerPhone.length > 15) {
+                console.warn(`[GATE 6 WARNING] Could not resolve LID to standard MSISDN: ${customerPhone}. Aborting.`);
+                continue;
+              }
+
+              // 🚦 GATE 5: ATOMIC DB DEDUPLICATION (THE TRANS-LOCK)
+              if (msgId) {
+                try {
+                  const { error: commitError } = await adminSupabase.from('whatsapp_sessions').insert({
+                    shop_id: shopId,
+                    session_key: `msg_dedup_${msgId}`,
+                    session_value: { created_at: new Date().toISOString() },
+                    updated_at: new Date().toISOString()
+                  });
+
+                  if (commitError) {
+                    if (commitError.code === '23505') {
+                      console.log(`[GATE 5] Meta Message ${msgId} already processed (DB constraint 23505). Aborting.`);
+                      continue;
+                    }
+                    throw commitError;
+                  }
+                } catch (dbErr: any) {
+                  if (dbErr && (dbErr.code === '23505' || dbErr.message?.includes('23505'))) {
+                    console.log(`[GATE 5] Meta Message ${msgId} already processed (caught DB constraint 23505). Aborting.`);
+                    continue;
+                  }
+                  console.error(`[GATE 5] DB insertion error during de-duplication:`, dbErr);
+                  continue;
+                }
+              }
+
+              // 🚦 GATE 7: COOLDOWN PRE-FLIGHT MERCHANT BALANCE CHECKS
+              const cooldownKey = `cooldown_${customerPhone}`;
+              const { data: cooldownSession } = await adminSupabase
+                .from('whatsapp_sessions')
+                .select('updated_at')
+                .eq('shop_id', shopId)
+                .eq('session_key', cooldownKey)
+                .maybeSingle();
+
+              if (cooldownSession) {
+                const lastInteraction = new Date(cooldownSession.updated_at).getTime();
+                const now = Date.now();
+                if (now - lastInteraction < 24 * 60 * 60 * 1000) {
+                  console.log(`[GATE 7 COOLDOWN] outreach already sent within 24h for ${customerPhone}. Aborting quietly.`);
+                  continue;
+                }
+              }
+
+              const { data: existingContact } = await adminSupabase
+                .from('customers_master')
+                .select('id')
+                .eq('shop_id', shopId)
+                .eq('whatsapp_number', customerPhone)
+                .maybeSingle();
+
+              const pushName = change.value.contacts?.[0]?.profile?.name || 'QR Walk-in Lead';
+
+              if (existingContact) {
+                // Update cooldown session
+                await adminSupabase.from('whatsapp_sessions').upsert({
+                  shop_id: shopId,
+                  session_key: cooldownKey,
+                  session_value: { last_sent: new Date().toISOString() },
+                  updated_at: new Date().toISOString()
+                }, { onConflict: 'shop_id, session_key' });
+
+                // Send "Already Connected" notification once
+                if (metaConfigRow.meta_access_token && phoneNumberId) {
+                  const { data: shopInfo } = await adminSupabase
+                    .from('shops')
+                    .select('shop_name')
+                    .eq('id', shopId)
+                    .maybeSingle();
+                  
+                  const shopName = shopInfo?.shop_name || 'Our Store';
+                  const alreadyConnectedMsg = `Your number is already saved / You are already connected to ${shopName}!`;
+                  
+                  try {
+                    await axios.post(
+                      `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
+                      {
+                        messaging_product: "whatsapp",
+                        recipient_type: "individual",
+                        to: customerPhone,
+                        type: "text",
+                        text: { body: alreadyConnectedMsg }
+                      },
+                      {
+                        headers: {
+                          'Authorization': `Bearer ${metaConfigRow.meta_access_token}`,
+                          'Content-Type': 'application/json'
+                        }
+                      }
+                    );
+                  } catch (sendError) {
+                    console.error(`[GATE 7 ERROR] Failed to send duplicate contact response:`, sendError);
+                  }
+                }
+                console.log(`[GATE 7] Customer ${customerPhone} already connected. Notice sent. Exiting.`);
+                continue;
+              }
+
+              // Solvent wallet balance checks
+              const { data: wallet } = await adminSupabase
+                .from('wallets')
+                .select('credits_remaining')
+                .eq('shop_id', shopId)
+                .maybeSingle();
+
+              const creditsRemaining = wallet ? Number(wallet.credits_remaining) : 0;
+
+              const { data: settingData } = await adminSupabase
+                .from('system_settings')
+                .select('value')
+                .eq('key', 'qr_leads_credit_cost')
+                .maybeSingle();
+              const qrCost = settingData && settingData.value ? Number(settingData.value) : 10;
+
+              if (creditsRemaining < qrCost) {
+                console.log(`[GATE 7 WALLET INSOLVENCY] Pre-flight insolvency for shop ${shopId}. Registering missed lead.`);
+                try {
+                  await adminSupabase.from('customers_master').insert({
+                    shop_id: shopId,
+                    customer_name: pushName,
+                    whatsapp_number: customerPhone,
+                    tags: ['MISSED_LEAD'],
+                    source: 'QR_SCAN',
+                    loyalty_credits: 0
+                  });
+                } catch (insertError) {
+                  console.error(`[GATE 7 ERROR] Missed lead insert failed:`, insertError);
+                }
+                continue;
+              }
+
+              // 🚦 GATE 8: ATOMIC LEAD INSERTION & DEFERRED WALLET BILLING
+              try {
+                // 1. Insert customer lead first
+                const { error: insertError } = await adminSupabase.from('customers_master').insert({
+                  shop_id: shopId,
+                  customer_name: pushName,
+                  whatsapp_number: customerPhone,
+                  tags: ['IN_STORE_QR_LEAD'],
+                  source: 'QR_SCAN',
+                  loyalty_credits: 5
+                });
+
+                if (insertError) {
+                  if (insertError.code === '23505') {
+                    console.log(`[GATE 8] Lead insertion collision for ${customerPhone}. Aborting.`);
+                    continue;
+                  }
+                  throw insertError;
+                }
+                console.log(`[GATE 8] Lead registered in customers_master first for ${customerPhone}`);
+
+                // 2. Wallet billing deduction via RPC
+                const { error: deductError } = await adminSupabase.rpc('deduct_credits', { 
+                  p_shop_id: shopId, 
+                  p_amount: qrCost 
+                });
+
+                if (deductError) {
+                  throw deductError;
+                }
+
+                console.log(`[GATE 8] Charged ${qrCost} credits from shop ${shopId}`);
+
+                // 3. Increment counters
+                await adminSupabase.rpc('increment_credits_used', { p_shop_id: shopId });
+
+                try {
+                  await adminSupabase.rpc('increment_qr_analytics', { p_shop_id: shopId, p_credits: qrCost });
+                } catch (analyticsError) {
+                  console.error("[GATE 8 WARNING] Failed to update QR analytics stats:", analyticsError);
+                }
+
+                // Update cooldown session so new leads are also rate-limited
+                await adminSupabase.from('whatsapp_sessions').upsert({
+                  shop_id: shopId,
+                  session_key: cooldownKey,
+                  session_value: { last_sent: new Date().toISOString() },
+                  updated_at: new Date().toISOString()
+                }, { onConflict: 'shop_id, session_key' });
+
+              } catch (billingOrInsertError) {
+                console.error(`[GATE 8 FAULT] Downgrading lead for ${customerPhone}:`, billingOrInsertError);
+                
+                // Downgrade tag to MISSED_LEAD and reset credits
+                try {
+                  await adminSupabase
+                    .from('customers_master')
+                    .update({ tags: ['MISSED_LEAD'], loyalty_credits: 0 })
+                    .eq('shop_id', shopId)
+                    .eq('whatsapp_number', customerPhone);
+                } catch (updateError) {
+                  console.error(`[GATE 8] Failed to downgrade lead tag for ${customerPhone}:`, updateError);
+                }
+                continue;
+              }
+
+              // 🚦 GATE 9: COMPLIANT AUTOMATED DELIVERY DISPATCH
+              if (metaConfigRow.meta_access_token && phoneNumberId) {
+                const { data: shopInfo } = await adminSupabase
+                  .from('shops')
+                  .select('shop_name, owner_phone')
+                  .eq('id', shopId)
+                  .single();
+
+                const merchantName = shopInfo?.shop_name || 'Merchant Shop Name';
+                const merchantPhone = shopInfo?.owner_phone ? shopInfo.owner_phone.replace(/\D/g, '') : phoneNumberId;
+
+                const promoCopy = `Welcome to ${merchantName}! 🎁 \n\nSave our number right now to get exclusive, real-time weekly offers directly on WhatsApp. \n\n👇 Click the contact card below to save us instantly!`;
+                
+                try {
+                  await axios.post(
+                    `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
+                    {
+                      messaging_product: "whatsapp",
+                      recipient_type: "individual",
+                      to: customerPhone,
+                      type: "text",
+                      text: { body: promoCopy }
+                    },
+                    {
+                      headers: {
+                        'Authorization': `Bearer ${metaConfigRow.meta_access_token}`,
+                        'Content-Type': 'application/json'
+                      }
+                    }
+                  );
+
+                  await new Promise(resolve => setTimeout(resolve, 500));
+
+                  await axios.post(
+                    `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
+                    {
+                      messaging_product: "whatsapp",
+                      recipient_type: "individual",
+                      to: customerPhone,
+                      type: "contacts",
+                      contacts: [{
+                        name: {
+                          formatted_name: merchantName,
+                          first_name: merchantName
+                        },
+                        phones: [{
+                          phone: `+${merchantPhone}`,
+                          type: "CELL",
+                          wa_id: merchantPhone
+                        }]
+                      }]
+                    },
+                    {
+                      headers: {
+                        'Authorization': `Bearer ${metaConfigRow.meta_access_token}`,
+                        'Content-Type': 'application/json'
+                      }
+                    }
+                  );
+                  console.log(`[GATE 9] Welcome sequence successfully dispatched to ${customerPhone}`);
+                } catch (sendError) {
+                  console.error(`[GATE 9 ERROR] Failed to send welcome flow:`, sendError);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

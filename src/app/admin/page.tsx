@@ -47,6 +47,9 @@ export default function AdminDashboard() {
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
   const [globalError, setGlobalError] = useState<{title: string, message: string} | null>(null);
 
+  // UI State
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -262,8 +265,6 @@ export default function AdminDashboard() {
   const totalTokens = data.metrics?.totalTokens || 0;
   const globalMessages = data.metrics?.globalMessages || 0;
   const totalRevenue = data.metrics?.totalRevenue || 0;
-
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#F5F1EA] text-[#3E3B36] flex flex-col md:flex-row">

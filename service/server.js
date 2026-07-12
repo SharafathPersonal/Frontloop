@@ -37,7 +37,7 @@ app.post('/api/whatsapp/test-mock-lead', async (req, res) => {
     
     const mockJid = `${test_phone || '919999999999'}@s.whatsapp.net`;
     const mockMsg = {
-        key: { remoteJid: mockJid, fromMe: false },
+        key: { remoteJid: mockJid, fromMe: false, id: 'mock_msg_' + Date.now() },
         message: { conversation: "✨ add me to broadcast" },
         pushName: test_name || "Mock Test Customer"
     };

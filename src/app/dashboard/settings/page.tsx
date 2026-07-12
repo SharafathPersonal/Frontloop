@@ -35,6 +35,8 @@ function SettingsContent() {
   const [creditPacks, setCreditPacks] = useState<any[]>([]);
   const [selectedPack, setSelectedPack] = useState<number>(100);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [brandStory, setBrandStory] = useState<string>('');
+  const [brandStoryStatus, setBrandStoryStatus] = useState<SaveStatus>('idle');
   const [creditStatus, setCreditStatus] = useState<CreditStatus>('idle');
   const [loading, setLoading] = useState(true);
   const [manualProviderOpen, setManualProviderOpen] = useState(false);
@@ -245,6 +247,7 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
         }
       }
       if (shopData) {
+        setBrandStory(shopData.brand_story || '');
         setShop(shopData);
         setConnectionStatus(normalizeStatus(shopData.qr_express_status || 'disconnected'));
         setShopForm({
@@ -271,6 +274,23 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
     load();
   }, []);
 
+
+  const handleSaveBrandStory = async (e: FormEvent) => {
+    e.preventDefault();
+    setBrandStoryStatus('saving');
+    try {
+      const res = await fetch('/api/settings/brand-story', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brand_story: brandStory })
+      });
+      if (!res.ok) throw new Error('Failed to save');
+      setBrandStoryStatus('saved');
+      setTimeout(() => setBrandStoryStatus('idle'), 3000);
+    } catch (error) {
+      setBrandStoryStatus('error');
+    }
+  };
 
   const handleConfirmSaveProfile = (e: FormEvent) => {
     e.preventDefault();
@@ -880,6 +900,38 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
             </button>
             {saveStatus === 'saved' && <div className="flex items-center gap-1.5 text-[#C4A896]"><CheckCircle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Saved!</span></div>}
             {saveStatus === 'error' && <div className="flex items-center gap-1.5 text-[#8B8378]"><AlertTriangle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Save failed</span></div>}
+          </div>
+        </form>
+      </section>
+
+      {/* ── AI BRAND INTELLIGENCE ─────────────────────────────── */}
+      <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
+        <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
+          <div className="w-8 h-8 bg-[#F5F1EA] rounded-lg flex items-center justify-center">
+            <Zap size={14} className="text-[#C4A896]" strokeWidth={1.5} />
+          </div>
+          <div>
+            <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">✨ AI Brand Intelligence</h2>
+            <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Tell AI the story of your brand to generate hyper-personalized responses.</p>
+          </div>
+        </div>
+        <form onSubmit={handleSaveBrandStory} className="p-6 space-y-5">
+          <div>
+            <textarea 
+              rows={4}
+              required 
+              value={brandStory} 
+              onChange={(e) => setBrandStory(e.target.value)} 
+              className="input-editorial w-full resize-none p-3" 
+              placeholder="e.g., We are a boutique organic clothing store in Kozhikode focusing on sustainable fashion. Our tone is friendly and warm..." 
+            />
+          </div>
+          <div className="flex items-center gap-4 pt-1">
+            <button type="submit" disabled={brandStoryStatus === 'saving'} className="btn-primary rounded-lg disabled:opacity-50">
+              {brandStoryStatus === 'saving' ? 'Saving...' : 'Save Brand Story'}
+            </button>
+            {brandStoryStatus === 'saved' && <div className="flex items-center gap-1.5 text-[#C4A896]"><CheckCircle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Saved!</span></div>}
+            {brandStoryStatus === 'error' && <div className="flex items-center gap-1.5 text-[#8B8378]"><AlertTriangle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Save failed</span></div>}
           </div>
         </form>
       </section>

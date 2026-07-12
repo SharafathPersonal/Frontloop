@@ -723,6 +723,89 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════
+          SECTION 2.7 — AI BRAND STORY INTELLIGENCE
+      ══════════════════════════════════════════════════════════ */}
+      <section className="w-full py-24 bg-[#EFEAE2] text-[#3E3B36] border-b border-[#E8E3DA] scroll-reveal-section overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          
+          <div className="gsap-reveal z-10 order-2 lg:order-1 relative">
+            <div className="absolute inset-0 bg-[#3E3B36] rounded-[2rem] transform rotate-3 scale-105 opacity-5 pointer-events-none"></div>
+            <div className="bg-white rounded-[2rem] p-6 sm:p-10 shadow-2xl border border-[#E8E3DA] relative z-10">
+              <div className="flex items-center gap-3 mb-6 pb-6 border-b border-[#E8E3DA]">
+                <div className="w-12 h-12 rounded-full bg-[#F5F1EA] flex items-center justify-center shrink-0 border border-[#E8E3DA]">
+                  <Wand2 size={24} className="text-[#C4A896]" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-[#3E3B36]">AI Brand Identity Engine</p>
+                  <p className="text-[11px] text-[#8B8378] tracking-widest uppercase">Live Demo</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4 mb-6">
+                <div className="bg-[#F5F1EA] p-4 rounded-xl text-xs text-[#8B8378] font-mono leading-relaxed border border-[#E8E3DA] relative">
+                  <div className="absolute -top-3 left-4 bg-[#C4A896] text-white text-[9px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-widest">Brand Context Injected</div>
+                  "We are a boutique organic clothing store... tone is friendly and warm..."
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="self-end bg-[#dcf8c6] max-w-[85%] ml-auto rounded-lg rounded-tr-none p-3 shadow-sm border border-emerald-100">
+                  <p className="text-xs text-[#111B21]">Do you have any pure cotton shirts for summer?</p>
+                </div>
+                <div className="self-start bg-white max-w-[90%] rounded-lg rounded-tl-none p-3 shadow-sm border border-[#E8E3DA]">
+                  <p className="text-xs text-[#111B21] leading-relaxed">
+                    Hello there! 🌿 Yes, we absolutely do. We just launched our breathable, 100% organic summer cotton collection. They are incredibly soft and perfect for the heat! Would you like me to send you the catalog? ✨
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="gsap-reveal space-y-8 order-1 lg:order-2">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#C4A896]/30 text-[#C4A896] text-[10px] font-bold tracking-widest uppercase mb-6 shadow-sm">
+                <Bot size={12} className="shrink-0" />
+                Hyper-Personalized AI
+              </div>
+              <h2 className="serif-headline text-3xl sm:text-5xl text-[#3E3B36] mb-6 leading-tight">
+                Supercharge Your Customer Support with Brand-Aware AI
+              </h2>
+              <p className="text-lg text-[#8B8378] leading-relaxed mb-4">
+                Don't just reply. Reply with your brand’s unique voice.
+              </p>
+              <p className="text-base text-[#3E3B36]/70 leading-relaxed">
+                True Attendly doesn't send robotic, generic AI responses. By blending your unique Brand Story with our advanced AI, every automated message feels personal, warm, and authentic to your business.
+              </p>
+            </div>
+
+            <ul className="space-y-5 mt-8">
+              <li className="flex items-start gap-4">
+                <div className="w-6 h-6 rounded-full bg-[#C4A896]/20 flex items-center justify-center shrink-0 mt-0.5"><CheckCircle size={14} className="text-[#C4A896]" /></div>
+                <div>
+                  <strong className="block text-sm text-[#3E3B36] mb-1">Tailored to You</strong>
+                  <span className="text-sm text-[#8B8378]">AI knows your history, products, and tone.</span>
+                </div>
+              </li>
+              <li className="flex items-start gap-4">
+                <div className="w-6 h-6 rounded-full bg-[#C4A896]/20 flex items-center justify-center shrink-0 mt-0.5"><ShieldCheck size={14} className="text-[#C4A896]" /></div>
+                <div>
+                  <strong className="block text-sm text-[#3E3B36] mb-1">Zero Hallucinations</strong>
+                  <span className="text-sm text-[#8B8378]">Responds strictly based on your saved profile.</span>
+                </div>
+              </li>
+              <li className="flex items-start gap-4">
+                <div className="w-6 h-6 rounded-full bg-[#C4A896]/20 flex items-center justify-center shrink-0 mt-0.5"><MessageCircle size={14} className="text-[#C4A896]" /></div>
+                <div>
+                  <strong className="block text-sm text-[#3E3B36] mb-1">Human-Like Warmth</strong>
+                  <span className="text-sm text-[#8B8378]">Customers won't even know it's an AI.</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
           SECTION 3 — FEATURES GRID (Light Cream)
       ══════════════════════════════════════════════════════════ */}
       <section

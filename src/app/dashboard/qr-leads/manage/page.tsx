@@ -182,7 +182,9 @@ export default function ManageQRLeadsPage() {
       let vcardContent = '';
       unsavedLeads.forEach((lead, index) => {
         const phone = lead.whatsapp_number.replace('@s.whatsapp.net', '');
-        vcardContent += `BEGIN:VCARD\nVERSION:3.0\nFN:C${index + 1} - ${lead.customer_name || 'Customer'}\nTEL;TYPE=CELL:+${phone}\nEND:VCARD\n`;
+        const customerName = `C${index + 1} - ${lead.customer_name || 'Customer'}`;
+        // FIX 3: Inject mandatory N: property alongside FN: to prevent parser crashes
+        vcardContent += `BEGIN:VCARD\nVERSION:3.0\nN:;${customerName};;;\nFN:${customerName}\nTEL;TYPE=CELL:+${phone}\nEND:VCARD\n`;
       });
 
       const blob = new Blob([vcardContent], { type: 'text/vcard' });

@@ -41,6 +41,7 @@ export default function QRLeadsPage() {
   const { showToast } = useToast();
 
   const [syncedCount, setSyncedCount] = useState(0);
+  const [showQRModal, setShowQRModal] = useState(false);
 
   // Realtime subscription ref
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -199,42 +200,31 @@ export default function QRLeadsPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:p-6 md:p-8">
-        {/* QR Hero Section (Left Pane) */}
-        <div className="xl:col-span-4 flex flex-col gap-6">
-          <div className="bg-[#3E3B36] rounded-[2rem] p-4 sm:p-6 md:p-8 relative overflow-hidden flex flex-col items-center text-center shadow-2xl h-full">
+      <div className="flex flex-col gap-6 sm:p-6 md:p-8">
+        {/* Top Metrics Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          {/* Scan & Join Mini Card */}
+          <div className="bg-[#3E3B36] rounded-[1.5rem] p-6 relative overflow-hidden flex flex-col justify-between shadow-[0_8px_30px_rgb(0,0,0,0.04)] group">
             {/* Background Accent */}
-            <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-bl-[4rem] -z-0 transition-transform group-hover:scale-110"></div>
             
-            <div className="w-16 h-16 bg-[#C4A896]/20 border border-[#C4A896]/30 rounded-2xl flex items-center justify-center mb-6 relative z-10 backdrop-blur-sm">
-              <QrCode className="text-[#C4A896]" size={32} />
+            <div className="flex items-center gap-4 mb-6 relative z-10">
+              <div className="w-12 h-12 bg-[#C4A896]/20 border border-[#C4A896]/30 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                <QrCode className="text-[#C4A896]" size={20} />
+              </div>
+              <p className="text-[10px] tracking-[0.2em] uppercase text-white/80 font-bold">Scan & Join</p>
             </div>
             
-            <h2 className="text-2xl serif-headline text-white mb-3 relative z-10">Scan & Join</h2>
-            <p className="text-sm text-white/60 mb-8 leading-relaxed relative z-10 font-medium">
-              Place this at your reception. Customers instantly join your broadcast list via WhatsApp.
-            </p>
-            
-            <div className="relative w-56 h-56 bg-white p-3 rounded-[1.5rem] shadow-2xl mb-8 transform transition-transform hover:scale-105 duration-500 z-10 border-4 border-white/10">
-              {qrImageSrc && (
-                <Image src={qrImageSrc} alt="Store QR Code" fill className="object-contain p-2 rounded-xl" unoptimized />
-              )}
+            <div className="relative z-10">
+              <button
+                onClick={() => setShowQRModal(true)}
+                className="w-full inline-flex items-center justify-center gap-2 bg-[#C4A896] text-[#3E3B36] px-6 py-3 rounded-xl text-xs font-bold tracking-widest uppercase hover:bg-[#b09482] transition-colors shadow-md"
+              >
+                <QrCode size={16} />
+                Show QR Code
+              </button>
             </div>
-            
-            <button
-              onClick={handleDownloadQR}
-              className="mt-auto w-full flex items-center justify-center gap-3 bg-[#C4A896] text-[#3E3B36] py-4 rounded-xl text-xs font-bold tracking-[0.2em] uppercase hover:bg-[#b09482] transition-colors relative z-10 shadow-lg"
-            >
-              <Download size={16} />
-              Download Display Pass
-            </button>
           </div>
-        </div>
-
-        {/* Analytics & Leads (Right Pane) */}
-        <div className="xl:col-span-8 flex flex-col gap-4 sm:p-6 md:p-8">
-          {/* Metric Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-[1.5rem] border border-[#E8E3DA] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-[#F5F1EA] rounded-bl-[4rem] -z-0 transition-transform group-hover:scale-110"></div>
               <div className="flex items-center gap-4 mb-6 relative z-10">
@@ -279,10 +269,10 @@ export default function QRLeadsPage() {
                 </div>
               </div>
             </div>
-          </div>
+        </div>
 
-          {/* Leads Table */}
-          <div className="bg-white rounded-[1.5rem] border border-[#E8E3DA] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden flex flex-col flex-1">
+        {/* Leads Table */}
+        <div className="bg-white rounded-[1.5rem] border border-[#E8E3DA] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden flex flex-col w-full">
             <div className="p-6 md:p-4 sm:p-6 md:p-8 border-b border-[#E8E3DA] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h2 className="text-xl serif-headline text-[#3E3B36]">Real-Time Intake stream</h2>
@@ -361,7 +351,36 @@ export default function QRLeadsPage() {
             </div>
           </div>
         </div>
-      </div>
+
+      {showQRModal && (
+        <div className="fixed inset-0 z-[100] bg-[#3E3B36]/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setShowQRModal(false)}>
+          <div className="bg-white rounded-3xl p-8 max-w-lg w-full flex flex-col items-center shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <h3 className="text-2xl serif-headline text-[#3E3B36] mb-2 text-center">Scan to Connect</h3>
+            <p className="text-[#8B8378] text-sm text-center mb-8">Place this at your reception. Customers instantly join your broadcast list via WhatsApp.</p>
+            
+            <div className="relative w-80 h-80 bg-white shadow-sm border border-[#E8E3DA] rounded-2xl p-4 mb-8">
+              {qrImageSrc && (
+                <Image src={qrImageSrc} alt="Store QR Code Large" fill className="object-contain p-4" unoptimized />
+              )}
+            </div>
+            
+            <div className="flex gap-4 w-full">
+              <button
+                onClick={() => setShowQRModal(false)}
+                className="flex-1 py-3 rounded-xl font-bold tracking-widest uppercase text-xs text-[#8B8378] bg-[#F5F1EA] hover:bg-[#E8E3DA] transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={handleDownloadQR}
+                className="flex-1 py-3 rounded-xl font-bold tracking-widest uppercase text-xs text-[#3E3B36] bg-[#C4A896] hover:bg-[#b09482] transition-colors flex items-center justify-center gap-2"
+              >
+                <Download size={16} /> Download
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

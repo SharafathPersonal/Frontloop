@@ -4,6 +4,50 @@ const supabase = require('../config/supabase');
 const pino = require('pino');
 const { processInboundLead } = require('./leadController');
 
+// Resilient in-memory store implementation to support all versions of Baileys
+function makeInMemoryStore() {
+    const storeObj = {
+        contacts: {},
+        chats: {},
+        messages: {},
+        bind: (ev) => {
+            ev.on('messaging-history.set', ({ contacts }) => {
+                if (contacts) {
+                    for (const contact of contacts) {
+                        storeObj.contacts[contact.id] = {
+                            ...storeObj.contacts[contact.id],
+                            ...contact
+                        };
+                    }
+                }
+            });
+
+            ev.on('contacts.upsert', (contacts) => {
+                for (const contact of contacts) {
+                    storeObj.contacts[contact.id] = {
+                        ...storeObj.contacts[contact.id],
+                        ...contact
+                    };
+                }
+            });
+
+            ev.on('contacts.update', (updates) => {
+                for (const update of updates) {
+                    if (storeObj.contacts[update.id]) {
+                        Object.assign(storeObj.contacts[update.id], update);
+                    } else {
+                        storeObj.contacts[update.id] = update;
+                    }
+                }
+            });
+        }
+    };
+    return storeObj;
+}
+
+// Initialize the active in-memory store on engine startup
+const store = makeInMemoryStore();
+
 const logger = pino({ level: process.env.LOG_LEVEL || 'silent' });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -218,14 +262,20 @@ const startWhatsAppEngine = async (shopId, phoneNumber = null) => {
 
   // Tear down any existing authenticated socket.
   if (activeSessions.has(shopId)) {
-    try { activeSessions.get(shopId).ws.close(); } catch (e) {}
+    const oldSock = activeSessions.get(shopId);
+    console.log(`[STATE MACHINE] 🔌 Tearing down active socket for shop ${shopId} before restart.`);
+    try { oldSock.end(undefined); } catch (e) {}
+    try { oldSock.ws.close(); } catch (e) {}
     activeSessions.delete(shopId);
   }
 
   // Tear down any existing connecting/QR-phase socket.
   // This prevents duplicate sockets when engine is restarted mid-connecting.
   if (connectingEngines.has(shopId)) {
-    try { connectingEngines.get(shopId).ws.close(); } catch (e) {}
+    const oldSock = connectingEngines.get(shopId);
+    console.log(`[STATE MACHINE] 🔌 Tearing down connecting socket for shop ${shopId} before restart.`);
+    try { oldSock.end(undefined); } catch (e) {}
+    try { oldSock.ws.close(); } catch (e) {}
     connectingEngines.delete(shopId);
   }
 
@@ -239,6 +289,10 @@ const startWhatsAppEngine = async (shopId, phoneNumber = null) => {
     keepAliveIntervalMs: 30000,
     browser: ['Ubuntu', 'Chrome', '20.0.04'],
   });
+
+  // Bind the in-memory store to the socket event emitter and attach it to the socket context
+  store.bind(sock.ev);
+  sock.store = store;
 
   // Register in connectingEngines IMMEDIATELY so subsequent calls to startWhatsAppEngine
   // or handleConnect can detect that an engine is already in flight and avoid duplicates.
@@ -352,6 +406,14 @@ const startWhatsAppEngine = async (shopId, phoneNumber = null) => {
           activeSessions.delete(shopId);
           connectingEngines.delete(shopId);
           console.log(`[STATE MACHINE] 🔄 Transient disconnect for shop ${shopId} (code=${statusCode}). Scheduling reconnect in 5s.`);
+          
+          // Fix Reconnect Timer Overwrite Bug
+          if (reconnectTimers.has(shopId)) {
+            console.log(`[STATE MACHINE] 🕐 Wiping duplicate pending reconnect timer for shop ${shopId}`);
+            clearTimeout(reconnectTimers.get(shopId));
+            reconnectTimers.delete(shopId);
+          }
+
           const timer = setTimeout(() => {
             reconnectTimers.delete(shopId);
             startWhatsAppEngine(shopId).catch((err) => {
@@ -367,7 +429,7 @@ const startWhatsAppEngine = async (shopId, phoneNumber = null) => {
     if (events['messages.upsert']) {
       const upsert = events['messages.upsert'];
       for (const msg of upsert.messages) {
-        await processInboundLead(msg, shopId, sock);
+        await processInboundLead(msg, shopId, sock, store);
       }
     }
   });
