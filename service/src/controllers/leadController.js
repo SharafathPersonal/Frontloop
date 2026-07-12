@@ -78,7 +78,7 @@ const processInboundLead = async (msg, shopId, sock) => {
           const shopName = shopInfo?.shop_name || 'Our Store';
           const merchantPhone = shopInfo?.owner_phone ? shopInfo.owner_phone.replace(/\D/g, '') : '';
           
-          const promoCopy = `Welcome to ${shopName}! 🎁 Please save our number right now to receive exclusive, real-time weekly offers and flash updates directly to your WhatsApp number. Click the official business contact card below to save us instantly to your phone book!`;
+          const promoCopy = `Welcome to ${shopName}! 🎁 \n\nSave our number right now to get exclusive, real-time weekly offers directly on WhatsApp. \n\n👇 Click the contact card below to save us instantly!`;
           
           await sock.sendMessage(rawSender, {
               text: promoCopy

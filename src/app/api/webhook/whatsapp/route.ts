@@ -220,7 +220,7 @@ export async function POST(req: Request) {
                          const merchantPhone = shopInfo.owner_phone ? shopInfo.owner_phone.replace(/\D/g, '') : phoneNumberId;
 
                          // ELEMENT 1: Loyalty Promotional Copy
-                         const promoCopy = `Welcome to ${merchantName}! 🎁 Please save our number right now to receive exclusive, real-time weekly offers and flash updates directly to your WhatsApp number. Click the official business contact card below to save us instantly to your phone book!`;
+                         const promoCopy = `Welcome to ${merchantName}! 🎁 \n\nSave our number right now to get exclusive, real-time weekly offers directly on WhatsApp. \n\n👇 Click the contact card below to save us instantly!`;
                          await axios.post(
                            `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
                            {
