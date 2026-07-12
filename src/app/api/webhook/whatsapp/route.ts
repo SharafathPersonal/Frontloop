@@ -219,7 +219,29 @@ export async function POST(req: Request) {
                          const merchantName = shopInfo.shop_name || 'Merchant Shop Name';
                          const merchantPhone = shopInfo.owner_phone ? shopInfo.owner_phone.replace(/\D/g, '') : phoneNumberId;
 
-                         // ELEMENT 1: Interactive Contact Card (vCard payload)
+                         // ELEMENT 1: Loyalty Promotional Copy
+                         const promoCopy = "Hello! Thanks for connecting with us. 🎁 Save our number right now to receive exclusive, real-time weekly offers and flash updates directly in your WhatsApp inbox! Click the contact card below to save instantly.";
+                         await axios.post(
+                           `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
+                           {
+                             messaging_product: "whatsapp",
+                             recipient_type: "individual",
+                             to: customerPhone,
+                             type: "text",
+                             text: { body: promoCopy }
+                           },
+                           {
+                             headers: {
+                               'Authorization': `Bearer ${metaConfigRow.meta_access_token}`,
+                               'Content-Type': 'application/json'
+                             }
+                           }
+                         );
+
+                         // Small delay to ensure sequential delivery
+                         await new Promise(resolve => setTimeout(resolve, 500));
+
+                         // ELEMENT 2: Interactive Contact Card (vCard payload)
                          await axios.post(
                            `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
                            {
@@ -238,28 +260,6 @@ export async function POST(req: Request) {
                                  wa_id: merchantPhone
                                }]
                              }]
-                           },
-                           {
-                             headers: {
-                               'Authorization': `Bearer ${metaConfigRow.meta_access_token}`,
-                               'Content-Type': 'application/json'
-                             }
-                           }
-                         );
-
-                         // Small delay to ensure sequential delivery
-                         await new Promise(resolve => setTimeout(resolve, 500));
-
-                         // ELEMENT 2: Loyalty Promotional Copy
-                         const promoCopy = "🔥 You got 5 Credits for your next purchase! (Note: 1 Credit = 1 Rupee). Tap the contact card above to Save our number instantly and lock in your credits for your next visit!";
-                         await axios.post(
-                           `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
-                           {
-                             messaging_product: "whatsapp",
-                             recipient_type: "individual",
-                             to: customerPhone,
-                             type: "text",
-                             text: { body: promoCopy }
                            },
                            {
                              headers: {
