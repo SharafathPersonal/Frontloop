@@ -395,71 +395,71 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════
-          SECTION 2.5 — PROBLEM VS SOLUTION MATRIX
+          SECTION 2.5 — RETAIL VALUE MATRIX
       ══════════════════════════════════════════════════════════ */}
-      <section id="solutions" className="pt-16 pb-20 sm:py-24 overflow-hidden bg-white border-b border-[#E8E3DA]">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
-            <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#C4A896' }}>The Industry Trap</p>
-            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-6">
-              Why Traditional Marketing is Killing Your Retail Margins
-            </h2>
-            <p className="text-base leading-relaxed text-[#8B8378]">
-              The modern customer ignores SMS and blocks unsolicited spam. To win, you need permission, native formatting, and zero-ban infrastructure.
+      <section id="solutions" className="w-full min-h-auto py-16 px-4 sm:px-8 bg-[#3E3B36] text-white overflow-hidden border-b border-white/10">
+        <div className="max-w-6xl mx-auto">
+          
+          {/* SUB-SECTION A: THE RETAIL REALITY CHECK */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+            {/* Card 1: The Struggle */}
+            <div className="gsap-reveal bg-white/5 backdrop-blur-md rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
+              <h3 className="text-xl sm:text-2xl font-bold mb-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 shrink-0">
+                  <XCircle size={20} />
+                </div>
+                The Daily Retail Struggle
+              </h3>
+              <p className="text-white/70 leading-relaxed text-sm sm:text-base">
+                Merchants waste hours manually copy-pasting customer contact numbers or risking permanent number bans by using cheap, unofficial automation bots.
+              </p>
+            </div>
+            
+            {/* Card 2: The Attendly Fix */}
+            <div className="gsap-reveal bg-gradient-to-br from-emerald-900/40 to-[#3E3B36] rounded-2xl p-6 lg:p-8 border border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
+              <h3 className="text-xl sm:text-2xl font-bold mb-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                  <CheckCircle size={20} />
+                </div>
+                The True Attendly Solution
+              </h3>
+              <p className="text-emerald-50/80 leading-relaxed text-sm sm:text-base">
+                Absolute frictionless capturing. A simple counter QR code scan securely logs the customer’s profile, triggers an immediate business card exchange, and safely whitelists the connection in real-time with absolute zero-ban risk.
+              </p>
+            </div>
+          </div>
+
+          {/* SUB-SECTION B: WHY WE CAPTURE HIGH-QUALITY LEADS */}
+          <div className="gsap-reveal max-w-4xl mx-auto text-center mb-16">
+            <span className="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] sm:text-xs uppercase tracking-widest text-[#C4A896] mb-6">
+              Our Uniqueness
+            </span>
+            <h3 className="text-2xl sm:text-4xl font-bold mb-6 leading-tight">
+              Why True Attendly Drives High-Retention Growth?
+            </h3>
+            <p className="text-base sm:text-lg text-white/70 leading-relaxed max-w-3xl mx-auto">
+              Traditional systems force customers to manually save a shop's 10-digit number just to click a link. With our Smart Sync, the moment they scan at your counter, they are automatically opted into your dynamic broadcast pipeline—giving you 100% verified, active buyers who actually open your messages.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            
-            {/* Trap A vs Solution A */}
-            <div className="gsap-reveal bg-[#F5F1EA] rounded-2xl p-4 sm:p-6 lg:p-8 border border-[#E8E3DA]">
-              <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 mb-6 pb-6 border-b border-[#E8E3DA]">
-                <div className="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 shadow-sm">
-                  <XCircle size={24} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-[#3E3B36] mb-2">Problem: The Unofficial Third-Party Ban Trap</h3>
-                  <p className="text-sm text-[#8B8378] leading-relaxed">Sending bulk messages manually or via insecure web-scrapers gets your official business number instantly banned by WhatsApp, destroying your brand equity overnight.</p>
-                </div>
-              </div>
-              <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
-                <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 shadow-sm">
-                  <CheckCircle size={24} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-[#3E3B36] mb-2">Solution: Dual-Engine Safety Pipeline</h3>
-                  <p className="text-sm text-[#8B8378] leading-relaxed">
-                    Use Official <strong>Meta API</strong> if you have a registered business for absolute zero-ban mass broadcasting. No documents? Use our <strong>In-Store QR Engine</strong> where customers text you first, completely whitelisting your number legally and natively.
-                  </p>
-                </div>
-              </div>
+          {/* SUB-SECTION C: THE OMNICHANNEL DIFFERENCE */}
+          <div className="gsap-reveal grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
+            <div className="bg-white/5 rounded-2xl p-6 border border-white/5 relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-1 h-full bg-red-500/50"></div>
+              <h4 className="font-bold mb-3 uppercase tracking-wider text-xs text-red-300">Traditional Payment/Bulk Tools</h4>
+              <p className="text-sm text-white/60 leading-relaxed">
+                Complex developer integrations, high fixed monthly subscription traps regardless of usage, rigid template approvals, and high risks of immediate account suspension.
+              </p>
             </div>
-
-            {/* Trap B vs Solution B */}
-            <div className="gsap-reveal bg-[#F5F1EA] rounded-2xl p-4 sm:p-6 lg:p-8 border border-[#E8E3DA]">
-              <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 mb-6 pb-6 border-b border-[#E8E3DA]">
-                <div className="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 shadow-sm">
-                  <XCircle size={24} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-[#3E3B36] mb-2">Problem: The Ghost Contact Friction</h3>
-                  <p className="text-sm text-[#8B8378] leading-relaxed">Customers rarely type and save your 10-digit number. If they don't save it, broadcast links aren't clickable, and your text gets ignored as "unknown spam."</p>
-                </div>
-              </div>
-              <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
-                <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 shadow-sm">
-                  <CheckCircle size={24} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-[#3E3B36] mb-2">Solution: Instant Smart vCard Push</h3>
-                  <p className="text-sm text-[#8B8378] leading-relaxed">
-                    Upon QR scan, our system automatically drops a formatted <strong>vCard</strong>. One tap saves your merchant contact details directly into their native phonebook, ensuring maximum downstream read-rates and clickable URLs.
-                  </p>
-                </div>
-              </div>
+            <div className="bg-white/5 rounded-2xl p-6 border border-emerald-500/20 relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+              <h4 className="font-bold mb-3 uppercase tracking-wider text-xs text-emerald-400">True Attendly Advantage</h4>
+              <p className="text-sm text-white/80 leading-relaxed">
+                Zero monthly subscription locks (Pay-As-You-Send dynamic credit wallet), instant counter-top lead onboarding, native vCard device sync, and smart AI copy assistance built for real retail store conversion.
+              </p>
             </div>
-
           </div>
+
         </div>
       </section>
 
