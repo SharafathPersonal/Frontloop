@@ -52,13 +52,12 @@ export default function LandingPage() {
 
       // ── Hero entrance animation ────────────────────────────────
       if (heroRef.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        const heroEls = heroRef.current.querySelectorAll('.gsap-reveal');
-        gsap.fromTo(
+        const heroEls = heroRef.current.querySelectorAll('.hero-animate');
+        gsap.from(
           heroEls,
-          { opacity: 0, y: 30 },
           {
-            opacity: 1,
-            y: 0,
+            opacity: 0,
+            y: 30,
             duration: 0.9,
             stagger: 0.12,
             ease: 'power3.out',
@@ -66,10 +65,7 @@ export default function LandingPage() {
           }
         );
       } else if (heroRef.current) {
-        heroRef.current.querySelectorAll('.gsap-reveal').forEach((el) => {
-          (el as HTMLElement).style.opacity = '1';
-          (el as HTMLElement).style.transform = 'none';
-        });
+        // No action needed for prefers-reduced-motion since elements are visible by default
       }
 
       // ── Section scroll reveals ─────────────────────────────────
@@ -220,26 +216,26 @@ export default function LandingPage() {
             {/* ── Left Column ──────────────────────────────────── */}
             <div className="space-y-8 z-10">
 
-              <div className="gsap-reveal">
+              <div className="hero-animate">
                 <span className="text-xs tracking-[0.2em] uppercase font-bold px-3 py-1.5 rounded-full border border-[#C4A896]/20" style={{ color: '#C4A896', backgroundColor: 'rgba(196,168,150,0.1)' }}>
                   Version {APP_VERSION} Live
                 </span>
               </div>
 
-              <div className="gsap-reveal">
+              <div className="hero-animate">
                 <h1 className="serif-headline text-4xl md:text-6xl font-bold text-white mb-6 leading-[1.2] tracking-tight">
                   The Omnichannel AI Marketing Platform for High-Retention Retail.
                 </h1>
               </div>
 
-              <div className="gsap-reveal">
+              <div className="hero-animate">
                 <p className="text-lg text-neutral-400 max-w-2xl mb-8 leading-relaxed">
                   Stop losing customers to dead channels. Launch official Meta WhatsApp updates, trigger zero-risk in-store QR lead pipelines, save bulk contacts via automated vCard sync, and run premium AI email campaigns—all from one unified ledger.
                 </p>
               </div>
 
               {/* The 4-Feature Hub Display */}
-              <div className="gsap-reveal grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+              <div className="hero-animate grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
                 <div className="p-4 rounded-xl flex items-start gap-3 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
                   <ShieldCheck style={{ color: '#C4A896' }} className="mt-1 shrink-0" size={20} />
                   <div>
@@ -270,7 +266,7 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className="gsap-reveal flex items-center gap-4 flex-wrap pt-4">
+              <div className="hero-animate flex items-center gap-4 flex-wrap pt-4">
                 <Link href="/auth/register" className="btn-primary rounded-sm shadow-lg border border-[#C4A896]/30">
                   Create Free Workspace
                 </Link>
@@ -282,7 +278,7 @@ export default function LandingPage() {
             </div>
 
             {/* ── Right Column — 5-Block Cluster Mockup ── */}
-            <div className="gsap-reveal relative w-full h-[400px] sm:h-[500px] lg:h-[540px] perspective-1000 scale-[0.75] sm:scale-90 lg:scale-100 origin-top flex-shrink-0 mt-8 lg:mt-0">
+            <div className="hero-animate relative w-full h-[400px] sm:h-[500px] lg:h-[540px] perspective-1000 scale-[0.75] sm:scale-90 lg:scale-100 origin-top flex-shrink-0 mt-8 lg:mt-0">
               
               {/* Block 1: Campaign Dashboard (Meta API) */}
               <div className="absolute left-0 top-12 w-[260px] bg-white rounded-xl shadow-2xl border border-[#E8E3DA] p-4 transform -rotate-6 hover:rotate-0 transition-all duration-500 z-10">
@@ -397,64 +393,62 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════════
           SECTION 2.5 — RETAIL VALUE MATRIX
       ══════════════════════════════════════════════════════════ */}
-      <section id="solutions" className="w-full min-h-auto py-16 px-4 sm:px-8 bg-[#3E3B36] text-white overflow-hidden border-b border-white/10">
-        <div className="max-w-6xl mx-auto">
+      <section id="solutions" className="w-full min-h-auto py-16 px-4 sm:px-8 bg-[#3E3B36] text-white overflow-hidden scroll-reveal-section">
+        <div className="max-w-7xl mx-auto space-y-16">
           
-          {/* SUB-SECTION A: THE RETAIL REALITY CHECK */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-            {/* Card 1: The Struggle */}
-            <div className="gsap-reveal bg-white/5 backdrop-blur-md rounded-2xl p-6 lg:p-8 border border-white/10 shadow-lg">
-              <h3 className="text-xl sm:text-2xl font-bold mb-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 shrink-0">
+          {/* Sub-Section A: The Retail Reality Check */}
+          <div className="gsap-reveal grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-[#2D2A26] p-8 rounded-2xl border border-white/5 shadow-lg flex flex-col justify-center">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center shrink-0">
                   <XCircle size={20} />
                 </div>
-                The Daily Retail Struggle
-              </h3>
-              <p className="text-white/70 leading-relaxed text-sm sm:text-base">
+                <h3 className="text-xl sm:text-2xl font-bold">The Daily Retail Struggle</h3>
+              </div>
+              <p className="text-sm sm:text-base text-neutral-400 leading-relaxed">
                 Merchants waste hours manually copy-pasting customer contact numbers or risking permanent number bans by using cheap, unofficial automation bots.
               </p>
             </div>
             
-            {/* Card 2: The Attendly Fix */}
-            <div className="gsap-reveal bg-gradient-to-br from-emerald-900/40 to-[#3E3B36] rounded-2xl p-6 lg:p-8 border border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
-              <h3 className="text-xl sm:text-2xl font-bold mb-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+            <div className="bg-gradient-to-br from-[#C4A896]/20 to-[#3E3B36] p-8 rounded-2xl border border-[#C4A896]/30 shadow-[0_0_30px_rgba(196,168,150,0.1)] flex flex-col justify-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="flex items-center gap-3 mb-4 relative z-10">
+                <div className="w-10 h-10 rounded-lg bg-[#C4A896]/20 text-[#C4A896] flex items-center justify-center shrink-0">
                   <CheckCircle size={20} />
                 </div>
-                The True Attendly Solution
-              </h3>
-              <p className="text-emerald-50/80 leading-relaxed text-sm sm:text-base">
+                <h3 className="text-xl sm:text-2xl font-bold text-white">The True Attendly Solution</h3>
+              </div>
+              <p className="text-sm sm:text-base text-neutral-300 leading-relaxed relative z-10">
                 Absolute frictionless capturing. A simple counter QR code scan securely logs the customer’s profile, triggers an immediate business card exchange, and safely whitelists the connection in real-time with absolute zero-ban risk.
               </p>
             </div>
           </div>
 
-          {/* SUB-SECTION B: WHY WE CAPTURE HIGH-QUALITY LEADS */}
-          <div className="gsap-reveal max-w-4xl mx-auto text-center mb-16">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] sm:text-xs uppercase tracking-widest text-[#C4A896] mb-6">
-              Our Uniqueness
-            </span>
-            <h3 className="text-2xl sm:text-4xl font-bold mb-6 leading-tight">
+          {/* Sub-Section B: Why We Capture High-Quality Leads */}
+          <div className="gsap-reveal max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[#C4A896] text-[10px] font-bold tracking-widest uppercase mb-6">
+              <Zap size={12} />
+              Verified Active Buyers
+            </div>
+            <h2 className="serif-headline text-2xl sm:text-4xl text-white mb-6">
               Why True Attendly Drives High-Retention Growth?
-            </h3>
-            <p className="text-base sm:text-lg text-white/70 leading-relaxed max-w-3xl mx-auto">
-              Traditional systems force customers to manually save a shop's 10-digit number just to click a link. With our Smart Sync, the moment they scan at your counter, they are automatically opted into your dynamic broadcast pipeline—giving you 100% verified, active buyers who actually open your messages.
+            </h2>
+            <p className="text-base sm:text-lg text-neutral-400 leading-relaxed">
+              Traditional systems force customers to manually save a shop&apos;s 10-digit number just to click a link. With our Smart Sync, the moment they scan at your counter, they are automatically opted into your dynamic broadcast pipeline—giving you 100% verified, active buyers who actually open your messages.
             </p>
           </div>
 
-          {/* SUB-SECTION C: THE OMNICHANNEL DIFFERENCE */}
+          {/* Sub-Section C: The Omnichannel Difference */}
           <div className="gsap-reveal grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
-            <div className="bg-white/5 rounded-2xl p-6 border border-white/5 relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-1 h-full bg-red-500/50"></div>
-              <h4 className="font-bold mb-3 uppercase tracking-wider text-xs text-red-300">Traditional Payment/Bulk Tools</h4>
-              <p className="text-sm text-white/60 leading-relaxed">
+            <div className="bg-white/5 p-6 sm:p-8 rounded-xl border border-white/10 hover:border-white/20 transition-colors w-full">
+              <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-4">Traditional Bulk Tools</h4>
+              <p className="text-sm sm:text-base text-neutral-400 leading-relaxed">
                 Complex developer integrations, high fixed monthly subscription traps regardless of usage, rigid template approvals, and high risks of immediate account suspension.
               </p>
             </div>
-            <div className="bg-white/5 rounded-2xl p-6 border border-emerald-500/20 relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
-              <h4 className="font-bold mb-3 uppercase tracking-wider text-xs text-emerald-400">True Attendly Advantage</h4>
-              <p className="text-sm text-white/80 leading-relaxed">
+            <div className="bg-[#C4A896]/10 p-6 sm:p-8 rounded-xl border border-[#C4A896]/30 hover:border-[#C4A896]/50 transition-colors w-full">
+              <h4 className="text-[10px] font-bold text-[#C4A896] uppercase tracking-widest mb-4">True Attendly Advantage</h4>
+              <p className="text-sm sm:text-base text-neutral-200 leading-relaxed">
                 Zero monthly subscription locks (Pay-As-You-Send dynamic credit wallet), instant counter-top lead onboarding, native vCard device sync, and smart AI copy assistance built for real retail store conversion.
               </p>
             </div>
@@ -1138,7 +1132,7 @@ export default function LandingPage() {
                 <p className="text-sm text-[#8B8378] leading-relaxed">The platform instantly logs the customer's name and number onto your dashboard in real-time. The customer is immediately prompted to save your business profile card. Once saved, they are seamlessly whitelisted to receive all your upcoming real-time shop offers with zero upfront wallet discounts required from the merchant.</p>
               </div>
             </div>
-            <div className="md:col-span-2 gsap-reveal">
+            <div className="md:col-span-2 gsap-reveal min-w-0">
               <div className="w-full h-full bg-[#111827] rounded-3xl p-2 shadow-2xl relative overflow-hidden flex flex-col">
                 <div className="bg-[#1f2937] h-12 rounded-t-2xl flex items-center px-4 justify-between border-b border-gray-700">
                   <div className="flex gap-2">
