@@ -236,29 +236,93 @@ export default function LandingPage() {
 
               {/* The 4-Feature Hub Display */}
               <div className="hero-animate grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-                <div className="p-4 rounded-xl flex items-start gap-3 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
-                  <ShieldCheck style={{ color: '#C4A896' }} className="mt-1 shrink-0" size={20} />
+                <div className="p-4 rounded-xl flex items-start gap-4 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                  <div className="p-3 bg-amber-950/30 backdrop-blur-md rounded-2xl border border-amber-800/40 shadow-xl shadow-amber-950/40 shrink-0">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="warm-grad-shield" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#B45309" />
+                          <stop offset="100%" stopColor="#FDE68A" />
+                        </linearGradient>
+                        <filter id="warm-glow-shield" x="-20%" y="-20%" width="140%" height="140%">
+                          <feGaussianBlur stdDeviation="1.5" result="blur" />
+                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                      </defs>
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="url(#warm-grad-shield)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" filter="url(#warm-glow-shield)"/>
+                      <path d="M9 12l2 2 4-4" stroke="url(#warm-grad-shield)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
                   <div>
                     <h3 className="text-sm font-bold text-white mb-1">Official Meta API Mode</h3>
                     <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>0% Ban Risk. Verified Broadcasts to GST Brands.</p>
                   </div>
                 </div>
-                <div className="p-4 rounded-xl flex items-start gap-3 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
-                  <Smartphone style={{ color: '#C4A896' }} className="mt-1 shrink-0" size={20} />
+                
+                <div className="p-4 rounded-xl flex items-start gap-4 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                  <div className="p-3 bg-amber-950/30 backdrop-blur-md rounded-2xl border border-amber-800/40 shadow-xl shadow-amber-950/40 shrink-0">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="warm-grad-phone" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#B45309" />
+                          <stop offset="100%" stopColor="#FDE68A" />
+                        </linearGradient>
+                        <filter id="warm-glow-phone" x="-20%" y="-20%" width="140%" height="140%">
+                          <feGaussianBlur stdDeviation="1.5" result="blur" />
+                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                      </defs>
+                      <rect x="5" y="2" width="14" height="20" rx="2" stroke="url(#warm-grad-phone)" strokeWidth="1.25" filter="url(#warm-glow-phone)"/>
+                      <path d="M12 18h.01" stroke="url(#warm-grad-phone)" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  </div>
                   <div>
                     <h3 className="text-sm font-bold text-white mb-1">In-Store QR Engine</h3>
                     <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>Instant walk-in lead capture via Scan & Join mechanics.</p>
                   </div>
                 </div>
-                <div className="p-4 rounded-xl flex items-start gap-3 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
-                  <Bot style={{ color: '#C4A896' }} className="mt-1 shrink-0" size={20} />
+
+                <div className="p-4 rounded-xl flex items-start gap-4 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                  <div className="p-3 bg-amber-950/30 backdrop-blur-md rounded-2xl border border-amber-800/40 shadow-xl shadow-amber-950/40 shrink-0">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="warm-grad-bot" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#B45309" />
+                          <stop offset="100%" stopColor="#FDE68A" />
+                        </linearGradient>
+                        <filter id="warm-glow-bot" x="-20%" y="-20%" width="140%" height="140%">
+                          <feGaussianBlur stdDeviation="1.5" result="blur" />
+                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                      </defs>
+                      <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" stroke="url(#warm-grad-bot)" strokeWidth="1.25" filter="url(#warm-glow-bot)"/>
+                      <path d="M17 8H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2z" stroke="url(#warm-grad-bot)" strokeWidth="1.25"/>
+                      <path d="M15 13v.01M9 13v.01" stroke="url(#warm-grad-bot)" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  </div>
                   <div>
                     <h3 className="text-sm font-bold text-white mb-1">AI Template Polisher</h3>
                     <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>Automated compliance formatting & unique spintax variations.</p>
                   </div>
                 </div>
-                <div className="p-4 rounded-xl flex items-start gap-3 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
-                  <Mail style={{ color: '#C4A896' }} className="mt-1 shrink-0" size={20} />
+
+                <div className="p-4 rounded-xl flex items-start gap-4 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                  <div className="p-3 bg-amber-950/30 backdrop-blur-md rounded-2xl border border-amber-800/40 shadow-xl shadow-amber-950/40 shrink-0">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="warm-grad-mail" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#B45309" />
+                          <stop offset="100%" stopColor="#FDE68A" />
+                        </linearGradient>
+                        <filter id="warm-glow-mail" x="-20%" y="-20%" width="140%" height="140%">
+                          <feGaussianBlur stdDeviation="1.5" result="blur" />
+                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                      </defs>
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="url(#warm-grad-mail)" strokeWidth="1.25" filter="url(#warm-glow-mail)"/>
+                      <path d="M22 6l-10 7L2 6" stroke="url(#warm-grad-mail)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
                   <div>
                     <h3 className="text-sm font-bold text-white mb-1">Premium AI Email Suite</h3>
                     <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>Powered by Resend with luxury responsive layouts.</p>
@@ -399,9 +463,22 @@ export default function LandingPage() {
           {/* Sub-Section A: The Retail Reality Check */}
           <div className="gsap-reveal grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="bg-[#2D2A26] p-8 rounded-2xl border border-white/5 shadow-lg flex flex-col justify-center">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center shrink-0">
-                  <XCircle size={20} />
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-amber-950/30 backdrop-blur-md rounded-2xl border border-amber-800/40 shadow-xl shadow-amber-950/40 shrink-0">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="warm-grad-x" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#B45309" />
+                        <stop offset="100%" stopColor="#FDE68A" />
+                      </linearGradient>
+                      <filter id="warm-glow-x" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="1.5" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                    </defs>
+                    <circle cx="12" cy="12" r="10" stroke="url(#warm-grad-x)" strokeWidth="1.25" filter="url(#warm-glow-x)"/>
+                    <path d="M15 9l-6 6M9 9l6 6" stroke="url(#warm-grad-x)" strokeWidth="1.25" strokeLinecap="round"/>
+                  </svg>
                 </div>
                 <h3 className="text-xl sm:text-2xl font-bold">The Daily Retail Struggle</h3>
               </div>
@@ -412,9 +489,22 @@ export default function LandingPage() {
             
             <div className="bg-gradient-to-br from-[#C4A896]/20 to-[#3E3B36] p-8 rounded-2xl border border-[#C4A896]/30 shadow-[0_0_30px_rgba(196,168,150,0.1)] flex flex-col justify-center relative overflow-hidden">
               <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="flex items-center gap-3 mb-4 relative z-10">
-                <div className="w-10 h-10 rounded-lg bg-[#C4A896]/20 text-[#C4A896] flex items-center justify-center shrink-0">
-                  <CheckCircle size={20} />
+              <div className="flex items-center gap-4 mb-4 relative z-10">
+                <div className="p-3 bg-amber-950/30 backdrop-blur-md rounded-2xl border border-amber-800/40 shadow-xl shadow-amber-950/40 shrink-0">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="warm-grad-check" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#B45309" />
+                        <stop offset="100%" stopColor="#FDE68A" />
+                      </linearGradient>
+                      <filter id="warm-glow-check" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="1.5" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                    </defs>
+                    <circle cx="12" cy="12" r="10" stroke="url(#warm-grad-check)" strokeWidth="1.25" filter="url(#warm-glow-check)"/>
+                    <path d="M8 12l3 3 5-6" stroke="url(#warm-grad-check)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </div>
                 <h3 className="text-xl sm:text-2xl font-bold text-white">The True Attendly Solution</h3>
               </div>
@@ -427,7 +517,7 @@ export default function LandingPage() {
           {/* Sub-Section B: Why We Capture High-Quality Leads */}
           <div className="gsap-reveal max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[#C4A896] text-[10px] font-bold tracking-widest uppercase mb-6">
-              <Zap size={12} />
+              <Zap size={12} className="shrink-0" style={{ color: '#FDE68A' }} />
               Verified Active Buyers
             </div>
             <h2 className="serif-headline text-2xl sm:text-4xl text-white mb-6">
@@ -663,42 +753,180 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
-                icon: '◆',
+                icon: (
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="ai-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#451A03" />
+                        <stop offset="100%" stopColor="#D97706" />
+                      </linearGradient>
+                      <filter id="ai-glow-light" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="1.5" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                    </defs>
+                    <path d="M21 12.5C21 12.5 17.5 13 16 14.5C14.5 16 14 19.5 14 19.5C14 19.5 13.5 16 12 14.5C10.5 13 7 12.5 7 12.5C7 12.5 10.5 12 12 10.5C13.5 9 14 5.5 14 5.5C14 5.5 14.5 9 16 10.5C17.5 12 21 12.5 21 12.5Z" fill="url(#ai-grad-light)" filter="url(#ai-glow-light)" opacity="0.9" />
+                    <path d="M8 6.5C8 6.5 6.5 6.7 5.8 7.4C5.1 8.1 4.9 9.6 4.9 9.6C4.9 9.6 4.7 8.1 4 7.4C3.3 6.7 1.8 6.5 1.8 6.5C1.8 6.5 3.3 6.3 4 5.6C4.7 4.9 4.9 3.4 4.9 3.4C4.9 3.4 5.1 4.9 5.8 5.6C6.5 6.3 8 6.5 8 6.5Z" fill="url(#ai-grad-light)" filter="url(#ai-glow-light)" />
+                  </svg>
+                ),
                 title: 'AI-Powered Message Polisher',
                 desc: 'Draft raw offers in any tone and let our multi-tier failover AI (Gemini/Groq) refine it into premium marketing copy instantly. Automatically injects Meta standard tokens ({{1}} and {{2}}) for flawless conversion and compliance.',
               },
               {
-                icon: '◎',
+                icon: (
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="timer-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#451A03" />
+                        <stop offset="100%" stopColor="#D97706" />
+                      </linearGradient>
+                      <filter id="timer-glow-light" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="1.5" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                    </defs>
+                    <circle cx="12" cy="12" r="9" stroke="url(#timer-grad-light)" strokeWidth="1.25" strokeDasharray="4 2" filter="url(#timer-glow-light)" />
+                    <circle cx="12" cy="12" r="6" stroke="url(#timer-grad-light)" strokeWidth="1.25" opacity="0.5" />
+                    <path d="M12 7V12L15 15" stroke="url(#timer-grad-light)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" filter="url(#timer-glow-light)" />
+                  </svg>
+                ),
                 title: 'Throttled Dispatches',
                 desc: 'Safeguard your retail phone lines. Built-in dynamic timing delays protect sender numbers from network spam flags.',
               },
               {
-                icon: '◈',
+                icon: (
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="ledger-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#451A03" />
+                        <stop offset="100%" stopColor="#D97706" />
+                      </linearGradient>
+                      <filter id="ledger-glow-light" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="1.5" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                    </defs>
+                    <ellipse cx="12" cy="7" rx="8" ry="3" stroke="url(#ledger-grad-light)" strokeWidth="1.25" filter="url(#ledger-glow-light)" />
+                    <path d="M4 7V12C4 13.6569 7.58172 15 12 15C16.4183 15 20 13.6569 20 12V7" stroke="url(#ledger-grad-light)" strokeWidth="1.25" filter="url(#ledger-glow-light)" />
+                    <path d="M4 12V17C4 18.6569 7.58172 20 12 20C16.4183 20 20 18.6569 20 17V12" stroke="url(#ledger-grad-light)" strokeWidth="1.25" opacity="0.6" />
+                  </svg>
+                ),
                 title: 'Pay-As-You-Send Ledger',
                 desc: 'Zero subscription locks. Purchase pre-paid credits seamlessly; exactly 1 credit is deducted per successful text dispatch.',
               },
               {
-                icon: '◉',
+                icon: (
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="csv-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#451A03" />
+                        <stop offset="100%" stopColor="#D97706" />
+                      </linearGradient>
+                      <filter id="csv-glow-light" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="1.5" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                    </defs>
+                    <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="url(#csv-grad-light)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" filter="url(#csv-glow-light)" />
+                    <path d="M14 2V8H20" stroke="url(#csv-grad-light)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M8 13H16M8 17H13" stroke="url(#csv-grad-light)" strokeWidth="1.25" strokeLinecap="round" opacity="0.7" />
+                  </svg>
+                ),
                 title: 'Unified CSV & Excel Parser',
                 desc: 'Ingest massive retail contact lists using our high-speed spreadsheet parser. Supports both CSV and raw .xlsx Excel manifests with automatic 10-digit phone regex masking and serverless-safe duplicate upsert filtering.',
               },
               {
-                icon: '🎯',
+                icon: (
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="qr-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#451A03" />
+                        <stop offset="100%" stopColor="#D97706" />
+                      </linearGradient>
+                      <filter id="qr-glow-light" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="1.5" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                    </defs>
+                    <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="url(#qr-grad-light)" strokeWidth="1.25" filter="url(#qr-glow-light)" />
+                    <rect x="5" y="5" width="3" height="3" rx="0.5" fill="url(#qr-grad-light)" />
+                    <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="url(#qr-grad-light)" strokeWidth="1.25" filter="url(#qr-glow-light)" />
+                    <rect x="16" y="5" width="3" height="3" rx="0.5" fill="url(#qr-grad-light)" />
+                    <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="url(#qr-grad-light)" strokeWidth="1.25" filter="url(#qr-glow-light)" />
+                    <rect x="5" y="16" width="3" height="3" rx="0.5" fill="url(#qr-grad-light)" />
+                    <rect x="14" y="14" width="3" height="3" rx="0.5" fill="url(#qr-grad-light)" filter="url(#qr-glow-light)" />
+                    <rect x="18" y="14" width="3" height="3" rx="0.5" fill="url(#qr-grad-light)" />
+                    <rect x="14" y="18" width="7" height="3" rx="0.5" fill="url(#qr-grad-light)" />
+                  </svg>
+                ),
                 title: 'Capture Foot Traffic Instantly with Dynamic QR Leads',
                 desc: "Turn physical visitors into digital leads with zero setup friction. When customers scan your dynamic QR code and send a quick WhatsApp message, their profile is instantly captured and added to your dashboard in seconds. Backed by advanced real-time search, robust sorting, and ultra-smooth infinite scrolling, managing your shop's growth has never been this simple.",
               },
               {
-                icon: '📇',
+                icon: (
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="vcard-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#451A03" />
+                        <stop offset="100%" stopColor="#D97706" />
+                      </linearGradient>
+                      <filter id="vcard-glow-light" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="1.5" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                    </defs>
+                    <rect x="3" y="4" width="18" height="16" rx="2" stroke="url(#vcard-grad-light)" strokeWidth="1.25" filter="url(#vcard-glow-light)" />
+                    <circle cx="9" cy="10" r="3" stroke="url(#vcard-grad-light)" strokeWidth="1.25" opacity="0.9" />
+                    <path d="M4.5 17C4.5 14.5 7.5 14 9 14C10.5 14 13.5 14.5 13.5 17" stroke="url(#vcard-grad-light)" strokeWidth="1.25" strokeLinecap="round" />
+                    <path d="M15 9H19M15 13H17" stroke="url(#vcard-grad-light)" strokeWidth="1.25" strokeLinecap="round" opacity="0.6" />
+                  </svg>
+                ),
                 title: 'Smart vCard Address Book Push',
                 desc: "Automatically push native vCard (VCF) payloads upon the initial QR inbound message. Legally whitelist your official contact number inside their local phonebook for optimal future campaign read rates.",
               },
               {
-                icon: '📊',
+                icon: (
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="analytics-grad-light" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#451A03" />
+                        <stop offset="100%" stopColor="#D97706" />
+                      </linearGradient>
+                      <filter id="analytics-glow-light" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="2" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                    </defs>
+                    <rect x="3" y="14" width="4" height="6" rx="1" fill="url(#analytics-grad-light)" filter="url(#analytics-glow-light)" />
+                    <rect x="10" y="9" width="4" height="11" rx="1" fill="url(#analytics-grad-light)" filter="url(#analytics-glow-light)" opacity="0.8" />
+                    <rect x="17" y="4" width="4" height="16" rx="1" fill="url(#analytics-grad-light)" filter="url(#analytics-glow-light)" opacity="0.9" />
+                    <path d="M4 14L12 9L19 4" stroke="url(#analytics-grad-light)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ),
                 title: 'Omnichannel Analytics Ledger',
                 desc: "Unified tracking dashboards bridging Meta WhatsApp receipts and Resend Email telemetry. Instantly view delivery metrics, deep-link click rates, and failure cascades across multiple campaigns from one single source of truth.",
               },
               {
-                icon: '💳',
+                icon: (
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="card-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#451A03" />
+                        <stop offset="50%" stopColor="#92400E" />
+                        <stop offset="100%" stopColor="#D97706" />
+                      </linearGradient>
+                      <filter id="card-glow-light" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="1.5" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                    </defs>
+                    <rect x="2" y="5" width="20" height="14" rx="3" fill="url(#card-grad-light)" filter="url(#card-glow-light)" opacity="0.2" />
+                    <rect x="2" y="5" width="20" height="14" rx="3" stroke="url(#card-grad-light)" strokeWidth="1.25" />
+                    <rect x="2" y="9" width="20" height="3" fill="#171717" opacity="0.6" />
+                    <path d="M6 13.5H9V16.5H6V13.5Z" stroke="url(#card-grad-light)" strokeWidth="1" strokeLinejoin="round" />
+                    <path d="M6 14.5H9 M6 15.5H9 M7.5 13.5V16.5" stroke="url(#card-grad-light)" strokeWidth="0.5" />
+                  </svg>
+                ),
                 title: 'Automated Loyalty Engine & Cashfree Gateways',
                 desc: "Instantly drop 5 dynamic Loyalty Credits into a new prospect's account upon QR scan. Top-up global wallets seamlessly via our dynamic Cashfree integration, enabling transparent, pay-as-you-go broadcasting.",
               },
@@ -710,11 +938,10 @@ export default function LandingPage() {
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(196,168,150,0.6)')}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#E8E3DA')}
               >
-                <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center mb-5 text-lg transition-colors duration-300"
-                  style={{ backgroundColor: 'rgba(232,227,218,0.6)', color: '#8B8378' }}
-                >
-                  {card.icon}
+                <div className="mb-5 flex items-start">
+                  <div className="p-3 bg-amber-100/40 backdrop-blur-md rounded-2xl border border-amber-200/60 shadow-md shadow-amber-900/5 inline-flex items-center justify-center">
+                    {card.icon}
+                  </div>
                 </div>
                 <h3
                   className="lexend-subheading text-sm font-medium mb-3"
@@ -750,8 +977,21 @@ export default function LandingPage() {
             
             {/* Card 1 */}
             <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-xl p-4 sm:p-6 lg:p-8 flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mb-6">
-                <XCircle size={24} />
+              <div className="p-3 bg-amber-100/40 backdrop-blur-md rounded-2xl border border-amber-200/60 shadow-md shadow-amber-900/5 inline-flex items-center justify-center mb-6 shrink-0">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="light-grad-x1" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#451A03" />
+                      <stop offset="100%" stopColor="#D97706" />
+                    </linearGradient>
+                    <filter id="light-glow-x1" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="1.5" result="blur" />
+                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                  </defs>
+                  <circle cx="12" cy="12" r="10" stroke="url(#light-grad-x1)" strokeWidth="1.25" filter="url(#light-glow-x1)"/>
+                  <path d="M15 9l-6 6M9 9l6 6" stroke="url(#light-grad-x1)" strokeWidth="1.25" strokeLinecap="round"/>
+                </svg>
               </div>
               <h3 className="lexend-subheading text-base font-semibold text-[#3E3B36] mb-2">Social Media Ads (Meta/IG)</h3>
               <p className="text-lg font-bold text-[#C4A896] mb-4">~15% Viewability Rate</p>
@@ -762,8 +1002,21 @@ export default function LandingPage() {
 
             {/* Card 2 */}
             <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-xl p-4 sm:p-6 lg:p-8 flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mb-6">
-                <XCircle size={24} />
+              <div className="p-3 bg-amber-100/40 backdrop-blur-md rounded-2xl border border-amber-200/60 shadow-md shadow-amber-900/5 inline-flex items-center justify-center mb-6 shrink-0">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="light-grad-x2" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#451A03" />
+                      <stop offset="100%" stopColor="#D97706" />
+                    </linearGradient>
+                    <filter id="light-glow-x2" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="1.5" result="blur" />
+                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                  </defs>
+                  <circle cx="12" cy="12" r="10" stroke="url(#light-grad-x2)" strokeWidth="1.25" filter="url(#light-glow-x2)"/>
+                  <path d="M15 9l-6 6M9 9l6 6" stroke="url(#light-grad-x2)" strokeWidth="1.25" strokeLinecap="round"/>
+                </svg>
               </div>
               <h3 className="lexend-subheading text-base font-semibold text-[#3E3B36] mb-2">Traditional Media</h3>
               <p className="text-lg font-bold text-[#C4A896] mb-4">Dynamic Zero Tracking</p>
@@ -774,8 +1027,21 @@ export default function LandingPage() {
 
             {/* Card 3 */}
             <div className="gsap-reveal bg-[#3E3B36] border border-[#3E3B36] rounded-xl p-4 sm:p-6 lg:p-8 flex flex-col items-center text-center transform md:-translate-y-4 shadow-xl">
-              <div className="w-12 h-12 rounded-full bg-[#F5F1EA] text-[#3E3B36] flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(245,241,234,0.3)]">
-                <CheckCircle size={24} />
+              <div className="p-3 bg-amber-950/30 backdrop-blur-md rounded-2xl border border-amber-800/40 shadow-xl shadow-amber-950/40 inline-flex items-center justify-center mb-6 shrink-0">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="warm-grad-check2" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#B45309" />
+                      <stop offset="100%" stopColor="#FDE68A" />
+                    </linearGradient>
+                    <filter id="warm-glow-check2" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="1.5" result="blur" />
+                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                  </defs>
+                  <circle cx="12" cy="12" r="10" stroke="url(#warm-grad-check2)" strokeWidth="1.25" filter="url(#warm-glow-check2)"/>
+                  <path d="M8 12l3 3 5-6" stroke="url(#warm-grad-check2)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </div>
               <h3 className="lexend-subheading text-base font-semibold text-[#F5F1EA] mb-2">True Attendly Broadcast</h3>
               <p className="text-lg font-bold text-[#C4A896] mb-4">98% Guaranteed Read Rate</p>
@@ -1186,8 +1452,21 @@ export default function LandingPage() {
 
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="gsap-reveal bg-[#F5F1EA] rounded-2xl p-8 border border-[#E8E3DA] flex flex-col h-full">
-              <div className="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shadow-sm mb-6 shrink-0">
-                <XCircle size={24} />
+              <div className="p-3 bg-amber-100/40 backdrop-blur-md rounded-2xl border border-amber-200/60 shadow-md shadow-amber-900/5 inline-flex items-center justify-center mb-6 shrink-0">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="light-grad-x3" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#451A03" />
+                      <stop offset="100%" stopColor="#D97706" />
+                    </linearGradient>
+                    <filter id="light-glow-x3" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="1.5" result="blur" />
+                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                  </defs>
+                  <circle cx="12" cy="12" r="10" stroke="url(#light-grad-x3)" strokeWidth="1.25" filter="url(#light-glow-x3)"/>
+                  <path d="M15 9l-6 6M9 9l6 6" stroke="url(#light-grad-x3)" strokeWidth="1.25" strokeLinecap="round"/>
+                </svg>
               </div>
               <h3 className="text-xl font-bold text-[#3E3B36] mb-4">The Daily Struggle</h3>
               <p className="text-sm leading-relaxed text-[#8B8378] flex-1">
@@ -1196,8 +1475,22 @@ export default function LandingPage() {
             </div>
 
             <div className="gsap-reveal bg-[#F5F1EA] rounded-2xl p-8 border border-[#E8E3DA] flex flex-col h-full">
-              <div className="w-12 h-12 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center shadow-sm mb-6 shrink-0">
-                <AlertTriangle size={24} />
+              <div className="p-3 bg-amber-100/40 backdrop-blur-md rounded-2xl border border-amber-200/60 shadow-md shadow-amber-900/5 inline-flex items-center justify-center mb-6 shrink-0">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="light-grad-alert" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#451A03" />
+                      <stop offset="100%" stopColor="#D97706" />
+                    </linearGradient>
+                    <filter id="light-glow-alert" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="1.5" result="blur" />
+                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                  </defs>
+                  <path d="M12 2l10 18H2L12 2z" stroke="url(#light-grad-alert)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" filter="url(#light-glow-alert)"/>
+                  <path d="M12 8v4" stroke="url(#light-grad-alert)" strokeWidth="1.25" strokeLinecap="round"/>
+                  <circle cx="12" cy="16" r="1" fill="url(#light-grad-alert)"/>
+                </svg>
               </div>
               <h3 className="text-xl font-bold text-[#3E3B36] mb-4">The Friction</h3>
               <p className="text-sm leading-relaxed text-[#8B8378] flex-1">
@@ -1206,8 +1499,21 @@ export default function LandingPage() {
             </div>
 
             <div className="gsap-reveal bg-[#3E3B36] rounded-2xl p-8 border border-[#C4A896]/30 flex flex-col h-full shadow-xl transform lg:-translate-y-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-sm mb-6 shrink-0 border border-emerald-500/20">
-                <CheckCircle size={24} />
+              <div className="p-3 bg-amber-950/30 backdrop-blur-md rounded-2xl border border-amber-800/40 shadow-xl shadow-amber-950/40 inline-flex items-center justify-center mb-6 shrink-0">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="warm-grad-check3" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#B45309" />
+                      <stop offset="100%" stopColor="#FDE68A" />
+                    </linearGradient>
+                    <filter id="warm-glow-check3" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="1.5" result="blur" />
+                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                  </defs>
+                  <circle cx="12" cy="12" r="10" stroke="url(#warm-grad-check3)" strokeWidth="1.25" filter="url(#warm-glow-check3)"/>
+                  <path d="M8 12l3 3 5-6" stroke="url(#warm-grad-check3)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </div>
               <h3 className="text-xl font-bold text-white mb-4">The Attendly Fix</h3>
               <p className="text-sm leading-relaxed text-white/70 flex-1">
@@ -1235,8 +1541,21 @@ export default function LandingPage() {
               {/* Traditional Tools */}
               <div className="p-10 border-b md:border-b-0 md:border-r border-[#E8E3DA] bg-[#F5F1EA]/50">
                 <div className="flex items-center gap-3 mb-8">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 shrink-0">
-                    <XCircle size={20} />
+                  <div className="p-3 bg-amber-100/40 backdrop-blur-md rounded-2xl border border-amber-200/60 shadow-md shadow-amber-900/5 shrink-0">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="light-grad-x4" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#451A03" />
+                          <stop offset="100%" stopColor="#D97706" />
+                        </linearGradient>
+                        <filter id="light-glow-x4" x="-20%" y="-20%" width="140%" height="140%">
+                          <feGaussianBlur stdDeviation="1.5" result="blur" />
+                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                      </defs>
+                      <circle cx="12" cy="12" r="10" stroke="url(#light-grad-x4)" strokeWidth="1.25" filter="url(#light-glow-x4)"/>
+                      <path d="M15 9l-6 6M9 9l6 6" stroke="url(#light-grad-x4)" strokeWidth="1.25" strokeLinecap="round"/>
+                    </svg>
                   </div>
                   <h3 className="text-xl font-bold text-[#3E3B36]">Traditional Bulk Platforms</h3>
                 </div>
@@ -1268,8 +1587,21 @@ export default function LandingPage() {
               <div className="p-10 bg-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-[#C4A896]/10 rounded-bl-full -z-10"></div>
                 <div className="flex items-center gap-3 mb-8">
-                  <div className="w-10 h-10 rounded-full bg-[#3E3B36] flex items-center justify-center text-[#C4A896] shrink-0">
-                    <CheckCircle size={20} />
+                  <div className="p-3 bg-amber-100/40 backdrop-blur-md rounded-2xl border border-amber-200/60 shadow-md shadow-amber-900/5 shrink-0">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="light-grad-check4" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#451A03" />
+                          <stop offset="100%" stopColor="#D97706" />
+                        </linearGradient>
+                        <filter id="light-glow-check4" x="-20%" y="-20%" width="140%" height="140%">
+                          <feGaussianBlur stdDeviation="1.5" result="blur" />
+                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                      </defs>
+                      <circle cx="12" cy="12" r="10" stroke="url(#light-grad-check4)" strokeWidth="1.25" filter="url(#light-glow-check4)"/>
+                      <path d="M8 12l3 3 5-6" stroke="url(#light-grad-check4)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </div>
                   <h3 className="text-xl font-bold text-[#3E3B36]">True Attendly Broadcast</h3>
                 </div>

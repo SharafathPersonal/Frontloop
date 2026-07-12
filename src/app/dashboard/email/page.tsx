@@ -31,7 +31,7 @@ export default function EmailMarketingPage() {
       setLoading(false);
 
       channel = supabase
-        .channel(`email-campaigns-main:${user.id}`)
+        .channel(`email-campaigns-main:${user.id}-${Date.now()}`)
         .on('postgres_changes', {
           event: '*', schema: 'public', table: 'email_campaigns',
           filter: `shop_id=eq.${user.id}`,

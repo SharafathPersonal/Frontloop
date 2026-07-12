@@ -111,7 +111,7 @@ export default function CampaignHistoryPage() {
       setLoading(false);
 
       channel = supabase
-        .channel(`campaigns-history:${user.id}`)
+        .channel(`campaigns-history:${user.id}-${Date.now()}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'campaigns', filter: `shop_id=eq.${user.id}` }, fetch)
         .subscribe();
     }

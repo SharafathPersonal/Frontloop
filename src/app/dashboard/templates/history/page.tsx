@@ -69,7 +69,7 @@ export default function TemplateHistoryPage() {
 
       // Realtime listener to reflect status updates immediately (e.g. from webhooks)
       channel = supabase
-        .channel(`message-templates-history:${user.id}`)
+        .channel(`message-templates-history:${user.id}-${Date.now()}`)
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'message_templates', filter: `shop_id=eq.${user.id}` },
