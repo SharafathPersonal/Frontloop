@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { APP_VERSION } from '@/lib/config';
-import { Phone, MessageCircle, XCircle, CheckCircle, ArrowRight, Mail, Smartphone } from 'lucide-react';
+import { Phone, MessageCircle, XCircle, CheckCircle, ArrowRight, Mail, Smartphone, ShieldCheck, Bot, Contact } from 'lucide-react';
 
 // ──────────────────────────────────────────────────────────────────
 // LANDING PAGE — True Attendly Broadcast
@@ -209,145 +209,210 @@ export default function LandingPage() {
           className="absolute inset-0 pointer-events-none"
           style={{
             background: `
-              radial-gradient(ellipse 80% 60% at 70% 20%, rgba(139, 123, 168, 0.30) 0%, transparent 70%),
-              radial-gradient(ellipse 60% 50% at 10% 80%, rgba(196, 168, 150, 0.30) 0%, transparent 70%)
+              radial-gradient(ellipse 80% 60% at 70% 20%, rgba(196, 168, 150, 0.15) 0%, transparent 70%),
+              radial-gradient(ellipse 60% 50% at 10% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 70%)
             `,
           }}
         />
 
-        <div className="relative max-w-6xl mx-auto px-6 pt-20 pb-16 w-full">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <div className="relative max-w-7xl mx-auto px-6 pt-28 pb-16 w-full">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
 
             {/* ── Left Column ──────────────────────────────────── */}
-            <div className="space-y-7">
+            <div className="space-y-8 z-10">
 
               <div className="gsap-reveal">
-                <span
-                  className="text-xs tracking-[0.2em] uppercase font-medium"
-                  style={{ color: '#C4A896' }}
-                >
-                  Attendly Broadcast
+                <span className="text-xs tracking-[0.2em] uppercase font-bold px-3 py-1.5 rounded-full border border-[#C4A896]/20" style={{ color: '#C4A896', backgroundColor: 'rgba(196,168,150,0.1)' }}>
+                  Version {APP_VERSION} Live
                 </span>
               </div>
 
               <div className="gsap-reveal">
-                <h1
-                  className="serif-headline text-4xl sm:text-5xl lg:text-[52px] text-white leading-[1.1]"
-                >
+                <h1 className="serif-headline text-4xl sm:text-5xl lg:text-[52px] text-white leading-[1.1] tracking-tight">
                   The Omnichannel AI Marketing Platform for High-Retention Retail.
                 </h1>
               </div>
 
               <div className="gsap-reveal">
-                <p
-                  className="text-base max-w-lg leading-relaxed"
-                  style={{ color: 'rgba(255,255,255,0.75)' }}
-                >
-                  Launch high-converting WhatsApp updates and Premium Email campaigns simultaneously. Broadcast dynamic offers, generate AI copies that write for you, and manage credit-driven pipelines with sub-second global execution.
+                <p className="text-base max-w-xl leading-relaxed" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                  Stop losing customers to dead channels. Launch official Meta WhatsApp updates, trigger zero-risk in-store QR lead pipelines, save bulk contacts via automated vCard sync, and run premium AI email campaigns—all from one unified ledger.
                 </p>
               </div>
 
-              {/* CTA Row */}
-              <div className="gsap-reveal flex items-center gap-4 flex-wrap pb-4">
-                <Link href="/auth/register" className="btn-primary rounded-sm">
-                  Start Broadcasting
+              {/* The 4-Feature Hub Display */}
+              <div className="gsap-reveal grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                <div className="p-4 rounded-xl flex items-start gap-3 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                  <ShieldCheck style={{ color: '#C4A896' }} className="mt-1 shrink-0" size={20} />
+                  <div>
+                    <h3 className="text-sm font-bold text-white mb-1">Official Meta API Mode</h3>
+                    <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>0% Ban Risk. Verified Broadcasts to GST Brands.</p>
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl flex items-start gap-3 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                  <Smartphone style={{ color: '#C4A896' }} className="mt-1 shrink-0" size={20} />
+                  <div>
+                    <h3 className="text-sm font-bold text-white mb-1">In-Store QR Engine</h3>
+                    <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>Instant walk-in lead capture via Scan & Join mechanics.</p>
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl flex items-start gap-3 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                  <Bot style={{ color: '#C4A896' }} className="mt-1 shrink-0" size={20} />
+                  <div>
+                    <h3 className="text-sm font-bold text-white mb-1">AI Template Polisher</h3>
+                    <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>Automated compliance formatting & unique spintax variations.</p>
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl flex items-start gap-3 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                  <Mail style={{ color: '#C4A896' }} className="mt-1 shrink-0" size={20} />
+                  <div>
+                    <h3 className="text-sm font-bold text-white mb-1">Premium AI Email Suite</h3>
+                    <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>Powered by Resend with luxury responsive layouts.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="gsap-reveal flex items-center gap-4 flex-wrap pt-4">
+                <Link href="/auth/register" className="btn-primary rounded-sm shadow-lg border border-[#C4A896]/30">
+                  Create Free Workspace
                 </Link>
-                <a href="#services" className="btn-secondary-dark rounded-sm">
-                  See How It Works
+                <a href="#solutions" className="btn-secondary-dark rounded-sm">
+                  Explore Architecture
                 </a>
               </div>
 
-              {/* USP Bullets */}
-              <div className="gsap-reveal space-y-5 mt-6">
-                <div className="flex items-start gap-4">
-                  <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-[#C4A896] text-[#3E3B36] flex items-center justify-center text-xs font-bold">1</div>
-                  <div>
-                    <strong className="text-white text-[15px]">Step 1: Print & Place</strong>
-                    <p className="text-sm leading-relaxed mt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>Generate a dedicated QR code from the app and place it at your billing counter.</p>
-                  </div>
+            </div>
+
+            {/* ── Right Column — Dual Mockup Grid ── */}
+            <div className="hidden lg:block gsap-reveal relative w-full h-[540px] perspective-1000">
+              
+              {/* Left Mockup: Meta API Dashboard & Email Editor */}
+              <div className="absolute left-0 top-12 w-[340px] bg-[#F5F1EA] rounded-2xl shadow-2xl border-[4px] border-[#E8E3DA] overflow-hidden transform -rotate-y-6 rotate-z-2 translate-x-4 z-10 flex flex-col">
+                <div className="bg-white px-4 py-3 border-b border-[#E8E3DA] flex justify-between items-center">
+                  <span className="text-xs font-bold text-[#3E3B36]">Campaign Dashboard</span>
+                  <span className="bg-emerald-100 text-emerald-700 text-[9px] uppercase px-2 py-1 rounded font-bold">Meta API</span>
                 </div>
-                <div className="flex items-start gap-4">
-                  <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-[#C4A896] text-[#3E3B36] flex items-center justify-center text-xs font-bold">2</div>
-                  <div>
-                    <strong className="text-white text-[15px]">Step 2: Instant Customer Scan</strong>
-                    <p className="text-sm leading-relaxed mt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>Shoppers scan the QR, automatically opening their native WhatsApp with the pre-filled "✨ Add me to Broadcast" text trigger.</p>
+                <div className="p-4 space-y-4">
+                  <div className="flex gap-2">
+                    <div className="flex-1 bg-white border border-[#E8E3DA] p-3 rounded-lg text-center shadow-sm">
+                      <p className="text-[10px] text-[#8B8378] font-bold uppercase tracking-wider mb-1">Sent</p>
+                      <p className="text-xl font-black text-[#3E3B36]">45,210</p>
+                    </div>
+                    <div className="flex-1 bg-white border border-[#E8E3DA] p-3 rounded-lg text-center shadow-sm">
+                      <p className="text-[10px] text-[#8B8378] font-bold uppercase tracking-wider mb-1">Delivered</p>
+                      <p className="text-xl font-black text-[#10B981]">44,890</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-[#10B981] text-white flex items-center justify-center text-xs font-bold">3</div>
-                  <div>
-                    <strong className="text-white text-[15px]">Step 3: 100% Anti-Ban Auto-Sync</strong>
-                    <p className="text-sm leading-relaxed mt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>Our secure cloud platform instantly captures the real name and number, syncs it safely to your DB (consuming 10 credits), and sends a dynamic welcome voucher while keeping your official phone number completely safe from bans.</p>
+                  <div className="bg-white p-3 rounded-lg border border-[#E8E3DA] shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Bot size={14} style={{ color: '#C4A896' }} />
+                      <span className="text-[10px] font-bold text-[#3E3B36] uppercase tracking-wider">AI Email Editor</span>
+                    </div>
+                    <div className="h-20 bg-[#F5F1EA] rounded border border-[#E8E3DA] border-dashed flex items-center justify-center">
+                      <span className="text-[10px] text-[#8B8378]">Visual Layout Engine</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Advanced Tech Tags */}
-              <div className="gsap-reveal flex flex-col gap-2 pt-4 mt-2 border-t border-white/10">
-                <p className="tracking-[0.2em] text-xs text-[#8B8378] uppercase font-medium">Multi-Tier AI Engine Failover Protection (Gemini/Groq Powered)</p>
-                <p className="tracking-[0.2em] text-xs text-[#8B8378] uppercase font-medium">Real-Time Local Connection Packet Intercept Guard</p>
-                
-                {/* HERO HIGHLIGHT pill */}
-                <div className="mt-3 bg-[#C4A896]/10 border border-[#C4A896]/20 p-4 rounded-xl flex flex-col gap-1.5 transition-colors hover:bg-[#C4A896]/20">
-                  <p className="text-sm font-bold text-[#C4A896] flex items-center gap-2">🎯 Dynamic QR Lead Generation</p>
-                  <p className="text-sm leading-relaxed text-white/80">Instant, zero-friction in-store lead capture that securely logs walk-in customers into your CRM dashboard automatically via a single scan.</p>
+              {/* Right Mockup: Smartphone QR Journey */}
+              <div className="absolute right-0 top-4 w-[260px] h-[480px] bg-[#EFEAE2] rounded-[2.5rem] shadow-2xl border-[8px] border-[#1f2937] overflow-hidden flex flex-col transform rotate-y-12 -rotate-z-3 -translate-x-2 z-20">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-[#1f2937] rounded-b-xl z-30"></div>
+                <div className="bg-[#075e54] text-white pt-10 pb-3 px-4 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center shrink-0">
+                    <span className="font-bold text-sm">TB</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">True Broadcast</p>
+                    <p className="text-[9px] text-white/70 uppercase tracking-widest">Business Account</p>
+                  </div>
+                </div>
+                <div className="flex-1 p-4 flex flex-col gap-3 relative" style={{backgroundImage: 'radial-gradient(#d1cbbd 1px, transparent 1px)', backgroundSize: '16px 16px'}}>
+                  <div className="self-end bg-[#dcf8c6] max-w-[85%] rounded-lg rounded-tr-none p-2.5 shadow-sm mt-2">
+                    <p className="text-[12px] text-[#111B21]">✨ Add me to Broadcast</p>
+                  </div>
+                  <div className="self-start bg-white max-w-[90%] rounded-lg rounded-tl-none p-3 shadow-sm border-l-4 border-emerald-500 mt-2">
+                    <div className="flex items-center gap-3 mb-2 pb-2 border-b border-gray-100">
+                      <div className="w-8 h-8 bg-[#F5F1EA] rounded-full flex items-center justify-center"><Contact size={16} className="text-[#3E3B36]"/></div>
+                      <div>
+                        <p className="text-[12px] font-bold text-[#3E3B36]">True Attendly</p>
+                        <p className="text-[10px] text-[#8B8378]">Business Contact</p>
+                      </div>
+                    </div>
+                    <button className="w-full text-center text-[11px] font-bold text-blue-500 py-1">Save Contact</button>
+                  </div>
+                  <div className="self-start bg-white max-w-[90%] rounded-lg rounded-tl-none p-2.5 shadow-sm mt-1">
+                    <p className="text-[12px] text-[#111B21]">Welcome! You've been granted <strong className="text-emerald-600">5 Loyalty Credits</strong>.</p>
+                  </div>
                 </div>
               </div>
 
             </div>
 
-            {/* ── Right Column — QR Mockup Card (desktop only) ── */}
-            <div className="hidden lg:flex items-center justify-center gsap-reveal relative w-full h-[500px]">
-              {/* Stand / QR Display */}
-              <div className="absolute left-0 bottom-10 w-64 bg-white rounded-xl shadow-2xl p-6 transform -rotate-6 border-[6px] border-[#E8E3DA] flex flex-col items-center">
-                <div className="w-full text-center mb-4">
-                  <h3 className="text-lg font-bold text-[#3E3B36] uppercase tracking-wide">Scan & Join</h3>
-                  <p className="text-xs text-[#8B8378]">Unlock 10% Off Instantly</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 2.5 — PROBLEM VS SOLUTION MATRIX
+      ══════════════════════════════════════════════════════════ */}
+      <section id="solutions" className="py-24 scroll-reveal-section bg-white border-b border-[#E8E3DA]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
+            <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#C4A896' }}>The Industry Trap</p>
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-6">
+              Why Traditional Marketing is Killing Your Retail Margins
+            </h2>
+            <p className="text-base leading-relaxed text-[#8B8378]">
+              The modern customer ignores SMS and blocks unsolicited spam. To win, you need permission, native formatting, and zero-ban infrastructure.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            
+            {/* Trap A vs Solution A */}
+            <div className="gsap-reveal bg-[#F5F1EA] rounded-2xl p-8 border border-[#E8E3DA]">
+              <div className="flex items-start gap-4 mb-6 pb-6 border-b border-[#E8E3DA]">
+                <div className="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 shadow-sm">
+                  <XCircle size={24} />
                 </div>
-                <div className="w-40 h-40 bg-black rounded-lg p-2 flex items-center justify-center relative">
-                  <div className="absolute inset-2 bg-white flex flex-wrap" style={{backgroundImage: 'repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), repeating-linear-gradient(45deg, #000 25%, #fff 25%, #fff 75%, #000 75%, #000)', backgroundPosition: '0 0, 10px 10px', backgroundSize: '20px 20px'}} />
-                </div>
-                <div className="mt-4 w-full h-8 bg-[#3E3B36] rounded-md flex items-center justify-center">
-                  <span className="text-white text-xs font-medium">True Attendly In-Store</span>
+                <div>
+                  <h3 className="text-lg font-bold text-[#3E3B36] mb-2">Problem: The Unofficial Third-Party Ban Trap</h3>
+                  <p className="text-sm text-[#8B8378] leading-relaxed">Sending bulk messages manually or via insecure web-scrapers gets your official business number instantly banned by WhatsApp, destroying your brand equity overnight.</p>
                 </div>
               </div>
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 shadow-sm">
+                  <CheckCircle size={24} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-[#3E3B36] mb-2">Solution: Dual-Engine Safety Pipeline</h3>
+                  <p className="text-sm text-[#8B8378] leading-relaxed">
+                    Use Official <strong>Meta API</strong> if you have a registered business for absolute zero-ban mass broadcasting. No documents? Use our <strong>In-Store QR Engine</strong> where customers text you first, completely whitelisting your number legally and natively.
+                  </p>
+                </div>
+              </div>
+            </div>
 
-              {/* Smartphone Preview */}
-              <div className="absolute right-0 top-10 w-[260px] h-[480px] bg-white rounded-[2.5rem] shadow-2xl border-[8px] border-[#1f2937] overflow-hidden flex flex-col transform rotate-3">
-                {/* Phone Header */}
-                <div className="bg-[#075e54] text-white px-4 pt-8 pb-3 flex items-center gap-3 relative">
-                  <div className="w-20 h-5 bg-black absolute top-0 left-1/2 -translate-x-1/2 rounded-b-xl"></div>
-                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center shrink-0">
-                    <span className="font-bold text-sm">B</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">Broadcast Bot</p>
-                    <p className="text-[10px] text-white/70">Online</p>
-                  </div>
+            {/* Trap B vs Solution B */}
+            <div className="gsap-reveal bg-[#F5F1EA] rounded-2xl p-8 border border-[#E8E3DA]">
+              <div className="flex items-start gap-4 mb-6 pb-6 border-b border-[#E8E3DA]">
+                <div className="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 shadow-sm">
+                  <XCircle size={24} />
                 </div>
-                {/* Phone Body */}
-                <div className="flex-1 bg-[#efeae2] p-4 flex flex-col justify-end gap-3" style={{backgroundImage: 'radial-gradient(#d1cbbd 1px, transparent 1px)', backgroundSize: '16px 16px'}}>
-                  {/* Sent Message Bubble */}
-                  <div className="self-end bg-[#dcf8c6] max-w-[85%] rounded-lg rounded-tr-none p-3 shadow-sm relative">
-                    <p className="text-[13px] text-[#111B21]">✨ Add me to Broadcast</p>
-                    <div className="text-right mt-1">
-                      <span className="text-[9px] text-[#667781]">Just now</span>
-                    </div>
-                  </div>
-                  {/* Reply Bubble */}
-                  <div className="self-start bg-white max-w-[90%] rounded-lg rounded-tl-none p-3 shadow-sm relative animate-pulse">
-                    <div className="w-8 h-2 bg-gray-200 rounded mb-1"></div>
-                    <div className="w-16 h-2 bg-gray-200 rounded"></div>
-                  </div>
+                <div>
+                  <h3 className="text-lg font-bold text-[#3E3B36] mb-2">Problem: The Ghost Contact Friction</h3>
+                  <p className="text-sm text-[#8B8378] leading-relaxed">Customers rarely type and save your 10-digit number. If they don't save it, broadcast links aren't clickable, and your text gets ignored as "unknown spam."</p>
                 </div>
-                {/* Phone Footer */}
-                <div className="bg-white p-3 flex items-center gap-2 border-t border-gray-200">
-                  <div className="flex-1 bg-gray-100 h-9 rounded-full px-4 flex items-center text-xs text-gray-400">
-                    Type a message...
-                  </div>
-                  <div className="w-9 h-9 bg-[#128c7e] rounded-full flex items-center justify-center shrink-0 text-white">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
-                  </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 shadow-sm">
+                  <CheckCircle size={24} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-[#3E3B36] mb-2">Solution: Instant Smart vCard Push</h3>
+                  <p className="text-sm text-[#8B8378] leading-relaxed">
+                    Upon QR scan, our system automatically drops a formatted <strong>vCard</strong>. One tap saves your merchant contact details directly into their native phonebook, ensuring maximum downstream read-rates and clickable URLs.
+                  </p>
                 </div>
               </div>
             </div>
