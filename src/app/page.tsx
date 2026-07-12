@@ -201,8 +201,7 @@ export default function LandingPage() {
       ══════════════════════════════════════════════════════════ */}
       <section
         ref={heroRef}
-        className="relative min-h-[92vh] flex items-center overflow-hidden"
-        style={{ backgroundColor: '#3E3B36' }}
+        className="w-full min-h-screen relative flex flex-col justify-center py-20 lg:py-32 bg-[#3E3B36] overflow-hidden"
       >
         {/* Ambient glow layers */}
         <div
@@ -215,7 +214,7 @@ export default function LandingPage() {
           }}
         />
 
-        <div className="relative max-w-7xl mx-auto px-6 pt-28 pb-16 w-full h-auto">
+        <div className="relative max-w-7xl mx-auto px-6 w-full h-auto mt-20">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
             {/* ── Left Column ──────────────────────────────────── */}
@@ -228,13 +227,13 @@ export default function LandingPage() {
               </div>
 
               <div className="gsap-reveal">
-                <h1 className="serif-headline text-3xl sm:text-4xl lg:text-[52px] text-white leading-[1.2] tracking-tight">
+                <h1 className="serif-headline text-4xl md:text-6xl font-bold text-white mb-6 leading-[1.2] tracking-tight">
                   The Omnichannel AI Marketing Platform for High-Retention Retail.
                 </h1>
               </div>
 
               <div className="gsap-reveal">
-                <p className="text-base max-w-xl leading-relaxed" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                <p className="text-lg text-neutral-400 max-w-2xl mb-8 leading-relaxed">
                   Stop losing customers to dead channels. Launch official Meta WhatsApp updates, trigger zero-risk in-store QR lead pipelines, save bulk contacts via automated vCard sync, and run premium AI email campaigns—all from one unified ledger.
                 </p>
               </div>
