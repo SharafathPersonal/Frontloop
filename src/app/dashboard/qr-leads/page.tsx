@@ -120,8 +120,7 @@ export default function QRLeadsPage() {
           .from('customers_master')
           .select('*', { count: 'exact', head: true })
           .eq('shop_id', user.id)
-          .contains('tags', ['IN_STORE_QR_LEAD'])
-          .eq('is_exported_to_vcf', true);
+          .contains('tags', ['IN_STORE_QR_LEAD']);
         if (syncCount !== null) setSyncedCount(syncCount);
 
         const channel = supabase
@@ -401,7 +400,7 @@ export default function QRLeadsPage() {
                       return (
                         <tr key={lead.id} className="hover:bg-[#F5F1EA]/30 transition-colors">
                           <td className="px-6 py-4">
-                            <span className="text-sm font-bold text-[#3E3B36]">C{lead.serial_number || '-'}</span>
+                            <span className="text-sm font-bold text-[#3E3B36]">C-</span>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
@@ -417,17 +416,10 @@ export default function QRLeadsPage() {
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            {!lead.is_exported_to_vcf ? (
-                              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-bold tracking-wide">
-                                <AlertCircle size={14} />
-                                🆕 New / Unsaved
-                              </div>
-                            ) : (
-                              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold tracking-wide">
-                                <CheckCircle2 size={14} />
-                                ✅ Saved to Phone
-                              </div>
-                            )}
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#F9F7F4] text-[#8B8378] border border-[#E8E3DA] text-[10px] font-bold tracking-wide">
+                              <CheckCircle2 size={14} />
+                              Lead captured
+                            </div>
                           </td>
                         </tr>
                       );
