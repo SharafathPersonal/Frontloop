@@ -196,9 +196,18 @@ export async function POST(req: Request) {
 
     const payload = (await req.json()) as BroadcastPayload;
 
-    if (!payload.targetTags || payload.targetTags.length === 0) {
+    const targetSource = payload.targetSource || 'TAGS';
+
+    if (targetSource === 'TAGS' && (!payload.targetTags || payload.targetTags.length === 0)) {
       return NextResponse.json(
         { ok: false, error: 'No target audience tags provided' },
+        { status: 400 },
+      );
+    }
+    
+    if (targetSource === 'CSV' && (!payload.csvData || payload.csvData.length === 0)) {
+      return NextResponse.json(
+        { ok: false, error: 'No CSV data provided' },
         { status: 400 },
       );
     }
@@ -268,32 +277,57 @@ export async function POST(req: Request) {
     }
 
     // ── 5. Resolve recipients (case-insensitive tag match) ───────────────
-    const { data: allContacts, error: contactsError } = await userClient
-      .from('customers_master')
-      .select('customer_name, whatsapp_number, tags')
-      .eq('shop_id', user.id);
+    let recipients: CustomerRecord[] = [];
+    
+    if (targetSource === 'TAGS') {
+      const { data: allContacts, error: contactsError } = await userClient
+        .from('customers_master')
+        .select('customer_name, whatsapp_number, tags')
+        .eq('shop_id', user.id);
 
-    if (contactsError) {
-      return NextResponse.json({ ok: false, error: 'Failed to load contacts' }, { status: 500 });
+      if (contactsError) {
+        return NextResponse.json({ ok: false, error: 'Failed to load contacts' }, { status: 500 });
+      }
+
+      let targetTags: string[] = [];
+      if (Array.isArray(payload.targetTags)) {
+        targetTags = payload.targetTags;
+      } else if (typeof payload.targetTags === 'string') {
+        targetTags = (payload.targetTags as string).split(',').map(t => t.trim()).filter(Boolean);
+      }
+      const targetTagsLower = targetTags.map((t) => t.toLowerCase().trim());
+
+      recipients = (allContacts ?? []).filter((c) => {
+        const parsedTags = parseTags(c.tags);
+        return parsedTags.some((tag: string) => targetTagsLower.includes(tag.toLowerCase().trim()));
+      });
+    } else if (targetSource === 'QR_LEADS') {
+      const { data: qrLeads, error: qrError } = await userClient
+        .from('customers_master')
+        .select('customer_name, whatsapp_number, tags, serial_number')
+        .eq('shop_id', user.id)
+        .contains('tags', ['IN_STORE_QR_LEAD']);
+        
+      if (qrError) {
+        return NextResponse.json({ ok: false, error: 'Failed to load QR Leads' }, { status: 500 });
+      }
+      
+      recipients = (qrLeads ?? []).map(lead => ({
+        customer_name: lead.serial_number ? `C${lead.serial_number}` : (lead.customer_name || 'Customer'),
+        whatsapp_number: lead.whatsapp_number,
+        tags: ['IN_STORE_QR_LEAD']
+      }));
+    } else if (targetSource === 'CSV' && payload.csvData) {
+      recipients = payload.csvData.map(row => ({
+        customer_name: row.name || 'Customer',
+        whatsapp_number: row.phone,
+        tags: ['CSV_IMPORT']
+      }));
     }
-
-    // Flatten potential payload target tags array/string variations
-    let targetTags: string[] = [];
-    if (Array.isArray(payload.targetTags)) {
-      targetTags = payload.targetTags;
-    } else if (typeof payload.targetTags === 'string') {
-      targetTags = (payload.targetTags as string).split(',').map(t => t.trim()).filter(Boolean);
-    }
-    const targetTagsLower = targetTags.map((t) => t.toLowerCase().trim());
-
-    const recipients: CustomerRecord[] = (allContacts ?? []).filter((c) => {
-      const parsedTags = parseTags(c.tags);
-      return parsedTags.some((tag: string) => targetTagsLower.includes(tag.toLowerCase().trim()));
-    });
 
     // ── 6. STRICT EMPTY GUARD — fail fast, record campaign as failed ──────
     if (recipients.length === 0) {
-      const failureReason = `No contacts found with tag(s): ${targetTags.join(', ')}`;
+      const failureReason = `No contacts found for target source: ${targetSource}`;
 
       const { data: newCampaign } = await userClient
         .from('campaigns')
@@ -318,7 +352,7 @@ export async function POST(req: Request) {
           .update({ 
             status: 'failed', 
             total_failed: 1,
-            failure_reason: 'No contacts found matching the selected target tags for this shop.' 
+            failure_reason: 'No contacts found matching the selected target for this shop.' 
           })
           .eq('id', campaignId);
       }
@@ -378,7 +412,9 @@ export async function POST(req: Request) {
     }
 
     // ── 9. Create campaign row (status: processing) ──────────────────────
-    const campaignTitle = `${payload.campaign.title} [Tags: ${payload.targetTags.join(', ')}]`;
+    const campaignTitle = targetSource === 'TAGS' 
+      ? `${payload.campaign.title} [Tags: ${payload.targetTags?.join(', ') || ''}]`
+      : `${payload.campaign.title} [Source: ${targetSource}]`;
 
     // Pre-replace constant template variables (except name) for the DB campaign log
     let dbMessageBody = payload.campaign.message_body;
@@ -832,6 +868,8 @@ export async function POST(req: Request) {
                   quantity: 1,
                 });
               }
+              // Rate limit for Meta API to prevent spam blocks (approx 100-200ms per message)
+              await delay(200);
             }
           } catch (loopError: any) {
             console.error('[Meta API] Unexpected loop-level error:', loopError);

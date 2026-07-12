@@ -233,7 +233,9 @@ export interface ParsedContact {
 /** The full payload sent to the broadcast dispatcher (tag-based targeting) */
 export interface BroadcastPayload {
   campaign: CampaignFormValues;
-  targetTags: CustomerTag[];
+  targetTags?: CustomerTag[];
+  targetSource?: 'TAGS' | 'QR_LEADS' | 'CSV';
+  csvData?: ParsedContact[];
   creditsRequired: number;
   templateParams?: Record<string, string>;
 }

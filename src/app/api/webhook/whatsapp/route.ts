@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import axios from 'axios';
 
 const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || 'trueattendly_secure_webhook_token';
 
@@ -154,11 +155,17 @@ export async function POST(req: Request) {
                   const pushName = change.value.contacts?.[0]?.profile?.name || 'QR Walk-in Lead';
 
                   try {
-                    // 1. Check wallet
+                    // 1. Check wallet and fetch shop details
                     const { data: walletData } = await adminSupabase
                       .from('wallets')
                       .select('credits_remaining')
                       .eq('shop_id', shopId)
+                      .single();
+
+                    const { data: shopInfo } = await adminSupabase
+                      .from('shops')
+                      .select('shop_name, owner_phone')
+                      .eq('id', shopId)
                       .single();
 
                     const hasCredits = walletData && walletData.credits_remaining >= 10;
@@ -168,7 +175,7 @@ export async function POST(req: Request) {
                     try {
                       const { data: existingContact } = await adminSupabase
                         .from('customers_master')
-                        .select('id, tags')
+                        .select('id, tags, loyalty_credits')
                         .eq('shop_id', shopId)
                         .eq('whatsapp_number', customerPhone)
                         .maybeSingle();
@@ -176,14 +183,20 @@ export async function POST(req: Request) {
                       let tagsArray = [tagToAssign];
                       if (existingContact) {
                         tagsArray = Array.from(new Set([...(existingContact.tags || []).filter((t: string) => t !== 'VIP_InStore'), tagToAssign]));
-                        await adminSupabase.from('customers_master').update({ tags: tagsArray, source: 'QR_SCAN' }).eq('id', existingContact.id);
+                        // Update existing contact
+                        await adminSupabase.from('customers_master').update({ 
+                          tags: tagsArray, 
+                          source: 'QR_SCAN',
+                          loyalty_credits: existingContact.loyalty_credits ? existingContact.loyalty_credits + 5 : 5
+                        }).eq('id', existingContact.id);
                       } else {
                         await adminSupabase.from('customers_master').insert({
                           shop_id: shopId,
                           customer_name: pushName,
                           whatsapp_number: customerPhone,
                           tags: tagsArray,
-                          source: 'QR_SCAN'
+                          source: 'QR_SCAN',
+                          loyalty_credits: 5
                         });
                       }
                       console.log("💾 [DB SUCCESS] Lead successfully captured and isolated under IN_STORE_QR_LEAD tag!");
@@ -198,23 +211,60 @@ export async function POST(req: Request) {
                       // 4. Update Analytics
                       await adminSupabase.rpc('increment_qr_analytics', { p_shop_id: shopId, p_credits: 10 });
 
-                      // 5. Send Welcome Voucher via Meta API
-                      if (metaConfigRow.meta_access_token && phoneNumberId) {
-                         const welcomeMessage = `Hello ${pushName}! 🎉\n\nThanks for subscribing to our VIP Broadcast. Here is your exclusive welcome voucher: *VIP10* for 10% off your next purchase!`;
-                         await fetch(`https://graph.facebook.com/v17.0/${phoneNumberId}/messages`, {
-                           method: 'POST',
-                           headers: {
-                             'Authorization': `Bearer ${metaConfigRow.meta_access_token}`,
-                             'Content-Type': 'application/json'
+                      // 5. Send Automated Response Sequence via Meta API
+                      if (metaConfigRow.meta_access_token && phoneNumberId && shopInfo) {
+                         const merchantName = shopInfo.shop_name || 'Merchant Shop Name';
+                         const merchantPhone = shopInfo.owner_phone ? shopInfo.owner_phone.replace(/\D/g, '') : phoneNumberId;
+
+                         // ELEMENT 1: Interactive Contact Card (vCard payload)
+                         await axios.post(
+                           `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
+                           {
+                             messaging_product: "whatsapp",
+                             recipient_type: "individual",
+                             to: customerPhone,
+                             type: "contacts",
+                             contacts: [{
+                               name: {
+                                 formatted_name: merchantName,
+                                 first_name: merchantName
+                               },
+                               phones: [{
+                                 phone: `+${merchantPhone}`,
+                                 type: "CELL",
+                                 wa_id: merchantPhone
+                               }]
+                             }]
                            },
-                           body: JSON.stringify({
+                           {
+                             headers: {
+                               'Authorization': `Bearer ${metaConfigRow.meta_access_token}`,
+                               'Content-Type': 'application/json'
+                             }
+                           }
+                         );
+
+                         // Small delay to ensure sequential delivery
+                         await new Promise(resolve => setTimeout(resolve, 500));
+
+                         // ELEMENT 2: Loyalty Promotional Copy
+                         const promoCopy = "🔥 You got 5 Credits for your next purchase! (Note: 1 Credit = 1 Rupee). Tap the contact card above to Save our number instantly and lock in your credits for your next visit!";
+                         await axios.post(
+                           `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
+                           {
                              messaging_product: "whatsapp",
                              recipient_type: "individual",
                              to: customerPhone,
                              type: "text",
-                             text: { body: welcomeMessage }
-                           })
-                         });
+                             text: { body: promoCopy }
+                           },
+                           {
+                             headers: {
+                               'Authorization': `Bearer ${metaConfigRow.meta_access_token}`,
+                               'Content-Type': 'application/json'
+                             }
+                           }
+                         );
                       }
                     }
                   } catch (err) {

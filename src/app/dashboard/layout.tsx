@@ -37,6 +37,7 @@ const navLinks: NavLink[] = [
   { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={14} strokeWidth={1.5} /> },
   { label: 'Audience', href: '/dashboard/customers', icon: <Users size={14} strokeWidth={1.5} /> },
   { label: 'Email Campaigns', href: '/dashboard/email', icon: <Mail size={14} strokeWidth={1.5} /> },
+  { label: 'WhatsApp Campaigns', href: '/dashboard/campaigns', icon: <Radio size={14} strokeWidth={1.5} /> },
   { label: 'In-Store QR Leads', href: '/dashboard/qr-leads', icon: <QrCode size={14} strokeWidth={1.5} /> },
   { label: 'Transactions', href: '/dashboard/transactions', icon: <Receipt size={14} strokeWidth={1.5} /> },
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings size={14} strokeWidth={1.5} /> },
