@@ -130,13 +130,13 @@ export default function MerchantLedgerPage() {
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Profile Details Block */}
-          <div className="bg-[#FFFFFF] border border-[#E8E3DA] p-8 shadow-sm lg:col-span-2">
+          <div className="bg-[#FFFFFF] border border-[#E8E3DA] p-4 sm:p-6 md:p-8 shadow-sm lg:col-span-2">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#E8E3DA]">
               <Building size={18} className="text-[#C4A896]" />
               <h2 className="text-sm font-semibold uppercase tracking-widest">Merchant Identity</h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:p-6 md:p-8">
               <div className="space-y-4">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[#8E8B85] mb-1">Owner Contact</p>
@@ -200,13 +200,13 @@ export default function MerchantLedgerPage() {
 
 
         {/* SECTION B: INLINE MANUAL INFUSION ENGINE & BLOCK ACTION CONTROLS */}
-        <section className="bg-[#FFFFFF] border border-[#E8E3DA] p-8 shadow-sm">
+        <section className="bg-[#FFFFFF] border border-[#E8E3DA] p-4 sm:p-6 md:p-8 shadow-sm">
           <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#E8E3DA]">
             <ShieldAlert size={18} className="text-[#3E3B36]" />
             <h2 className="text-sm font-semibold uppercase tracking-widest">Administrative Control Engine</h2>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:p-6 md:p-8 items-start">
             
             {/* Manual Infusion */}
             <div className="bg-[#F5F1EA] p-6">
@@ -258,14 +258,15 @@ export default function MerchantLedgerPage() {
         </section>
 
         {/* SECTION C: CAMPAIGN HISTORICAL PERFORMANCE MATRIX */}
-        <section className="bg-[#FFFFFF] border border-[#E8E3DA] p-8 shadow-sm">
+        <section className="bg-[#FFFFFF] border border-[#E8E3DA] p-4 sm:p-6 md:p-8 shadow-sm">
           <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#E8E3DA]">
             <Activity size={18} className="text-[#3E3B36]" />
             <h2 className="text-sm font-semibold uppercase tracking-widest">Campaign Historical Matrix</h2>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+        <div className="bg-[#FFFFFF] border border-[#E8E3DA] shadow-sm">
+          <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
+          <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[#F5F1EA] text-[10px] uppercase tracking-widest text-[#8E8B85]">
                   <th className="p-4 font-semibold">Dispatch Record</th>
@@ -277,7 +278,7 @@ export default function MerchantLedgerPage() {
               <tbody className="text-sm divide-y divide-[#E8E3DA]">
                 {campaigns.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="p-8 text-center text-[10px] uppercase tracking-widest text-[#8B8378]">
+                    <td colSpan={4} className="p-4 sm:p-6 md:p-8 text-center text-[10px] uppercase tracking-widest text-[#8B8378]">
                       No broadcast dispatches detected for this merchant.
                     </td>
                   </tr>
@@ -307,6 +308,7 @@ export default function MerchantLedgerPage() {
               </tbody>
             </table>
           </div>
+        </div>
         </section>
 
       </main>

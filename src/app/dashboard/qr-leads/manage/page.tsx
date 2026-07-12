@@ -328,8 +328,9 @@ export default function ManageQRLeadsPage() {
       </div>
 
       {/* Scrollable Table Area */}
-      <div className="flex-1 overflow-y-auto p-6 md:p-8">
+      <div className="flex-1 overflow-y-auto p-6 md:p-4 sm:p-6 md:p-8">
         <div className="max-w-7xl mx-auto bg-white rounded-[1.5rem] border border-[#E8E3DA] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+          <div className="overflow-x-auto whitespace-nowrap">
            <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 bg-[#F9F7F4] z-10 shadow-sm border-b border-[#E8E3DA]">
                 <tr>
@@ -399,6 +400,7 @@ export default function ManageQRLeadsPage() {
                 )}
               </tbody>
            </table>
+          </div>
            
            {/* Infinite Scroll Trigger & Loader */}
            <div ref={observerTarget} className="py-6 flex justify-center items-center h-16 bg-[#F9F7F4] border-t border-[#E8E3DA]">

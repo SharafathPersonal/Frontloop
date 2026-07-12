@@ -199,10 +199,10 @@ export default function QRLeadsPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:p-6 md:p-8">
         {/* QR Hero Section (Left Pane) */}
         <div className="xl:col-span-4 flex flex-col gap-6">
-          <div className="bg-[#3E3B36] rounded-[2rem] p-8 relative overflow-hidden flex flex-col items-center text-center shadow-2xl h-full">
+          <div className="bg-[#3E3B36] rounded-[2rem] p-4 sm:p-6 md:p-8 relative overflow-hidden flex flex-col items-center text-center shadow-2xl h-full">
             {/* Background Accent */}
             <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
             
@@ -232,7 +232,7 @@ export default function QRLeadsPage() {
         </div>
 
         {/* Analytics & Leads (Right Pane) */}
-        <div className="xl:col-span-8 flex flex-col gap-8">
+        <div className="xl:col-span-8 flex flex-col gap-4 sm:p-6 md:p-8">
           {/* Metric Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-[1.5rem] border border-[#E8E3DA] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
@@ -283,15 +283,15 @@ export default function QRLeadsPage() {
 
           {/* Leads Table */}
           <div className="bg-white rounded-[1.5rem] border border-[#E8E3DA] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden flex flex-col flex-1">
-            <div className="p-6 md:p-8 border-b border-[#E8E3DA] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="p-6 md:p-4 sm:p-6 md:p-8 border-b border-[#E8E3DA] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h2 className="text-xl serif-headline text-[#3E3B36]">Real-Time Intake stream</h2>
                 <p className="text-xs text-[#8B8378] mt-1">Showing latest 5 connections</p>
               </div>
             </div>
             
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
+          <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-[#F9F7F4]">
                     <th className="px-8 py-5 text-[10px] tracking-[0.2em] uppercase text-[#8B8378] font-bold border-b border-[#E8E3DA]">Customer Profile</th>

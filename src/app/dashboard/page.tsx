@@ -210,7 +210,7 @@ export default function DashboardPage() {
               <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">Broadcast Analytics</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Total Sent</p>
               <p className="text-xl font-medium text-[#3E3B36]">{waMetrics.sent.toLocaleString()}</p>
@@ -241,7 +241,7 @@ export default function DashboardPage() {
               <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">Corporate Reach</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Dispatched</p>
               <p className="text-xl font-medium text-[#3E3B36]">{emailMetrics.sent.toLocaleString()}</p>
@@ -272,7 +272,7 @@ export default function DashboardPage() {
               <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">Retail Lead Intake</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Total Scans</p>
               <p className="text-xl font-medium text-[#3E3B36]">{qrMetrics.total.toLocaleString()}</p>
@@ -303,7 +303,7 @@ export default function DashboardPage() {
           <h3 className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mb-6 flex items-center gap-2">
             <TrendingUp size={14} className="text-[#25D366]" /> Daily WA Read Trends
           </h3>
-          <div className="h-[200px] w-full">
+          <div className="h-[250px] lg:h-[200px] w-full">
             {waChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={waChartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
@@ -331,7 +331,7 @@ export default function DashboardPage() {
           <h3 className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mb-6 flex items-center gap-2">
             <Activity size={14} className="text-blue-500" /> Email Clicks &amp; Conversions
           </h3>
-          <div className="h-[200px] w-full">
+          <div className="h-[250px] lg:h-[200px] w-full">
             {emailChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={emailChartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
@@ -354,7 +354,7 @@ export default function DashboardPage() {
           <h3 className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mb-6 flex items-center gap-2">
             <Users size={14} className="text-[#C4A896]" /> QR Retail Growth Rate
           </h3>
-          <div className="h-[200px] w-full">
+          <div className="h-[250px] lg:h-[200px] w-full">
             {qrChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={qrChartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>

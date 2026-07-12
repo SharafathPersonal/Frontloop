@@ -343,7 +343,7 @@ export default function CampaignsLedgerPage() {
 
   if (mode !== 'META_API') {
     return (
-      <div className="max-w-md mx-auto text-center py-20 bg-white border border-[#E8E3DA] rounded-xl p-8 shadow-sm mt-12">
+      <div className="max-w-md mx-auto text-center py-20 bg-white border border-[#E8E3DA] rounded-xl p-4 sm:p-6 md:p-8 shadow-sm mt-12">
         <div className="w-12 h-12 rounded-full bg-[#F5F1EA] flex items-center justify-center mx-auto mb-4">
           <Lock className="text-[#C4A896]" size={20} />
         </div>

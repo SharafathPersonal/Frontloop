@@ -169,7 +169,7 @@ export default function TransactionsPage() {
       </div>
 
       <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-2xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#F9F7F4] border-b border-[#E8E3DA]">

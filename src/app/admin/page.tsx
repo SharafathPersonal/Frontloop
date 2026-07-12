@@ -219,7 +219,7 @@ export default function AdminDashboard() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#F5F1EA] flex items-center justify-center p-4">
-        <div className="bg-[#FFFFFF] p-8 md:p-12 shadow-2xl rounded-sm w-full max-w-md border border-[#E8E3DA]">
+        <div className="bg-[#FFFFFF] p-4 sm:p-6 md:p-8 md:p-12 shadow-2xl rounded-sm w-full max-w-md border border-[#E8E3DA]">
           <div className="flex justify-center mb-6">
             <ShieldAlert size={48} className="text-[#3E3B36]" strokeWidth={1.5} />
           </div>
@@ -263,10 +263,50 @@ export default function AdminDashboard() {
   const globalMessages = data.metrics?.globalMessages || 0;
   const totalRevenue = data.metrics?.totalRevenue || 0;
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <div className="min-h-screen bg-[#F5F1EA] text-[#3E3B36] flex">
+    <div className="min-h-screen bg-[#F5F1EA] text-[#3E3B36] flex flex-col md:flex-row">
+      
+      {/* Mobile Header */}
+      <div className="md:hidden flex items-center justify-between p-4 bg-[#FFFFFF] border-b border-[#E8E3DA]">
+        <div className="flex items-center gap-2">
+          <ShieldAlert size={20} className="text-[#3E3B36]" />
+          <span className="text-sm font-bold tracking-widest uppercase">Master Base</span>
+        </div>
+        <button onClick={() => setSidebarOpen(true)} className="text-[#3E3B36]">
+          <LayoutDashboard size={24} />
+        </button>
+      </div>
+
       {/* Sidebar Navigation */}
-      <aside className="w-64 bg-[#FFFFFF] border-r border-[#E8E3DA] flex flex-col hidden md:flex sticky top-0 h-screen">
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
+          <aside className="absolute top-0 left-0 bottom-0 w-64 bg-[#FFFFFF] flex flex-col z-10 shadow-xl overflow-y-auto">
+            <div className="p-6 border-b border-[#E8E3DA] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <ShieldAlert size={20} className="text-[#3E3B36]" />
+                <h1 className="text-sm font-bold tracking-widest uppercase">Master Base</h1>
+              </div>
+              <button onClick={() => setSidebarOpen(false)}><X size={20} /></button>
+            </div>
+            <nav className="flex-1 p-4 space-y-2">
+              <button onClick={() => { setActiveView('analytics'); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium tracking-wide transition-colors ${activeView === 'analytics' ? 'bg-[#F5F1EA] text-[#3E3B36]' : 'text-[#8E8B85]'}`}> <LayoutDashboard size={18} /> Analytics </button>
+              <button onClick={() => { setActiveView('merchants'); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium tracking-wide transition-colors ${activeView === 'merchants' ? 'bg-[#F5F1EA] text-[#3E3B36]' : 'text-[#8E8B85]'}`}> <Store size={18} /> Merchants </button>
+              <button onClick={() => { setActiveView('pricing'); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium tracking-wide transition-colors ${activeView === 'pricing' ? 'bg-[#F5F1EA] text-[#3E3B36]' : 'text-[#8E8B85]'}`}> <IndianRupee size={18} /> Pricing Engine </button>
+              <button onClick={() => { router.push('/admin/transactions'); setSidebarOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium tracking-wide transition-colors text-[#8E8B85]"> <CreditCard size={18} /> Transactions </button>
+              <button onClick={() => { setActiveView('feedbacks'); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium tracking-wide transition-colors ${activeView === 'feedbacks' ? 'bg-[#F5F1EA] text-[#3E3B36]' : 'text-[#8E8B85]'}`}> <MessageSquare size={18} /> Support Tickets </button>
+              <button onClick={() => { setActiveView('logs'); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium tracking-wide transition-colors ${activeView === 'logs' ? 'bg-[#F5F1EA] text-[#3E3B36]' : 'text-[#8E8B85]'}`}> <Shield size={18} /> Security & Audit </button>
+            </nav>
+            <div className="p-4 border-t border-[#E8E3DA]">
+              <button onClick={() => { document.cookie = "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"; window.location.reload(); }} className="w-full text-center text-[10px] uppercase tracking-wider font-semibold hover:text-black transition-colors">Terminate Link</button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      <aside className="w-64 bg-[#FFFFFF] border-r border-[#E8E3DA] flex-col hidden md:flex sticky top-0 h-screen overflow-y-auto">
         <div className="p-6 border-b border-[#E8E3DA] flex items-center gap-3">
           <ShieldAlert size={24} className="text-[#3E3B36]" />
           <h1 className="text-sm font-bold tracking-widest uppercase">Master Base</h1>
@@ -328,7 +368,7 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      <main className="flex-1 max-w-6xl p-6 md:p-10">
+      <main className="flex-1 w-full max-w-full p-4 sm:p-6 md:p-10 overflow-hidden">
         
         {/* VIEW 1: MASTER DASHBOARD ANALYTICS */}
         {activeView === 'analytics' && (
@@ -398,7 +438,8 @@ export default function AdminDashboard() {
               </select>
             </div>
 
-            <div className="bg-[#FFFFFF] border border-[#E8E3DA] overflow-x-auto shadow-sm">
+            <div className="bg-[#FFFFFF] border border-[#E8E3DA] shadow-sm">
+              <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-[#F5F1EA] text-[10px] uppercase tracking-widest text-[#8E8B85]">
@@ -446,8 +487,9 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
               {merchants.length === 0 && !isLoadingMerchants && (
-                <div className="p-8 text-center text-[#8E8B85] text-sm tracking-widest uppercase">No merchants found.</div>
+                <div className="p-4 sm:p-6 md:p-8 text-center text-[#8E8B85] text-sm tracking-widest uppercase">No merchants found.</div>
               )}
+              </div>
             </div>
 
             {hasMoreMerchants && (
@@ -478,9 +520,9 @@ export default function AdminDashboard() {
             )}
             
             {/* System Cost Configurations */}
-            <div className="bg-[#FFFFFF] border border-[#E8E3DA] p-6 shadow-sm">
+            <div className="bg-[#FFFFFF] border border-[#E8E3DA] p-4 sm:p-6 shadow-sm">
               <h3 className="text-xs font-bold uppercase tracking-widest mb-6 pb-2 border-b border-[#E8E3DA]">System Credit Deduction Rates</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4 sm:p-6 md:p-8">
                 <div>
                   <label className="block text-[10px] uppercase tracking-widest text-[#8E8B85] mb-2">WhatsApp Credit Cost (per message)</label>
                   <input 
@@ -557,7 +599,7 @@ export default function AdminDashboard() {
                 </div>
               ))}
               {pricingTiers.length === 0 && (
-                <div className="col-span-full p-8 text-center text-[#8E8B85] text-sm uppercase tracking-widest border border-dashed border-[#E8E3DA]">
+                <div className="col-span-full p-4 sm:p-6 md:p-8 text-center text-[#8E8B85] text-sm uppercase tracking-widest border border-dashed border-[#E8E3DA]">
                   No pricing tiers configured. Ensure public.pricing_tiers is populated.
                 </div>
               )}
@@ -583,7 +625,7 @@ export default function AdminDashboard() {
             
             <div className="space-y-4">
               {data.feedbacks?.length === 0 && (
-                <div className="bg-[#FFFFFF] p-8 border border-[#E8E3DA] text-center text-[#8E8B85] text-sm tracking-widest uppercase">
+                <div className="bg-[#FFFFFF] p-4 sm:p-6 md:p-8 border border-[#E8E3DA] text-center text-[#8E8B85] text-sm tracking-widest uppercase">
                   No support tickets found in the matrix.
                 </div>
               )}
@@ -658,7 +700,8 @@ export default function AdminDashboard() {
               </div>
             </div>
             
-            <div className="bg-[#FFFFFF] border border-[#E8E3DA] overflow-x-auto shadow-sm">
+            <div className="bg-[#FFFFFF] border border-[#E8E3DA] shadow-sm">
+              <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-[#F5F1EA] text-[10px] uppercase tracking-widest text-[#8E8B85]">
@@ -719,10 +762,11 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
               {logs.length === 0 && !isLoadingLogs && (
-                <div className="p-8 text-center text-[#8E8B85] text-sm tracking-widest uppercase">
+                <div className="p-4 sm:p-6 md:p-8 text-center text-[#8E8B85] text-sm tracking-widest uppercase">
                   {logType === 'activity' ? 'No activity logs found.' : 'No system error logs found.'}
                 </div>
               )}
+              </div>
             </div>
 
             {hasMoreLogs && (

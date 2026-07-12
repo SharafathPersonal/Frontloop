@@ -535,7 +535,7 @@ function BroadcastPageInner() {
               </div>
             ) : (
               <div
-                className={`p-8 text-center cursor-pointer transition-all ${imageDragging ? 'bg-[#F5F1EA] border-[#C4A896]' : 'hover:bg-[#F5F1EA]/30'} ${isSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+                className={`p-4 sm:p-6 md:p-8 text-center cursor-pointer transition-all ${imageDragging ? 'bg-[#F5F1EA] border-[#C4A896]' : 'hover:bg-[#F5F1EA]/30'} ${isSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
                 onDragOver={(e) => { if (!isSubmitting) { e.preventDefault(); setImageDragging(true); } }}
                 onDragLeave={() => setImageDragging(false)}
                 onDrop={handleImageDrop}

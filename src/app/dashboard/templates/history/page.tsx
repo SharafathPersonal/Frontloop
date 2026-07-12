@@ -232,8 +232,8 @@ export default function TemplateHistoryPage() {
             <p className="text-xs">No matching template logs found.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+          <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
+          <table className="w-full text-left text-sm">
               <thead className="bg-[#F5F1EA] text-[#8B8378] text-[10px] tracking-[0.1em] uppercase font-semibold">
                 <tr>
                   <th className="px-6 py-4">Preview</th>

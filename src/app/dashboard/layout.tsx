@@ -243,7 +243,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           {/* Page Content */}
-          <main className="flex-1 overflow-y-auto p-6 lg:p-8 flex flex-col gap-6">
+          <main className="flex-1 overflow-y-auto p-6 lg:p-4 sm:p-6 md:p-8 flex flex-col gap-6">
             {shop?.whatsapp_mode === 'QR_EXPRESS' && shop?.qr_express_status?.toUpperCase() !== 'CONNECTED' && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm shrink-0">
                 <div className="flex items-center gap-3">

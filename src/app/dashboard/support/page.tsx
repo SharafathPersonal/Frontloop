@@ -75,7 +75,7 @@ export default function SupportPage() {
         <div className="grid md:grid-cols-2">
           
           {/* Left Column: 24/7 Helpline */}
-          <div className="p-8 md:border-r border-b md:border-b-0 border-[#E8E3DA] flex flex-col">
+          <div className="p-4 sm:p-6 md:p-8 md:border-r border-b md:border-b-0 border-[#E8E3DA] flex flex-col">
             <h2 className="serif-headline text-2xl text-[#3E3B36] mb-3">24/7 Concierge Support</h2>
             <p className="text-sm text-[#8B8378] leading-relaxed font-sans mb-8">
               Have an urgent dispatch issue or billing question? Our founding team is available around the clock to keep your retail pipelines running smoothly.
@@ -102,7 +102,7 @@ export default function SupportPage() {
           </div>
 
           {/* Right Column: Ticketing Form */}
-          <div className="p-8">
+          <div className="p-4 sm:p-6 md:p-8">
             <h3 className="text-xs font-semibold text-[#8B8378] tracking-[0.2em] uppercase mb-6">Issue Ticketing & Feedback</h3>
             <form onSubmit={handleSubmitFeedback} className="space-y-5">
               

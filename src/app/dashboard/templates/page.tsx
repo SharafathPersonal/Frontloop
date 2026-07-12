@@ -311,7 +311,7 @@ export default function TemplatesPage() {
 
   if (mode === 'QR_EXPRESS') {
     return (
-      <div className="max-w-md mx-auto text-center py-20 bg-white border border-[#E8E3DA] rounded-xl p-8 shadow-sm">
+      <div className="max-w-md mx-auto text-center py-20 bg-white border border-[#E8E3DA] rounded-xl p-4 sm:p-6 md:p-8 shadow-sm">
         <div className="w-12 h-12 rounded-full bg-[#F5F1EA] flex items-center justify-center mx-auto mb-4">
           <Lock className="text-[#C4A896]" size={20} />
         </div>
@@ -358,8 +358,8 @@ export default function TemplatesPage() {
 
       <div className="bg-white border border-[#E8E3DA] rounded-xl overflow-hidden">
         {isLoading ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+          <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
+          <table className="w-full text-left text-sm">
               <thead className="bg-[#F5F1EA] text-[#8B8378] text-[10px] tracking-[0.1em] uppercase">
                 <tr>
                   <th className="px-6 py-4 font-medium">Template Name</th>
@@ -384,8 +384,8 @@ export default function TemplatesPage() {
             <p>No templates found. Create your first template to start broadcasting.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+          <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
+          <table className="w-full text-left text-sm">
               <thead className="bg-[#F5F1EA] text-[#8B8378] text-[10px] tracking-[0.1em] uppercase">
                 <tr>
                   <th className="px-6 py-4 font-medium">Template Name</th>

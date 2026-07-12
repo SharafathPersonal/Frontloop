@@ -144,7 +144,7 @@ export default function AdminTransactionsPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#F5F1EA] flex items-center justify-center p-4">
-        <div className="bg-[#FFFFFF] p-8 md:p-12 shadow-2xl rounded-sm w-full max-w-md border border-[#E8E3DA]">
+        <div className="bg-[#FFFFFF] p-4 sm:p-6 md:p-8 md:p-12 shadow-2xl rounded-sm w-full max-w-md border border-[#E8E3DA]">
           <div className="flex justify-center mb-6">
             <ShieldAlert size={48} className="text-[#3E3B36]" strokeWidth={1.5} />
           </div>
@@ -286,7 +286,8 @@ export default function AdminTransactionsPage() {
         </div>
 
         {/* Transactions Table */}
-        <div className="bg-[#FFFFFF] border border-[#E8E3DA] overflow-x-auto shadow-sm">
+        <div className="bg-[#FFFFFF] border border-[#E8E3DA] shadow-sm">
+          <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#F5F1EA] text-[10px] uppercase tracking-widest text-[#8E8B85]">
@@ -346,10 +347,11 @@ export default function AdminTransactionsPage() {
               })}
             </tbody>
           </table>
+          </div>
 
           {/* Empty state */}
           {transactions.length === 0 && !loading && (
-            <div className="p-8 text-center text-[#8E8B85] text-sm tracking-widest uppercase">
+            <div className="p-4 sm:p-6 md:p-8 text-center text-[#8E8B85] text-sm tracking-widest uppercase">
               No transactions found.
             </div>
           )}

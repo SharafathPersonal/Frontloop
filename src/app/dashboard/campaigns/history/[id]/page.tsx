@@ -600,7 +600,7 @@ export default function CampaignDrillDownPage({
       </div>
 
       {/* Payload Breakdown */}
-      <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-8">
+      <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-4 sm:p-6 md:p-8">
         <div className="flex justify-between items-start flex-wrap gap-4 mb-8">
           <div>
             <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36] mb-1">

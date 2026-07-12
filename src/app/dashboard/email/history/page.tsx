@@ -268,8 +268,8 @@ export default function EmailHistoryPage() {
             <p className="text-xs tracking-[0.1em] uppercase text-[#8B8378]">No email campaigns found.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[800px]">
+          <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
+          <table className="w-full text-left border-collapse min-w-[800px]">
               <thead className="bg-[#F5F1EA] border-b border-[#E8E3DA]">
                 <tr>
                   <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Campaign / Subject</th>

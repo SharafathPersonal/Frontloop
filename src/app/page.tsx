@@ -215,8 +215,8 @@ export default function LandingPage() {
           }}
         />
 
-        <div className="relative max-w-7xl mx-auto px-6 pt-28 pb-16 w-full">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="relative max-w-7xl mx-auto px-6 pt-28 pb-16 w-full h-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
             {/* ── Left Column ──────────────────────────────────── */}
             <div className="space-y-8 z-10">
@@ -228,7 +228,7 @@ export default function LandingPage() {
               </div>
 
               <div className="gsap-reveal">
-                <h1 className="serif-headline text-4xl sm:text-5xl lg:text-[52px] text-white leading-[1.1] tracking-tight">
+                <h1 className="serif-headline text-3xl sm:text-4xl lg:text-[52px] text-white leading-[1.2] tracking-tight">
                   The Omnichannel AI Marketing Platform for High-Retention Retail.
                 </h1>
               </div>
@@ -283,7 +283,7 @@ export default function LandingPage() {
             </div>
 
             {/* ── Right Column — 5-Block Cluster Mockup ── */}
-            <div className="hidden lg:block gsap-reveal relative w-full h-[540px] perspective-1000">
+            <div className="gsap-reveal relative w-full h-[400px] sm:h-[500px] lg:h-[540px] perspective-1000 scale-[0.7] sm:scale-90 lg:scale-100 origin-top flex-shrink-0 mt-8 lg:mt-0">
               
               {/* Block 1: Campaign Dashboard (Meta API) */}
               <div className="absolute left-0 top-12 w-[260px] bg-white rounded-xl shadow-2xl border border-[#E8E3DA] p-4 transform -rotate-6 hover:rotate-0 transition-all duration-500 z-10">
@@ -410,11 +410,11 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             
             {/* Trap A vs Solution A */}
-            <div className="gsap-reveal bg-[#F5F1EA] rounded-2xl p-8 border border-[#E8E3DA]">
-              <div className="flex items-start gap-4 mb-6 pb-6 border-b border-[#E8E3DA]">
+            <div className="gsap-reveal bg-[#F5F1EA] rounded-2xl p-4 sm:p-6 lg:p-8 border border-[#E8E3DA]">
+              <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 mb-6 pb-6 border-b border-[#E8E3DA]">
                 <div className="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 shadow-sm">
                   <XCircle size={24} />
                 </div>
@@ -423,7 +423,7 @@ export default function LandingPage() {
                   <p className="text-sm text-[#8B8378] leading-relaxed">Sending bulk messages manually or via insecure web-scrapers gets your official business number instantly banned by WhatsApp, destroying your brand equity overnight.</p>
                 </div>
               </div>
-              <div className="flex items-start gap-4">
+              <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
                 <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 shadow-sm">
                   <CheckCircle size={24} />
                 </div>
@@ -437,8 +437,8 @@ export default function LandingPage() {
             </div>
 
             {/* Trap B vs Solution B */}
-            <div className="gsap-reveal bg-[#F5F1EA] rounded-2xl p-8 border border-[#E8E3DA]">
-              <div className="flex items-start gap-4 mb-6 pb-6 border-b border-[#E8E3DA]">
+            <div className="gsap-reveal bg-[#F5F1EA] rounded-2xl p-4 sm:p-6 lg:p-8 border border-[#E8E3DA]">
+              <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 mb-6 pb-6 border-b border-[#E8E3DA]">
                 <div className="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 shadow-sm">
                   <XCircle size={24} />
                 </div>
@@ -447,7 +447,7 @@ export default function LandingPage() {
                   <p className="text-sm text-[#8B8378] leading-relaxed">Customers rarely type and save your 10-digit number. If they don't save it, broadcast links aren't clickable, and your text gets ignored as "unknown spam."</p>
                 </div>
               </div>
-              <div className="flex items-start gap-4">
+              <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
                 <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 shadow-sm">
                   <CheckCircle size={24} />
                 </div>
@@ -712,7 +712,7 @@ export default function LandingPage() {
             ].map((card) => (
               <div
                 key={card.title}
-                className="gsap-reveal group bg-white rounded-xl p-6 border transition-colors duration-300"
+                className="gsap-reveal group bg-white rounded-xl p-4 sm:p-6 border transition-colors duration-300"
                 style={{ borderColor: '#E8E3DA' }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(196,168,150,0.6)')}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#E8E3DA')}
@@ -756,7 +756,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             
             {/* Card 1 */}
-            <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-xl p-8 flex flex-col items-center text-center">
+            <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-xl p-4 sm:p-6 lg:p-8 flex flex-col items-center text-center">
               <div className="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mb-6">
                 <XCircle size={24} />
               </div>
@@ -768,7 +768,7 @@ export default function LandingPage() {
             </div>
 
             {/* Card 2 */}
-            <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-xl p-8 flex flex-col items-center text-center">
+            <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-xl p-4 sm:p-6 lg:p-8 flex flex-col items-center text-center">
               <div className="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mb-6">
                 <XCircle size={24} />
               </div>
@@ -780,7 +780,7 @@ export default function LandingPage() {
             </div>
 
             {/* Card 3 */}
-            <div className="gsap-reveal bg-[#3E3B36] border border-[#3E3B36] rounded-xl p-8 flex flex-col items-center text-center transform md:-translate-y-4 shadow-xl">
+            <div className="gsap-reveal bg-[#3E3B36] border border-[#3E3B36] rounded-xl p-4 sm:p-6 lg:p-8 flex flex-col items-center text-center transform md:-translate-y-4 shadow-xl">
               <div className="w-12 h-12 rounded-full bg-[#F5F1EA] text-[#3E3B36] flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(245,241,234,0.3)]">
                 <CheckCircle size={24} />
               </div>
