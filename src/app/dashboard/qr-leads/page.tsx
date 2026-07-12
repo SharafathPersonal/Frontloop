@@ -376,8 +376,8 @@ export default function QRLeadsPage() {
         </div>
 
         {/* Scrollable Table Area */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-6xl mx-auto bg-white rounded-xl border border-[#E8E3DA] shadow-sm overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-6 md:p-8">
+          <div className="max-w-7xl mx-auto bg-white rounded-[1.5rem] border border-[#E8E3DA] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
              <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 bg-[#F5F1EA] z-10 shadow-sm">
                   <tr>
@@ -447,156 +447,175 @@ export default function QRLeadsPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-7xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-3xl serif-headline text-[#3E3B36]">In-Store QR Leads</h1>
-          <p className="text-sm text-[#8B8378] mt-1 tracking-wide">
-            Turn walk-ins into loyal subscribers instantly.
+          <h1 className="text-3xl md:text-4xl serif-headline text-[#3E3B36]">In-Store Lead Engine</h1>
+          <p className="text-sm text-[#8B8378] mt-2 tracking-wide flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Real-time walk-in capture and sync is active
           </p>
         </div>
+        <button 
+          onClick={() => setIsManageMode(true)}
+          className="group flex items-center gap-2 bg-[#3E3B36] text-[#F5F1EA] px-6 py-3 rounded-xl text-xs font-bold tracking-widest uppercase hover:bg-[#2A2825] transition-all shadow-xl hover:-translate-y-1"
+        >
+          Manage All Leads
+          <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* QR Hero Section */}
-        <div className="lg:col-span-1 bg-white rounded-2xl p-8 border border-[#E8E3DA] shadow-sm flex flex-col items-center text-center">
-          <div className="w-12 h-12 bg-[#F5F1EA] rounded-full flex items-center justify-center mb-6">
-            <QrCode className="text-[#C4A896]" size={24} />
-          </div>
-          <h2 className="text-xl serif-headline text-[#3E3B36] mb-2">Your Display QR</h2>
-          <p className="text-xs text-[#8B8378] mb-8 leading-relaxed">
-            Print and place this on your reception desk. Customers scan to get a VIP voucher and join your broadcast list.
-          </p>
-          
-          <div className="relative w-48 h-48 bg-white p-2 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] mb-8 border border-[#E8E3DA]">
-            {qrImageSrc && (
-              <Image src={qrImageSrc} alt="Store QR Code" fill className="object-contain p-2 rounded-lg" unoptimized />
-            )}
-          </div>
-          
-          <button
-            onClick={handleDownloadQR}
-            className="w-full flex items-center justify-center gap-2 bg-[#3E3B36] text-[#F5F1EA] py-3 rounded-lg text-xs tracking-[0.15em] uppercase hover:bg-[#2A2825] transition-colors"
-          >
-            <Download size={14} />
-            Download for Print
-          </button>
-        </div>
-
-        {/* Analytics & Leads */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Metric Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white p-6 rounded-2xl border border-[#E8E3DA] shadow-sm hover:border-[#C4A896] transition-colors">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-                  <Users size={16} className="text-blue-500" />
-                </div>
-                <p className="text-xs tracking-[0.15em] uppercase text-[#8B8378]">Total Leads</p>
-              </div>
-              <p className="text-3xl serif-headline text-[#3E3B36]">{totalAudience}</p>
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+        {/* QR Hero Section (Left Pane) */}
+        <div className="xl:col-span-4 flex flex-col gap-6">
+          <div className="bg-[#3E3B36] rounded-[2rem] p-8 relative overflow-hidden flex flex-col items-center text-center shadow-2xl h-full">
+            {/* Background Accent */}
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
+            
+            <div className="w-16 h-16 bg-[#C4A896]/20 border border-[#C4A896]/30 rounded-2xl flex items-center justify-center mb-6 relative z-10 backdrop-blur-sm">
+              <QrCode className="text-[#C4A896]" size={32} />
             </div>
             
-            <div className="bg-white p-6 rounded-2xl border border-[#E8E3DA] shadow-sm hover:border-[#C4A896] transition-colors">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center">
-                  <Flame size={16} className="text-orange-500" />
+            <h2 className="text-2xl serif-headline text-white mb-3 relative z-10">Scan & Join</h2>
+            <p className="text-sm text-white/60 mb-8 leading-relaxed relative z-10 font-medium">
+              Place this at your reception. Customers instantly join your broadcast list via WhatsApp.
+            </p>
+            
+            <div className="relative w-56 h-56 bg-white p-3 rounded-[1.5rem] shadow-2xl mb-8 transform transition-transform hover:scale-105 duration-500 z-10 border-4 border-white/10">
+              {qrImageSrc && (
+                <Image src={qrImageSrc} alt="Store QR Code" fill className="object-contain p-2 rounded-xl" unoptimized />
+              )}
+            </div>
+            
+            <button
+              onClick={handleDownloadQR}
+              className="mt-auto w-full flex items-center justify-center gap-3 bg-[#C4A896] text-[#3E3B36] py-4 rounded-xl text-xs font-bold tracking-[0.2em] uppercase hover:bg-[#b09482] transition-colors relative z-10 shadow-lg"
+            >
+              <Download size={16} />
+              Download Display Pass
+            </button>
+          </div>
+        </div>
+
+        {/* Analytics & Leads (Right Pane) */}
+        <div className="xl:col-span-8 flex flex-col gap-8">
+          {/* Metric Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white p-6 rounded-[1.5rem] border border-[#E8E3DA] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-[4rem] -z-0 transition-transform group-hover:scale-110"></div>
+              <div className="flex items-center gap-4 mb-6 relative z-10">
+                <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100">
+                  <Users size={20} className="text-blue-500" />
                 </div>
-                <p className="text-xs tracking-[0.15em] uppercase text-[#8B8378]">VCF Syncing Progress</p>
+                <p className="text-[10px] tracking-[0.2em] uppercase text-[#8B8378] font-bold">Total Audience</p>
               </div>
-              <p className="text-3xl serif-headline text-[#3E3B36] mb-3">
-                {syncedCount} / {totalAudience} <span className="text-lg text-[#8B8378]">Saved</span>
-              </p>
-              
-              {/* Progress Bar Chart */}
-              <div className="space-y-1.5">
-                 <div className="flex justify-between text-[10px] uppercase tracking-wider text-[#8B8378] font-semibold">
-                   <span>Sync Progress</span>
-                   <span>{totalAudience > 0 ? Math.round((syncedCount / totalAudience) * 100) : 0}%</span>
-                 </div>
-                 <div className="w-full h-1.5 bg-[#F5F1EA] rounded-full overflow-hidden">
-                   <div 
-                     className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out"
-                     style={{ width: `${totalAudience > 0 ? (syncedCount / totalAudience) * 100 : 0}%` }}
-                   />
-                 </div>
+              <p className="text-4xl serif-headline text-[#3E3B36] relative z-10">{totalAudience}</p>
+            </div>
+            
+            <div className="bg-white p-6 rounded-[1.5rem] border border-[#E8E3DA] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-bl-[4rem] -z-0 transition-transform group-hover:scale-110"></div>
+              <div className="flex items-center gap-4 mb-6 relative z-10">
+                <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center border border-orange-100">
+                  <Flame size={20} className="text-orange-500" />
+                </div>
+                <p className="text-[10px] tracking-[0.2em] uppercase text-[#8B8378] font-bold">Today's Scans</p>
               </div>
+              <p className="text-4xl serif-headline text-[#3E3B36] relative z-10">{todayStats.scans}</p>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-[#E8E3DA] shadow-sm hover:border-[#C4A896] transition-colors">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center">
-                  <Coins size={16} className="text-green-500" />
+            <div className="bg-white p-6 rounded-[1.5rem] border border-[#E8E3DA] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-bl-[4rem] -z-0 transition-transform group-hover:scale-110"></div>
+              <div className="flex items-center gap-4 mb-6 relative z-10">
+                <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center border border-emerald-100">
+                  <CheckCircle2 size={20} className="text-emerald-500" />
                 </div>
-                <p className="text-xs tracking-[0.15em] uppercase text-[#8B8378]">Credits Used</p>
+                <p className="text-[10px] tracking-[0.2em] uppercase text-[#8B8378] font-bold">Phone Synced</p>
               </div>
-              <p className="text-3xl serif-headline text-[#3E3B36]">{creditsUsed}</p>
+              <div className="relative z-10">
+                <p className="text-4xl serif-headline text-[#3E3B36] mb-4">
+                  {syncedCount} <span className="text-sm text-[#8B8378] serif-headline">/ {totalAudience}</span>
+                </p>
+                <div className="w-full h-1.5 bg-[#F5F1EA] rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
+                    style={{ width: `${totalAudience > 0 ? (syncedCount / totalAudience) * 100 : 0}%` }}
+                  >
+                    <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]"></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Leads Table */}
-          <div className="bg-white rounded-2xl border border-[#E8E3DA] shadow-sm overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-[#E8E3DA] flex justify-between items-center bg-[#FAFAFA]">
-              <h2 className="text-lg serif-headline text-[#3E3B36]">Latest Captured Leads</h2>
-              <button 
-                onClick={() => setIsManageMode(true)}
-                className="group flex items-center gap-2 bg-[#F5F1EA] hover:bg-[#E8E3DA] text-[#3E3B36] px-4 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all"
-              >
-                Manage Your Leads
-                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-              </button>
+          <div className="bg-white rounded-[1.5rem] border border-[#E8E3DA] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden flex flex-col flex-1">
+            <div className="p-6 md:p-8 border-b border-[#E8E3DA] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-xl serif-headline text-[#3E3B36]">Real-Time Intake stream</h2>
+                <p className="text-xs text-[#8B8378] mt-1">Showing latest 5 connections</p>
+              </div>
             </div>
+            
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-white">
-                    <th className="px-6 py-4 text-[10px] tracking-[0.15em] uppercase text-[#8B8378] font-medium border-b border-[#E8E3DA]">Customer</th>
-                    <th className="px-6 py-4 text-[10px] tracking-[0.15em] uppercase text-[#8B8378] font-medium border-b border-[#E8E3DA]">Phone Number</th>
-                    <th className="px-6 py-4 text-[10px] tracking-[0.15em] uppercase text-[#8B8378] font-medium border-b border-[#E8E3DA]">Date Joined</th>
-                    <th className="px-6 py-4 text-[10px] tracking-[0.15em] uppercase text-[#8B8378] font-medium border-b border-[#E8E3DA]">Status</th>
+                  <tr className="bg-[#F9F7F4]">
+                    <th className="px-8 py-5 text-[10px] tracking-[0.2em] uppercase text-[#8B8378] font-bold border-b border-[#E8E3DA]">Customer Profile</th>
+                    <th className="px-8 py-5 text-[10px] tracking-[0.2em] uppercase text-[#8B8378] font-bold border-b border-[#E8E3DA]">Phone Connection</th>
+                    <th className="px-8 py-5 text-[10px] tracking-[0.2em] uppercase text-[#8B8378] font-bold border-b border-[#E8E3DA]">Intake Timestamp</th>
+                    <th className="px-8 py-5 text-[10px] tracking-[0.2em] uppercase text-[#8B8378] font-bold border-b border-[#E8E3DA]">Network Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E8E3DA] bg-white">
                   {latestLeads.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-6 py-12 text-center text-[#8B8378] text-sm">
-                        No QR leads captured yet. Print your QR code to get started!
+                      <td colSpan={4} className="px-8 py-20 text-center text-[#8B8378]">
+                        <div className="flex flex-col items-center justify-center">
+                          <Users size={32} className="text-[#E8E3DA] mb-4" />
+                          <p className="text-sm font-medium">No walk-in scans detected yet.</p>
+                          <p className="text-xs mt-1">Leads will automatically appear here.</p>
+                        </div>
                       </td>
                     </tr>
                   ) : (
                     latestLeads.slice(0, 5).map((lead) => {
                       const isMissed = lead.tags?.includes('MISSED_LEAD');
                       return (
-                        <tr key={lead.id} className="hover:bg-[#F5F1EA]/30 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-6 h-6 rounded-full bg-[#E8E3DA] text-[#3E3B36] flex items-center justify-center font-bold text-[10px] uppercase">
-                                {lead.customer_name ? lead.customer_name.charAt(0) : '?'}
+                        <tr key={lead.id} className="hover:bg-[#F5F1EA]/50 transition-colors group">
+                          <td className="px-8 py-5">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-full bg-[#3E3B36] text-[#F5F1EA] flex items-center justify-center font-bold text-sm uppercase shadow-sm group-hover:bg-[#C4A896] transition-colors">
+                                {lead.customer_name && lead.customer_name !== 'Unknown' ? lead.customer_name.charAt(0) : '?'}
                               </div>
-                              <span className="text-sm font-medium text-[#3E3B36]">{lead.customer_name}</span>
+                              <span className="text-sm font-bold text-[#3E3B36]">{lead.customer_name && lead.customer_name !== 'Unknown' ? lead.customer_name : 'New Customer'}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
-                            <span className="text-sm text-[#8B8378] font-mono">{lead.whatsapp_number}</span>
+                          <td className="px-8 py-5">
+                            <span className="text-sm text-[#8B8378] font-mono font-medium tracking-wide">+{lead.whatsapp_number.replace('@s.whatsapp.net', '')}</span>
                           </td>
-                          <td className="px-6 py-4">
-                            <span className="text-sm text-[#8B8378]">
+                          <td className="px-8 py-5">
+                            <span className="text-xs text-[#8B8378] font-medium tracking-wide flex flex-col sm:inline">
                               {new Date(lead.created_at).toLocaleDateString(undefined, {
                                 month: 'short', day: 'numeric', year: 'numeric'
                               })}
+                              <span className="sm:ml-2 text-[#C4A896]">
+                                {new Date(lead.created_at).toLocaleTimeString(undefined, {
+                                  hour: '2-digit', minute: '2-digit'
+                                })}
+                              </span>
                             </span>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-8 py-5">
                             {isMissed ? (
-                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 text-red-600 text-[10px] font-bold tracking-wide border border-red-100">
-                                <AlertCircle size={12} />
-                                PENDING
+                              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-[10px] font-bold tracking-[0.1em] border border-red-100 uppercase">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                                Dropped
                               </div>
                             ) : (
-                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold tracking-wide">
-                                <CheckCircle2 size={12} />
-                                ACTIVE
+                              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold tracking-[0.1em] uppercase">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Synced
                               </div>
                             )}
                           </td>
