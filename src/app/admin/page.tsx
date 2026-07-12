@@ -38,7 +38,7 @@ export default function AdminDashboard() {
 
   // Pricing State
   const [pricingTiers, setPricingTiers] = useState<any[]>([]);
-  const [systemSettings, setSystemSettings] = useState({ whatsapp_credit_cost: 1.0, email_credit_cost: 0.5 });
+  const [systemSettings, setSystemSettings] = useState({ whatsapp_credit_cost: 1.0, email_credit_cost: 0.5, qr_leads_credit_cost: 10.0 });
   const [isSavingPricing, setIsSavingPricing] = useState(false);
   const [pricingStatusMsg, setPricingStatusMsg] = useState('');
   const [pricingConfirmOpen, setPricingConfirmOpen] = useState(false);
@@ -93,7 +93,8 @@ export default function AdminDashboard() {
         if (json.settings) {
           setSystemSettings({
             whatsapp_credit_cost: Number(json.settings.whatsapp_credit_cost) || 1.0,
-            email_credit_cost: Number(json.settings.email_credit_cost) || 0.5
+            email_credit_cost: Number(json.settings.email_credit_cost) || 0.5,
+            qr_leads_credit_cost: Number(json.settings.qr_leads_credit_cost) || 10.0
           });
         }
         setIsAuthenticated(true);
@@ -466,15 +467,8 @@ export default function AdminDashboard() {
         {/* VIEW 3: GLOBAL PRICING ENGINE */}
         {activeView === 'pricing' && (
           <div className="space-y-8 animate-in fade-in duration-300">
-            <div className="flex items-center justify-between border-b border-[#E8E3DA] pb-4">
+            <div className="border-b border-[#E8E3DA] pb-4">
               <h2 className="text-xl font-bold uppercase tracking-widest">Global Pricing Engine</h2>
-              <button 
-                onClick={() => setPricingConfirmOpen(true)}
-                disabled={isSavingPricing}
-                className="bg-[#3E3B36] text-[#F5F1EA] flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-widest font-semibold hover:bg-black transition-colors disabled:opacity-50"
-              >
-                <Save size={14} /> {isSavingPricing ? 'Syncing...' : 'Save Changes'}
-              </button>
             </div>
             
             {pricingStatusMsg && (
@@ -484,7 +478,7 @@ export default function AdminDashboard() {
             )}
             
             {/* System Cost Configurations */}
-            <div className="bg-[#FFFFFF] border border-[#E8E3DA] p-6 shadow-sm mb-8">
+            <div className="bg-[#FFFFFF] border border-[#E8E3DA] p-6 shadow-sm">
               <h3 className="text-xs font-bold uppercase tracking-widest mb-6 pb-2 border-b border-[#E8E3DA]">System Credit Deduction Rates</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
@@ -507,6 +501,25 @@ export default function AdminDashboard() {
                   />
                   <p className="text-[9px] text-[#8E8B85] mt-1.5 uppercase tracking-widest">Base rate for Email Engine dispatch</p>
                 </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest text-[#8E8B85] mb-2">QR Leads Credit Cost (per scan)</label>
+                  <input 
+                    type="number" step="0.1"
+                    value={systemSettings.qr_leads_credit_cost}
+                    onChange={(e) => setSystemSettings(prev => ({ ...prev, qr_leads_credit_cost: Number(e.target.value) }))}
+                    className="w-full bg-[#F5F1EA] border-none text-[#3E3B36] px-4 py-3 text-lg focus:outline-none focus:ring-1 focus:ring-[#3E3B36] transition-all font-medium"
+                  />
+                  <p className="text-[9px] text-[#8E8B85] mt-1.5 uppercase tracking-widest">Cost deducted per QR lead captured</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end mt-6 pt-4 border-t border-[#E8E3DA]">
+                <button 
+                  onClick={() => setPricingConfirmOpen(true)}
+                  disabled={isSavingPricing}
+                  className="bg-[#3E3B36] text-[#F5F1EA] flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-widest font-semibold hover:bg-black transition-colors disabled:opacity-50"
+                >
+                  <Save size={14} /> {isSavingPricing ? 'Syncing...' : 'Save Rates'}
+                </button>
               </div>
             </div>
 
@@ -548,6 +561,17 @@ export default function AdminDashboard() {
                   No pricing tiers configured. Ensure public.pricing_tiers is populated.
                 </div>
               )}
+            </div>
+
+            {/* Tiers Save Button */}
+            <div className="flex items-center justify-end pt-4 border-t border-[#E8E3DA]">
+              <button 
+                onClick={() => setPricingConfirmOpen(true)}
+                disabled={isSavingPricing}
+                className="bg-[#3E3B36] text-[#F5F1EA] flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-widest font-semibold hover:bg-black transition-colors disabled:opacity-50"
+              >
+                <Save size={14} /> {isSavingPricing ? 'Syncing...' : 'Save Tiers'}
+              </button>
             </div>
           </div>
         )}

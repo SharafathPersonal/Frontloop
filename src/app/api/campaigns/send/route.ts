@@ -503,12 +503,12 @@ export async function POST(req: Request) {
 
           try {
             // ── PRE-LOOP: active WebSocket connection stream re-verification ──
-            console.log('[QR Express] Preflight: checking if socket is live on Render...');
+            // Preflight check
             const statusRes = await fetch(`${renderServerUrl}/api/whatsapp/status?shop_id=${shopId}`);
             const statusData = await statusRes.json().catch(() => ({}));
             
             if (statusData.status !== 'CONNECTED') {
-              console.log('[QR Express] Socket not connected. Bootstrapping connect...');
+              // Socket not connected. Bootstrapping connect...
               const connectRes = await fetch(`${renderServerUrl}/api/whatsapp/connect?shop_id=${shopId}`);
               const connectText = await connectRes.text();
               if (connectText !== 'CONNECTED') {

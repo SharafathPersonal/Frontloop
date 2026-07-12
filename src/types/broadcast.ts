@@ -163,6 +163,7 @@ export interface Customer {
   customer_name: string;
   whatsapp_number: string; 
   tags: CustomerTag[];
+  is_saved_to_phone?: boolean;
   created_at: string;
 }
 

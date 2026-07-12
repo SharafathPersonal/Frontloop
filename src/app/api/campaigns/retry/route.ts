@@ -152,7 +152,7 @@ export async function POST(req: Request) {
       const statusData = await statusRes.json().catch(() => ({}));
       
       if (statusData.status !== 'CONNECTED') {
-         console.log("Active messaging socket is dead. Attempting connect on Render...");
+         // Active messaging socket is dead. Attempting connect on Render...
          const connectRes = await fetch(`${renderServerUrl}/api/whatsapp/connect?shop_id=${shopId}`);
          const connectText = await connectRes.text();
          if (connectText !== 'CONNECTED') {

@@ -168,7 +168,15 @@ export async function POST(req: Request) {
                       .eq('id', shopId)
                       .single();
 
-                    const hasCredits = walletData && walletData.credits_remaining >= 10;
+                    // Fetch dynamic QR cost
+                    const { data: settingData } = await adminSupabase
+                      .from('system_settings')
+                      .select('value')
+                      .eq('key', 'qr_leads_credit_cost')
+                      .maybeSingle();
+                    const qrCost = settingData && settingData.value ? Number(settingData.value) : 10;
+
+                    const hasCredits = walletData && walletData.credits_remaining >= qrCost;
                     const tagToAssign = hasCredits ? 'IN_STORE_QR_LEAD' : 'MISSED_LEAD';
 
                     // 2. Save Contact
@@ -202,17 +210,16 @@ export async function POST(req: Request) {
                         // Increment credits_used for a NEW unique lead
                         await adminSupabase.rpc('increment_credits_used', { p_shop_id: shopId });
                       }
-                      console.log("💾 [DB SUCCESS] Lead successfully captured and isolated under IN_STORE_QR_LEAD tag!");
                     } catch (dbError) {
                       console.error("🚨 [DB ERROR] Failed to save contact to the isolated QR tag:", dbError);
                     }
 
                     if (hasCredits) {
                       // 3. Deduct credits
-                      await adminSupabase.rpc('deduct_credits', { p_shop_id: shopId, p_amount: 10 });
+                      await adminSupabase.rpc('deduct_credits', { p_shop_id: shopId, p_amount: qrCost });
                       
                       // 4. Update Analytics
-                      await adminSupabase.rpc('increment_qr_analytics', { p_shop_id: shopId, p_credits: 10 });
+                      await adminSupabase.rpc('increment_qr_analytics', { p_shop_id: shopId, p_credits: qrCost });
 
                       // 5. Send Automated Response Sequence via Meta API
                       if (metaConfigRow.meta_access_token && phoneNumberId && shopInfo) {
@@ -220,7 +227,7 @@ export async function POST(req: Request) {
                          const merchantPhone = shopInfo.owner_phone ? shopInfo.owner_phone.replace(/\D/g, '') : phoneNumberId;
 
                          // ELEMENT 1: Loyalty Promotional Copy
-                         const promoCopy = `Welcome to ${merchantName}! 🎁 \n\nSave our number right now to get exclusive, real-time weekly offers directly on WhatsApp. \n\n👇 Click the contact card below to save us instantly!`;
+                         const promoCopy = `Welcome to ${merchantName}! 🎁 Please save our number right now to receive exclusive, real-time weekly offers directly on WhatsApp.`;
                          await axios.post(
                            `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
                            {
