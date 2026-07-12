@@ -23,6 +23,7 @@ import {
   Receipt,
   Mail,
   QrCode,
+  AlertTriangle,
 } from 'lucide-react';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 import { ToastProvider } from '@/contexts/ToastContext';
@@ -242,7 +243,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           {/* Page Content */}
-          <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+          <main className="flex-1 overflow-y-auto p-6 lg:p-8 flex flex-col gap-6">
+            {shop?.whatsapp_mode === 'QR_EXPRESS' && shop?.qr_express_status !== 'CONNECTED' && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm shrink-0">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="text-amber-500" size={20} />
+                  <div>
+                    <p className="text-sm text-amber-900 font-bold">WhatsApp Disconnected</p>
+                    <p className="text-xs text-amber-700 mt-0.5">Please reconnect WhatsApp to activate your QR code and capture real-time leads.</p>
+                  </div>
+                </div>
+                <Link href="/dashboard/settings" className="bg-amber-100 hover:bg-amber-200 text-amber-900 px-4 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap border border-amber-300">
+                  Connect WhatsApp
+                </Link>
+              </div>
+            )}
             {children}
           </main>
 
