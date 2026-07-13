@@ -10,7 +10,7 @@ import { Upload, X, CheckCircle, AlertTriangle, Users, UserPlus, Tag, ArrowRight
 import { Spinner } from '@/components/ui/Spinner';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 
-type CustomerTag = 'VIP' | 'Regular' | 'New';
+type CustomerTag = 'VIP' | 'Regular' | 'New' | 'DIGITAL_BILL';
 
 interface CustomerRow {
   customer_name: string;
@@ -23,6 +23,7 @@ const TAG_OPTIONS: { value: CustomerTag; label: string; desc: string }[] = [
   { value: 'VIP', label: 'VIP', desc: 'High-value, priority customers' },
   { value: 'Regular', label: 'Regular', desc: 'Established returning customers' },
   { value: 'New', label: 'New', desc: 'Recently added contacts' },
+  { value: 'DIGITAL_BILL', label: 'Digital Bill', desc: 'Captured via POS Counter' },
 ];
 
 export default function CustomersUploadPage() {
@@ -66,12 +67,17 @@ export default function CustomersUploadPage() {
 
   const validatePhone = (num: string): string | null => {
     const pureNum = num.split('@')[0];
-    const cleaned = pureNum.replace(/[\s\-\+]/g, '').replace(/^0+/, '');
-    const match = cleaned.match(/^(\d{1,4})?(\d{10})$/);
-    if (!match) return null;
-    const countryCode = match[1] || '91';
-    const subscriberNumber = match[2];
-    return `${countryCode}${subscriberNumber}@s.whatsapp.net`;
+    // Replace the old regex string with this robust absolute numbers filter
+    const cleanNumber = pureNum.replace(/\D/g, ''); // Strips all non-digit characters completely
+    
+    // Enforce standard 10-digit validation check (adjust country prefixes as required by architecture)
+    const isValid = cleanNumber.length >= 10 && cleanNumber.length <= 15;
+    if (!isValid) return null;
+
+    if (cleanNumber.length === 10) {
+      return `91${cleanNumber}@s.whatsapp.net`;
+    }
+    return `${cleanNumber}@s.whatsapp.net`;
   };
 
   const parseFile = useCallback((file: File) => {

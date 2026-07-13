@@ -62,7 +62,7 @@ export type CampaignStatus =
   | 'insufficient_credits'
   | 'paused_logout';
 
-export type CustomerTag = string; // e.g., 'VIP', 'Regular', 'New'
+export type CustomerTag = 'VIP' | 'Regular' | 'New' | 'DIGITAL_BILL';
 
 export type WhatsAppConnectionMode = 'META_API' | 'QR_EXPRESS' | 'NONE';
 

@@ -141,40 +141,21 @@ export function DynamicInvoiceViewer({ invoiceNumber }: DynamicInvoiceViewerProp
 
   return (
     <div id="print-modal-container" className="flex flex-col h-full bg-[#F5F1EA]/30 overflow-y-auto">
-      {/* Stylesheet override for clean printing */}
       <style>{`
         @media print {
-          body {
-            background: white !important;
-            color: black !important;
-          }
-          /* Hide standard elements during print */
-          body > * {
-            display: none !important;
-          }
-          #print-modal-container {
-            display: block !important;
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            height: auto !important;
-            background: white !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
-          }
+          aside, nav, header, 
+          .no-print, 
+          #print-modal-header, 
           #print-modal-actions {
             display: none !important;
           }
-          #printable-invoice-content {
-            display: block !important;
-            padding: 20px !important;
-            margin: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
-            background: white !important;
+          #print-modal-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
           }
         }
       `}</style>

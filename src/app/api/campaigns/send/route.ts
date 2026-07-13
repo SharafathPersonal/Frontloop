@@ -30,7 +30,7 @@ import type { BroadcastPayload, Shop, Wallet, CustomerTag } from '@/types/broadc
 interface CustomerRecord {
   customer_name: string;
   whatsapp_number: string;
-  tags: CustomerTag[];
+  tags: string[];
 }
 
 // ---------------------------------------------------------------------------
