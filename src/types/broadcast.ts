@@ -69,6 +69,7 @@ export type WhatsAppConnectionMode = 'META_API' | 'QR_EXPRESS' | 'NONE';
 export interface Shop {
   id: string;                 // uuid — mirrors auth.users.id
   shop_name: string;
+  slug?: string | null;       // URL-safe slug for public-facing pages
   owner_phone: string;
   contact_number?: string | null;
   location_address?: string | null;
@@ -89,6 +90,7 @@ export interface Shop {
   invoice_theme_color?: string | null;
   invoice_footer_note?: string | null;
   gst_number: string | null;
+  brand_story?: string | null;
   created_at: string;         // ISO 8601 timestamp
 }
 
@@ -319,3 +321,34 @@ export interface ApiError {
 }
 
 export type ApiResponse<T> = ApiSuccess<T> | ApiError;
+
+// ------------------------------------------------------------------
+// 7. FLASH OFFERS DOMAIN TYPES
+// ------------------------------------------------------------------
+
+export interface FlashOffer {
+  id: string;
+  shop_id: string;
+  product_name: string;
+  offer_description?: string | null;
+  original_price: number;
+  discount_price: number;
+  show_percentage_badge: boolean;
+  show_discount_price: boolean;
+  is_active: boolean;
+  is_deleted: boolean;
+  views_count: number;
+  image_url?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type FlashOfferInsert = Omit<FlashOffer, 'id' | 'created_at' | 'updated_at' | 'views_count' | 'is_deleted'> & {
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+  views_count?: number;
+  is_deleted?: boolean;
+};
+
+export type FlashOfferUpdate = Partial<Omit<FlashOffer, 'id' | 'shop_id' | 'created_at'>>;

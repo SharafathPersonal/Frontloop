@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: number) => {
   const controller = new AbortController();
@@ -36,6 +37,31 @@ export async function POST(req: Request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey) {
+      return NextResponse.json({ error: 'Server misconfiguration: Missing service role key' }, { status: 500 });
+    }
+
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    // 1. Check if the merchant has at least 1 credit
+    const { data: wallet, error: walletError } = await supabaseAdmin
+      .from('wallets')
+      .select('credits_remaining')
+      .eq('shop_id', user.id)
+      .single();
+
+    if (walletError || !wallet || wallet.credits_remaining < 1) {
+      return NextResponse.json(
+        { error: 'Insufficient credits for AI operation. Required: 1 credit.' },
+        { status: 403 }
+      );
     }
 
     // Rate Limiting (Phase 2)
@@ -124,6 +150,7 @@ Strict Output Layout Rules:
           if (text) {
             const parsed = JSON.parse(text);
             if (parsed.spintax_message) {
+              await supabaseAdmin.rpc('deduct_credits', { p_shop_id: user.id, p_amount: 1 });
               return NextResponse.json(parsed);
             }
           }
@@ -159,7 +186,10 @@ Strict Output Layout Rules:
           const text = data.choices?.[0]?.message?.content;
           if (text) {
             const parsed = JSON.parse(text);
-            if (parsed.spintax_message) return NextResponse.json(parsed);
+            if (parsed.spintax_message) {
+              await supabaseAdmin.rpc('deduct_credits', { p_shop_id: user.id, p_amount: 1 });
+              return NextResponse.json(parsed);
+            }
           }
         }
       }
@@ -184,7 +214,10 @@ Strict Output Layout Rules:
           const text = data.choices?.[0]?.message?.content;
           if (text) {
             const parsed = JSON.parse(text);
-            if (parsed.spintax_message) return NextResponse.json(parsed);
+            if (parsed.spintax_message) {
+              await supabaseAdmin.rpc('deduct_credits', { p_shop_id: user.id, p_amount: 1 });
+              return NextResponse.json(parsed);
+            }
           }
         }
       }
@@ -209,7 +242,10 @@ Strict Output Layout Rules:
           const text = data.choices?.[0]?.message?.content;
           if (text) {
             const parsed = JSON.parse(text);
-            if (parsed.spintax_message) return NextResponse.json(parsed);
+            if (parsed.spintax_message) {
+              await supabaseAdmin.rpc('deduct_credits', { p_shop_id: user.id, p_amount: 1 });
+              return NextResponse.json(parsed);
+            }
           }
         }
       }
@@ -217,7 +253,7 @@ Strict Output Layout Rules:
       // Fallback to Tier 5
     }
 
-    // Tier 5: Emergency Local Fallback Template
+    // Tier 5: Emergency Local Fallback Template - charge 0 credits
     const basicFallback = "{Hello|Hi|Greetings} {{1}},\n\n{Exclusive update|Great news} from {{2}}!\n\n" + (raw_message || "") + "\n\n{Don't miss out|Act now}! {Contact us|Reply} today.";
     return NextResponse.json({ spintax_message: basicFallback });
 

@@ -12,14 +12,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { shop_id, amount } = await req.json();
+    let { shop_id, amount, action } = await req.json();
 
-    if (!shop_id || typeof amount !== 'number' || amount <= 0) {
+    if (!action) {
+      action = 'add';
+    }
+
+    if (!shop_id || typeof amount !== 'number' || amount < 0 || !['add', 'subtract', 'set'].includes(action)) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
     // We MUST use the SERVICE_ROLE_KEY to bypass RLS for admin operations.
-    // If it's missing, we fallback to anon key but it will fail due to RLS.
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -31,9 +34,6 @@ export async function POST(req: Request) {
       }
     );
 
-    // Increment directly in the wallets table via RPC if available, or just a raw update.
-    // We can fetch the current credits and add to it, but a raw RPC is safer.
-    // We will use a standard query since we might not have an increment RPC.
     const { data: wallet, error: fetchError } = await supabaseAdmin
       .from('wallets')
       .select('credits_remaining')
@@ -44,7 +44,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Wallet not found' }, { status: 404 });
     }
 
-    const newBalance = wallet.credits_remaining + amount;
+    const currentBalance = wallet.credits_remaining;
+    let newBalance = currentBalance;
+    let netChange = 0;
+
+    if (action === 'add') {
+      newBalance = currentBalance + amount;
+      netChange = amount;
+    } else if (action === 'subtract') {
+      newBalance = Math.max(0, currentBalance - amount);
+      netChange = newBalance - currentBalance;
+    } else if (action === 'set') {
+      newBalance = Math.max(0, amount);
+      netChange = newBalance - currentBalance;
+    }
 
     const { error: updateError } = await supabaseAdmin
       .from('wallets')
@@ -55,10 +68,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to update credits' }, { status: 500 });
     }
 
+    // Log the ADMIN_ADJUSTMENT in the payment transaction history ledger
+    const { error: logError } = await supabaseAdmin
+      .from('payment_logs')
+      .insert({
+        shop_id,
+        order_id: `ADMIN_ADJUSTMENT_${action.toUpperCase()}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        amount: 0.00,
+        credits_credited: netChange,
+        payment_status: 'success'
+      });
+
+    if (logError) {
+      console.error('Failed to log admin adjustment audit:', logError);
+    }
+
     return NextResponse.json({ success: true, newBalance });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error.message || 'Internal server error' },
       { status: 500 }
     );
   }

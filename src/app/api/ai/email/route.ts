@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: number) => {
   const controller = new AbortController();
@@ -36,6 +37,31 @@ export async function POST(req: Request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey) {
+      return NextResponse.json({ error: 'Server misconfiguration: Missing service role key' }, { status: 500 });
+    }
+
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    // 1. Check if the merchant has at least 1 credit
+    const { data: wallet, error: walletError } = await supabaseAdmin
+      .from('wallets')
+      .select('credits_remaining')
+      .eq('shop_id', user.id)
+      .single();
+
+    if (walletError || !wallet || wallet.credits_remaining < 1) {
+      return NextResponse.json(
+        { error: 'Insufficient credits for AI operation. Required: 1 credit.' },
+        { status: 403 }
+      );
     }
 
     const { prompt, shop_name, image_url } = await req.json();
@@ -97,7 +123,10 @@ Do NOT output any markdown code fences, backticks, or text explanations. Return 
           if (text) {
             const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
             const parsed = JSON.parse(cleanText);
-            if (parsed.subject && parsed.html_body) return NextResponse.json(parsed);
+            if (parsed.subject && parsed.html_body) {
+              await supabaseAdmin.rpc('deduct_credits', { p_shop_id: user.id, p_amount: 1 });
+              return NextResponse.json(parsed);
+            }
           }
         }
       }
@@ -129,7 +158,10 @@ Do NOT output any markdown code fences, backticks, or text explanations. Return 
           const text = data.choices?.[0]?.message?.content;
           if (text) {
             const parsed = JSON.parse(text);
-            if (parsed.subject && parsed.html_body) return NextResponse.json(parsed);
+            if (parsed.subject && parsed.html_body) {
+              await supabaseAdmin.rpc('deduct_credits', { p_shop_id: user.id, p_amount: 1 });
+              return NextResponse.json(parsed);
+            }
           }
         }
       }
@@ -154,7 +186,10 @@ Do NOT output any markdown code fences, backticks, or text explanations. Return 
           const text = data.choices?.[0]?.message?.content;
           if (text) {
             const parsed = JSON.parse(text);
-            if (parsed.subject && parsed.html_body) return NextResponse.json(parsed);
+            if (parsed.subject && parsed.html_body) {
+              await supabaseAdmin.rpc('deduct_credits', { p_shop_id: user.id, p_amount: 1 });
+              return NextResponse.json(parsed);
+            }
           }
         }
       }
@@ -179,7 +214,10 @@ Do NOT output any markdown code fences, backticks, or text explanations. Return 
           const text = data.choices?.[0]?.message?.content;
           if (text) {
             const parsed = JSON.parse(text);
-            if (parsed.subject && parsed.html_body) return NextResponse.json(parsed);
+            if (parsed.subject && parsed.html_body) {
+              await supabaseAdmin.rpc('deduct_credits', { p_shop_id: user.id, p_amount: 1 });
+              return NextResponse.json(parsed);
+            }
           }
         }
       }

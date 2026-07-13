@@ -494,11 +494,11 @@ export default function LandingPage() {
           }}
         />
 
-        <div className="relative max-w-7xl mx-auto px-6 w-full mt-8 lg:mt-12">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <div className="relative max-w-[90rem] mx-auto px-6 w-full mt-8 lg:mt-12">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 xl:gap-8 items-center">
             
             {/* Left side copy details */}
-            <div className="lg:col-span-5 space-y-6 z-10 text-left">
+            <div className="xl:col-span-4 space-y-6 z-10 text-left">
               {/* Badges Stack */}
               <div className="hero-animate flex flex-wrap gap-2.5">
                 <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-semibold tracking-wider text-[#C4A896] bg-amber-950/40 border border-[#C4A896]/35 px-3.5 py-1.5 rounded-full">
@@ -517,6 +517,13 @@ export default function LandingPage() {
                 <span className="block font-medium text-[#C4A896] mt-2">Turn Any Smartphone into a Smart POS &amp; WhatsApp Billing Terminal Instantly!</span>
               </h1>
 
+              {/* ✨ NEW V3.12 Flash Offer Micro-Badge */}
+              <div className="hero-animate pt-1">
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide text-[#C4A896] bg-amber-950/45 border border-[#C4A896]/35 px-4 py-2 rounded-lg shadow-sm animate-pulse">
+                  ✨ NEW V3.12: Frictionless In-Store Flash Offers — Turn Foot Traffic into Impulse Sales Instantly.
+                </span>
+              </div>
+
               {/* Sub-Headline */}
               <p className="hero-animate text-sm sm:text-base text-neutral-300 leading-relaxed max-w-xl">
                 Eliminate checkout friction. Capture 100% of walk-in store traffic, deliver premium custom-themed digital bills straight to customer WhatsApp threads with absolute zero-ban risk, and run hyper-targeted omnichannel promotions from one unified wallet ledger.
@@ -526,13 +533,23 @@ export default function LandingPage() {
               <div className="hero-animate flex flex-wrap items-center gap-4 pt-4">
                 <Link
                   href="/auth/register"
-                  className="btn-primary rounded-sm shadow-xl shadow-amber-950/20 hover:scale-[1.02] transition-transform duration-300 border border-[#C4A896]/20"
+                  className="btn-primary rounded-sm shadow-xl shadow-amber-950/20 hover:scale-[1.02] transition-transform duration-300 border border-[#C4A896]/20 font-bold uppercase tracking-wider text-[10px] px-5 py-3.5"
                 >
                   Create Free Workspace
                 </Link>
                 <a
+                  href="#flash-offers-tech-engine"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById('flash-offers-tech-engine')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="bg-[#C4A896]/15 hover:bg-[#C4A896]/25 border border-[#C4A896]/30 text-white rounded-sm font-bold uppercase tracking-wider text-[10px] px-5 py-3.5 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  See Live In-Store Demo
+                </a>
+                <a
                   href="#engines"
-                  className="btn-secondary-dark rounded-sm hover:bg-white/5 transition-colors"
+                  className="btn-secondary-dark rounded-sm hover:bg-white/5 transition-colors font-bold uppercase tracking-wider text-[10px] px-5 py-3.5"
                 >
                   Explore Architecture
                 </a>
@@ -540,7 +557,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right side live interactive emulator playground */}
-            <div className="lg:col-span-7 hero-animate w-full flex flex-col md:flex-row gap-6 relative">
+            <div className="xl:col-span-8 hero-animate w-full flex flex-col md:flex-row gap-6 relative">
               
               {/* VISUAL BOX 1: Cashier Terminal Interface */}
               <div className="flex-1 bg-white text-slate-800 rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col h-[520px]">
@@ -770,6 +787,18 @@ export default function LandingPage() {
                   </div>
                 </div>
 
+              </div>
+
+              {/* VISUAL BOX 3: Live In-Store Flash Offers Customer Mockup */}
+              <div className="flex-1 h-[520px] relative flex items-center justify-center">
+                <Image
+                  src="/images/flash-offers-mockup-new.png"
+                  alt="Live In-Store Flash Offers"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  className="object-contain"
+                  priority
+                />
               </div>
 
             </div>
@@ -1457,6 +1486,230 @@ export default function LandingPage() {
 
               <span className="text-[8.5px] font-bold text-slate-400 uppercase tracking-widest pt-6 border-t border-slate-100 mt-6 block shrink-0">Client-Side Error Boundaries (error.tsx)</span>
             </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 6.5 — THE FRICTIONLESS RETAIL TECH ENGINE
+      ══════════════════════════════════════════════════════════ */}
+      <section id="flash-offers-tech-engine" className="w-full py-24 px-6 bg-[#FCFBF9] border-y border-[#E8E3DA] scroll-reveal-section">
+        <div className="max-w-6xl mx-auto">
+          
+          {/* Header */}
+          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
+            <span className="text-xs tracking-[0.25em] uppercase text-[#C4A896] font-bold">
+              Flagship Feature Engine
+            </span>
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mt-4 mb-4">
+              Live In-Store Flash Offers
+            </h2>
+            <p className="text-sm text-slate-500 leading-relaxed max-w-xl mx-auto">
+              Bridge the physical-to-digital gap. Turn random walk-in foot traffic into highly engaged digital contacts instantly with zero signup friction.
+            </p>
+          </div>
+
+          {/* Interactive Split-Screen Presentation */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start max-w-6xl mx-auto gsap-reveal">
+            
+            {/* COLUMN A: The Merchant's Command Center */}
+            <article className="bg-white border border-[#E8E3DA] rounded-2xl p-8 shadow-md flex flex-col justify-between h-full space-y-8">
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#3E3B36] text-[#C4A896] rounded-xl flex items-center justify-center shrink-0">
+                    <Sliders size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-base">Zero-Setup Real-Time Inventory &amp; Margin Control</h3>
+                    <p className="text-[9px] text-[#C4A896] font-bold uppercase tracking-widest mt-0.5">Merchant Command Center</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Give your storefront the absolute power to broadcast live discounts and update margins instantly, with zero barcode scanner dependencies or complex software integrations.
+                </p>
+
+                {/* Bullet Points */}
+                <ul className="space-y-3.5 text-xs text-slate-500 border-t border-slate-100 pt-5">
+                  <li className="flex items-start gap-3">
+                    <span className="text-sm shrink-0">🪙</span>
+                    <div>
+                      <strong className="text-slate-800 font-semibold block">Bidirectional Smart Calculator</strong>
+                      <span className="text-[11px] leading-normal text-slate-500">Enter original/discount values, and let the UI automatically compute custom margin savings percentage on the fly.</span>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-sm shrink-0">🔄</span>
+                    <div>
+                      <strong className="text-slate-800 font-semibold block">The Master Availability Switch</strong>
+                      <span className="text-[11px] leading-normal text-slate-500">Instantly toggle offer states with zero latency cache eviction, updating active customer browser views in real time.</span>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-sm shrink-0">🤖</span>
+                    <div>
+                      <strong className="text-slate-800 font-semibold block">Brand-Aware AI Copywriter</strong>
+                      <span className="text-[11px] leading-normal text-slate-500">One-click copy generation trained specifically to convert impulse shoppers with emojis and tight marketing statements.</span>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-sm shrink-0">🛡️</span>
+                    <div>
+                      <strong className="text-slate-800 font-semibold block">Safe Historical Archival</strong>
+                      <span className="text-[11px] leading-normal text-slate-500">Soft-delete protection flags hide expired offers from shoppers, preserving deep analytical view logs for audit analysis.</span>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Merchant UI Mockup (CLS-Insured aspect-video) */}
+              <div className="w-full aspect-video relative rounded-xl border border-slate-200 bg-[#FCFBF9] overflow-hidden flex flex-col justify-between p-4 shrink-0">
+                <div className="flex items-center justify-between border-b pb-2 border-slate-200/60">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Active Offer Panel</span>
+                  </div>
+                  <span className="text-[9px] bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-bold">2 Credits / Create</span>
+                </div>
+
+                {/* Calculator Mockup */}
+                <div className="grid grid-cols-3 gap-2 my-2">
+                  <div className="p-2 bg-white border border-slate-200 rounded">
+                    <span className="text-[7px] text-slate-400 font-bold block uppercase tracking-wider">Original</span>
+                    <span className="text-xs font-bold text-slate-800">₹500.00</span>
+                  </div>
+                  <div className="p-2 bg-white border border-slate-200 rounded">
+                    <span className="text-[7px] text-slate-400 font-bold block uppercase tracking-wider">Discounted</span>
+                    <span className="text-xs font-bold text-slate-800">₹399.00</span>
+                  </div>
+                  <div className="p-2 bg-white border border-emerald-200 bg-emerald-50/20 rounded flex flex-col justify-center">
+                    <span className="text-[7px] text-emerald-600 font-bold block uppercase tracking-wider">Computed</span>
+                    <span className="text-xs font-bold text-emerald-700">20% OFF</span>
+                  </div>
+                </div>
+
+                {/* AI Copy result */}
+                <div className="p-2 bg-[#3E3B36] text-white rounded text-[10px] flex items-center justify-between">
+                  <span className="font-mono truncate">⚡ Grab premium organic Avocados at 20% off today! 🥑</span>
+                  <span className="text-[7px] text-[#C4A896] uppercase font-bold tracking-widest shrink-0 ml-2">AI Cleaned</span>
+                </div>
+
+                {/* Switch row */}
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200/60">
+                  <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Online Visibility State</span>
+                  <div className="w-8 h-4 bg-[#C4A896] rounded-full p-0.5 flex justify-end items-center cursor-pointer">
+                    <div className="w-3 h-3 bg-white rounded-full shadow-sm" />
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            {/* COLUMN B: The App-Less Customer Portal Experience */}
+            <article className="bg-[#3E3B36] text-white border border-slate-800 rounded-2xl p-8 shadow-xl flex flex-col justify-between h-full space-y-8">
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#C4A896]/20 text-[#C4A896] rounded-xl flex items-center justify-center shrink-0 border border-[#C4A896]/30">
+                    <Smartphone size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-base">Instant App-Less, No-Login Consumer Discovery</h3>
+                    <p className="text-[9px] text-[#C4A896] font-bold uppercase tracking-widest mt-0.5">Consumer Experience Canvas</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Eliminate all barriers to transaction. Customers simply scan a high-resolution printed store entry QR code to see live offers with absolute zero onboarding friction.
+                </p>
+
+                {/* Bullet Points */}
+                <ul className="space-y-3.5 text-xs text-slate-300 border-t border-slate-700 pt-5">
+                  <li className="flex items-start gap-3">
+                    <span className="text-sm shrink-0">🔓</span>
+                    <div>
+                      <strong className="text-white font-semibold block">Absolute Zero-Friction Entry</strong>
+                      <span className="text-[11px] leading-normal text-slate-300">No mobile app installs, no mandatory sign-ups, and absolutely zero phone number input forms.</span>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-sm shrink-0">🏪</span>
+                    <div>
+                      <strong className="text-white font-semibold block">Custom Merchant Brand Shell</strong>
+                      <span className="text-[11px] leading-normal text-slate-300">Displays the official logo, shop name, and custom theme-adaptive coloring dynamically matching the brand settings.</span>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-sm shrink-0">🔍</span>
+                    <div>
+                      <strong className="text-white font-semibold block">Intelligent Fuzzy Search Bar</strong>
+                      <span className="text-[11px] leading-normal text-slate-300">Built-in typo tolerance dynamically matching regional translations (e.g. "തകാളി" to "Tomato") case-insensitively.</span>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-sm shrink-0">💎</span>
+                    <div>
+                      <strong className="text-white font-semibold block">Wholistic Organic Growth Engine</strong>
+                      <span className="text-[11px] leading-normal text-slate-300">A subtle premium "Powered by True Attendly" baseline stamp in the footer invites walk-in B2B merchants to register.</span>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Customer UI Mockup (CLS-Insured aspect-video) */}
+              <div className="w-full aspect-video relative rounded-xl border border-[#E8E3DA] bg-[#FAFAF8] overflow-hidden flex flex-col justify-between p-0 shrink-0">
+                {/* Brand Header inside customer app mockup */}
+                <div className="w-full bg-[#5C4033]/[0.05] border-b border-black/[0.06] px-3 py-2 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-white p-0.5 border border-black/10 flex items-center justify-center text-xs font-bold text-slate-800 shrink-0">
+                      🥑
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold text-[#5C4033] font-serif leading-none">Fresh Greens Market</p>
+                      <p className="text-[8px] text-[#5C4033]/70 font-semibold flex items-center gap-0.5 mt-0.5">
+                        <Sparkles size={8} /> Live Flash Offers
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Search band mockup */}
+                <div className="bg-gradient-to-r from-[#5C4033] to-[#5C4033dd] px-3 py-2 shrink-0">
+                  <div className="relative">
+                    <Search size={10} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/50" />
+                    <input
+                      type="text"
+                      readOnly
+                      placeholder="Search offers... (e.g. 'Toma')"
+                      className="w-full pl-6 pr-2 py-1 rounded bg-white/15 text-white placeholder-white/50 text-[9px] border border-white/20 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Result Feed list */}
+                <div className="p-3 flex-1 flex flex-col justify-center bg-[#FAFAF8]">
+                  <div className="bg-white rounded-xl border border-[#5C4033]/15 p-2.5 shadow-sm flex items-start justify-between gap-2 shrink-0">
+                    <div className="min-w-0">
+                      <h4 className="text-[10px] font-bold text-slate-900 leading-snug">Fresh Organic Avocados</h4>
+                      <p className="text-[8px] text-slate-400 mt-0.5 leading-none">Original: ₹500 · Save 20%</p>
+                      <div className="flex items-baseline gap-1 mt-1">
+                        <span className="text-xs font-bold text-[#5C4033]">₹399</span>
+                        <span className="text-[8px] text-slate-400 line-through">₹500</span>
+                      </div>
+                    </div>
+                    <div className="px-2 py-0.5 bg-[#5C4033] text-white text-[8px] font-bold rounded-full shrink-0">
+                      20% OFF
+                    </div>
+                  </div>
+                </div>
+
+                {/* Platform branding footer */}
+                <div className="px-3 py-2 border-t border-[#5C4033]/15 bg-[#FAFAF8] flex items-center justify-center gap-1 shrink-0">
+                  <span className="text-[8px] text-slate-400">Powered by</span>
+                  <span className="text-[8px] font-semibold font-serif text-[#5C4033]">True Attendly</span>
+                </div>
+              </div>
+            </article>
 
           </div>
 

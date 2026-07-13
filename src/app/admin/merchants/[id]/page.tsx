@@ -16,8 +16,9 @@ export default function MerchantLedgerPage() {
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [totalConsumed, setTotalConsumed] = useState(0);
 
-  // Infusion State
+  // Infusion / Adjustment State
   const [infusionAmount, setInfusionAmount] = useState<number | ''>('');
+  const [adjustmentAction, setAdjustmentAction] = useState<'add' | 'subtract' | 'set'>('add');
   const [isInfusing, setIsInfusing] = useState(false);
   const [infusionConfirmOpen, setInfusionConfirmOpen] = useState(false);
 
@@ -57,21 +58,25 @@ export default function MerchantLedgerPage() {
       const res = await fetch('/api/admin/credits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shop_id: id, amount: Number(infusionAmount) })
+        body: JSON.stringify({ 
+          shop_id: id, 
+          amount: Number(infusionAmount), 
+          action: adjustmentAction 
+        })
       });
       if (res.ok) {
         setInfusionAmount('');
         await fetchMerchantDetails();
       } else {
-        setGlobalError({ title: 'Infusion Error', message: 'Failed to infuse credits' });
+        const errorData = await res.json();
+        setGlobalError({ title: 'Adjustment Error', message: errorData.error || 'Failed to adjust credits' });
       }
     } catch (e) {
-      setGlobalError({ title: 'Infusion Error', message: 'Error infusing credits' });
+      setGlobalError({ title: 'Adjustment Error', message: 'Error adjusting credits' });
     } finally {
       setIsInfusing(false);
     }
   };
-
   const executeSuspendToggle = async () => {
     setSuspendConfirmOpen(false);
     setIsSuspending(true);
@@ -208,30 +213,49 @@ export default function MerchantLedgerPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:p-6 md:p-8 items-start">
             
-            {/* Manual Infusion */}
+            {/* Manual Adjustment */}
             <div className="bg-[#F5F1EA] p-6">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest mb-3 text-[#3E3B36]">Manual Credit Infusion</h3>
-              <p className="text-xs text-[#8B8378] mb-4">Discretionary adjustments are executed instantly and bypass the payment gateway ledger.</p>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest mb-3 text-[#3E3B36]">Manual Credit Adjustment</h3>
+              <p className="text-xs text-[#8B8378] mb-4">Discretionary adjustments are executed instantly and log audit details to the ledger.</p>
+              
+              {/* Segmented control for adjustment actions */}
+              <div className="flex gap-2 mb-4">
+                {(['add', 'subtract', 'set'] as const).map((act) => (
+                  <button
+                    key={act}
+                    type="button"
+                    onClick={() => setAdjustmentAction(act)}
+                    className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider border transition-colors ${
+                      adjustmentAction === act
+                        ? 'bg-[#3E3B36] text-[#F5F1EA] border-[#3E3B36]'
+                        : 'bg-[#FFFFFF] text-[#8B8378] border-[#E8E3DA] hover:bg-[#F5F1EA]'
+                    }`}
+                  >
+                    {act === 'add' ? 'ADD' : act === 'subtract' ? 'SUBTRACT' : 'SET BALANCE'}
+                  </button>
+                ))}
+              </div>
+
               <div className="flex items-center gap-3">
                 <input 
                   type="number"
-                  min="1"
+                  min="0"
                   value={infusionAmount}
-                  onChange={e => setInfusionAmount(parseInt(e.target.value) || '')}
+                  onChange={e => setInfusionAmount(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
                   className="flex-1 bg-[#FFFFFF] text-sm text-[#3E3B36] px-4 py-3 border border-[#E8E3DA] focus:outline-none focus:border-[#3E3B36] transition-colors"
-                  placeholder="Enter token amount..."
+                  placeholder={adjustmentAction === 'set' ? "Enter target balance..." : "Enter adjustment amount..."}
                   disabled={isInfusing}
                 />
                 <button 
                   onClick={() => {
-                    if (infusionAmount && Number(infusionAmount) > 0) {
+                    if (infusionAmount !== '') {
                       setInfusionConfirmOpen(true);
                     }
                   }}
-                  disabled={isInfusing || !infusionAmount}
+                  disabled={isInfusing || infusionAmount === ''}
                   className="bg-[#3E3B36] text-[#F5F1EA] px-6 py-3 text-xs uppercase tracking-widest font-semibold hover:bg-black transition-colors disabled:opacity-50"
                 >
-                  {isInfusing ? 'EXECUTING...' : 'INFUSE'}
+                  {isInfusing ? 'EXECUTING...' : 'EXECUTE'}
                 </button>
               </div>
             </div>
@@ -316,9 +340,17 @@ export default function MerchantLedgerPage() {
       {/* Modals */}
       <CustomConfirm
         isOpen={infusionConfirmOpen}
-        title="Confirm Discretionary Infusion"
-        message={`Are you sure you want to permanently inject ${infusionAmount} tokens into the ledger for ${shop.shop_name}?`}
-        confirmText="EXECUTE INFUSION"
+        title={
+          adjustmentAction === 'add' ? "Confirm Credit Infusion" :
+          adjustmentAction === 'subtract' ? "Confirm Credit Deduction" :
+          "Confirm Credit Balance Override"
+        }
+        message={
+          adjustmentAction === 'add' ? `Are you sure you want to permanently add ${infusionAmount} credits to the wallet for ${shop.shop_name}?` :
+          adjustmentAction === 'subtract' ? `Are you sure you want to permanently deduct ${infusionAmount} credits from the wallet for ${shop.shop_name}?` :
+          `Are you sure you want to permanently override the wallet balance to ${infusionAmount} credits for ${shop.shop_name}?`
+        }
+        confirmText="EXECUTE ADJUSTMENT"
         requireInput="CONFIRM"
         onConfirm={executeInfusion}
         onCancel={() => setInfusionConfirmOpen(false)}

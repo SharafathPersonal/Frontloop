@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import type { Campaign, Shop, Wallet, EmailCampaign, Customer } from '@/types/broadcast';
-import { Mail, MessageSquare, QrCode, ArrowRight, Activity, Smartphone, CheckCircle2, AlertTriangle, Users, TrendingUp } from 'lucide-react';
+import { Mail, MessageSquare, QrCode, ArrowRight, Activity, Smartphone, CheckCircle2, AlertTriangle, Users, TrendingUp, Zap } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -23,6 +23,7 @@ export default function DashboardPage() {
   const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>([]);
   const [qrLeads, setQrLeads] = useState<Customer[]>([]);
   const [digitalInvoices, setDigitalInvoices] = useState<any[]>([]);
+  const [flashOffers, setFlashOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,13 +38,15 @@ export default function DashboardPage() {
         { data: emailData },
         { data: qrData },
         { data: invoicesData },
+        { data: flashOffersData },
       ] = await Promise.all([
         supabase.from('shops').select('*').eq('id', user.id).maybeSingle(),
         supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle(),
         supabase.from('campaigns').select('*').eq('shop_id', user.id).order('created_at', { ascending: true }),
         supabase.from('email_campaigns').select('*').eq('shop_id', user.id).order('created_at', { ascending: true }),
         supabase.from('customers_master').select('*').eq('shop_id', user.id).order('created_at', { ascending: true }),
-        supabase.from('digital_invoices').select('*').eq('shop_id', user.id).order('created_at', { ascending: true })
+        supabase.from('digital_invoices').select('*').eq('shop_id', user.id).order('created_at', { ascending: true }),
+        supabase.from('shop_flash_offers').select('id, is_active, views_count, is_deleted').eq('shop_id', user.id).eq('is_deleted', false)
       ]);
 
       if (shopData) setShop(shopData);
@@ -52,6 +55,7 @@ export default function DashboardPage() {
       if (emailData) setEmailCampaigns(emailData);
       if (qrData) setQrLeads(qrData);
       if (invoicesData) setDigitalInvoices(invoicesData);
+      if (flashOffersData) setFlashOffers(flashOffersData);
 
       setLoading(false);
     }
@@ -308,6 +312,66 @@ export default function DashboardPage() {
               <p className="text-xl font-medium text-amber-500">{(qrMetrics.pending + qrMetrics.failed).toLocaleString()}</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ⚡ Flash Offers Feature Spotlight */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#3E3B36] to-[#2A2825] rounded-2xl p-6 border border-[#3E3B36] shadow-lg">
+        {/* Decorative orbs */}
+        <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-[#C4A896]/10 -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 w-32 h-32 rounded-full bg-[#C4A896]/5 translate-y-1/2 pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          {/* Left: Identity */}
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[#C4A896]/20 border border-[#C4A896]/30 flex items-center justify-center flex-shrink-0">
+              <Zap size={22} className="text-[#C4A896]" strokeWidth={1.5} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="lexend-subheading text-sm font-semibold text-[#F5F1EA]">Live Flash Offers</h2>
+                <span className="inline-flex items-center gap-1 bg-[#C4A896] text-[#3E3B36] text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#3E3B36] animate-pulse inline-block" />
+                  NEW
+                </span>
+              </div>
+              <p className="text-[11px] text-[#F5F1EA]/60 leading-relaxed max-w-xs">
+                In-store discount engine. Customers scan your QR and see live deals-zero app install, zero friction.
+              </p>
+            </div>
+          </div>
+
+          {/* Centre: Live stats */}
+          <div className="flex items-center gap-6 md:gap-8">
+            <div className="text-center">
+              <p className="serif-headline text-2xl text-[#C4A896]">
+                {flashOffers.filter(o => o.is_active).length}
+              </p>
+              <p className="text-[9px] tracking-[0.15em] text-[#F5F1EA]/50 uppercase mt-0.5">Active</p>
+            </div>
+            <div className="w-px h-8 bg-[#F5F1EA]/10" />
+            <div className="text-center">
+              <p className="serif-headline text-2xl text-[#F5F1EA]">
+                {flashOffers.length}
+              </p>
+              <p className="text-[9px] tracking-[0.15em] text-[#F5F1EA]/50 uppercase mt-0.5">Total</p>
+            </div>
+            <div className="w-px h-8 bg-[#F5F1EA]/10" />
+            <div className="text-center">
+              <p className="serif-headline text-2xl text-[#F5F1EA]">
+                {flashOffers.reduce((acc, o) => acc + (Number(o.views_count) || 0), 0).toLocaleString()}
+              </p>
+              <p className="text-[9px] tracking-[0.15em] text-[#F5F1EA]/50 uppercase mt-0.5">Views</p>
+            </div>
+          </div>
+
+          {/* Right: CTA */}
+          <Link
+            href="/dashboard/flash-offers"
+            className="flex-shrink-0 inline-flex items-center gap-2 bg-[#C4A896] hover:bg-[#d4b8a6] text-[#3E3B36] px-5 py-2.5 rounded-xl text-xs font-bold tracking-widest uppercase transition-colors shadow-md"
+          >
+            Open Engine <ArrowRight size={13} />
+          </Link>
         </div>
       </div>
 
