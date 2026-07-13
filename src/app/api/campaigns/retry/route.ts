@@ -145,20 +145,15 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── IMPLEMENT WHATSAPP SOCKET HEALTH CHECKER FIRST (Render Engine) ───────
     if (dispatchMode === 'QR_EXPRESS') {
-      const renderServerUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
-      const statusRes = await fetch(`${renderServerUrl}/api/whatsapp/status?shop_id=${shopId}`);
-      const statusData = await statusRes.json().catch(() => ({}));
-      
-      if (statusData.status !== 'CONNECTED') {
-         // Active messaging socket is dead. Attempting connect on Render...
-         const connectRes = await fetch(`${renderServerUrl}/api/whatsapp/connect?shop_id=${shopId}`);
-         const connectText = await connectRes.text();
-         if (connectText !== 'CONNECTED') {
-           return NextResponse.json({ ok: false, error: "WhatsApp is not actively running. Please go to settings and re-scan the QR code." }, { status: 400 });
-         }
-      }
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            'QR_EXPRESS connection mode is decommissioned. Please configure and use META_API.',
+        },
+        { status: 400 },
+      );
     }
 
     // ── Wallet / Credit Check ────────────────────────────────────────────────

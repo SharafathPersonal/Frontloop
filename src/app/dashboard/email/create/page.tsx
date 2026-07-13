@@ -8,7 +8,7 @@ import Link from 'next/link';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 import { Spinner } from '@/components/ui/Spinner';
 
-type CustomerTag = 'VIP' | 'Regular' | 'New';
+type CustomerTag = 'VIP' | 'Regular' | 'New' | 'DIGITAL_BILL';
 interface RecipientTag { value: CustomerTag; label: string; count: number; }
 
 export default function EmailCreatePage() {
@@ -41,13 +41,17 @@ export default function EmailCreatePage() {
       if (!user) return;
       const [{ data: wallet }, tagCounts, { data: configData }] = await Promise.all([
         supabase.from('wallets').select('credits_remaining').eq('shop_id', user.id).maybeSingle(),
-        Promise.all((['VIP', 'Regular', 'New'] as CustomerTag[]).map(async (tag) => {
+        Promise.all((['VIP', 'Regular', 'New', 'DIGITAL_BILL'] as CustomerTag[]).map(async (tag) => {
           const { count } = await supabase
             .from('customers_master')
             .select('*', { count: 'exact', head: true })
             .eq('shop_id', user.id)
             .contains('tags', [tag]);
-          return { value: tag, label: tag, count: count ?? 0 };
+          return { 
+            value: tag, 
+            label: tag === 'DIGITAL_BILL' ? 'Digital Bill Customers 🧾' : tag, 
+            count: count ?? 0 
+          };
         })),
         supabase.from('system_settings').select('value').eq('key', 'email_credit_cost').maybeSingle()
       ]);
@@ -149,9 +153,10 @@ export default function EmailCreatePage() {
       }
 
       return data.publicUrl;
-    } catch (err: any) {
+    } catch (err: unknown) {
       setImageUploading(false);
-      setErrorMsg(`Image upload failed: ${err.message || 'Network error'}`);
+      const errMsg = err instanceof Error ? err.message : 'Network error';
+      setErrorMsg(`Image upload failed: ${errMsg}`);
       return null;
     }
   };
@@ -186,8 +191,9 @@ export default function EmailCreatePage() {
         subject: data.subject || prev.subject,
         html_body: data.html_body || prev.html_body
       }));
-    } catch (err: any) {
-      setErrorMsg(err.message);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'AI Generation failed';
+      setErrorMsg(errMsg);
     } finally {
       setIsGenerating(false);
     }

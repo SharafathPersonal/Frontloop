@@ -34,57 +34,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    let campaignId: string | undefined;
-    try {
-      const body = await req.json();
-      campaignId = body.campaignId;
-    } catch (e) {
-      // JSON body is optional
-    }
-
-    // Fetch messages that are not READ from message_logs
-    let query = supabase
-      .from('message_logs')
-      .select('id, meta_message_id, recipient_phone, campaign_id, status')
-      .eq('shop_id', user.id);
-
-    if (campaignId) {
-      query = query.eq('campaign_id', campaignId);
-    }
-
-    const { data: logs, error: logsError } = await query.neq('status', 'READ');
-
-    if (logsError) {
-      console.error('[Refresh API] Error fetching message logs:', logsError);
-      return NextResponse.json({ error: logsError.message }, { status: 500 });
-    }
-
-    if (!logs || logs.length === 0) {
-      return NextResponse.json({ ok: true, updatedCount: 0 });
-    }
-
-    // Call Baileys express microservice sync status endpoint
-    const renderServerUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
-    
-    const response = await fetch(`${renderServerUrl}/api/whatsapp/sync-status`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        shop_id: user.id,
-        messages: logs,
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('[Refresh API] WhatsApp service error:', errText);
-      return NextResponse.json({ error: `WhatsApp status sync failed: ${errText}` }, { status: 502 });
-    }
-
-    const data = await response.json();
-    return NextResponse.json({ ok: true, updatedCount: data.updated?.length || 0 });
+    // Status synchronization is handled asynchronously via Meta Webhooks.
+    // Retaining mock endpoint for backward compatibility with frontend refresh triggers.
+    return NextResponse.json({ ok: true, updatedCount: 0 });
 
   } catch (error) {
     console.error('[Refresh API] Exception occurred:', error);

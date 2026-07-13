@@ -172,17 +172,11 @@ export async function POST(req: Request) {
 
       for (const recipient of recipientsSnapshot) {
         try {
-          // Deduct credit
-          const { error: deductError } = await adminClient.rpc('deduct_credits', {
-            p_shop_id: shopId,
-            p_amount: creditCostSnapshot,
-          });
-          if (deductError) throw new Error(`Credit deduction failed: ${deductError.message}`);
-
           const envEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
           const rawEmail = envEmail.match(/<(.+)>/)?.[1] || envEmail.replace(/["']/g, "");
 
-          const { error: resendError } = await resend.emails.send({
+          // 1. Fire email payload via Resend service router first
+          const { data: resendData, error: resendError } = await resend.emails.send({
             from: `${shopNameSnapshot} <${rawEmail}>`,
             replyTo: replyToSnapshot,
             to: recipient.email,
@@ -190,8 +184,18 @@ export async function POST(req: Request) {
             html: htmlSnapshot,
           });
 
-          if (resendError) {
-            throw new Error(`Resend API Error: ${resendError.message}`);
+          if (resendError || !resendData) {
+            throw new Error(`Resend API Error: ${resendError?.message || 'Dispatch failed'}`);
+          }
+
+          // 2. Perform database token balance reduction ONLY after confirmed API dispatch success
+          const { error: deductError } = await adminClient.rpc('deduct_credits', {
+            p_shop_id: shopId,
+            p_amount: creditCostSnapshot,
+          });
+
+          if (deductError) {
+            throw new Error(`Credit ledger transaction failed: ${deductError.message}`);
           }
 
           successCount++;

@@ -1,26 +1,294 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { APP_VERSION } from '@/lib/config';
-import { Phone, MessageCircle, XCircle, CheckCircle, ArrowRight, Mail, Smartphone, ShieldCheck, Bot, Contact, Zap, Wand2, Upload, Image as ImageIcon, AlertTriangle, X } from 'lucide-react';
+import {
+  Phone, MessageCircle, XCircle, CheckCircle, ArrowRight, Mail,
+  Smartphone, ShieldCheck, Bot, Contact, Zap, Wand2, Upload,
+  Image as ImageIcon, AlertTriangle, X, Search, Loader2, Plus,
+  Trash2, Download, Eye, Check, RefreshCw, HelpCircle, ArrowUpRight,
+  Settings, ChevronRight, Copy, Database, FileText, Lock, Sparkles,
+  CreditCard, TrendingUp, Sliders, Layers
+} from 'lucide-react';
 
-// ──────────────────────────────────────────────────────────────────
-// LANDING PAGE — True Attendly Broadcast
-// Premium Editorial B2B SaaS Marketing Page
-// ──────────────────────────────────────────────────────────────────
+
+// Preset Shop Branding Colors for Demo
+const BRAND_PRESET_COLORS = [
+  { name: 'Classic Amber', hex: '#B45309', bg: 'bg-amber-700' },
+  { name: 'Emerald Forest', hex: '#047857', bg: 'bg-emerald-700' },
+  { name: 'Imperial Crimson', hex: '#B91C1C', bg: 'bg-red-700' },
+  { name: 'Sleek Indigo', hex: '#4338CA', bg: 'bg-indigo-700' },
+  { name: 'Charcoal Noir', hex: '#374151', bg: 'bg-gray-700' }
+];
 
 export default function LandingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+
+  // ──────────────────────────────────────────────────────────────────
+  // 1. DYNAMIC PREVIEW & POS TERMINAL STATE
+  // ──────────────────────────────────────────────────────────────────
+  const [cart, setCart] = useState([
+    { id: 1, name: 'Pure Cotton Summer Shirt', price: 1299, qty: 1 },
+    { id: 2, name: 'Organic Linen Trousers', price: 1899, qty: 1 }
+  ]);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemPrice, setNewItemPrice] = useState('');
+  const [isScanning, setIsScanning] = useState(true);
+  const [scanSuccess, setScanSuccess] = useState(false);
+  const [qrTotal, setQrTotal] = useState(3198); // Matches subtotal initially
+  const [brandColor, setBrandColor] = useState('#B45309');
+  const [selectedPresetColor, setSelectedPresetColor] = useState('#B45309');
+  const [invoiceFooterNote, setInvoiceFooterNote] = useState('Thank you for visiting! Please come again. ✨');
+  const [showBillModal, setShowBillModal] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  // Cart Calculations
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const gst = Math.round(subtotal * 0.18);
+  const total = subtotal + gst;
+
+  // Add Item to POS Cart
+  const handleAddItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newItemName || !newItemPrice) return;
+    const price = parseFloat(newItemPrice);
+    if (isNaN(price) || price <= 0) return;
+
+    const newId = cart.length > 0 ? Math.max(...cart.map(i => i.id)) + 1 : 1;
+    setCart([...cart, { id: newId, name: newItemName, price, qty: 1 }]);
+    setNewItemName('');
+    setNewItemPrice('');
+    triggerScanFlash();
+  };
+
+  const triggerScanFlash = () => {
+    setScanSuccess(true);
+    setTimeout(() => setScanSuccess(false), 800);
+  };
+
+  const removeItem = (id: number) => {
+    setCart(cart.filter(item => item.id !== id));
+  };
+
+  // ──────────────────────────────────────────────────────────────────
+  // 2. AI TEMPLATE POLISHER STATE
+  // ──────────────────────────────────────────────────────────────────
+  const [roughText, setRoughText] = useState('hey buyer we got new clothes in our shop 20% discount if you visit this sunday');
+  const [polishedOutput, setPolishedOutput] = useState('');
+  const [isPolishing, setIsPolishing] = useState(false);
+
+  const handlePolishText = () => {
+    setIsPolishing(true);
+    setPolishedOutput('');
+    setTimeout(() => {
+      setIsPolishing(false);
+      setPolishedOutput(
+        `Hi {{1}}! Exclusive new collections are now available at {{2}}. Enjoy an exclusive 20% privilege savings when you visit us this Sunday. View Catalog: {{3}} 🌿`
+      );
+    }, 1200);
+  };
+
+  // ──────────────────────────────────────────────────────────────────
+  // 3. COHORT EMAIL CAMPAIGN STATE
+  // ──────────────────────────────────────────────────────────────────
+  const [emailSubject, setEmailSubject] = useState('🎁 Private Access: 20% Off Our New Collection');
+  const [selectedCohorts, setSelectedCohorts] = useState<string[]>(['DIGITAL_BILL', 'VIP']);
+  const cohortCounts: Record<string, number> = {
+    'DIGITAL_BILL': 1240,
+    'VIP': 650,
+    'NEW': 420,
+    'REGULAR': 890
+  };
+
+  const toggleCohort = (cohort: string) => {
+    if (selectedCohorts.includes(cohort)) {
+      setSelectedCohorts(selectedCohorts.filter(c => c !== cohort));
+    } else {
+      setSelectedCohorts([...selectedCohorts, cohort]);
+    }
+  };
+
+  // 1 Wallet Credit per Email (Standard platform parameter)
+  const totalEmailsCount = selectedCohorts.reduce((sum, c) => sum + (cohortCounts[c] || 0), 0);
+  const creditsDeducted = totalEmailsCount * 1; // 1 credit per email dispatch
+
+  // ──────────────────────────────────────────────────────────────────
+  // 4. DUAL-STATE TRANSACTION LEDGER (infinite cursor simulation)
+  // ──────────────────────────────────────────────────────────────────
+  const [activeLedgerTab, setActiveLedgerTab] = useState<'purchases' | 'usages'>('usages');
+  const [ledgerUsages, setLedgerUsages] = useState<any[]>([]);
+  const [isLoadingMoreUsages, setIsLoadingMoreUsages] = useState(false);
+  const [hasMoreUsages, setHasMoreUsages] = useState(true);
+
+  // Initial 20 records for usages cursor matrix (strict 20-row cursor matrix)
+  const generateInitialUsages = () => [
+    { id: 'u-1', type: 'Digital Invoice Dispatch', desc: 'INV-1002', date: 'Just now', credits: '1.0 Credit', status: 'delivered' },
+    { id: 'u-2', type: 'WhatsApp Campaign', desc: 'Weekend Feast BOGO Launch', date: '12 mins ago', credits: '1,420.0 Credits', status: 'delivered' },
+    { id: 'u-3', type: 'Email Marketing', desc: 'Eid Collection VIP Drop', date: '45 mins ago', credits: '650.0 Credits', status: 'delivered' },
+    { id: 'u-4', type: 'Digital Invoice Dispatch', desc: 'INV-1001', date: '1 hour ago', credits: '1.0 Credit', status: 'delivered' },
+    { id: 'u-5', type: 'WhatsApp Campaign', desc: 'VIP Special Cohort A', date: '2 hours ago', credits: '310.0 Credits', status: 'delivered' },
+    { id: 'u-6', type: 'Email Marketing', desc: 'Weekly Retention Newsletter v2.1', date: '4 hours ago', credits: '890.0 Credits', status: 'delivered' },
+    { id: 'u-7', type: 'Digital Invoice Dispatch', desc: 'INV-1000', date: '6 hours ago', credits: '1.0 Credit', status: 'delivered' },
+    { id: 'u-8', type: 'WhatsApp Campaign', desc: 'Flash Sale Alert Segment B', date: '8 hours ago', credits: '500.0 Credits', status: 'delivered' },
+    { id: 'u-9', type: 'Email Marketing', desc: 'Welcome Series Cohort New Users', date: '12 hours ago', credits: '420.0 Credits', status: 'delivered' },
+    { id: 'u-10', type: 'Digital Invoice Dispatch', desc: 'INV-0999', date: '14 hours ago', credits: '1.0 Credit', status: 'delivered' },
+    { id: 'u-11', type: 'WhatsApp Campaign', desc: 'Mid-Season Clearance Sale', date: '1 day ago', credits: '850.0 Credits', status: 'delivered' },
+    { id: 'u-12', type: 'Email Marketing', desc: 'Product Restock Alert', date: '1 day ago', credits: '1,240.0 Credits', status: 'delivered' },
+    { id: 'u-13', type: 'Digital Invoice Dispatch', desc: 'INV-0998', date: '1 day ago', credits: '1.0 Credit', status: 'delivered' },
+    { id: 'u-14', type: 'WhatsApp Campaign', desc: 'Festival Special Promo', date: '2 days ago', credits: '920.0 Credits', status: 'delivered' },
+    { id: 'u-15', type: 'Email Marketing', desc: 'Abandoned Cart Recovery Loop', date: '2 days ago', credits: '15.0 Credits', status: 'delivered' },
+    { id: 'u-16', type: 'Digital Invoice Dispatch', desc: 'INV-0997', date: '2 days ago', credits: '1.0 Credit', status: 'delivered' },
+    { id: 'u-17', type: 'WhatsApp Campaign', desc: 'Loyalty Tier Top Up Broadcast', date: '3 days ago', credits: '200.0 Credits', status: 'delivered' },
+    { id: 'u-18', type: 'Email Marketing', desc: 'Re-engagement Cohort D', date: '3 days ago', credits: '180.0 Credits', status: 'delivered' },
+    { id: 'u-19', type: 'Digital Invoice Dispatch', desc: 'INV-0996', date: '3 days ago', credits: '1.0 Credit', status: 'delivered' },
+    { id: 'u-20', type: 'WhatsApp Campaign', desc: 'Weekend Special Coupon Loop', date: '4 days ago', credits: '350.0 Credits', status: 'delivered' },
+  ];
 
   useEffect(() => {
+    setLedgerUsages(generateInitialUsages());
+  }, []);
+
+  const handleLoadMoreUsages = () => {
+    if (isLoadingMoreUsages || !hasMoreUsages) return;
+    setIsLoadingMoreUsages(true);
+
+    setTimeout(() => {
+      const nextBatch = [
+        { id: 'u-21', type: 'Digital Invoice Dispatch', desc: 'INV-0995', date: '5 days ago', credits: '1.0 Credit', status: 'delivered' },
+        { id: 'u-22', type: 'Email Marketing', desc: 'Holiday Collection Announcement', date: '6 days ago', credits: '1,420.0 Credits', status: 'delivered' },
+        { id: 'u-23', type: 'WhatsApp Campaign', desc: 'Store Anniversary VIP Invite', date: '1 week ago', credits: '650.0 Credits', status: 'delivered' },
+        { id: 'u-24', type: 'Digital Invoice Dispatch', desc: 'INV-0994', date: '1 week ago', credits: '1.0 Credit', status: 'delivered' },
+        { id: 'u-25', type: 'WhatsApp Campaign', desc: 'Black Friday Broadcast Opt-in', date: '1 week ago', credits: '2,200.0 Credits', status: 'delivered' },
+      ];
+      setLedgerUsages(prev => [...prev, ...nextBatch]);
+      setIsLoadingMoreUsages(false);
+      setHasMoreUsages(false); // End of demo list
+    }, 1500);
+  };
+
+  // Mock Cashfree Topup Logs (Tab A)
+  const cashfreeLogs = [
+    { id: 'CF-TXN-90231', date: 'Jul 12, 2026', tokens: '10,000 Tokens', amount: '₹10,000.00', status: 'Success' },
+    { id: 'CF-TXN-88421', date: 'Jun 28, 2026', tokens: '5,000 Tokens', amount: '₹5,000.00', status: 'Success' },
+    { id: 'CF-TXN-85102', date: 'May 15, 2026', tokens: '10,000 Tokens', amount: '₹10,000.00', status: 'Success' },
+    { id: 'CF-TXN-81190', date: 'Apr 02, 2026', tokens: '2,500 Tokens', amount: '₹2,500.00', status: 'Success' }
+  ];
+
+  // ──────────────────────────────────────────────────────────────────
+  // 5. SECURITY BARRIER: MANDATORY MULTI-CLICK POPUP STATE
+  // ──────────────────────────────────────────────────────────────────
+  const [securityModalOpen, setSecurityModalOpen] = useState(false);
+  const [securityClickCount, setSecurityClickCount] = useState(0);
+  const [securityPayloadType, setSecurityPayloadType] = useState<'email' | 'whatsapp'>('email');
+  const [dispatchStatus, setDispatchStatus] = useState<'idle' | 'broadcasting' | 'completed'>('idle');
+
+  const triggerSecurityModal = (type: 'email' | 'whatsapp') => {
+    setSecurityPayloadType(type);
+    setSecurityModalOpen(true);
+    setSecurityClickCount(0);
+    setDispatchStatus('idle');
+  };
+
+  const handleSecurityVerification = () => {
+    if (securityClickCount === 0) {
+      setSecurityClickCount(1);
+    } else if (securityClickCount === 1) {
+      setSecurityClickCount(2);
+      setDispatchStatus('broadcasting');
+
+      // Simulate broadcast loop
+      setTimeout(() => {
+        setDispatchStatus('completed');
+        // Add new usage to top of ledger view to show live sync
+        const newRecord = {
+          id: `u-new-${Date.now()}`,
+          type: securityPayloadType === 'email' ? 'Email Marketing' : 'WhatsApp Campaign',
+          desc: securityPayloadType === 'email' ? emailSubject : 'AI Polished Custom Broadcast',
+          date: 'Just now',
+          credits: securityPayloadType === 'email' ? `${creditsDeducted.toLocaleString()}.0 Credits` : '1,240.0 Credits',
+          status: 'delivered'
+        };
+        setLedgerUsages(prev => [newRecord, ...prev]);
+        setTimeout(() => {
+          setSecurityModalOpen(false);
+          setSecurityClickCount(0);
+        }, 1500);
+      }, 2000);
+    }
+  };
+
+  // ──────────────────────────────────────────────────────────────────
+  // 6. ANTI-BAN SPINTAX ENGINE STATE
+  // ──────────────────────────────────────────────────────────────────
+  const [spintaxInput, setSpintaxInput] = useState('{Hello|Hi|Hey} customer! {Thanks|Thank you} for visiting us today.');
+  const [spintaxVariations, setSpintaxVariations] = useState<string[]>([]);
+  const [simulatedDelay, setSimulatedDelay] = useState(0);
+
+  const generateSpintaxVariations = () => {
+    const regex = /\{([^}]+)\}/g;
+    const variants: string[] = [];
+
+    for (let i = 0; i < 3; i++) {
+      let output = spintaxInput;
+      let match;
+
+      // Simple parse for demo
+      while ((match = regex.exec(spintaxInput)) !== null) {
+        const choices = match[1].split('|');
+        const selected = choices[Math.floor(Math.random() * choices.length)];
+        output = output.replace(match[0], selected);
+      }
+
+      // If no spintax brackets matched, add generic response
+      if (output === spintaxInput) {
+        output = `${output} [Variant ${i + 1}]`;
+      }
+      variants.push(output);
+    }
+
+    setSpintaxVariations(variants);
+    setSimulatedDelay(Math.floor(Math.random() * 8) + 5); // 5 to 12-second intervals
+  };
+
+  useEffect(() => {
+    generateSpintaxVariations();
+  }, [spintaxInput]);
+
+  // ──────────────────────────────────────────────────────────────────
+  // 7. UNIFIED MANIFEST PARSER STATE (CSV/Excel Drag & Drop)
+  // ──────────────────────────────────────────────────────────────────
+  const [csvStatus, setCsvStatus] = useState<'idle' | 'uploading' | 'parsed'>('idle');
+  const [parsedRowsCount, setParsedRowsCount] = useState(0);
+  const [parsedContacts, setParsedContacts] = useState<any[]>([]);
+
+  const handleSimulatedCsvUpload = () => {
+    setCsvStatus('uploading');
+    setTimeout(() => {
+      setCsvStatus('parsed');
+      setParsedRowsCount(6);
+      setParsedContacts([
+        { name: 'K. Sharafath', rawPhone: '916282560928', maskedPhone: '+91 62825 ••••8', status: 'DIGITAL_BILL' },
+        { name: 'A. Rahul', rawPhone: '919876543210', maskedPhone: '+91 98765 ••••0', status: 'DIGITAL_BILL' },
+        { name: 'M. Priya', rawPhone: '918887776660', maskedPhone: '+91 88877 ••••0', status: 'DIGITAL_BILL' },
+        { name: 'John Doe', rawPhone: '917776665552', maskedPhone: '+91 77766 ••••2', status: 'DIGITAL_BILL' },
+        { name: 'Fathima R.', rawPhone: '919445556661', maskedPhone: '+91 94455 ••••1', status: 'DIGITAL_BILL' },
+        { name: 'S. Suresh', rawPhone: '919998887774', maskedPhone: '+91 99988 ••••4', status: 'DIGITAL_BILL' },
+      ]);
+    }, 1500);
+  };
+
+  // ──────────────────────────────────────────────────────────────────
+  // LENIS & GSAP INTEGRATION
+  // ──────────────────────────────────────────────────────────────────
+  useEffect(() => {
     let lenis: import('lenis').default | null = null;
-    let gsapModule: typeof import('gsap') | null = null;
 
     async function initAnimations() {
-      // Dynamic imports for client-only libs
       const [{ default: Lenis }, { gsap }, { ScrollTrigger }] = await Promise.all([
         import('lenis'),
         import('gsap'),
@@ -28,47 +296,45 @@ export default function LandingPage() {
       ]);
 
       gsap.registerPlugin(ScrollTrigger);
-      gsapModule = { gsap } as typeof import('gsap');
 
-      // ── Lenis Smooth Scroll ────────────────────────────────────
+      // Smooth scroll (Lenis)
       if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         lenis = new Lenis({ lerp: 0.08, smoothWheel: true });
-
         lenis.on('scroll', ScrollTrigger.update);
-
         gsap.ticker.add((time) => lenis?.raf(time * 1000));
         gsap.ticker.lagSmoothing(0);
       }
 
-      // ── Header scroll state ────────────────────────────────────
+      // Header scrolled state
       const header = headerRef.current;
       if (header) {
         ScrollTrigger.create({
           start: 40,
-          onEnter: () => header.classList.add('header-scrolled'),
-          onLeaveBack: () => header.classList.remove('header-scrolled'),
+          onEnter: () => {
+            header.classList.add('header-scrolled');
+            setIsScrolled(true);
+          },
+          onLeaveBack: () => {
+            header.classList.remove('header-scrolled');
+            setIsScrolled(false);
+          },
         });
       }
 
-      // ── Hero entrance animation ────────────────────────────────
+      // Hero entrance animations
       if (heroRef.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         const heroEls = heroRef.current.querySelectorAll('.hero-animate');
-        gsap.from(
-          heroEls,
-          {
-            opacity: 0,
-            y: 30,
-            duration: 0.9,
-            stagger: 0.12,
-            ease: 'power3.out',
-            delay: 0.1,
-          }
-        );
-      } else if (heroRef.current) {
-        // No action needed for prefers-reduced-motion since elements are visible by default
+        gsap.from(heroEls, {
+          opacity: 0,
+          y: 35,
+          duration: 0.8,
+          stagger: 0.1,
+          ease: 'power3.out',
+          delay: 0.1,
+        });
       }
 
-      // ── Section scroll reveals ─────────────────────────────────
+      // Section scroll reveals
       const sections = document.querySelectorAll('.scroll-reveal-section');
       sections.forEach((section) => {
         const els = section.querySelectorAll('.gsap-reveal');
@@ -103,9 +369,23 @@ export default function LandingPage() {
     };
   }, []);
 
+  // Preset Color selection trigger
+  const selectPresetColor = (hex: string) => {
+    setSelectedPresetColor(hex);
+    setBrandColor(hex);
+  };
+
+  const handleDownloadBill = () => {
+    setIsDownloading(true);
+    setTimeout(() => {
+      setIsDownloading(false);
+      alert(`INV-1002-BILL.pdf downloaded successfully! (Simulated PDF download path with custom color config: ${brandColor})`);
+    }, 1500);
+  };
+
   return (
-    <main className="w-full max-w-full min-h-screen overflow-x-hidden relative">
-      {/* ── Injected header scroll styles ─────────────────────── */}
+    <main className="w-full max-w-full min-h-screen overflow-x-hidden relative text-slate-800 antialiased bg-[#F5F1EA]">
+      {/* ── Injected header scrolled styles ─────────────────────── */}
       <style jsx global>{`
         .header-scrolled {
           background: rgba(255, 255, 255, 0.95) !important;
@@ -113,7 +393,7 @@ export default function LandingPage() {
           box-shadow: 0 1px 0 #E8E3DA !important;
         }
         .header-scrolled .nav-link-light {
-          color: #8B8378 !important;
+          color: #3E3B36 !important;
         }
         .header-scrolled .nav-link-light:hover {
           color: #C4A896 !important;
@@ -144,36 +424,29 @@ export default function LandingPage() {
         style={{ background: 'transparent' }}
       >
         <div className="max-w-6xl mx-auto px-6 h-full flex items-center justify-between">
-
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
-            <div className="relative w-10 h-10 flex-shrink-0">
-              <Image 
-                src="/images/logo-light.png"
-                alt="Attendly"
+            <div className="relative w-8 h-8 flex-shrink-0">
+              <Image
+                src={isScrolled ? "/images/logo-dark.png" : "/images/logo-light.png"}
+                alt="True Attendly Broadcast Logo"
                 fill
-                sizes="40px"
-                className="object-contain logo-light transition-opacity duration-300" 
-              />
-              <Image 
-                src="/images/logo-dark.png"
-                alt="Attendly"
-                fill
-                sizes="40px"
-                className="object-contain logo-dark opacity-0 transition-opacity duration-300 absolute inset-0" 
+                sizes="32px"
+                className="object-contain transition-all duration-300"
+                priority
               />
             </div>
             <span className="brand-text serif-headline text-white text-base transition-colors duration-300">
-              Attendly Broadcast
+              True Attendly
             </span>
           </Link>
 
           {/* Center Nav (desktop only) */}
           <nav className="hidden md:flex items-center gap-8">
-            {['About', 'Services', 'Contact'].map((item) => (
+            {['Engines', 'Ledger', 'Comparison', 'Deep Dive'].map((item) => (
               <a
                 key={item}
-                href={`#${item.toLowerCase()}`}
+                href={`#${item.toLowerCase().replace(' ', '-')}`}
                 className="nav-link-light text-xs tracking-[0.2em] text-white/80 hover:text-white uppercase transition-colors duration-200"
               >
                 {item}
@@ -181,2114 +454,1308 @@ export default function LandingPage() {
             ))}
           </nav>
 
-          {/* Sign In */}
-          <Link
-            href="/auth/login"
-            className="signin-link text-xs tracking-[0.2em] text-white/80 hover:text-white uppercase transition-colors duration-200"
-          >
-            Sign In
-          </Link>
-
+          {/* CTAs */}
+          <div className="flex items-center gap-4">
+            <Link
+              href="/auth/login"
+              className="signin-link text-xs tracking-[0.2em] text-white/80 hover:text-white uppercase transition-colors duration-200"
+            >
+              Sign In →
+            </Link>
+            <Link
+              href="/auth/register"
+              className="hidden sm:inline-flex bg-[#C4A896] hover:bg-[#b09380] text-white text-[10px] tracking-[0.15em] font-bold uppercase px-4 py-2 rounded transition-colors"
+            >
+              Create Free Workspace
+            </Link>
+          </div>
         </div>
       </header>
 
       {/* ══════════════════════════════════════════════════════════
-          SECTION 2 — HERO (Dark Full-Bleed)
+          SECTION 2 — HERO SECTION & MARKETING HOOK
       ══════════════════════════════════════════════════════════ */}
       <section
         ref={heroRef}
-        className="w-full relative flex flex-col justify-center pt-24 pb-12 lg:pt-32 lg:pb-24 bg-[#3E3B36]"
+        className="w-full relative flex flex-col justify-center pt-24 pb-16 lg:pt-36 lg:pb-32 bg-[#3E3B36] text-white"
       >
-        {/* Ambient glow layers */}
+        {/* Decorative Grid Layer */}
+        <div className="absolute inset-0 opacity-5 pointer-events-none"
+             style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+
+        {/* Ambient Glows */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 pointer-events-none overflow-hidden"
           style={{
             background: `
-              radial-gradient(ellipse 80% 60% at 70% 20%, rgba(196, 168, 150, 0.15) 0%, transparent 70%),
-              radial-gradient(ellipse 60% 50% at 10% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 70%)
+              radial-gradient(circle 800px at 70% 30%, rgba(196, 168, 150, 0.18) 0%, transparent 80%),
+              radial-gradient(circle 600px at 20% 80%, rgba(139, 123, 168, 0.1) 0%, transparent 80%)
             `,
           }}
         />
 
-        <div className="relative max-w-7xl mx-auto px-6 w-full h-auto mt-12 lg:mt-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-
-            {/* ── Left Column ──────────────────────────────────── */}
-            <div className="space-y-8 z-10">
-
-              <div className="hero-animate">
-                <span className="text-xs tracking-[0.2em] uppercase font-bold px-3 py-1.5 rounded-full border border-[#C4A896]/20" style={{ color: '#C4A896', backgroundColor: 'rgba(196,168,150,0.1)' }}>
-                  Version {APP_VERSION} Live
+        <div className="relative max-w-7xl mx-auto px-6 w-full mt-8 lg:mt-12">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            
+            {/* Left side copy details */}
+            <div className="lg:col-span-5 space-y-6 z-10 text-left">
+              {/* Badges Stack */}
+              <div className="hero-animate flex flex-wrap gap-2.5">
+                <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-semibold tracking-wider text-[#C4A896] bg-amber-950/40 border border-[#C4A896]/35 px-3.5 py-1.5 rounded-full">
+                  <ShieldCheck size={12} className="text-[#C4A896]" />
+                  Official Meta API Mode · 0% Ban Risk. Verified Broadcasts to GST Brands.
+                </span>
+                <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-semibold tracking-wider text-emerald-300 bg-emerald-950/40 border border-emerald-800/40 px-3.5 py-1.5 rounded-full">
+                  <Smartphone size={12} className="text-emerald-300" />
+                  Dynamic Mobile POS · Light-speed QR checkout codes.
                 </span>
               </div>
 
-              <div className="hero-animate">
-                <h1 className="serif-headline text-4xl md:text-6xl font-bold text-white mb-6 leading-[1.2] tracking-tight">
-                  The Omnichannel AI Marketing Platform for High-Retention Retail.
-                </h1>
-              </div>
+              {/* Headline */}
+              <h1 className="hero-animate serif-headline text-3xl sm:text-4xl lg:text-5xl font-light text-white leading-[1.15] tracking-tight">
+                Stop Wasting Fortune on Rigid Billing Software &amp; Thermal Paper Rolls.
+                <span className="block font-medium text-[#C4A896] mt-2">Turn Any Smartphone into a Smart POS &amp; WhatsApp Billing Terminal Instantly!</span>
+              </h1>
 
-              <div className="hero-animate">
-                <p className="text-lg text-neutral-400 max-w-2xl mb-8 leading-relaxed">
-                  Stop losing customers to dead channels. Launch official Meta WhatsApp updates, trigger zero-risk in-store QR lead pipelines, save bulk contacts via automated vCard sync, and run premium AI email campaigns—all from one unified ledger.
-                </p>
-              </div>
+              {/* Sub-Headline */}
+              <p className="hero-animate text-sm sm:text-base text-neutral-300 leading-relaxed max-w-xl">
+                Eliminate checkout friction. Capture 100% of walk-in store traffic, deliver premium custom-themed digital bills straight to customer WhatsApp threads with absolute zero-ban risk, and run hyper-targeted omnichannel promotions from one unified wallet ledger.
+              </p>
 
-              {/* The 4-Feature Hub Display */}
-              <div className="hero-animate grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-                <div className="p-4 rounded-xl flex items-start gap-4 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
-                  <div className="p-3 bg-amber-950/30 backdrop-blur-md rounded-2xl border border-amber-800/40 shadow-xl shadow-amber-950/40 shrink-0">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <linearGradient id="warm-grad-shield" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#B45309" />
-                          <stop offset="100%" stopColor="#FDE68A" />
-                        </linearGradient>
-                        <filter id="warm-glow-shield" x="-20%" y="-20%" width="140%" height="140%">
-                          <feGaussianBlur stdDeviation="1.5" result="blur" />
-                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                        </filter>
-                      </defs>
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="url(#warm-grad-shield)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" filter="url(#warm-glow-shield)"/>
-                      <path d="M9 12l2 2 4-4" stroke="url(#warm-grad-shield)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white mb-1">Official Meta API Mode</h3>
-                    <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>0% Ban Risk. Verified Broadcasts to GST Brands.</p>
-                  </div>
-                </div>
-                
-                <div className="p-4 rounded-xl flex items-start gap-4 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
-                  <div className="p-3 bg-amber-950/30 backdrop-blur-md rounded-2xl border border-amber-800/40 shadow-xl shadow-amber-950/40 shrink-0">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <linearGradient id="warm-grad-phone" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#B45309" />
-                          <stop offset="100%" stopColor="#FDE68A" />
-                        </linearGradient>
-                        <filter id="warm-glow-phone" x="-20%" y="-20%" width="140%" height="140%">
-                          <feGaussianBlur stdDeviation="1.5" result="blur" />
-                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                        </filter>
-                      </defs>
-                      <rect x="5" y="2" width="14" height="20" rx="2" stroke="url(#warm-grad-phone)" strokeWidth="1.25" filter="url(#warm-glow-phone)"/>
-                      <path d="M12 18h.01" stroke="url(#warm-grad-phone)" strokeWidth="1.5" strokeLinecap="round"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white mb-1">In-Store QR Engine</h3>
-                    <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>Instant walk-in lead capture via Scan & Join mechanics.</p>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl flex items-start gap-4 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
-                  <div className="p-3 bg-amber-950/30 backdrop-blur-md rounded-2xl border border-amber-800/40 shadow-xl shadow-amber-950/40 shrink-0">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <linearGradient id="warm-grad-bot" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#B45309" />
-                          <stop offset="100%" stopColor="#FDE68A" />
-                        </linearGradient>
-                        <filter id="warm-glow-bot" x="-20%" y="-20%" width="140%" height="140%">
-                          <feGaussianBlur stdDeviation="1.5" result="blur" />
-                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                        </filter>
-                      </defs>
-                      <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" stroke="url(#warm-grad-bot)" strokeWidth="1.25" filter="url(#warm-glow-bot)"/>
-                      <path d="M17 8H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2z" stroke="url(#warm-grad-bot)" strokeWidth="1.25"/>
-                      <path d="M15 13v.01M9 13v.01" stroke="url(#warm-grad-bot)" strokeWidth="1.5" strokeLinecap="round"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white mb-1">AI Template Polisher</h3>
-                    <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>Automated compliance formatting & unique spintax variations.</p>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl flex items-start gap-4 transition-colors border border-white/10" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
-                  <div className="p-3 bg-amber-950/30 backdrop-blur-md rounded-2xl border border-amber-800/40 shadow-xl shadow-amber-950/40 shrink-0">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <linearGradient id="warm-grad-mail" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#B45309" />
-                          <stop offset="100%" stopColor="#FDE68A" />
-                        </linearGradient>
-                        <filter id="warm-glow-mail" x="-20%" y="-20%" width="140%" height="140%">
-                          <feGaussianBlur stdDeviation="1.5" result="blur" />
-                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                        </filter>
-                      </defs>
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="url(#warm-grad-mail)" strokeWidth="1.25" filter="url(#warm-glow-mail)"/>
-                      <path d="M22 6l-10 7L2 6" stroke="url(#warm-grad-mail)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white mb-1">Premium AI Email Suite</h3>
-                    <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>Powered by Resend with luxury responsive layouts.</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="hero-animate flex items-center gap-4 flex-wrap pt-4">
-                <Link href="/auth/register" className="btn-primary rounded-sm shadow-lg border border-[#C4A896]/30">
+              {/* Action CTAs */}
+              <div className="hero-animate flex flex-wrap items-center gap-4 pt-4">
+                <Link
+                  href="/auth/register"
+                  className="btn-primary rounded-sm shadow-xl shadow-amber-950/20 hover:scale-[1.02] transition-transform duration-300 border border-[#C4A896]/20"
+                >
                   Create Free Workspace
                 </Link>
-                <a href="#solutions" className="btn-secondary-dark rounded-sm">
+                <a
+                  href="#engines"
+                  className="btn-secondary-dark rounded-sm hover:bg-white/5 transition-colors"
+                >
                   Explore Architecture
                 </a>
               </div>
+            </div>
+
+            {/* Right side live interactive emulator playground */}
+            <div className="lg:col-span-7 hero-animate w-full flex flex-col md:flex-row gap-6 relative">
+              
+              {/* VISUAL BOX 1: Cashier Terminal Interface */}
+              <div className="flex-1 bg-white text-slate-800 rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col h-[520px]">
+                
+                {/* POS Header */}
+                <div className="bg-[#3E3B36] text-white px-4 py-3 flex items-center justify-between border-b border-slate-700 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping"></span>
+                    <span className="text-[10px] font-bold tracking-widest uppercase">POS Terminal v3.11</span>
+                  </div>
+                  <span className="text-[9px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">ST-INBOUND-01</span>
+                </div>
+
+                {/* Simulated Barcode Scanning active viewfinder */}
+                <div className="relative h-28 bg-slate-900 overflow-hidden flex items-center justify-center shrink-0 border-b border-slate-200">
+                  <div className={`absolute inset-0 bg-emerald-500/10 transition-opacity duration-300 ${scanSuccess ? 'opacity-100' : 'opacity-0'}`} />
+                  
+                  {/* Viewfinder borders */}
+                  <div className="absolute w-36 h-16 border-2 border-dashed border-emerald-400/60 rounded-md flex items-center justify-center">
+                    <span className="text-[9px] text-emerald-400 font-mono tracking-widest uppercase animate-pulse">Barcode Active</span>
+                  </div>
+
+                  {/* Red Laser scan animation */}
+                  <div className="absolute left-0 right-0 h-[1.5px] bg-red-500 shadow-[0_0_8px_rgba(239,68,68,1)] animate-bounce" />
+
+                  {/* Scan overlay text */}
+                  <span className="absolute bottom-2 text-[8px] text-slate-400 font-mono">Hold barcode close to camera</span>
+                </div>
+
+                {/* Items in Cart */}
+                <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#FCFBF9]">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Active Cart items</h3>
+                    <span className="text-xs font-bold text-slate-700">{cart.length} Products</span>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+                    {cart.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between bg-white border border-slate-200 p-2 rounded-lg shadow-sm">
+                        <div className="min-w-0 flex-1 pr-2">
+                          <p className="text-xs font-semibold text-slate-800 truncate">{item.name}</p>
+                          <p className="text-[10px] text-slate-500">Qty: {item.qty} × ₹{item.price}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-bold text-slate-800">₹{item.price * item.qty}</span>
+                          <button
+                            onClick={() => removeItem(item.id)}
+                            className="text-slate-400 hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {cart.length === 0 && (
+                      <div className="text-center py-6 text-xs text-slate-400 italic">Cart is empty. Add a product below to trigger QR.</div>
+                    )}
+                  </div>
+
+                  {/* Cart Form inputs to add custom products */}
+                  <form onSubmit={handleAddItem} className="pt-2 border-t border-slate-200/60 flex gap-2 items-center">
+                    <input
+                      type="text"
+                      placeholder="Product Name"
+                      value={newItemName}
+                      onChange={(e) => setNewItemName(e.target.value)}
+                      className="flex-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs focus:outline-none focus:border-[#C4A896]"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Price"
+                      value={newItemPrice}
+                      onChange={(e) => setNewItemPrice(e.target.value)}
+                      className="w-16 px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs focus:outline-none focus:border-[#C4A896]"
+                    />
+                    <button
+                      type="submit"
+                      className="bg-[#3E3B36] hover:bg-[#C4A896] text-white p-2 rounded transition-colors shrink-0"
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </form>
+                </div>
+
+                {/* Dynamic Counter QR Code mapping real-time pricing states */}
+                <div className="p-4 bg-slate-50 border-t border-slate-200 shrink-0 flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Real-time checkout billing</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Subtotal: <span className="font-semibold text-slate-700">₹{subtotal}</span></p>
+                    <p className="text-[10px] text-slate-500">GST (18%): <span className="font-semibold text-slate-700">₹{gst}</span></p>
+                    <p className="text-sm font-bold text-[#3E3B36] mt-0.5">Total: ₹{total}</p>
+                  </div>
+                  
+                  {/* Interactive Dynamic QR output representation */}
+                  <div className="relative p-2 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col items-center shrink-0">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-800">
+                      <rect x="3" y="3" width="6" height="6" rx="1" />
+                      <rect x="15" y="3" width="6" height="6" rx="1" />
+                      <rect x="3" y="15" width="6" height="6" rx="1" />
+                      <path d="M16 16h2v2h-2zm4 0h1v1h-1zm-2 4h3v1h-3zm-2-2h1v1h-1zm2 1h1v1h-1z" />
+                      {/* Dynamic dot shifting based on total to simulate price state maps */}
+                      <circle cx={10 + (total % 4)} cy={10 + (total % 4)} r="1.5" fill="#C4A896" stroke="none" />
+                      <rect x="9" y="3" width="3" height="3" fill="currentColor" stroke="none" />
+                      <rect x="3" y="10" width="3" height="3" fill="currentColor" stroke="none" />
+                    </svg>
+                    <span className="text-[7px] font-bold text-[#C4A896] uppercase tracking-wider mt-1">Scan for bill</span>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* VISUAL BOX 2: Customer Device Inbox Emulation */}
+              <div className="flex-1 bg-slate-900 rounded-[2.5rem] p-3 shadow-2xl border-[6px] border-slate-800 h-[520px] flex flex-col relative overflow-hidden">
+                {/* Phone Speaker notch */}
+                <div className="absolute top-1 left-1/2 -translate-x-1/2 w-20 h-4 bg-slate-800 rounded-b-xl z-20" />
+                
+                {/* WhatsApp Chat header */}
+                <div className="bg-[#075e54] text-white pt-6 pb-2.5 px-4 flex items-center gap-2 shrink-0 z-10">
+                  <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center font-bold text-xs shrink-0">
+                    S
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold truncate">True Broadcast Store</p>
+                    <p className="text-[8px] text-emerald-200/90 tracking-wide">verified business account</p>
+                  </div>
+                </div>
+
+                {/* Chat feed */}
+                <div className="flex-1 bg-[#ece5dd] p-3 flex flex-col gap-3 overflow-y-auto"
+                     style={{ backgroundImage: 'radial-gradient(#d1cbbd 1px, transparent 1px)', backgroundSize: '12px 12px' }}>
+                  
+                  {/* Inbound Text Trigger */}
+                  <div className="self-end bg-[#dcf8c6] max-w-[85%] rounded-lg rounded-tr-none px-3 py-1.5 shadow-sm text-xs border border-emerald-100 mt-2">
+                    <p className="text-slate-800">✨ Get my Bill INV-1002</p>
+                    <span className="text-[8px] text-slate-500 float-right mt-1 ml-2">19:08</span>
+                  </div>
+
+                  {/* Outbound Response PDF Attachment & Preview */}
+                  <div className="self-start bg-white max-w-[90%] rounded-lg rounded-tl-none p-2.5 shadow-sm border-l-4 mt-1 transition-all duration-300 w-full"
+                       style={{ borderColor: brandColor }}>
+                    
+                    {/* PDF Document Row */}
+                    <div className="flex items-center gap-3 mb-2 pb-2 border-b border-slate-100">
+                      <div className="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center shrink-0 border border-rose-100">
+                        <FileText size={18} className="text-rose-600" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-bold text-slate-800 truncate">INV-1002-BILL.pdf</p>
+                        <p className="text-[9px] text-slate-500">142 KB • PDF Document</p>
+                      </div>
+                      <Download size={14} className="text-slate-400 hover:text-slate-600 cursor-pointer shrink-0" onClick={handleDownloadBill} />
+                    </div>
+
+                    {/* Dynamic Brand Accent Theme Frame Preview */}
+                    <div className="border rounded p-2 text-[10px] bg-slate-50" style={{ borderColor: `${brandColor}30` }}>
+                      <div className="flex justify-between items-center border-b pb-1 mb-1 font-bold text-slate-700" style={{ borderBottomColor: `${brandColor}20` }}>
+                        <div className="relative w-14 h-4 flex-shrink-0">
+                          <Image
+                            src="/images/logo-dark.png"
+                            alt="Shop Logo"
+                            fill
+                            sizes="56px"
+                            className="object-contain object-left"
+                          />
+                        </div>
+                        <span>INV-1002</span>
+                      </div>
+                      <div className="space-y-0.5 text-slate-600">
+                        {cart.map(item => (
+                          <div key={item.id} className="flex justify-between">
+                            <span>{item.qty}x {item.name}</span>
+                            <span>₹{item.price * item.qty}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="border-t pt-1 mt-1 flex justify-between font-bold text-slate-800" style={{ borderTopColor: `${brandColor}20` }}>
+                        <span>Total (inc. GST)</span>
+                        <span>₹{total}</span>
+                      </div>
+                    </div>
+
+                    {/* Merchant Thank-You Custom Footer */}
+                    <div className="mt-2 text-center border-t pt-2 border-slate-100">
+                      <p className="text-[11px] text-slate-800 font-medium italic font-serif" style={{ color: brandColor }}>
+                        "{invoiceFooterNote}"
+                      </p>
+                    </div>
+
+                    {/* Platform footprint */}
+                    <div className="mt-1 text-right">
+                      <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Powered by True Attendly</span>
+                    </div>
+
+                    <span className="text-[8px] text-slate-500 float-right mt-1.5">19:08</span>
+                  </div>
+
+                  {/* Cashier Overrides triggers inside the workspace */}
+                  <div className="flex gap-2 mt-1 self-start shrink-0 w-full max-w-[90%]">
+                    <button
+                      onClick={() => setShowBillModal(true)}
+                      className="flex-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded px-2 py-1.5 text-[9px] font-bold uppercase tracking-widest flex items-center justify-center gap-1 shadow-sm transition-colors"
+                    >
+                      <Eye size={10} /> View Bill
+                    </button>
+                    <button
+                      onClick={handleDownloadBill}
+                      className="flex-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded px-2 py-1.5 text-[9px] font-bold uppercase tracking-widest flex items-center justify-center gap-1 shadow-sm transition-colors"
+                    >
+                      {isDownloading ? <Loader2 size={10} className="animate-spin" /> : <Download size={10} />}
+                      Download Bill
+                    </button>
+                  </div>
+                </div>
+
+                {/* Inline color controller to demonstrate mirroring */}
+                <div className="p-3 bg-[#FCFBF9] border-t border-slate-200 shrink-0 text-slate-800 flex items-center justify-between gap-2">
+                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Accent Mirror</span>
+                  <div className="flex gap-1.5">
+                    {BRAND_PRESET_COLORS.map((c) => (
+                      <button
+                        key={c.hex}
+                        onClick={() => selectPresetColor(c.hex)}
+                        className={`w-4 h-4 rounded-full border ${c.bg} transition-transform ${brandColor === c.hex ? 'scale-125 border-slate-800' : 'border-transparent hover:scale-110'}`}
+                        title={c.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+              </div>
 
             </div>
 
-            {/* ── Right Column — 5-Block Cluster Mockup ── */}
-            <div className="hero-animate relative w-full h-[400px] sm:h-[500px] lg:h-[540px] perspective-1000 scale-[0.75] sm:scale-90 lg:scale-100 origin-top flex-shrink-0 mt-8 lg:mt-0">
-              
-              {/* Block 1: Campaign Dashboard (Meta API) */}
-              <div className="absolute left-0 top-12 w-[260px] bg-white rounded-xl shadow-2xl border border-[#E8E3DA] p-4 transform -rotate-6 hover:rotate-0 transition-all duration-500 z-10">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-[11px] font-bold text-[#3E3B36]">Meta API Broadcast</span>
-                  <span className="bg-emerald-100 text-emerald-700 text-[9px] uppercase px-2 py-0.5 rounded font-bold">Live</span>
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex-1 bg-[#F5F1EA] p-2.5 rounded-lg text-center border border-[#E8E3DA]">
-                    <p className="text-[9px] text-[#8B8378] uppercase font-bold tracking-wider mb-1">Sent</p>
-                    <p className="text-xl font-black text-[#3E3B36]">45k</p>
-                  </div>
-                  <div className="flex-1 bg-emerald-50 p-2.5 rounded-lg text-center border border-emerald-100">
-                    <p className="text-[9px] text-emerald-600 uppercase font-bold tracking-wider mb-1">Delivered</p>
-                    <p className="text-xl font-black text-emerald-600">44.8k</p>
-                  </div>
-                </div>
-              </div>
+          </div>
+        </div>
+      </section>
 
-              {/* Block 2: AI Template Polisher */}
-              <div className="absolute right-4 top-4 w-[240px] bg-[#3E3B36] rounded-xl shadow-2xl border border-[#C4A896]/30 p-4 transform rotate-3 hover:rotate-0 hover:-translate-y-2 transition-all duration-500 z-20">
-                <div className="flex items-center gap-2 mb-3">
-                  <Wand2 size={12} className="text-[#C4A896]" />
-                  <span className="text-[10px] font-bold text-white uppercase tracking-wider">AI Template Polisher</span>
-                </div>
-                <div className="bg-white/5 p-2.5 rounded text-[10px] text-white/50 line-through mb-2 border border-white/5">
-                  hi sir pls buy our stock
-                </div>
-                <div className="bg-emerald-500/10 border border-emerald-500/30 p-2.5 rounded text-[11px] text-emerald-400 font-medium leading-relaxed">
-                  Hi {`{{1}}`}! Exclusive stock arrived at {`{{2}}`}. ✨
-                </div>
-              </div>
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 3 — CORE VALUE HIGHLIGHTS: THE 3 BROADCAST ENGINES
+      ══════════════════════════════════════════════════════════ */}
+      <section id="engines" className="w-full py-24 px-6 bg-white scroll-reveal-section">
+        <div className="max-w-6xl mx-auto">
+          
+          <div className="max-w-3xl mx-auto text-center mb-20 gsap-reveal">
+            <span className="text-xs tracking-[0.25em] uppercase text-[#C4A896] font-bold">
+              Tri-Channel Routing Engine
+            </span>
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mt-4 mb-6 leading-tight">
+              Three Powerful Broadcast Engines.<br />One Unified Ledged Dashboard.
+            </h2>
+            <p className="text-sm sm:text-base text-slate-500 leading-relaxed max-w-2xl mx-auto">
+              From zero-ban counter checkout QR bills, official Meta APIs at scale, to flat-rate premium transactional email integrations. Choose your strategy, customize the theme, and launch.
+            </p>
+          </div>
 
-              {/* Block 3: In-Store QR Engine (Smartphone) */}
-              <div className="absolute left-1/2 -translate-x-1/2 top-10 w-[240px] h-[440px] bg-[#EFEAE2] rounded-[2rem] shadow-2xl border-[6px] border-[#1f2937] overflow-hidden flex flex-col transform rotate-0 hover:-translate-y-4 transition-all duration-500 z-30">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-4 bg-[#1f2937] rounded-b-xl z-30"></div>
-                <div className="bg-[#075e54] text-white pt-8 pb-3 px-4 flex items-center gap-3">
-                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center shrink-0">
-                    <span className="font-bold text-[11px]">TB</span>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* FEATURE A: Mobile POS & Digital Bill QR Engine */}
+            <div className="gsap-reveal bg-[#FCFBF9] border border-[#E8E3DA] rounded-2xl p-8 flex flex-col justify-between hover:shadow-lg transition-shadow">
+              <div className="space-y-6">
+                {/* Header Tagline & Icon */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center border border-emerald-100 shadow-sm">
+                    <Smartphone size={20} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold leading-tight">True Broadcast</p>
-                    <p className="text-[9px] text-white/70 uppercase tracking-widest mt-0.5">Business Account</p>
+                    <h3 className="font-bold text-slate-800 text-sm tracking-wide">Feature A: Digital Bill QR Engine</h3>
+                    <p className="text-[9px] text-[#C4A896] font-semibold uppercase tracking-widest mt-0.5">Zero Hardware Traps</p>
                   </div>
                 </div>
-                <div className="flex-1 p-3 flex flex-col gap-3 relative bg-[#ece5dd]" style={{backgroundImage: 'radial-gradient(#d1cbbd 1px, transparent 1px)', backgroundSize: '12px 12px'}}>
-                  <div className="self-end bg-[#dcf8c6] max-w-[85%] rounded-lg rounded-tr-none p-2 shadow-sm mt-3 border border-gray-200/50">
-                    <p className="text-[11px] text-[#111B21]">✨ Send me real-time offers and updates!</p>
+
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Eliminate legacy paper receipt printers. Generate lightning-fast mobile checkouts, delivering customized bills instantly.
+                </p>
+
+                {/* Capabilities matrix list */}
+                <ul className="space-y-3.5 text-xs text-slate-700">
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle size={14} className="text-emerald-500 mt-0.5 shrink-0" />
+                    <span><strong>Zero Hardware Traps:</strong> Turn any smartphone, tablet, or device into a POS cashier terminal using forms or barcode scanner.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle size={14} className="text-emerald-500 mt-0.5 shrink-0" />
+                    <span><strong>Dynamic Theme Mirroring:</strong> In-app viewer and delivered PDF auto-wrap inside your custom shop logo and <code>invoice_theme_color</code> accents.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle size={14} className="text-emerald-500 mt-0.5 shrink-0" />
+                    <span><strong>High-Intent Whitelisting:</strong> Uses customer scans ('✨ Get my Bill') to legally auto-save numbers under the <code>DIGITAL_BILL</code> tag pipeline with 0% block risk.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle size={14} className="text-emerald-500 mt-0.5 shrink-0" />
+                    <span><strong>Cashier Overrides:</strong> Standalone triggers for "🔍 View Bill" (overlay modal) and "📥 Download Bill" absolute paths.</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Interactive Preset styling mirroring demo widget */}
+              <div className="pt-6 mt-6 border-t border-slate-200/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Try Theme Mirroring</span>
+                  <span className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-100 rounded px-1.5 py-0.5 font-bold uppercase">Dynamic</span>
+                </div>
+                
+                <div className="space-y-2.5">
+                  <div>
+                    <label className="text-[9px] text-slate-400 font-bold block mb-1">Invoice Footer Note Configuration</label>
+                    <input
+                      type="text"
+                      value={invoiceFooterNote}
+                      onChange={(e) => setInvoiceFooterNote(e.target.value)}
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded text-[10px] focus:outline-none focus:border-[#C4A896]"
+                      placeholder="Thank you footer note..."
+                    />
                   </div>
-                  <div className="self-start bg-white max-w-[90%] rounded-lg rounded-tl-none p-2.5 shadow-sm border-l-2 border-emerald-500 mt-2">
-                    <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
-                      <div className="w-6 h-6 bg-[#F5F1EA] rounded-full flex items-center justify-center"><Contact size={12} className="text-[#3E3B36]"/></div>
-                      <div>
-                        <p className="text-[11px] font-bold text-[#3E3B36]">True Attendly</p>
-                        <p className="text-[9px] text-[#8B8378]">Business Contact</p>
-                      </div>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowBillModal(true)}
+                      className="flex-1 bg-[#3E3B36] hover:bg-slate-800 text-white py-1.5 px-3 rounded text-[9px] font-bold tracking-widest uppercase flex items-center justify-center gap-1 shadow-sm transition-colors"
+                    >
+                      <Eye size={10} /> Modal Preview
+                    </button>
+                    <button
+                      onClick={handleDownloadBill}
+                      className="flex-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 py-1.5 px-3 rounded text-[9px] font-bold tracking-widest uppercase flex items-center justify-center gap-1 shadow-sm transition-colors"
+                    >
+                      <Download size={10} /> Test Download
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* FEATURE B: Official Meta API Broadcast Tiers */}
+            <div className="gsap-reveal bg-[#FCFBF9] border border-[#E8E3DA] rounded-2xl p-8 flex flex-col justify-between hover:shadow-lg transition-shadow">
+              <div className="space-y-6">
+                {/* Header Tagline & Icon */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center border border-indigo-100 shadow-sm">
+                    <ShieldCheck size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm tracking-wide">Feature B: Official Meta API</h3>
+                    <p className="text-[9px] text-indigo-600 font-semibold uppercase tracking-widest mt-0.5">Verified Enterprise Mode</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Broadcasting to targeted contact segments at scale with 100% compliance, zero ban risks, and instant template approvals.
+                </p>
+
+                {/* Capabilities matrix list */}
+                <ul className="space-y-3.5 text-xs text-slate-700">
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle size={14} className="text-indigo-500 mt-0.5 shrink-0" />
+                    <span><strong>Verified Brand Trust:</strong> Connect official Business API keys to send messages to thousands of buyers simultaneously with full compliance.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle size={14} className="text-indigo-500 mt-0.5 shrink-0" />
+                    <span><strong>AI Template Polisher:</strong> Automatically refine rough drafts into compliant, premium marketing copies, preserving parameters like <code>{`{{1}}`}</code> and <code>{`{{2}}`}</code>.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle size={14} className="text-indigo-500 mt-0.5 shrink-0" />
+                    <span><strong>Cohort Targeting:</strong> Filter specific target audiences in PostgreSQL using array overlapping operators (<code>DIGITAL_BILL</code>, <code>VIP</code>, <code>NEW</code>).</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Interactive AI Template Polisher widget */}
+              <div className="pt-6 mt-6 border-t border-slate-200/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">AI Template Polisher</span>
+                  <span className="text-[9px] text-indigo-600 font-bold uppercase tracking-widest flex items-center gap-0.5"><Wand2 size={10} /> Meta Graph</span>
+                </div>
+                
+                <div className="space-y-2">
+                  <textarea
+                    rows={2}
+                    value={roughText}
+                    onChange={(e) => setRoughText(e.target.value)}
+                    className="w-full p-2 bg-white border border-slate-200 rounded text-[10px] font-mono leading-relaxed focus:outline-none focus:border-indigo-400 resize-none"
+                    placeholder="Enter rough copy note..."
+                  />
+                  <button
+                    onClick={handlePolishText}
+                    disabled={isPolishing}
+                    className="w-full bg-[#3E3B36] hover:bg-indigo-600 text-white py-1.5 px-3 rounded text-[9px] font-bold tracking-widest uppercase flex items-center justify-center gap-1 shadow-sm transition-colors"
+                  >
+                    {isPolishing ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                    Polish With AI
+                  </button>
+                  
+                  {polishedOutput && (
+                    <div className="p-2 bg-indigo-50 border border-indigo-100 rounded text-[10px] text-indigo-950 leading-relaxed font-medium">
+                      <span className="block font-bold text-[8px] text-indigo-600 uppercase tracking-widest mb-0.5">✦ Polished (Approved Format)</span>
+                      {polishedOutput}
                     </div>
-                    <button className="w-full text-center text-[10px] font-bold text-blue-500 py-1 hover:text-blue-600 transition-colors">Save Contact</button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* FEATURE C: Premium Omnichannel Email Suites */}
+            <div className="gsap-reveal bg-[#FCFBF9] border border-[#E8E3DA] rounded-2xl p-8 flex flex-col justify-between hover:shadow-lg transition-shadow">
+              <div className="space-y-6">
+                {/* Header Tagline & Icon */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center border border-purple-100 shadow-sm">
+                    <Mail size={20} />
                   </div>
-                  <div className="self-start bg-white max-w-[90%] rounded-lg rounded-tl-none p-2.5 shadow-sm mt-1">
-                    <p className="text-[11px] text-[#111B21] leading-relaxed">Scan to Save Contact &amp; Get Real-Time Offers</p>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm tracking-wide">Feature C: Premium Email Suites</h3>
+                    <p className="text-[9px] text-purple-600 font-semibold uppercase tracking-widest mt-0.5">Resend Integration</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Design luxury responsive layouts, optimize cost dispatches, and trigger dynamic target list campaigns.
+                </p>
+
+                {/* Capabilities matrix list */}
+                <ul className="space-y-3.5 text-xs text-slate-700">
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle size={14} className="text-purple-500 mt-0.5 shrink-0" />
+                    <span><strong>Luxury Responsive Layouts:</strong> Beautiful, minimal corporate layouts built for maximum conversions, delivery, and high click-through rates.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle size={14} className="text-purple-500 mt-0.5 shrink-0" />
+                    <span><strong>Flat-Rate Simplicity:</strong> Standardized platform economy settings: exactly 1 dynamic wallet credit deducted per successful email delivery.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle size={14} className="text-purple-500 mt-0.5 shrink-0" />
+                    <span><strong>Omnichannel Tracking:</strong> Connect template configurations, monitor deliveries, and control dispatches from one central dashboard.</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Interactive Email Campaign builder simulator */}
+              <div className="pt-6 mt-6 border-t border-slate-200/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Cohort Dispatch Estimator</span>
+                  <span className="text-[9px] bg-purple-50 text-purple-700 border border-purple-100 rounded px-1.5 py-0.5 font-bold uppercase">1 Credit/Email</span>
+                </div>
+                
+                <div className="space-y-2.5">
+                  <div>
+                    <label className="text-[9px] text-slate-400 font-bold block mb-1">Subject Line</label>
+                    <input
+                      type="text"
+                      value={emailSubject}
+                      onChange={(e) => setEmailSubject(e.target.value)}
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded text-[10px] focus:outline-none focus:border-purple-400"
+                    />
+                  </div>
+
+                  <div>
+                    <span className="text-[9px] text-slate-400 font-bold block mb-1">Select Cohorts</span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {Object.keys(cohortCounts).map((c) => (
+                        <button
+                          key={c}
+                          onClick={() => toggleCohort(c)}
+                          className={`px-2 py-1 border rounded text-[9px] font-bold transition-colors flex items-center justify-between ${selectedCohorts.includes(c) ? 'bg-purple-50 border-purple-300 text-purple-700' : 'bg-white border-slate-200 text-slate-500'}`}
+                        >
+                          <span>{c}</span>
+                          <span className="opacity-75">{cohortCounts[c]}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between bg-purple-950 text-white rounded p-2 text-[10px] shrink-0">
+                    <div>
+                      <p className="font-semibold text-purple-200">Credits Deducted</p>
+                      <p className="text-xs font-bold">{creditsDeducted.toLocaleString()} Credits</p>
+                    </div>
+                    <button
+                      onClick={() => triggerSecurityModal('email')}
+                      className="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold uppercase tracking-wider text-[8px]"
+                    >
+                      Dispatch Email
+                    </button>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Block 4: Premium AI Email Suite */}
-              <div className="absolute left-6 bottom-8 w-[220px] bg-white rounded-xl shadow-2xl border border-[#E8E3DA] overflow-hidden transform rotate-3 hover:rotate-0 hover:-translate-y-2 transition-all duration-500 z-40">
-                <div className="bg-[#F9F7F4] px-3 py-2 border-b border-[#E8E3DA] flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Mail size={12} className="text-[#6366f1]" />
-                    <span className="text-[10px] font-bold text-[#3E3B36] uppercase tracking-wider">AI Email Suite</span>
-                  </div>
-                </div>
-                <div className="p-4 bg-white">
-                  <div className="h-16 bg-gray-100 rounded-lg border border-dashed border-gray-300 flex items-center justify-center mb-3">
-                    <ImageIcon size={16} className="text-gray-400" />
-                  </div>
-                  <div className="space-y-1.5 mb-4">
-                    <div className="h-2 w-3/4 bg-gray-200 rounded"></div>
-                    <div className="h-2 w-1/2 bg-gray-200 rounded"></div>
-                  </div>
-                  <button className="w-full bg-[#111827] text-white text-[9px] py-2 rounded-lg uppercase font-bold tracking-widest">Dispatch</button>
-                </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 4 — TRUST BUILDER: DUAL-STATE TRANSACTION TRANSPARENCY
+      ══════════════════════════════════════════════════════════ */}
+      <section id="ledger" className="w-full py-24 px-6 bg-[#FCFBF9] border-y border-[#E8E3DA] scroll-reveal-section">
+        <div className="max-w-6xl mx-auto">
+          
+          <div className="max-w-2xl mx-auto text-center mb-12 gsap-reveal">
+            <span className="text-xs tracking-[0.25em] uppercase text-[#C4A896] font-bold">
+              Autonomous Wallet Ledger
+            </span>
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mt-4 mb-4">
+              Pay-As-You-Send Wallet &amp; Autonomous Ledger Control
+            </h2>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              No hidden fees, no subscriptions, no monthly trap locks. Monitor top-ups processed through our Cashfree Gateway and explore exact row-by-row campaign debits from our cursor ledger.
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto gsap-reveal bg-white border border-[#E8E3DA] rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            
+            {/* Header tab controller switch */}
+            <div className="bg-[#3E3B36] p-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-700 shrink-0">
+              <div className="flex bg-slate-800 rounded-lg p-1 w-full sm:w-auto">
+                <button
+                  onClick={() => setActiveLedgerTab('purchases')}
+                  className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-xs font-bold tracking-wider uppercase transition-all ${activeLedgerTab === 'purchases' ? 'bg-[#C4A896] text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                >
+                  <CreditCard size={12} className="inline-block mr-1.5 -mt-0.5" />
+                  Tab A: Credit Purchases
+                </button>
+                <button
+                  onClick={() => setActiveLedgerTab('usages')}
+                  className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-xs font-bold tracking-wider uppercase transition-all ${activeLedgerTab === 'usages' ? 'bg-[#C4A896] text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                >
+                  <TrendingUp size={12} className="inline-block mr-1.5 -mt-0.5" />
+                  Tab B: Credit Usages
+                </button>
               </div>
 
-              {/* Block 5: Bulk Messaging with AI (CSV Table) */}
-              <div className="absolute right-0 bottom-24 w-[240px] bg-white rounded-xl shadow-2xl border border-[#E8E3DA] p-4 transform -rotate-2 hover:rotate-0 hover:-translate-y-2 transition-all duration-500 z-20">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-[10px] font-bold text-[#3E3B36] uppercase tracking-wider">Bulk CSV Ingest</span>
-                  <Upload size={14} className="text-[#10B981]" />
+              {/* Wallet Summary metrics */}
+              <div className="flex gap-4 shrink-0 text-white">
+                <div className="text-right">
+                  <span className="text-[9px] text-slate-400 uppercase tracking-widest block font-bold">Lifetime Investment</span>
+                  <span className="text-sm font-black text-[#C4A896]">₹27,500.00</span>
                 </div>
-                <div className="bg-[#F5F1EA] rounded-lg border border-[#E8E3DA] overflow-hidden">
-                  <table className="w-full text-[9px] text-left">
-                    <thead className="bg-[#E8E3DA] text-[#8B8378]">
-                      <tr><th className="p-2 font-semibold">Name</th><th className="p-2 font-semibold">Phone</th></tr>
+                <div className="border-l border-slate-700 pl-4 text-right">
+                  <span className="text-[9px] text-slate-400 uppercase tracking-widest block font-bold">Total Vaulted Tokens</span>
+                  <span className="text-sm font-black text-white">27,500 Credits</span>
+                </div>
+              </div>
+            </div>
+
+            {/* TAB A Content: Cashfree Topup Logs */}
+            {activeLedgerTab === 'purchases' && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs min-w-[600px]">
+                  <thead className="bg-slate-50 border-b border-[#E8E3DA] text-slate-500 uppercase tracking-wider text-[10px] font-bold">
+                    <tr>
+                      <th className="p-4">Transaction ID</th>
+                      <th className="p-4">Top-Up Date</th>
+                      <th className="p-4">Tokens Credited</th>
+                      <th className="p-4">Total Amount (INR)</th>
+                      <th className="p-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                    {cashfreeLogs.map((log) => (
+                      <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="p-4 font-mono font-bold text-slate-800">{log.id}</td>
+                        <td className="p-4">{log.date}</td>
+                        <td className="p-4 font-semibold text-slate-800">{log.tokens}</td>
+                        <td className="p-4 font-semibold text-slate-800">{log.amount}</td>
+                        <td className="p-4">
+                          <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-emerald-200">
+                            {log.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="p-6 bg-slate-50/50 text-center border-t border-slate-100">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Verified by Cashfree payments global API webhook secure integration</p>
+                </div>
+              </div>
+            )}
+
+            {/* TAB B Content: Dynamic usage logs with cursor-based infinite scroll */}
+            {activeLedgerTab === 'usages' && (
+              <div>
+                <div className="overflow-x-auto max-h-[360px] overflow-y-auto pr-1">
+                  <table className="w-full text-left text-xs min-w-[600px]">
+                    <thead className="bg-slate-50 border-b border-[#E8E3DA] text-slate-500 uppercase tracking-wider text-[10px] font-bold sticky top-0 z-10">
+                      <tr>
+                        <th className="p-4 bg-slate-50">Operational Usage Type</th>
+                        <th className="p-4 bg-slate-50">Reference Title/ID</th>
+                        <th className="p-4 bg-slate-50">Date</th>
+                        <th className="p-4 bg-slate-50 text-right">Credits Deducted</th>
+                        <th className="p-4 bg-slate-50 text-center">Status</th>
+                      </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#E8E3DA] text-[#3E3B36]">
-                      <tr className="bg-white"><td className="p-2 font-bold">Aliya K.</td><td className="p-2 font-mono">91987...</td></tr>
-                      <tr className="bg-white"><td className="p-2 font-bold">Rahul M.</td><td className="p-2 font-mono">91987...</td></tr>
-                      <tr className="bg-white"><td className="p-2 font-bold">Priya S.</td><td className="p-2 font-mono">91999...</td></tr>
+                    <tbody className="divide-y divide-slate-100 text-slate-700">
+                      {ledgerUsages.map((usage) => (
+                        <tr key={usage.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="p-4 font-bold flex items-center gap-2">
+                            <span className={`w-1.5 h-1.5 rounded-full ${usage.type === 'WhatsApp Campaign' ? 'bg-emerald-500' : usage.type === 'Email Marketing' ? 'bg-purple-500' : 'bg-amber-600'}`} />
+                            {usage.type}
+                          </td>
+                          <td className="p-4 font-mono font-medium text-slate-800">{usage.desc}</td>
+                          <td className="p-4 text-slate-500">{usage.date}</td>
+                          <td className="p-4 text-right font-bold text-slate-800">{usage.credits}</td>
+                          <td className="p-4 text-center">
+                            <span className="bg-slate-100 text-slate-600 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded">
+                              {usage.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
-              </div>
 
-            </div>
+                {/* Cursor Infinite scroll load more actions */}
+                <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                    Showing {ledgerUsages.length} ledger logs
+                  </span>
 
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 2.5 — RETAIL VALUE MATRIX
-      ══════════════════════════════════════════════════════════ */}
-      <section id="solutions" className="w-full min-h-auto py-16 px-4 sm:px-8 bg-[#3E3B36] text-white overflow-hidden scroll-reveal-section">
-        <div className="max-w-7xl mx-auto space-y-16">
-          
-          {/* Sub-Section A: The Retail Reality Check */}
-          <div className="gsap-reveal grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-[#2D2A26] p-8 rounded-2xl border border-white/5 shadow-lg flex flex-col justify-center">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-amber-950/30 backdrop-blur-md rounded-2xl border border-amber-800/40 shadow-xl shadow-amber-950/40 shrink-0">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <linearGradient id="warm-grad-x" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#B45309" />
-                        <stop offset="100%" stopColor="#FDE68A" />
-                      </linearGradient>
-                      <filter id="warm-glow-x" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="1.5" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                      </filter>
-                    </defs>
-                    <circle cx="12" cy="12" r="10" stroke="url(#warm-grad-x)" strokeWidth="1.25" filter="url(#warm-glow-x)"/>
-                    <path d="M15 9l-6 6M9 9l6 6" stroke="url(#warm-grad-x)" strokeWidth="1.25" strokeLinecap="round"/>
-                  </svg>
-                </div>
-                <h3 className="text-xl sm:text-2xl font-bold">The Daily Retail Struggle</h3>
-              </div>
-              <p className="text-sm sm:text-base text-neutral-400 leading-relaxed">
-                Merchants waste hours manually copy-pasting customer contact numbers or risking permanent number bans by using cheap, unofficial automation bots.
-              </p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-[#C4A896]/20 to-[#3E3B36] p-8 rounded-2xl border border-[#C4A896]/30 shadow-[0_0_30px_rgba(196,168,150,0.1)] flex flex-col justify-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="flex items-center gap-4 mb-4 relative z-10">
-                <div className="p-3 bg-amber-950/30 backdrop-blur-md rounded-2xl border border-amber-800/40 shadow-xl shadow-amber-950/40 shrink-0">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <linearGradient id="warm-grad-check" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#B45309" />
-                        <stop offset="100%" stopColor="#FDE68A" />
-                      </linearGradient>
-                      <filter id="warm-glow-check" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="1.5" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                      </filter>
-                    </defs>
-                    <circle cx="12" cy="12" r="10" stroke="url(#warm-grad-check)" strokeWidth="1.25" filter="url(#warm-glow-check)"/>
-                    <path d="M8 12l3 3 5-6" stroke="url(#warm-grad-check)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                <h3 className="text-xl sm:text-2xl font-bold text-white">The True Attendly Solution</h3>
-              </div>
-              <p className="text-sm sm:text-base text-neutral-300 leading-relaxed relative z-10">
-                Absolute frictionless capturing. A simple counter QR code scan securely logs the customer’s profile, triggers an immediate business card exchange, and safely whitelists the connection in real-time with absolute zero-ban risk.
-              </p>
-            </div>
-          </div>
-
-          {/* Sub-Section B: Why We Capture High-Quality Leads */}
-          <div className="gsap-reveal max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[#C4A896] text-[10px] font-bold tracking-widest uppercase mb-6">
-              <Zap size={12} className="shrink-0" style={{ color: '#FDE68A' }} />
-              Verified Active Buyers
-            </div>
-            <h2 className="serif-headline text-2xl sm:text-4xl text-white mb-6">
-              Why True Attendly Drives High-Retention Growth?
-            </h2>
-            <p className="text-base sm:text-lg text-neutral-400 leading-relaxed">
-              Traditional systems force customers to manually save a shop&apos;s 10-digit number just to click a link. With our Smart Sync, the moment they scan at your counter, they are automatically opted into your dynamic broadcast pipeline—giving you 100% verified, active buyers who actually open your messages.
-            </p>
-          </div>
-
-          {/* Sub-Section C: The Omnichannel Difference */}
-          <div className="gsap-reveal grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
-            <div className="bg-white/5 p-6 sm:p-8 rounded-xl border border-white/10 hover:border-white/20 transition-colors w-full">
-              <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-4">Traditional Bulk Tools</h4>
-              <p className="text-sm sm:text-base text-neutral-400 leading-relaxed">
-                Complex developer integrations, high fixed monthly subscription traps regardless of usage, rigid template approvals, and high risks of immediate account suspension.
-              </p>
-            </div>
-            <div className="bg-[#C4A896]/10 p-6 sm:p-8 rounded-xl border border-[#C4A896]/30 hover:border-[#C4A896]/50 transition-colors w-full">
-              <h4 className="text-[10px] font-bold text-[#C4A896] uppercase tracking-widest mb-4">True Attendly Advantage</h4>
-              <p className="text-sm sm:text-base text-neutral-200 leading-relaxed">
-                Zero monthly subscription locks (Pay-As-You-Send dynamic credit wallet), instant counter-top lead onboarding, native vCard device sync, and smart AI copy assistance built for real retail store conversion.
-              </p>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 2.5 — SEE IT IN ACTION
-      ══════════════════════════════════════════════════════════ */}
-      <section className="py-24 scroll-reveal-section bg-white border-b border-[#E8E3DA]">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="max-w-2xl mx-auto text-center mb-16 gsap-reveal">
-            <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#C4A896' }}>
-              See It In Action
-            </p>
-            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-4">
-              Engage Customers Instantly.
-            </h2>
-            <p className="text-base leading-relaxed text-[#8B8378]">
-              Preview how your messages appear on your customers&apos; devices. High-converting layouts tailored for every industry.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            
-            {/* Card 1: Retail (E-commerce) Twin Block */}
-            <div className="flex flex-col gap-6">
-              <div className="gsap-reveal group bg-[#EFEAE2] rounded-[2rem] border-[6px] border-[#3E3B36] p-4 shadow-xl overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col justify-end min-h-[360px]">
-                <div className="absolute inset-0 bg-[#EFEAE2] opacity-50 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C4A896 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
-                <div className="bg-white rounded-lg shadow-sm p-1 flex flex-col relative max-w-[100%] mx-auto mt-4 rounded-tl-sm z-10 w-full">
-                  <div className="relative w-full h-40 rounded-t-md overflow-hidden bg-gray-100">
-                    <Image src="/images/showcase-1.png" alt="E-commerce Showcase" fill className="object-cover" />
-                  </div>
-                  <div className="px-2 pt-2 pb-1 relative">
-                    <p className="text-[13px] text-[#111B21] leading-[18px]">
-                      <strong>*Exclusive Drop!*</strong><br/>
-                      Get 20% off on our limited edition series today. Reply BUY to order.
-                    </p>
-                    <div className="float-right flex items-center gap-1 mt-1 ml-2 pb-0.5">
-                      <span className="text-[10px] text-[#667781]">10:42 AM</span>
-                      <svg viewBox="0 0 16 15" width="16" height="15" className="text-[#53bdeb] fill-current"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path><path d="M10.151 3.316l-.478-.372a.365.365 0 0 0-.51.063L3.806 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path></svg>
-                    </div>
-                  </div>
+                  {hasMoreUsages ? (
+                    <button
+                      onClick={handleLoadMoreUsages}
+                      disabled={isLoadingMoreUsages}
+                      className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm transition-colors"
+                    >
+                      {isLoadingMoreUsages ? (
+                        <>
+                          <Loader2 size={10} className="animate-spin" />
+                          Loading cursor page...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw size={10} />
+                          Load More Transactions
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                      Cursor reached end of ledger view (20+ Rows loaded)
+                    </span>
+                  )}
                 </div>
               </div>
-              {/* Email Twin */}
-              <div className="gsap-reveal group bg-white rounded-xl border border-[#E8E3DA] shadow-sm overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-xl flex flex-col h-[320px]">
-                <div className="bg-[#F5F1EA] px-4 py-2 border-b border-[#E8E3DA] flex items-center justify-between text-[10px] text-[#8B8378] uppercase tracking-widest font-semibold">
-                  <span>Inbox</span><span className="text-[9px]">10:42 AM</span>
-                </div>
-                <div className="px-4 py-3 border-b border-[#E8E3DA] bg-white">
-                   <p className="text-xs font-semibold text-[#3E3B36] truncate">🎁 Exclusive Eid Drop: 20% Off Just For You!</p>
-                </div>
-                <div className="flex-1 p-4 flex flex-col items-center justify-center text-center bg-[#F9F7F4] relative">
-                   <div className="w-full h-24 bg-gray-200 rounded-md mb-3 overflow-hidden relative shadow-sm">
-                      <Image src="/images/showcase-1.png" alt="Email Banner" fill className="object-cover" />
-                   </div>
-                   <p className="text-[11px] text-[#3E3B36] leading-relaxed mb-3">Dear Valued VIP Customer, our limited-edition festival series is live. Premium quality, crafted just for you.</p>
-                   <button className="bg-[#3E3B36] text-white text-[9px] uppercase tracking-widest px-4 py-2 rounded-md font-medium">Shop Collection Now</button>
-                </div>
-              </div>
-            </div>
-
-            {/* Card 2: Real Estate Twin Block */}
-            <div className="flex flex-col gap-6">
-              <div className="gsap-reveal group bg-[#EFEAE2] rounded-[2rem] border-[6px] border-[#3E3B36] p-4 shadow-xl overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col justify-end min-h-[360px]" style={{ transitionDelay: '100ms' }}>
-                <div className="absolute inset-0 bg-[#EFEAE2] opacity-50 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C4A896 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
-                <div className="bg-white rounded-lg shadow-sm p-1 flex flex-col relative max-w-[100%] mx-auto mt-4 rounded-tl-sm z-10 w-full">
-                  <div className="relative w-full h-40 rounded-t-md overflow-hidden bg-gray-100">
-                    <Image src="/images/showcase-2.png" alt="Real Estate Showcase" fill className="object-cover" />
-                  </div>
-                  <div className="px-2 pt-2 pb-1 relative">
-                    <p className="text-[13px] text-[#111B21] leading-[18px]">
-                      <strong>*New Property Alert!*</strong><br/>
-                      3 BHK luxury villas available at Prime Location. Click below to download the brochure.
-                    </p>
-                    <div className="float-right flex items-center gap-1 mt-1 ml-2 pb-0.5">
-                      <span className="text-[10px] text-[#667781]">11:15 AM</span>
-                      <svg viewBox="0 0 16 15" width="16" height="15" className="text-[#53bdeb] fill-current"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path><path d="M10.151 3.316l-.478-.372a.365.365 0 0 0-.51.063L3.806 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path></svg>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Email Twin */}
-              <div className="gsap-reveal group bg-white rounded-xl border border-[#E8E3DA] shadow-sm overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-xl flex flex-col h-[320px]" style={{ transitionDelay: '100ms' }}>
-                <div className="bg-[#F5F1EA] px-4 py-2 border-b border-[#E8E3DA] flex items-center justify-between text-[10px] text-[#8B8378] uppercase tracking-widest font-semibold">
-                  <span>Inbox</span><span className="text-[9px]">11:15 AM</span>
-                </div>
-                <div className="px-4 py-3 border-b border-[#E8E3DA] bg-white">
-                   <p className="text-xs font-semibold text-[#3E3B36] truncate">✨ New Luxury Property Alert: Prime 3 BHK Villas Selection</p>
-                </div>
-                <div className="flex-1 p-4 flex flex-col items-center justify-center text-center bg-[#F9F7F4] relative">
-                   <div className="w-full h-24 bg-gray-200 rounded-md mb-3 overflow-hidden relative shadow-sm">
-                      <Image src="/images/showcase-2.png" alt="Email Banner" fill className="object-cover" />
-                   </div>
-                   <p className="text-[11px] text-[#3E3B36] leading-relaxed mb-3">Presented by True Realities. View architectural blueprints and flexible pricing structures attached inside.</p>
-                   <button className="bg-[#3E3B36] text-white text-[9px] uppercase tracking-widest px-4 py-2 rounded-md font-medium">Download Brochure (PDF)</button>
-                </div>
-              </div>
-            </div>
-
-            {/* Card 3: Retail Feast Twin Block */}
-            <div className="flex flex-col gap-6">
-              <div className="gsap-reveal group bg-[#EFEAE2] rounded-[2rem] border-[6px] border-[#3E3B36] p-4 shadow-xl overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col justify-end min-h-[360px]" style={{ transitionDelay: '200ms' }}>
-                <div className="absolute inset-0 bg-[#EFEAE2] opacity-50 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C4A896 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
-                <div className="bg-white rounded-lg shadow-sm p-1 flex flex-col relative max-w-[100%] mx-auto mt-4 rounded-tl-sm z-10 w-full">
-                  <div className="relative w-full h-40 rounded-t-md overflow-hidden bg-gray-100">
-                    <Image src="/images/showcase-3.png" alt="Restaurant Showcase" fill className="object-cover" />
-                  </div>
-                  <div className="px-2 pt-2 pb-1 relative">
-                    <p className="text-[13px] text-[#111B21] leading-[18px]">
-                      <strong>*Weekend Feast!*</strong><br/>
-                      Buy 1 Get 1 Free on all premium items. Valid till Sunday midnight.
-                    </p>
-                    <div className="float-right flex items-center gap-1 mt-1 ml-2 pb-0.5">
-                      <span className="text-[10px] text-[#667781]">01:30 PM</span>
-                      <svg viewBox="0 0 16 15" width="16" height="15" className="text-[#53bdeb] fill-current"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path><path d="M10.151 3.316l-.478-.372a.365.365 0 0 0-.51.063L3.806 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path></svg>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Email Twin */}
-              <div className="gsap-reveal group bg-white rounded-xl border border-[#E8E3DA] shadow-sm overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-xl flex flex-col h-[320px]" style={{ transitionDelay: '200ms' }}>
-                <div className="bg-[#F5F1EA] px-4 py-2 border-b border-[#E8E3DA] flex items-center justify-between text-[10px] text-[#8B8378] uppercase tracking-widest font-semibold">
-                  <span>Inbox</span><span className="text-[9px]">01:30 PM</span>
-                </div>
-                <div className="px-4 py-3 border-b border-[#E8E3DA] bg-white">
-                   <p className="text-xs font-semibold text-[#3E3B36] truncate">🍕 Weekend Feast Active: Buy 1 Get 1 Free Tonight!</p>
-                </div>
-                <div className="flex-1 p-4 flex flex-col items-center justify-center text-center bg-[#F9F7F4] relative">
-                   <div className="w-full h-24 bg-gray-200 rounded-md mb-3 overflow-hidden relative shadow-sm">
-                      <Image src="/images/showcase-3.png" alt="Email Banner" fill className="object-cover" />
-                   </div>
-                   <p className="text-[11px] text-[#3E3B36] leading-relaxed mb-3">Order any of our signature wood-fired pizzas and get the second free. Valid till Sunday midnight.</p>
-                   <button className="bg-[#3E3B36] text-white text-[9px] uppercase tracking-widest px-4 py-2 rounded-md font-medium">Claim Free Pizza</button>
-                </div>
-              </div>
-            </div>
-
-            {/* Card 4: Education Twin Block */}
-            <div className="flex flex-col gap-6">
-              <div className="gsap-reveal group bg-[#EFEAE2] rounded-[2rem] border-[6px] border-[#3E3B36] p-4 shadow-xl overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col justify-end min-h-[360px]" style={{ transitionDelay: '300ms' }}>
-                <div className="absolute inset-0 bg-[#EFEAE2] opacity-50 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C4A896 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
-                <div className="bg-white rounded-lg shadow-sm p-1 flex flex-col relative max-w-[100%] mx-auto mt-4 rounded-tl-sm z-10 w-full">
-                  <div className="relative w-full h-40 rounded-t-md overflow-hidden bg-gray-100">
-                    <Image src="/images/showcase-4.png" alt="Event Showcase" fill className="object-cover" />
-                  </div>
-                  <div className="px-2 pt-2 pb-1 relative">
-                    <p className="text-[13px] text-[#111B21] leading-[18px]">
-                      <strong>*Seat Confirmed!*</strong><br/>
-                      Your masterclass starts tomorrow at 7 PM. Click the link to join the live stream.
-                    </p>
-                    <div className="float-right flex items-center gap-1 mt-1 ml-2 pb-0.5">
-                      <span className="text-[10px] text-[#667781]">04:45 PM</span>
-                      <svg viewBox="0 0 16 15" width="16" height="15" className="text-[#53bdeb] fill-current"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path><path d="M10.151 3.316l-.478-.372a.365.365 0 0 0-.51.063L3.806 9.879a.32.32 0 0 1-.484.033l-.358-.325a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.346.125.467-.025l6.236-8.083a.362.362 0 0 0-.011-.485z"></path></svg>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Email Twin */}
-              <div className="gsap-reveal group bg-white rounded-xl border border-[#E8E3DA] shadow-sm overflow-hidden relative transition-all duration-500 hover:scale-[1.03] hover:shadow-xl flex flex-col h-[320px]" style={{ transitionDelay: '300ms' }}>
-                <div className="bg-[#F5F1EA] px-4 py-2 border-b border-[#E8E3DA] flex items-center justify-between text-[10px] text-[#8B8378] uppercase tracking-widest font-semibold">
-                  <span>Inbox</span><span className="text-[9px]">04:45 PM</span>
-                </div>
-                <div className="px-4 py-3 border-b border-[#E8E3DA] bg-white">
-                   <p className="text-xs font-semibold text-[#3E3B36] truncate">🚀 Masterclass Confirmed: Your Live Access Link Inside</p>
-                </div>
-                <div className="flex-1 p-4 flex flex-col items-center justify-center text-center bg-[#F9F7F4] relative">
-                   <div className="w-full h-24 bg-gray-200 rounded-md mb-3 overflow-hidden relative shadow-sm">
-                      <Image src="/images/showcase-4.png" alt="Email Banner" fill className="object-cover" />
-                   </div>
-                   <p className="text-[11px] text-[#3E3B36] leading-relaxed mb-3">Your seats are locked for tomorrow's exclusive scale-up session at 7 PM. Join 10 minutes early.</p>
-                   <button className="bg-[#3E3B36] text-white text-[9px] uppercase tracking-widest px-4 py-2 rounded-md font-medium">Join Live Stream</button>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 2.7 — AI BRAND STORY INTELLIGENCE
-      ══════════════════════════════════════════════════════════ */}
-      <section className="w-full py-24 bg-[#EFEAE2] text-[#3E3B36] border-b border-[#E8E3DA] scroll-reveal-section overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          
-          <div className="gsap-reveal z-10 order-2 lg:order-1 relative">
-            <div className="absolute inset-0 bg-[#3E3B36] rounded-[2rem] transform rotate-3 scale-105 opacity-5 pointer-events-none"></div>
-            <div className="bg-white rounded-[2rem] p-6 sm:p-10 shadow-2xl border border-[#E8E3DA] relative z-10">
-              <div className="flex items-center gap-3 mb-6 pb-6 border-b border-[#E8E3DA]">
-                <div className="w-12 h-12 rounded-full bg-[#F5F1EA] flex items-center justify-center shrink-0 border border-[#E8E3DA]">
-                  <Wand2 size={24} className="text-[#C4A896]" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-[#3E3B36]">AI Brand Identity Engine</p>
-                  <p className="text-[11px] text-[#8B8378] tracking-widest uppercase">Live Demo</p>
-                </div>
-              </div>
-              
-              <div className="space-y-4 mb-6">
-                <div className="bg-[#F5F1EA] p-4 rounded-xl text-xs text-[#8B8378] font-mono leading-relaxed border border-[#E8E3DA] relative">
-                  <div className="absolute -top-3 left-4 bg-[#C4A896] text-white text-[9px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-widest">Brand Context Injected</div>
-                  "We are a boutique organic clothing store... tone is friendly and warm..."
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="self-end bg-[#dcf8c6] max-w-[85%] ml-auto rounded-lg rounded-tr-none p-3 shadow-sm border border-emerald-100">
-                  <p className="text-xs text-[#111B21]">Do you have any pure cotton shirts for summer?</p>
-                </div>
-                <div className="self-start bg-white max-w-[90%] rounded-lg rounded-tl-none p-3 shadow-sm border border-[#E8E3DA]">
-                  <p className="text-xs text-[#111B21] leading-relaxed">
-                    Hello there! 🌿 Yes, we absolutely do. We just launched our breathable, 100% organic summer cotton collection. They are incredibly soft and perfect for the heat! Would you like me to send you the catalog? ✨
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="gsap-reveal space-y-8 order-1 lg:order-2">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#C4A896]/30 text-[#C4A896] text-[10px] font-bold tracking-widest uppercase mb-6 shadow-sm">
-                <Bot size={12} className="shrink-0" />
-                Hyper-Personalized AI
-              </div>
-              <h2 className="serif-headline text-3xl sm:text-5xl text-[#3E3B36] mb-6 leading-tight">
-                Supercharge Your Customer Support with Brand-Aware AI
-              </h2>
-              <p className="text-lg text-[#8B8378] leading-relaxed mb-4">
-                Don't just reply. Reply with your brand’s unique voice.
-              </p>
-              <p className="text-base text-[#3E3B36]/70 leading-relaxed">
-                True Attendly doesn't send robotic, generic AI responses. By blending your unique Brand Story with our advanced AI, every automated message feels personal, warm, and authentic to your business.
-              </p>
-            </div>
-
-            <ul className="space-y-5 mt-8">
-              <li className="flex items-start gap-4">
-                <div className="w-6 h-6 rounded-full bg-[#C4A896]/20 flex items-center justify-center shrink-0 mt-0.5"><CheckCircle size={14} className="text-[#C4A896]" /></div>
-                <div>
-                  <strong className="block text-sm text-[#3E3B36] mb-1">Tailored to You</strong>
-                  <span className="text-sm text-[#8B8378]">AI knows your history, products, and tone.</span>
-                </div>
-              </li>
-              <li className="flex items-start gap-4">
-                <div className="w-6 h-6 rounded-full bg-[#C4A896]/20 flex items-center justify-center shrink-0 mt-0.5"><ShieldCheck size={14} className="text-[#C4A896]" /></div>
-                <div>
-                  <strong className="block text-sm text-[#3E3B36] mb-1">Zero Hallucinations</strong>
-                  <span className="text-sm text-[#8B8378]">Responds strictly based on your saved profile.</span>
-                </div>
-              </li>
-              <li className="flex items-start gap-4">
-                <div className="w-6 h-6 rounded-full bg-[#C4A896]/20 flex items-center justify-center shrink-0 mt-0.5"><MessageCircle size={14} className="text-[#C4A896]" /></div>
-                <div>
-                  <strong className="block text-sm text-[#3E3B36] mb-1">Human-Like Warmth</strong>
-                  <span className="text-sm text-[#8B8378]">Customers won't even know it's an AI.</span>
-                </div>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 3 — FEATURES GRID (Light Cream)
-      ══════════════════════════════════════════════════════════ */}
-      <section
-        id="about"
-        className="py-24 scroll-reveal-section"
-        style={{ backgroundColor: '#F5F1EA' }}
-      >
-        <div className="max-w-6xl mx-auto px-6">
-
-          <div className="max-w-2xl mb-16 gsap-reveal">
-            <p
-              className="text-xs tracking-[0.25em] uppercase mb-4"
-              style={{ color: '#C4A896' }}
-            >
-              Platform
-            </p>
-            <h2
-              className="serif-headline text-3xl sm:text-4xl mb-4"
-              style={{ color: '#3E3B36' }}
-            >
-              Reengineered to Drive Foot Traffic.
-            </h2>
-            <p style={{ color: '#8B8378' }} className="text-base leading-relaxed">
-              Every feature built with one purpose: converting your contact list into a reliable revenue stream.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <linearGradient id="ai-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#451A03" />
-                        <stop offset="100%" stopColor="#D97706" />
-                      </linearGradient>
-                      <filter id="ai-glow-light" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="1.5" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                      </filter>
-                    </defs>
-                    <path d="M21 12.5C21 12.5 17.5 13 16 14.5C14.5 16 14 19.5 14 19.5C14 19.5 13.5 16 12 14.5C10.5 13 7 12.5 7 12.5C7 12.5 10.5 12 12 10.5C13.5 9 14 5.5 14 5.5C14 5.5 14.5 9 16 10.5C17.5 12 21 12.5 21 12.5Z" fill="url(#ai-grad-light)" filter="url(#ai-glow-light)" opacity="0.9" />
-                    <path d="M8 6.5C8 6.5 6.5 6.7 5.8 7.4C5.1 8.1 4.9 9.6 4.9 9.6C4.9 9.6 4.7 8.1 4 7.4C3.3 6.7 1.8 6.5 1.8 6.5C1.8 6.5 3.3 6.3 4 5.6C4.7 4.9 4.9 3.4 4.9 3.4C4.9 3.4 5.1 4.9 5.8 5.6C6.5 6.3 8 6.5 8 6.5Z" fill="url(#ai-grad-light)" filter="url(#ai-glow-light)" />
-                  </svg>
-                ),
-                title: 'AI-Powered Message Polisher',
-                desc: 'Draft raw offers in any tone and let our multi-tier failover AI (Gemini/Groq) refine it into premium marketing copy instantly. Automatically injects Meta standard tokens ({{1}} and {{2}}) for flawless conversion and compliance.',
-              },
-              {
-                icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <linearGradient id="timer-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#451A03" />
-                        <stop offset="100%" stopColor="#D97706" />
-                      </linearGradient>
-                      <filter id="timer-glow-light" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="1.5" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                      </filter>
-                    </defs>
-                    <circle cx="12" cy="12" r="9" stroke="url(#timer-grad-light)" strokeWidth="1.25" strokeDasharray="4 2" filter="url(#timer-glow-light)" />
-                    <circle cx="12" cy="12" r="6" stroke="url(#timer-grad-light)" strokeWidth="1.25" opacity="0.5" />
-                    <path d="M12 7V12L15 15" stroke="url(#timer-grad-light)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" filter="url(#timer-glow-light)" />
-                  </svg>
-                ),
-                title: 'Throttled Dispatches',
-                desc: 'Safeguard your retail phone lines. Built-in dynamic timing delays protect sender numbers from network spam flags.',
-              },
-              {
-                icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <linearGradient id="ledger-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#451A03" />
-                        <stop offset="100%" stopColor="#D97706" />
-                      </linearGradient>
-                      <filter id="ledger-glow-light" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="1.5" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                      </filter>
-                    </defs>
-                    <ellipse cx="12" cy="7" rx="8" ry="3" stroke="url(#ledger-grad-light)" strokeWidth="1.25" filter="url(#ledger-glow-light)" />
-                    <path d="M4 7V12C4 13.6569 7.58172 15 12 15C16.4183 15 20 13.6569 20 12V7" stroke="url(#ledger-grad-light)" strokeWidth="1.25" filter="url(#ledger-glow-light)" />
-                    <path d="M4 12V17C4 18.6569 7.58172 20 12 20C16.4183 20 20 18.6569 20 17V12" stroke="url(#ledger-grad-light)" strokeWidth="1.25" opacity="0.6" />
-                  </svg>
-                ),
-                title: 'Pay-As-You-Send Ledger',
-                desc: 'Zero subscription locks. Purchase pre-paid credits seamlessly; exactly 1 credit is deducted per successful text dispatch.',
-              },
-              {
-                icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <linearGradient id="csv-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#451A03" />
-                        <stop offset="100%" stopColor="#D97706" />
-                      </linearGradient>
-                      <filter id="csv-glow-light" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="1.5" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                      </filter>
-                    </defs>
-                    <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="url(#csv-grad-light)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" filter="url(#csv-glow-light)" />
-                    <path d="M14 2V8H20" stroke="url(#csv-grad-light)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M8 13H16M8 17H13" stroke="url(#csv-grad-light)" strokeWidth="1.25" strokeLinecap="round" opacity="0.7" />
-                  </svg>
-                ),
-                title: 'Unified CSV & Excel Parser',
-                desc: 'Ingest massive retail contact lists using our high-speed spreadsheet parser. Supports both CSV and raw .xlsx Excel manifests with automatic 10-digit phone regex masking and serverless-safe duplicate upsert filtering.',
-              },
-              {
-                icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <linearGradient id="qr-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#451A03" />
-                        <stop offset="100%" stopColor="#D97706" />
-                      </linearGradient>
-                      <filter id="qr-glow-light" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="1.5" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                      </filter>
-                    </defs>
-                    <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="url(#qr-grad-light)" strokeWidth="1.25" filter="url(#qr-glow-light)" />
-                    <rect x="5" y="5" width="3" height="3" rx="0.5" fill="url(#qr-grad-light)" />
-                    <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="url(#qr-grad-light)" strokeWidth="1.25" filter="url(#qr-glow-light)" />
-                    <rect x="16" y="5" width="3" height="3" rx="0.5" fill="url(#qr-grad-light)" />
-                    <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="url(#qr-grad-light)" strokeWidth="1.25" filter="url(#qr-glow-light)" />
-                    <rect x="5" y="16" width="3" height="3" rx="0.5" fill="url(#qr-grad-light)" />
-                    <rect x="14" y="14" width="3" height="3" rx="0.5" fill="url(#qr-grad-light)" filter="url(#qr-glow-light)" />
-                    <rect x="18" y="14" width="3" height="3" rx="0.5" fill="url(#qr-grad-light)" />
-                    <rect x="14" y="18" width="7" height="3" rx="0.5" fill="url(#qr-grad-light)" />
-                  </svg>
-                ),
-                title: 'Capture Foot Traffic Instantly with Dynamic QR Leads',
-                desc: "Turn physical visitors into digital leads with zero setup friction. When customers scan your dynamic QR code and send a quick WhatsApp message, their profile is instantly captured and added to your dashboard in seconds. Backed by advanced real-time search, robust sorting, and ultra-smooth infinite scrolling, managing your shop's growth has never been this simple.",
-              },
-              {
-                icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <linearGradient id="vcard-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#451A03" />
-                        <stop offset="100%" stopColor="#D97706" />
-                      </linearGradient>
-                      <filter id="vcard-glow-light" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="1.5" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                      </filter>
-                    </defs>
-                    <rect x="3" y="4" width="18" height="16" rx="2" stroke="url(#vcard-grad-light)" strokeWidth="1.25" filter="url(#vcard-glow-light)" />
-                    <circle cx="9" cy="10" r="3" stroke="url(#vcard-grad-light)" strokeWidth="1.25" opacity="0.9" />
-                    <path d="M4.5 17C4.5 14.5 7.5 14 9 14C10.5 14 13.5 14.5 13.5 17" stroke="url(#vcard-grad-light)" strokeWidth="1.25" strokeLinecap="round" />
-                    <path d="M15 9H19M15 13H17" stroke="url(#vcard-grad-light)" strokeWidth="1.25" strokeLinecap="round" opacity="0.6" />
-                  </svg>
-                ),
-                title: 'Smart vCard Address Book Push',
-                desc: "Automatically push native vCard (VCF) payloads upon the initial QR inbound message. Legally whitelist your official contact number inside their local phonebook for optimal future campaign read rates.",
-              },
-              {
-                icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <linearGradient id="analytics-grad-light" x1="0%" y1="100%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#451A03" />
-                        <stop offset="100%" stopColor="#D97706" />
-                      </linearGradient>
-                      <filter id="analytics-glow-light" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="2" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                      </filter>
-                    </defs>
-                    <rect x="3" y="14" width="4" height="6" rx="1" fill="url(#analytics-grad-light)" filter="url(#analytics-glow-light)" />
-                    <rect x="10" y="9" width="4" height="11" rx="1" fill="url(#analytics-grad-light)" filter="url(#analytics-glow-light)" opacity="0.8" />
-                    <rect x="17" y="4" width="4" height="16" rx="1" fill="url(#analytics-grad-light)" filter="url(#analytics-glow-light)" opacity="0.9" />
-                    <path d="M4 14L12 9L19 4" stroke="url(#analytics-grad-light)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                ),
-                title: 'Omnichannel Analytics Ledger',
-                desc: "Unified tracking dashboards bridging Meta WhatsApp receipts and Resend Email telemetry. Instantly view delivery metrics, deep-link click rates, and failure cascades across multiple campaigns from one single source of truth.",
-              },
-              {
-                icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <linearGradient id="card-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#451A03" />
-                        <stop offset="50%" stopColor="#92400E" />
-                        <stop offset="100%" stopColor="#D97706" />
-                      </linearGradient>
-                      <filter id="card-glow-light" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="1.5" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                      </filter>
-                    </defs>
-                    <rect x="2" y="5" width="20" height="14" rx="3" fill="url(#card-grad-light)" filter="url(#card-glow-light)" opacity="0.2" />
-                    <rect x="2" y="5" width="20" height="14" rx="3" stroke="url(#card-grad-light)" strokeWidth="1.25" />
-                    <rect x="2" y="9" width="20" height="3" fill="#171717" opacity="0.6" />
-                    <path d="M6 13.5H9V16.5H6V13.5Z" stroke="url(#card-grad-light)" strokeWidth="1" strokeLinejoin="round" />
-                    <path d="M6 14.5H9 M6 15.5H9 M7.5 13.5V16.5" stroke="url(#card-grad-light)" strokeWidth="0.5" />
-                  </svg>
-                ),
-                title: 'Automated Loyalty Engine & Cashfree Gateways',
-                desc: "Instantly drop 5 dynamic Loyalty Credits into a new prospect's account upon QR scan. Top-up global wallets seamlessly via our dynamic Cashfree integration, enabling transparent, pay-as-you-go broadcasting.",
-              },
-            ].map((card) => (
-              <div
-                key={card.title}
-                className="gsap-reveal group bg-white rounded-xl p-4 sm:p-6 border transition-colors duration-300"
-                style={{ borderColor: '#E8E3DA' }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(196,168,150,0.6)')}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#E8E3DA')}
-              >
-                <div className="mb-5 flex items-start">
-                  <div className="p-3 bg-amber-100/40 backdrop-blur-md rounded-2xl border border-amber-200/60 shadow-md shadow-amber-900/5 inline-flex items-center justify-center">
-                    {card.icon}
-                  </div>
-                </div>
-                <h3
-                  className="lexend-subheading text-sm font-medium mb-3"
-                  style={{ color: '#3E3B36' }}
-                >
-                  {card.title}
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: '#8B8378' }}>
-                  {card.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 3.5 — WASTE VS. WEALTH MATRIX
-      ══════════════════════════════════════════════════════════ */}
-      <section className="py-24 scroll-reveal-section bg-[#F5F1EA] border-t border-[#E8E3DA]">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="max-w-2xl mx-auto text-center mb-16 gsap-reveal">
-            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-4">
-              Stop Wasting Money on Ghost Impressions.
-            </h2>
-            <p className="text-base leading-relaxed text-[#8B8378]">
-              Traditional ads eat your budget and get scrolled past. True Attendly Broadcast delivers your message straight to their hands with a 98% open rate. Pay only for what actually sends.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            
-            {/* Card 1 */}
-            <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-xl p-4 sm:p-6 lg:p-8 flex flex-col items-center text-center">
-              <div className="p-3 bg-amber-100/40 backdrop-blur-md rounded-2xl border border-amber-200/60 shadow-md shadow-amber-900/5 inline-flex items-center justify-center mb-6 shrink-0">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <linearGradient id="light-grad-x1" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#451A03" />
-                      <stop offset="100%" stopColor="#D97706" />
-                    </linearGradient>
-                    <filter id="light-glow-x1" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="1.5" result="blur" />
-                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                    </filter>
-                  </defs>
-                  <circle cx="12" cy="12" r="10" stroke="url(#light-grad-x1)" strokeWidth="1.25" filter="url(#light-glow-x1)"/>
-                  <path d="M15 9l-6 6M9 9l6 6" stroke="url(#light-grad-x1)" strokeWidth="1.25" strokeLinecap="round"/>
-                </svg>
-              </div>
-              <h3 className="lexend-subheading text-base font-semibold text-[#3E3B36] mb-2">Social Media Ads (Meta/IG)</h3>
-              <p className="text-lg font-bold text-[#C4A896] mb-4">~15% Viewability Rate</p>
-              <p className="text-sm text-[#8B8378] leading-relaxed">
-                High daily budgets, shrinking reach, and users swipe away in 0.5 seconds. You pay for impressions, not sales.
-              </p>
-            </div>
-
-            {/* Card 2 */}
-            <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-xl p-4 sm:p-6 lg:p-8 flex flex-col items-center text-center">
-              <div className="p-3 bg-amber-100/40 backdrop-blur-md rounded-2xl border border-amber-200/60 shadow-md shadow-amber-900/5 inline-flex items-center justify-center mb-6 shrink-0">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <linearGradient id="light-grad-x2" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#451A03" />
-                      <stop offset="100%" stopColor="#D97706" />
-                    </linearGradient>
-                    <filter id="light-glow-x2" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="1.5" result="blur" />
-                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                    </filter>
-                  </defs>
-                  <circle cx="12" cy="12" r="10" stroke="url(#light-grad-x2)" strokeWidth="1.25" filter="url(#light-glow-x2)"/>
-                  <path d="M15 9l-6 6M9 9l6 6" stroke="url(#light-grad-x2)" strokeWidth="1.25" strokeLinecap="round"/>
-                </svg>
-              </div>
-              <h3 className="lexend-subheading text-base font-semibold text-[#3E3B36] mb-2">Traditional Media</h3>
-              <p className="text-lg font-bold text-[#C4A896] mb-4">Dynamic Zero Tracking</p>
-              <p className="text-sm text-[#8B8378] leading-relaxed">
-                Extremely expensive to print and distribute. You have zero data on who read it, who ignored it, or if it hit the trash bin.
-              </p>
-            </div>
-
-            {/* Card 3 */}
-            <div className="gsap-reveal bg-[#3E3B36] border border-[#3E3B36] rounded-xl p-4 sm:p-6 lg:p-8 flex flex-col items-center text-center transform md:-translate-y-4 shadow-xl">
-              <div className="p-3 bg-amber-950/30 backdrop-blur-md rounded-2xl border border-amber-800/40 shadow-xl shadow-amber-950/40 inline-flex items-center justify-center mb-6 shrink-0">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <linearGradient id="warm-grad-check2" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#B45309" />
-                      <stop offset="100%" stopColor="#FDE68A" />
-                    </linearGradient>
-                    <filter id="warm-glow-check2" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="1.5" result="blur" />
-                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                    </filter>
-                  </defs>
-                  <circle cx="12" cy="12" r="10" stroke="url(#warm-grad-check2)" strokeWidth="1.25" filter="url(#warm-glow-check2)"/>
-                  <path d="M8 12l3 3 5-6" stroke="url(#warm-grad-check2)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <h3 className="lexend-subheading text-base font-semibold text-[#F5F1EA] mb-2">True Attendly Broadcast</h3>
-              <p className="text-lg font-bold text-[#C4A896] mb-4">98% Guaranteed Read Rate</p>
-              <p className="text-sm text-[rgba(245,241,234,0.8)] leading-relaxed">
-                Guaranteed High-Impact Inbox Reach: Delivered straight as a personal WhatsApp notification or an AI-polished premium corporate email. Customers see it, open it, and engage instantly.
-              </p>
-            </div>
+            )}
 
           </div>
 
-          <div className="gsap-reveal flex justify-center">
+          {/* Core ledger informational banner */}
+          <div className="gsap-reveal flex justify-center mt-12">
             <div className="inline-flex items-center gap-3 bg-white border border-[#E8E3DA] rounded-full px-5 py-2.5 shadow-sm">
               <span className="flex h-2 w-2 relative flex-shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C4A896] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C4A896]"></span>
               </span>
-              <p className="text-[10px] md:text-xs font-semibold tracking-wide text-[#3E3B36] uppercase text-left">
-                Retail Reality Check: A customer might ignore a billboard, but they NEVER leave a WhatsApp notification unread.
+              <p className="text-[10px] sm:text-xs font-semibold tracking-wide text-[#3E3B36] uppercase text-left">
+                Security Ledger: Inbound whitelisting ensures only opt-in customers are saved, safeguarding your official line.
               </p>
             </div>
           </div>
+
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════
-          SECTION 3.8 — OMNICHANNEL INFRASTRUCTURE ARCHITECTURE
+          SECTION 5 — PERSUASION REVERSAL: THE RETAIL REALITY CHECK
       ══════════════════════════════════════════════════════════ */}
-      <section className="bg-white py-24 scroll-reveal-section border-t border-[#E8E3DA]">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
-             <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#C4A896' }}>
-              Omnichannel Routing Infrastructure
-            </p>
-            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-4">
-              Three Powerful Broadcast Engines. One Unified Dashboard.
+      <section id="comparison" className="w-full py-24 px-6 bg-white scroll-reveal-section">
+        <div className="max-w-6xl mx-auto">
+          
+          <div className="max-w-2xl mx-auto text-center mb-16 gsap-reveal">
+            <span className="text-xs tracking-[0.25em] uppercase text-[#C4A896] font-bold">
+              The Reality Check
+            </span>
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mt-4 mb-4">
+              Why Legacy Checkout is Hurting Your Retail Sales
             </h2>
-            <p className="text-base leading-relaxed text-[#8B8378]">
-              Whether you represent an Enterprise brand needing guaranteed delivery at scale, a local shop looking for a quick, template-free setup, or an Omnichannel presence requiring AI-polished emails, our Tri-Channel Architecture adapts instantly.
+            <p className="text-sm text-slate-500 leading-relaxed">
+              We compared traditional, paper-based billing layouts against the True Attendly digital broadcast pipeline.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch max-w-5xl mx-auto gsap-reveal">
+            
+            {/* The Daily Struggle block */}
+            <div className="bg-[#FCFBF9] border border-red-200/60 rounded-2xl p-8 flex flex-col justify-between">
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center border border-red-100 shrink-0">
+                    <XCircle size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm">The Daily Retail Struggle</h3>
+                    <p className="text-[9px] text-red-500 font-semibold uppercase tracking-widest mt-0.5">High Costs &amp; Friction</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Merchants waste fortunes on expensive thermal paper rolls and remain chained to rigid, legacy PC-based billing systems that slow down checkout queues, while customers refuse to share phone numbers due to privacy friction.
+                </p>
+
+                <ul className="space-y-3 text-xs text-slate-500 border-t border-slate-200/60 pt-4">
+                  <li className="flex items-center gap-2">
+                    <X size={12} className="text-red-400 shrink-0" />
+                    <span>Costly thermal rolls and PC printer maintenance traps.</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <X size={12} className="text-red-400 shrink-0" />
+                    <span>Customers refuse to spell phone numbers in long public queues.</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <X size={12} className="text-red-400 shrink-0" />
+                    <span>Zero mechanism to contact buyers or drive repeat sales.</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <X size={12} className="text-red-400 shrink-0" />
+                    <span>Constant monthly subscription traps for rigid bulk tools.</span>
+                  </li>
+                </ul>
+              </div>
+              <span className="text-[8.5px] font-bold text-slate-400 uppercase tracking-widest pt-6 block border-t border-slate-100 mt-6">Inefficient Checkout System</span>
+            </div>
+
+            {/* True Attendly Advantage block */}
+            <div className="bg-[#3E3B36] text-white rounded-2xl p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#C4A896]/15 rounded-bl-full pointer-events-none" />
+              
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-500/10 text-emerald-300 rounded-xl flex items-center justify-center border border-emerald-500/20 shrink-0">
+                    <CheckCircle size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-sm">The True Attendly Advantage</h3>
+                    <p className="text-[9px] text-emerald-300 font-semibold uppercase tracking-widest mt-0.5">100% Frictionless Capture</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  One quick billing screen scan logs the lead, delivers an interactive custom invoice, auto-saves the merchant profile details, and legally whitelists the connection with absolute zero monthly subscription traps.
+                </p>
+
+                <ul className="space-y-3 text-xs text-slate-200 border-t border-slate-700 pt-4">
+                  <li className="flex items-center gap-2">
+                    <Check size={12} className="text-emerald-400 shrink-0" />
+                    <span>Zero paper hardware. Turn any smartphone or tablet into a billing term.</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={12} className="text-emerald-400 shrink-0" />
+                    <span>Opt-in whitelisting automatically whitelists the customer profile details.</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={12} className="text-emerald-400 shrink-0" />
+                    <span>Tag pipeline saves buyer records under <code>DIGITAL_BILL</code> segment.</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={12} className="text-emerald-400 shrink-0" />
+                    <span>No subscription locks. Purchase credits on a flexible pre-paid basis.</span>
+                  </li>
+                </ul>
+              </div>
+              <span className="text-[8.5px] font-bold text-[#C4A896] uppercase tracking-widest pt-6 block border-t border-slate-700 mt-6">Next-gen Mobile Billing Onboarding</span>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 6 — SYSTEM PLATFORM DEEP DIVE & INFRASTRUCTURE MATRIX
+      ══════════════════════════════════════════════════════════ */}
+      <section id="deep-dive" className="w-full py-24 px-6 bg-[#FCFBF9] border-t border-[#E8E3DA] scroll-reveal-section">
+        <div className="max-w-6xl mx-auto">
+          
+          <div className="max-w-2xl mx-auto text-center mb-16 gsap-reveal">
+            <span className="text-xs tracking-[0.25em] uppercase text-[#C4A896] font-bold">
+              Engineering Matrix
+            </span>
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mt-4 mb-4">
+              Advanced System Architecture
+            </h2>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Explore the system modules built to protect numbers, formatting datasets, and secure responsive layouts under zero Cumulative Layout Shift layout limits.
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto gsap-reveal">
-            {/* Premium In-Store QR Lead Engine */}
-            <div className="border border-[#E8E3DA] rounded-2xl p-8 bg-white flex flex-col justify-between hover:border-[#10B981]/50 transition-colors shadow-sm">
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                   <div className="w-10 h-10 bg-[#10B981] text-[#FFFFFF] rounded-xl flex items-center justify-center">
-                     <Smartphone size={20} />
-                   </div>
-                   <div>
-                     <h3 className="lexend-subheading text-lg font-bold text-[#3E3B36]">Feature A: Premium In-Store QR Lead Engine</h3>
-                     <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">Zero Meta Approvals, Zero Number Bans</p>
-                   </div>
-                </div>
-                <ul className="space-y-4 mb-8">
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>100% Safe Intake:</strong> Uses inbound customer texts ("✨ Send me real-time offers and updates!") to safely whitelist numbers instantly.</p>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Zero Meta Approvals:</strong> No cumbersome template reviews. Instant local activation via QR.</p>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Step 3: Instant Live Sync &amp; Auto-Save —</strong> The platform instantly logs the customer's name and number onto your dashboard in real-time. The customer is immediately prompted to save your business profile card. Once saved, they are seamlessly whitelisted to receive all your upcoming real-time shop offers with zero upfront wallet discounts required from the merchant.</p>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Risk-Free Sender Safety:</strong> Eliminate web-socket scraping and ban hazards entirely.</p>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* White-Label Branded Email Campaigns */}
-            <div className="border border-[#E8E3DA] rounded-2xl p-8 bg-[#F9F7F4] flex flex-col justify-between hover:border-[#6366f1]/30 transition-colors">
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                   <div className="w-10 h-10 bg-[#6366f1] text-[#FFFFFF] rounded-xl flex items-center justify-center">
-                     <Mail size={20} />
-                   </div>
-                   <div>
-                     <h3 className="lexend-subheading text-lg font-bold text-[#3E3B36]">Feature B: White-Label Email Campaigns</h3>
-                     <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">Powered By Resend (0.5 Credits)</p>
-                   </div>
-                </div>
-                <ul className="space-y-4 mb-8">
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Premium Corporate Styling:</strong> Clean, minimalistic HTML templates customized to your brand identity.</p>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Ultra-Low Cost Structure:</strong> Dispatch thousands of emails seamlessly for only 0.5 wallet credits per recipient.</p>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>AI-Assisted Drafting:</strong> Leverage cutting-edge language models to write high-converting copy in seconds.</p>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Dynamic CSV Parsing:</strong> Instant 10k+ audience generation and list segmentation uploads.</p>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Meta Official WhatsApp Campaign */}
-            <div className="border border-[#E8E3DA] rounded-2xl p-8 bg-[#F5F1EA] flex flex-col justify-between hover:border-[#3b82f6]/40 transition-colors shadow-sm">
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                   <div className="w-10 h-10 bg-[#3b82f6] text-[#FFFFFF] rounded-xl flex items-center justify-center">
-                     <ShieldCheck size={20} />
-                   </div>
-                   <div>
-                     <h3 className="lexend-subheading text-lg font-bold text-[#3E3B36]">Feature C: Official Meta API Broadcasts</h3>
-                     <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">Zero Risk, Verified Enterprise Architecture</p>
-                   </div>
-                </div>
-                <ul className="space-y-4 mb-8">
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Verified Brand Trust:</strong> Connect your official WhatsApp Business API to broadcast to tens of thousands of contacts seamlessly with 0% risk of bans.</p>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>AI Template Polisher:</strong> Automatically draft, format, and push your dynamic message templates directly to Meta for instant approval.</p>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Dynamic Variables:</strong> Seamlessly inject personalized names and custom fields using Meta's robust native token system.</p>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-[#10B981] mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-[#3E3B36] leading-relaxed"><strong>Granular Analytics:</strong> Track real-time Sent, Delivered, and Read receipts explicitly verified and synced from Meta's global webhooks.</p>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 3.9 — PLATFORM DEEP DIVE
-      ══════════════════════════════════════════════════════════ */}
-      <section className="bg-[#F5F1EA] py-24 scroll-reveal-section border-t border-[#E8E3DA]">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
-            <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#C4A896' }}>Platform Deep Dive</p>
-            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-6">
-              Advanced Capabilities.
-            </h2>
-          </div>
-
-          <div className="space-y-12">
             
-            {/* Feature 1 & 2 */}
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Bulk Campaign Broadcasting */}
-              <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-2xl p-8 shadow-sm">
-                <h3 className="text-xl font-bold text-[#3E3B36] mb-3">Bulk Campaign Broadcasting</h3>
-                <p className="text-sm text-[#8B8378] leading-relaxed mb-6">
-                  Broadcast Offers to 100k+ Opt-In Users instantly. Upload massive CSV or XLSX spreadsheets with zero processing lag. Set dynamic attributes like <code>{`{{1}}`}</code> and <code>{`{{2}}`}</code> to personalize each message.
+            {/* Anti-Ban Spintax Engine */}
+            <div className="bg-white border border-[#E8E3DA] rounded-2xl p-6 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-slate-800">
+                  <Sliders size={18} className="text-[#C4A896] shrink-0" />
+                  <h3 className="font-bold text-xs uppercase tracking-wider">Anti-Ban Spintax Engine</h3>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Automatic parsing of unique message string variations (<code>{`"{Hello|Hi|Hey}"`}</code>) reinforced by randomized human-like dispatch throttling delays (5 to 12-second intervals).
                 </p>
-                <div className="bg-[#F9F7F4] rounded-xl overflow-hidden border border-[#E8E3DA]">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-[#E8E3DA] text-[#3E3B36] uppercase tracking-wider">
-                      <tr><th className="p-3">Customer Name</th><th className="p-3">Phone</th><th className="p-3">Tag</th></tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#E8E3DA] text-[#8B8378]">
-                      <tr><td className="p-3 font-semibold text-[#3E3B36]">Aliya K.</td><td className="p-3 font-mono">919876543210</td><td className="p-3"><span className="bg-[#C4A896]/20 text-[#C4A896] px-2 py-0.5 rounded font-bold">VIP</span></td></tr>
-                      <tr><td className="p-3 font-semibold text-[#3E3B36]">Rahul M.</td><td className="p-3 font-mono">919876543211</td><td className="p-3"><span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded font-bold">NEW</span></td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
 
-              {/* Enterprise Meta Mode */}
-              <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-2xl p-8 shadow-sm">
-                <h3 className="text-xl font-bold text-[#3E3B36] mb-3">Enterprise Meta Mode: Smart Template Polish AI</h3>
-                <p className="text-sm text-[#8B8378] leading-relaxed mb-6">
-                  Turn raw business notes into luxury customer copy designed specifically for official Meta approvals. Our AI optimizes spacing, tone, and grammar while strictly preserving essential compliance placeholders like <code>{`{{1}}`}</code>.
-                </p>
-                <div className="space-y-3">
-                  <div className="bg-red-50 border border-red-100 p-3 rounded-lg">
-                    <p className="text-[10px] uppercase font-bold text-red-500 mb-1">Raw Input</p>
-                    <p className="text-sm text-[#3E3B36]">hi sir we have new stock pls buy come to shop.</p>
-                  </div>
-                  <div className="bg-emerald-50 border border-emerald-100 p-3 rounded-lg">
-                    <p className="text-[10px] uppercase font-bold text-emerald-600 mb-1">✦ Polished (Meta API)</p>
-                    <p className="text-sm text-[#3E3B36]">Hi {`{{1}}`}! Exclusive new stock has just arrived at {`{{2}}`}. Visit us today to secure yours before it's gone. ✨</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 3 & 4 */}
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Small Business QR Mode */}
-              <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-2xl p-8 shadow-sm">
-                <h3 className="text-xl font-bold text-[#3E3B36] mb-3">Small Business QR Mode: AI Ready-For-You</h3>
-                <p className="text-sm text-[#8B8378] leading-relaxed mb-6">
-                  Maximize inbox delivery with built-in Anti-Ban Spintax technology. Write one broadcast message, and our AI dynamically spins it into hundreds of unique variations sent across the QR bridge—safeguarded by 5 to 12-second randomized throttling.
-                </p>
-                <div className="bg-[#1f2937] border border-gray-700 p-4 rounded-xl text-green-400 font-mono text-xs">
-                  <p className="text-gray-400 mb-2">// Anti-Ban Spintax Engine</p>
-                  <p>"{`{Hello|Hi|Hey}`}" Aliya! We missed you.</p>
-                  <p>"{`{Greetings|Welcome back}`}" Rahul! Check out our new stock.</p>
-                </div>
-              </div>
-
-              {/* Deep Real-Time Analytics Dashboard */}
-              <div className="gsap-reveal bg-white border border-[#E8E3DA] rounded-2xl p-8 shadow-sm">
-                <h3 className="text-xl font-bold text-[#3E3B36] mb-3">Deep Real-Time Analytics Dashboard</h3>
-                <p className="text-sm text-[#8B8378] leading-relaxed mb-6">
-                  Track Sent, Delivered (Double-Tick), and Read (Blue-Tick) status logs in absolute real-time. Know exactly who read your campaign and optimize your retail marketing spend.
-                </p>
-                <div className="bg-[#F9F7F4] p-4 rounded-xl border border-[#E8E3DA] flex items-center justify-between">
-                  <div className="relative w-24 h-24 rounded-full border-8 border-[#10B981] flex items-center justify-center bg-white shadow-sm">
-                    <span className="text-2xl font-black text-[#3E3B36]">85%</span>
-                  </div>
-                  <div className="flex-1 ml-6 space-y-2">
-                    <div className="flex justify-between text-xs font-bold"><span className="text-[#10B981]">Read (85%)</span></div>
-                    <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden"><div className="bg-[#10B981] h-full w-[85%]"></div></div>
-                    <div className="flex justify-between text-xs font-bold"><span className="text-blue-500">Delivered (12%)</span></div>
-                    <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden"><div className="bg-blue-500 h-full w-[12%]"></div></div>
-                    <div className="flex justify-between text-xs font-bold"><span className="text-red-500">Failed (3%)</span></div>
-                    <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden"><div className="bg-red-500 h-full w-[3%]"></div></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 3.95 — EMAIL MARKETING
-      ══════════════════════════════════════════════════════════ */}
-      <section className="bg-white py-24 scroll-reveal-section border-t border-[#E8E3DA]">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
-            <span className="bg-[#6366f1]/10 text-[#6366f1] text-[10px] font-bold px-3 py-1 uppercase tracking-widest rounded-full mb-4 inline-block">New · Email Marketing</span>
-            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-6">
-              Now Broadcast via Email - With AI That Writes For You.
-            </h2>
-            <p className="text-base leading-relaxed text-[#8B8378]">
-              Launch full-scale email campaigns to your segmented audience. Our built-in AI Polish engine transforms rough drafts into premium, conversion-optimised copy in a single click.
-            </p>
-          </div>
-
-          <div className="bg-[#F5F1EA] rounded-[2rem] border border-[#E8E3DA] p-4 md:p-8 mb-16 shadow-lg gsap-reveal">
-            <div className="bg-white rounded-xl shadow-sm border border-[#E8E3DA] overflow-hidden flex flex-col md:flex-row">
-              <div className="flex-1 p-6 border-b md:border-b-0 md:border-r border-[#E8E3DA]">
-                <div className="flex items-center justify-between mb-6">
-                  <p className="text-xs font-bold text-[#8B8378] uppercase font-mono">dashboard/email/create</p>
-                  <button className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-[10px] px-3 py-1.5 rounded shadow-sm font-bold flex items-center gap-1">🪄 AI Polish</button>
-                </div>
-                <div className="w-full h-24 bg-[#F9F7F4] rounded-lg border-2 border-dashed border-[#E8E3DA] flex items-center justify-center text-[#8B8378] text-xs font-bold mb-6">
-                  Attach Header Banner Area
-                </div>
-                <div className="mb-6">
-                  <p className="text-[10px] font-bold text-[#8B8378] uppercase mb-2">Subject Line</p>
-                  <div className="w-full border border-[#E8E3DA] bg-gray-50 rounded p-2.5 text-sm text-[#3E3B36] font-semibold shadow-inner">🎁 Exclusive Offer Just For You — Limited Stock!</div>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-[#8B8378] uppercase mb-2 flex items-center gap-2">Email Body <span className="bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded text-[9px]">🤖 Ask AI to Write (Gemini/Groq)</span></p>
-                  <div className="w-full border border-[#E8E3DA] bg-gray-50 rounded p-3 text-sm text-gray-400 line-through">hi customer we have sale going on. come and buy. very good quality.</div>
-                  <div className="w-full border-l-4 border-indigo-400 bg-indigo-50 rounded-r p-4 text-sm text-indigo-900 font-medium mt-3 shadow-sm">
-                    <span className="text-indigo-600 font-black block mb-1">✦ AI Polished</span> Dear valued customer, our exclusive Eid collection is here — premium quality, limited pieces. Shop now before it sells out. ✨
-                  </div>
-                </div>
-              </div>
-              <div className="w-full md:w-72 bg-[#F9F7F4] p-6 flex flex-col">
-                <p className="text-[10px] font-bold text-[#8B8378] uppercase mb-4 border-b border-[#E8E3DA] pb-2">Targeting Segment:</p>
-                <div className="space-y-3 mb-6">
-                  <label className="flex items-center gap-2 text-sm text-[#3E3B36] font-medium"><input type="checkbox" checked readOnly className="rounded text-indigo-600 w-4 h-4" /> VIP</label>
-                  <label className="flex items-center gap-2 text-sm text-[#3E3B36] font-medium"><input type="checkbox" checked readOnly className="rounded text-indigo-600 w-4 h-4" /> Regular</label>
-                  <label className="flex items-center gap-2 text-sm text-[#3E3B36] font-medium"><input type="checkbox" readOnly className="rounded text-gray-300 w-4 h-4" /> New</label>
-                </div>
-                <div className="mt-auto bg-white p-4 rounded-xl border border-[#E8E3DA] text-center shadow-sm">
-                  <p className="text-2xl font-black text-[#3E3B36]">1,240 <span className="text-[10px] font-normal text-[#8B8378] block">Ready to send recipients</span></p>
-                  <p className="text-[9px] text-[#C4A896] font-bold uppercase mt-2">1 credit per email</p>
-                </div>
-                <button className="w-full bg-[#111827] text-white font-bold text-sm py-3 rounded-lg shadow mt-4 hover:bg-black transition-colors uppercase tracking-widest">Dispatch</button>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 gsap-reveal">
-            <div className="bg-[#F5F1EA] p-5 rounded-xl border border-[#E8E3DA] hover:border-indigo-200 transition-colors">
-              <div className="text-indigo-500 font-bold mb-2 text-lg">✦</div>
-              <h4 className="font-bold text-sm text-[#3E3B36] mb-2 leading-tight">Layout & Ask AI Framework</h4>
-              <p className="text-[11px] text-[#8B8378] leading-relaxed">Attach banners, write dynamic subjects, and use the "🤖 Ask AI to Write" to instantly generate premium copy.</p>
-            </div>
-            <div className="bg-[#F5F1EA] p-5 rounded-xl border border-[#E8E3DA] hover:border-[#C4A896]/50 transition-colors">
-              <div className="text-[#C4A896] font-bold mb-2 text-lg">◎</div>
-              <h4 className="font-bold text-sm text-[#3E3B36] mb-2 leading-tight">Tag-Based Audience Targeting</h4>
-              <p className="text-[11px] text-[#8B8378] leading-relaxed">Trigger precision sends using dynamic targeting tags for VIP, Regular, and New segments. Counts update instantly.</p>
-            </div>
-            <div className="bg-[#F5F1EA] p-5 rounded-xl border border-[#E8E3DA] hover:border-[#10B981]/50 transition-colors">
-              <div className="text-[#10B981] font-bold mb-2 text-lg">◈</div>
-              <h4 className="font-bold text-sm text-[#3E3B36] mb-2 leading-tight">Dedicated Analytics Routing</h4>
-              <p className="text-[11px] text-[#8B8378] leading-relaxed">Access History with aggregate blocks (Total Sent | Success | Delivered | Failed) equipped with Search, Sort, and Infinite Scrolling.</p>
-            </div>
-            <div className="bg-[#F5F1EA] p-5 rounded-xl border border-[#E8E3DA] hover:border-blue-300 transition-colors">
-              <div className="text-blue-500 font-bold mb-2 text-lg">⬇</div>
-              <h4 className="font-bold text-sm text-[#3E3B36] mb-2 leading-tight">Dual-Mode Exporting Manifests</h4>
-              <p className="text-[11px] text-[#8B8378] leading-relaxed">Download intelligence with "Export All Data" or "Export Filtered View" for instant CSV/Excel manifests.</p>
-            </div>
-            <div className="bg-[#F5F1EA] p-5 rounded-xl border border-[#E8E3DA] hover:border-red-300 transition-colors">
-              <div className="text-red-500 font-bold mb-2 text-lg">🛡️</div>
-              <h4 className="font-bold text-sm text-[#3E3B36] mb-2 leading-tight">Safety Transaction Popup Modal</h4>
-              <p className="text-[11px] text-[#8B8378] leading-relaxed">Operate with zero fear. A mandatory secure firewall popup requires manual verification before triggering any dispatch.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 3.96 — QR LEADS MANAGEMENT
-      ══════════════════════════════════════════════════════════ */}
-      <section className="bg-[#F9F7F4] py-24 scroll-reveal-section border-t border-[#E8E3DA]">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
-            <span className="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-3 py-1 uppercase tracking-widest rounded-full mb-4 inline-block">Walk-In Audience Growth</span>
-            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-6">
-              In-Store Scan Leads & vCard Pipeline.
-            </h2>
-            <p className="text-base leading-relaxed text-[#8B8378]">
-              Never let a walk-in customer leave unnoticed. Instantly capture their WhatsApp, drop Loyalty Credits, and sync them securely into a real-time CRM with one scan.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="md:col-span-1 space-y-6">
-              <div className="gsap-reveal bg-white p-6 rounded-2xl border border-[#E8E3DA] shadow-sm hover:border-emerald-200 transition-colors">
-                <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600 mb-4 border border-emerald-100"><Smartphone size={20} /></div>
-                <h3 className="font-bold text-[#3E3B36] mb-2">Instant Walk-In Capture</h3>
-                <p className="text-sm text-[#8B8378] leading-relaxed">The moment they scan your counter QR code and send the trigger text, their verified WhatsApp number is securely added to your unified Dashboard.</p>
-              </div>
-              <div className="gsap-reveal bg-white p-6 rounded-2xl border border-[#E8E3DA] shadow-sm hover:border-blue-200 transition-colors">
-                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 mb-4 border border-blue-100"><Contact size={20} /></div>
-                <h3 className="font-bold text-[#3E3B36] mb-2">Automated vCard Address Book Sync</h3>
-                <p className="text-sm text-[#8B8378] leading-relaxed">Our cloud immediately replies with a native vCard. The customer saves your exact business details to their phonebook with one tap—bypassing future spam folders.</p>
-              </div>
-              <div className="gsap-reveal bg-white p-6 rounded-2xl border border-[#E8E3DA] shadow-sm hover:border-[#C4A896]/50 transition-colors">
-                <div className="w-10 h-10 bg-[#C4A896]/10 rounded-lg flex items-center justify-center text-[#C4A896] mb-4 border border-[#C4A896]/20"><Zap size={20} /></div>
-                <h3 className="font-bold text-[#3E3B36] mb-2">Step 3: Instant Live Sync &amp; Auto-Save</h3>
-                <p className="text-sm text-[#8B8378] leading-relaxed">The platform instantly logs the customer's name and number onto your dashboard in real-time. The customer is immediately prompted to save your business profile card. Once saved, they are seamlessly whitelisted to receive all your upcoming real-time shop offers with zero upfront wallet discounts required from the merchant.</p>
-              </div>
-            </div>
-            <div className="md:col-span-2 gsap-reveal min-w-0">
-              <div className="w-full h-full bg-[#111827] rounded-3xl p-2 shadow-2xl relative overflow-hidden flex flex-col">
-                <div className="bg-[#1f2937] h-12 rounded-t-2xl flex items-center px-4 justify-between border-b border-gray-700">
-                  <div className="flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500"></div><div className="w-3 h-3 rounded-full bg-yellow-500"></div><div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  </div>
-                  <span className="text-gray-400 text-xs font-mono">dashboard/qr-leads</span>
-                </div>
-                <div className="flex-1 bg-[#F9F7F4] rounded-b-2xl p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <div>
-                      <h4 className="text-lg font-bold text-[#3E3B36]">Scan Leads Database</h4>
-                      <p className="text-xs text-[#8B8378]">Tracking new walk-in acquisitions.</p>
-                    </div>
-                    <button className="bg-emerald-100 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-lg text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 shadow-sm">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                      Listening for Scans...
-                    </button>
-                  </div>
-                  <div className="bg-white rounded-xl border border-[#E8E3DA] shadow-sm">
-                    <div className="w-full overflow-x-auto scrollbar-none">
-                    <table className="w-full text-left text-sm min-w-[600px]">
-                      <thead className="bg-[#F5F1EA] text-[#8B8378] text-xs uppercase tracking-wider border-b border-[#E8E3DA]">
-                        <tr><th className="p-4">Customer Lead</th><th className="p-4">Source</th><th className="p-4">Loyalty Credits</th><th className="p-4">Status</th></tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#E8E3DA]">
-                        <tr className="hover:bg-gray-50 transition-colors"><td className="p-4"><p className="font-bold text-[#3E3B36]">+91 98765 43210</p><p className="text-[10px] text-gray-400 mt-1">Just now</p></td><td className="p-4"><span className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-[10px] font-bold border border-blue-100">QR Counter #1</span></td><td className="p-4 font-mono font-bold text-emerald-600 bg-emerald-50/50 rounded m-2 inline-block px-2">+5 Credits</td><td className="p-4"><span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold">vCard Sent</span></td></tr>
-                        <tr className="hover:bg-gray-50 transition-colors"><td className="p-4"><p className="font-bold text-[#3E3B36]">+91 98765 11111</p><p className="text-[10px] text-gray-400 mt-1">10 mins ago</p></td><td className="p-4"><span className="bg-indigo-50 text-indigo-600 px-2 py-1 rounded text-[10px] font-bold border border-indigo-100">QR Display Window</span></td><td className="p-4 font-mono font-bold text-emerald-600 bg-emerald-50/50 rounded m-2 inline-block px-2">+5 Credits</td><td className="p-4"><span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold">vCard Sent</span></td></tr>
-                        <tr className="hover:bg-gray-50 transition-colors"><td className="p-4"><p className="font-bold text-[#3E3B36]">+91 99999 88888</p><p className="text-[10px] text-gray-400 mt-1">2 hours ago</p></td><td className="p-4"><span className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-[10px] font-bold border border-blue-100">QR Counter #1</span></td><td className="p-4 font-mono font-bold text-emerald-600 bg-emerald-50/50 rounded m-2 inline-block px-2">+5 Credits</td><td className="p-4"><span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-[10px] font-bold">Processed</span></td></tr>
-                      </tbody>
-                    </table>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 3.97 — THE RETAIL REALITY CHECK (Append 1)
-      ══════════════════════════════════════════════════════════ */}
-      <section className="py-24 scroll-reveal-section bg-white border-t border-[#E8E3DA]">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
-            <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#C4A896' }}>The Retail Reality Check</p>
-            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-6">
-              Why Manual Marketing is Breaking Your Growth
-            </h2>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="gsap-reveal bg-[#F5F1EA] rounded-2xl p-8 border border-[#E8E3DA] flex flex-col h-full">
-              <div className="p-3 bg-amber-100/40 backdrop-blur-md rounded-2xl border border-amber-200/60 shadow-md shadow-amber-900/5 inline-flex items-center justify-center mb-6 shrink-0">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <linearGradient id="light-grad-x3" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#451A03" />
-                      <stop offset="100%" stopColor="#D97706" />
-                    </linearGradient>
-                    <filter id="light-glow-x3" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="1.5" result="blur" />
-                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                    </filter>
-                  </defs>
-                  <circle cx="12" cy="12" r="10" stroke="url(#light-grad-x3)" strokeWidth="1.25" filter="url(#light-glow-x3)"/>
-                  <path d="M15 9l-6 6M9 9l6 6" stroke="url(#light-grad-x3)" strokeWidth="1.25" strokeLinecap="round"/>
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-[#3E3B36] mb-4">The Daily Struggle</h3>
-              <p className="text-sm leading-relaxed text-[#8B8378] flex-1">
-                Merchants spend hours manually copying customer numbers or risking their permanent business line with cheap unofficial bots that get banned in seconds.
-              </p>
-            </div>
-
-            <div className="gsap-reveal bg-[#F5F1EA] rounded-2xl p-8 border border-[#E8E3DA] flex flex-col h-full">
-              <div className="p-3 bg-amber-100/40 backdrop-blur-md rounded-2xl border border-amber-200/60 shadow-md shadow-amber-900/5 inline-flex items-center justify-center mb-6 shrink-0">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <linearGradient id="light-grad-alert" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#451A03" />
-                      <stop offset="100%" stopColor="#D97706" />
-                    </linearGradient>
-                    <filter id="light-glow-alert" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="1.5" result="blur" />
-                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                    </filter>
-                  </defs>
-                  <path d="M12 2l10 18H2L12 2z" stroke="url(#light-grad-alert)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" filter="url(#light-glow-alert)"/>
-                  <path d="M12 8v4" stroke="url(#light-grad-alert)" strokeWidth="1.25" strokeLinecap="round"/>
-                  <circle cx="12" cy="16" r="1" fill="url(#light-grad-alert)"/>
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-[#3E3B36] mb-4">The Friction</h3>
-              <p className="text-sm leading-relaxed text-[#8B8378] flex-1">
-                Customers refuse to manually type and save a store's 10-digit number. If they don't save it, all broadcast web links remain unclickable, and messages go straight to the archive block.
-              </p>
-            </div>
-
-            <div className="gsap-reveal bg-[#3E3B36] rounded-2xl p-8 border border-[#C4A896]/30 flex flex-col h-full shadow-xl transform lg:-translate-y-4">
-              <div className="p-3 bg-amber-950/30 backdrop-blur-md rounded-2xl border border-amber-800/40 shadow-xl shadow-amber-950/40 inline-flex items-center justify-center mb-6 shrink-0">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <linearGradient id="warm-grad-check3" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#B45309" />
-                      <stop offset="100%" stopColor="#FDE68A" />
-                    </linearGradient>
-                    <filter id="warm-glow-check3" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="1.5" result="blur" />
-                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                    </filter>
-                  </defs>
-                  <circle cx="12" cy="12" r="10" stroke="url(#warm-grad-check3)" strokeWidth="1.25" filter="url(#warm-glow-check3)"/>
-                  <path d="M8 12l3 3 5-6" stroke="url(#warm-grad-check3)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-white mb-4">The Attendly Fix</h3>
-              <p className="text-sm leading-relaxed text-white/70 flex-1">
-                Total freedom. One quick counter QR scan automatically logs the customer, pushes an auto-save business name details package, and legally whitelists the number with zero block risk.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 3.98 — THE OMNICHANNEL DIFFERENCE (Append 2)
-      ══════════════════════════════════════════════════════════ */}
-      <section className="py-24 scroll-reveal-section bg-[#F9F7F4] border-t border-[#E8E3DA]">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
-            <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#C4A896' }}>The Omnichannel Difference</p>
-            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36]">
-              True Attendly vs. Traditional Tools
-            </h2>
-          </div>
-
-          <div className="max-w-5xl mx-auto bg-white rounded-3xl border border-[#E8E3DA] shadow-xl overflow-hidden gsap-reveal">
-            <div className="grid md:grid-cols-2">
-              {/* Traditional Tools */}
-              <div className="p-10 border-b md:border-b-0 md:border-r border-[#E8E3DA] bg-[#F5F1EA]/50">
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="p-3 bg-amber-100/40 backdrop-blur-md rounded-2xl border border-amber-200/60 shadow-md shadow-amber-900/5 shrink-0">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <linearGradient id="light-grad-x4" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#451A03" />
-                          <stop offset="100%" stopColor="#D97706" />
-                        </linearGradient>
-                        <filter id="light-glow-x4" x="-20%" y="-20%" width="140%" height="140%">
-                          <feGaussianBlur stdDeviation="1.5" result="blur" />
-                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                        </filter>
-                      </defs>
-                      <circle cx="12" cy="12" r="10" stroke="url(#light-grad-x4)" strokeWidth="1.25" filter="url(#light-glow-x4)"/>
-                      <path d="M15 9l-6 6M9 9l6 6" stroke="url(#light-grad-x4)" strokeWidth="1.25" strokeLinecap="round"/>
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-bold text-[#3E3B36]">Traditional Bulk Platforms</h3>
-                </div>
-                <ul className="space-y-6">
-                  <li className="flex items-start gap-3">
-                    <X size={18} className="text-red-400 mt-0.5 shrink-0" />
-                    <span className="text-sm text-[#8B8378] leading-relaxed">Complex setup processes requiring developer skills.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <X size={18} className="text-red-400 mt-0.5 shrink-0" />
-                    <span className="text-sm text-[#8B8378] leading-relaxed">High recurring monthly lock-in subscriptions even if you send zero texts.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <X size={18} className="text-red-400 mt-0.5 shrink-0" />
-                    <span className="text-sm text-[#8B8378] leading-relaxed">Complex template registration rules.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <X size={18} className="text-red-400 mt-0.5 shrink-0" />
-                    <span className="text-sm text-[#8B8378] leading-relaxed">Zero in-store customer capturing tools.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <X size={18} className="text-red-400 mt-0.5 shrink-0" />
-                    <span className="text-sm text-[#8B8378] leading-relaxed">High risks of account suspension.</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* True Attendly */}
-              <div className="p-10 bg-white relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-[#C4A896]/10 rounded-bl-full -z-10"></div>
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="p-3 bg-amber-100/40 backdrop-blur-md rounded-2xl border border-amber-200/60 shadow-md shadow-amber-900/5 shrink-0">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <linearGradient id="light-grad-check4" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#451A03" />
-                          <stop offset="100%" stopColor="#D97706" />
-                        </linearGradient>
-                        <filter id="light-glow-check4" x="-20%" y="-20%" width="140%" height="140%">
-                          <feGaussianBlur stdDeviation="1.5" result="blur" />
-                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                        </filter>
-                      </defs>
-                      <circle cx="12" cy="12" r="10" stroke="url(#light-grad-check4)" strokeWidth="1.25" filter="url(#light-glow-check4)"/>
-                      <path d="M8 12l3 3 5-6" stroke="url(#light-grad-check4)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-bold text-[#3E3B36]">True Attendly Broadcast</h3>
-                </div>
-                <ul className="space-y-6">
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={18} className="text-emerald-500 mt-0.5 shrink-0" />
-                    <span className="text-sm text-[#3E3B36] font-medium leading-relaxed">Absolute simplicity for non-programmers.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={18} className="text-emerald-500 mt-0.5 shrink-0" />
-                    <span className="text-sm text-[#3E3B36] font-medium leading-relaxed">Zero monthly subscription traps via our pay-as-you-send credit engine.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={18} className="text-emerald-500 mt-0.5 shrink-0" />
-                    <span className="text-sm text-[#3E3B36] font-medium leading-relaxed">Automated AI assistant text generation designed for premium marketing.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={18} className="text-emerald-500 mt-0.5 shrink-0" />
-                    <span className="text-sm text-[#3E3B36] font-medium leading-relaxed">Instant smart QR lead capturing right at the billing counter.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle size={18} className="text-emerald-500 mt-0.5 shrink-0" />
-                    <span className="text-sm text-[#3E3B36] font-medium leading-relaxed">Dual-safe routing model designed exclusively to protect small retail stores.</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 4 — SERVICES & CONFIGURATIONS
-      ══════════════════════════════════════════════════════════ */}
-      <section
-        id="services"
-        className="py-24 scroll-reveal-section"
-        style={{ backgroundColor: '#FFFFFF', borderTop: '1px solid #E8E3DA', borderBottom: '1px solid #E8E3DA' }}
-      >
-        <div className="max-w-6xl mx-auto px-6">
-
-          {/* Header row */}
-          <div className="flex items-end justify-between mb-14 gsap-reveal">
-            <div>
-              <p
-                className="text-xs tracking-[0.25em] uppercase mb-3"
-                style={{ color: '#C4A896' }}
-              >
-                Services
-              </p>
-              <h2
-                className="serif-headline text-3xl sm:text-4xl"
-                style={{ color: '#3E3B36' }}
-              >
-                Everything You Need<br />to Broadcast at Scale.
-              </h2>
-            </div>
-            <a
-              href="#contact"
-              className="hidden sm:flex items-center gap-1.5 text-xs tracking-[0.2em] uppercase transition-colors duration-200"
-              style={{ color: '#8B8378' }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#C4A896')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#8B8378')}
-            >
-              Request a Demo →
-            </a>
-          </div>
-
-          {/* 2×2 service grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-0 border border-[#E8E3DA] rounded-xl overflow-hidden">
-            {[
-              {
-                label: '01',
-                title: 'Campaign Management',
-                desc: 'Create, schedule, and monitor WhatsApp broadcast campaigns with a full editorial workspace. Draft messages, attach media, and track delivery in real time.',
-              },
-              {
-                label: '02',
-                title: 'Contact Intelligence',
-                desc: 'Drop in massive retail manifests directly using our high-speed .csv and .xlsx Excel engine. The platform automatically applies 10-digit regex validation and executes duplicate-safe upsert pipelines instantly.',
-              },
-              {
-                label: '03',
-                title: 'Credit Economy',
-                desc: 'Purchase credits in flexible bundles. One credit per message ensures full cost transparency with zero hidden fees or subscription surprises.',
-              },
-              {
-                label: '04',
-                title: 'Delivery Analytics',
-                desc: 'Audit every campaign dispatch with a full delivery ledger. Track status transitions from pending to completed, with timestamped logs.',
-              },
-              {
-                label: '05',
-                title: 'Advanced Database Terminal',
-                desc: 'Segment your retail buyers instantly with our high-performance infinite scroll architecture. Filter by saved customer tags (VIP, Regular, New) using PostgreSQL array rules, search via omni-search, and clear registries in a single transactional stroke.',
-              },
-              {
-                label: '06',
-                title: 'Dynamic Pricing & Autonomous Ledger',
-                desc: 'Enjoy an entirely synchronized pricing grid mapped straight from our master administrative engine. Package tiers (50, 100, 200, or 500 Credits) refresh dynamically via Cashfree Payment Gateway checkout routines with success-only row-by-row deductions.',
-              },
-            ].map((service, i) => (
-              <div
-                key={service.title}
-                className="gsap-reveal p-8 transition-colors duration-200 cursor-default"
-                style={{
-                  borderRight: i % 2 === 0 ? '1px solid #E8E3DA' : 'none',
-                  borderBottom: i < 2 ? '1px solid #E8E3DA' : 'none',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(245,241,234,0.5)')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '')}
-              >
-                <p
-                  className="text-[10px] tracking-[0.25em] uppercase mb-5"
-                  style={{ color: '#C4A896' }}
-                >
-                  {service.label}
-                </p>
-                <h3
-                  className="lexend-subheading text-base font-medium mb-3"
-                  style={{ color: '#3E3B36' }}
-                >
-                  {service.title}
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: '#8B8378' }}>
-                  {service.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 4.5 — INFRASTRUCTURE SAFETY
-      ══════════════════════════════════════════════════════════ */}
-      <section className="bg-[#F5F1EA] border-y border-[#E8E3DA] py-16 scroll-reveal-section">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="mb-12 gsap-reveal">
-            <p className="uppercase tracking-[0.25em] text-[#8B8378] text-xs mb-3 font-medium">INFRASTRUCTURE</p>
-            <h2 className="serif-headline text-xl text-[#3E3B36]">Hardened against failures. Built for high volumes.</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 gsap-reveal">
-            <div>
-              <h3 className="lexend-subheading text-sm font-medium mb-3 text-[#3E3B36]">Idempotency Conflict Security</h3>
-              <p className="text-sm leading-relaxed text-[#8B8378]">Our API blocks multi-click accidental duplicate dispatches within a 5-minute threshold using cryptographic safety tokens, ensuring your wallet is never double-charged for the same payload.</p>
-            </div>
-            <div>
-              <h3 className="lexend-subheading text-sm font-medium mb-3 text-[#3E3B36]">Zero-CLS Structural Skeletons</h3>
-              <p className="text-sm leading-relaxed text-[#8B8378]">We guarantee absolute visual stability. From native route skeleton barriers to client-side React Error Boundaries (error.tsx) and real-time offline network listeners, every core operation is safeguarded.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 4.8 — ADVANCED CAPABILITIES (Pure CSS Mockups)
-      ══════════════════════════════════════════════════════════ */}
-      <section className="bg-white py-24 scroll-reveal-section">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="mb-16 gsap-reveal text-center max-w-2xl mx-auto">
-            <p className="uppercase tracking-[0.25em] text-[#C4A896] text-xs mb-3 font-medium">Platform Deep Dive</p>
-            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36]">Advanced Capabilities.</h2>
-          </div>
-          
-          <div className="space-y-24">
-            {/* Feature 1: Bulk Campaign Broadcasting */}
-            <div className="flex flex-col lg:flex-row items-center gap-12 gsap-reveal">
-              <div className="lg:w-1/2 space-y-4">
-                <h3 className="lexend-subheading text-xl font-medium text-[#3E3B36]">Bulk Campaign Broadcasting</h3>
-                <p className="text-sm leading-relaxed text-[#8B8378]">Broadcast Offers to 100k+ Opt-In Users instantly. Upload massive CSV or XLSX spreadsheets with zero processing lag. Set dynamic attributes like <code className="bg-[#F5F1EA] text-[#C4A896] px-1 rounded mx-0.5">{'{{1}}'}</code> and <code className="bg-[#F5F1EA] text-[#C4A896] px-1 rounded mx-0.5">{'{{2}}'}</code> to personalize each message.</p>
-              </div>
-              <div className="lg:w-1/2 w-full p-8 bg-[#F5F1EA] rounded-2xl flex items-center justify-center">
-                <div className="w-full max-w-md bg-[#FFFFFF] rounded-xl border border-[#E8E3DA] overflow-hidden shadow-sm">
-                  <div className="flex px-5 py-3 bg-[#F5F1EA]/50 border-b border-[#E8E3DA] text-[9px] text-[#8B8378] uppercase tracking-widest font-semibold">
-                    <div className="w-1/3">Customer Name</div><div className="w-1/3">Phone</div><div className="w-1/3 text-right">Tag</div>
-                  </div>
-                  <div className="flex px-5 py-4 border-b border-[#E8E3DA] text-xs text-[#3E3B36] items-center">
-                    <div className="w-1/3 font-medium truncate">Aliya K.</div><div className="w-1/3 font-mono text-[#8B8378] text-[11px]">919876543210</div><div className="w-1/3 text-right"><span className="px-2.5 py-1 bg-[#F5F1EA] border border-[#E8E3DA] rounded-full text-[9px] font-bold tracking-wider">VIP</span></div>
-                  </div>
-                  <div className="flex px-5 py-4 text-xs text-[#3E3B36] items-center">
-                    <div className="w-1/3 font-medium truncate">Rahul M.</div><div className="w-1/3 font-mono text-[#8B8378] text-[11px]">919876543211</div><div className="w-1/3 text-right"><span className="px-2.5 py-1 bg-[#F5F1EA] border border-[#E8E3DA] rounded-full text-[9px] font-bold tracking-wider">NEW</span></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 2: Enterprise Meta Mode: Smart Template Polish AI */}
-            <div className="flex flex-col lg:flex-row-reverse items-center gap-12 gsap-reveal">
-              <div className="lg:w-1/2 space-y-4">
-                <h3 className="lexend-subheading text-xl font-medium text-[#3E3B36]">Enterprise Meta Mode: Smart Template Polish AI</h3>
-                <p className="text-sm leading-relaxed text-[#8B8378]">Turn raw business notes into luxury customer copy designed specifically for official Meta approvals. Our AI optimizes spacing, tone, and grammar while strictly preserving essential compliance placeholders like <code className="bg-[#F5F1EA] text-[#C4A896] px-1 rounded mx-0.5">{'{{1}}'}</code> and <code className="bg-[#F5F1EA] text-[#C4A896] px-1 rounded mx-0.5">{'{{2}}'}</code>.</p>
-              </div>
-              <div className="lg:w-1/2 w-full p-8 bg-[#F5F1EA] rounded-2xl flex items-center justify-center">
-                <div className="w-full max-w-md flex flex-col sm:flex-row gap-3">
-                  <div className="w-full sm:w-1/2 p-4 bg-white rounded-xl border-2 border-dashed border-[#C4A896]/40 flex flex-col justify-center relative group hover:border-[#C4A896] transition-colors">
-                    <span className="absolute top-2 left-3 text-[8px] uppercase tracking-widest font-bold text-[#C4A896]">Raw Input</span>
-                    <p className="text-xs text-[#8B8378] font-mono leading-relaxed mt-4">hi sir we have new stock pls buy come to shop.</p>
-                  </div>
-                  <div className="hidden sm:flex items-center justify-center">
-                    <ArrowRight size={16} className="text-[#C4A896]" />
-                  </div>
-                  <div className="w-full sm:w-1/2 p-4 bg-[#FFFFFF] rounded-xl border border-[#C4A896] shadow-sm relative">
-                    <span className="absolute top-2 left-3 text-[8px] uppercase tracking-widest font-bold text-[#C4A896]">Polished (Meta API)</span>
-                    <p className="text-xs text-[#3E3B36] font-medium leading-relaxed mt-4">Hi <span className="text-[#C4A896]">{'{{1}}'}</span>! Exclusive new stock has just arrived at <span className="text-[#C4A896]">{'{{2}}'}</span>. Visit us today to secure yours before it&apos;s gone. ✨</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 3: Small Business QR Mode: AI Ready-For-You Mode */}
-            <div className="flex flex-col lg:flex-row items-center gap-12 gsap-reveal">
-              <div className="lg:w-1/2 space-y-4">
-                <h3 className="lexend-subheading text-xl font-medium text-[#3E3B36]">Small Business QR Mode: AI Ready-For-You Generator</h3>
-                <p className="text-sm leading-relaxed text-[#8B8378]">Maximize inbox delivery with built-in Anti-Ban Spintax technology. Write one broadcast message, and our AI dynamically spins it into hundreds of unique variations sent across the QR bridge—all safeguarded by our dynamic human-like anti-ban delay safety configurations (5 to 12-second randomized throttling).</p>
-              </div>
-              <div className="lg:w-1/2 w-full p-8 bg-[#F5F1EA] rounded-2xl flex items-center justify-center">
-                <div className="w-full max-w-md p-6 bg-white rounded-xl border border-[#E8E3DA] shadow-sm relative">
-                    <span className="absolute top-3 left-4 text-[9px] uppercase tracking-widest font-bold text-[#10B981] flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 bg-[#10B981] rounded-full animate-pulse"></span> Anti-Ban Spintax Engine
-                    </span>
-                    <div className="mt-6 space-y-3">
-                      <div className="p-3 bg-[#F9F7F4] border border-[#E8E3DA] rounded-lg text-[11px] text-[#3E3B36]">
-                        <span className="text-[#C4A896] font-mono">"{'{'}Hello|Hi|Hey{'}'}"</span> Aliya! We missed you.
+                <div className="space-y-2 border-t pt-4 border-slate-100">
+                  <label className="text-[9px] text-slate-400 font-bold block">Spintax template input</label>
+                  <input
+                    type="text"
+                    value={spintaxInput}
+                    onChange={(e) => setSpintaxInput(e.target.value)}
+                    className="w-full p-2 bg-[#FCFBF9] border border-slate-200 rounded text-[10px] font-mono focus:outline-none focus:border-[#C4A896]"
+                  />
+                  
+                  <div className="space-y-1">
+                    <span className="text-[8px] text-slate-400 font-bold block uppercase tracking-widest">Simulated Output Variations</span>
+                    {spintaxVariations.map((v, i) => (
+                      <div key={i} className="p-1.5 bg-slate-50 border border-slate-200 rounded text-[9.5px] font-mono text-slate-700 truncate">
+                        {v}
                       </div>
-                      <div className="p-3 bg-[#F9F7F4] border border-[#E8E3DA] rounded-lg text-[11px] text-[#3E3B36]">
-                        <span className="text-[#C4A896] font-mono">"{'{'}Greetings|Welcome back{'}'}"</span> Rahul! Check out our new stock.
-                      </div>
-                    </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 4: Deep Real-Time Analytics Dashboard */}
-            <div className="flex flex-col lg:flex-row-reverse items-center gap-12 gsap-reveal">
-              <div className="lg:w-1/2 space-y-4">
-                <h3 className="lexend-subheading text-xl font-medium text-[#3E3B36]">Deep Real-Time Analytics Dashboard</h3>
-                <p className="text-sm leading-relaxed text-[#8B8378]">Track Sent, Delivered (Double-Tick), and Read (Blue-Tick) status logs in absolute real-time. Know exactly who read your campaign and optimize your retail marketing spend with high-performance charts.</p>
-              </div>
-              <div className="lg:w-1/2 w-full p-8 bg-[#F5F1EA] rounded-2xl flex items-center justify-center">
-                <div className="w-full max-w-md p-6 bg-white rounded-xl border border-[#E8E3DA] shadow-sm">
-                  <div className="flex items-end justify-between mb-3">
-                    <span className="lexend-subheading text-sm font-semibold text-[#3E3B36]">Read Rate</span>
-                    <span className="text-lg font-bold text-[#10B981]">85%</span>
-                  </div>
-                  <div className="w-full h-3 rounded-full overflow-hidden flex bg-[#F5F1EA]">
-                    <div className="bg-[#10B981] h-full" style={{ width: '85%' }} />
-                    <div className="bg-[#6366F1] h-full" style={{ width: '12%' }} />
-                    <div className="bg-[#F43F5E] h-full" style={{ width: '3%' }} />
-                  </div>
-                  <div className="flex justify-between mt-5 text-[9px] uppercase tracking-widest text-[#8B8378] font-medium">
-                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-[2px] bg-[#10B981]"></span>Read (85%)</span>
-                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-[2px] bg-[#6366F1]"></span>Delivered (12%)</span>
-                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-[2px] bg-[#F43F5E]"></span>Failed (3%)</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 4.9 — EMAIL CAMPAIGN + AI POLISH SHOWCASE
-      ══════════════════════════════════════════════════════════ */}
-      <section className="bg-[#F5F1EA] border-t border-[#E8E3DA] py-24 scroll-reveal-section">
-        <div className="max-w-6xl mx-auto px-6">
-
-          {/* Header */}
-          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
-            <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ color: '#6366f1' }}>
-              New · Email Marketing
-            </p>
-            <h2 className="serif-headline text-3xl sm:text-4xl text-[#3E3B36] mb-4">
-              Now Broadcast via Email - With AI That Writes For You.
-            </h2>
-            <p className="text-base leading-relaxed text-[#8B8378]">
-              Launch full-scale email campaigns to your segmented audience. Our built-in AI Polish engine transforms rough drafts into premium, conversion-optimised copy in a single click.
-            </p>
-          </div>
-
-          {/* Two-column: mockup left, features right */}
-          <div className="flex flex-col lg:flex-row items-stretch gap-8 gsap-reveal">
-
-            {/* LEFT — Email Composer Mockup */}
-            <div className="lg:w-1/2 w-full">
-              <div className="bg-white rounded-2xl border border-[#E8E3DA] shadow-lg overflow-hidden h-full flex flex-col">
-
-                {/* Fake browser chrome */}
-                <div className="bg-[#F5F1EA] border-b border-[#E8E3DA] px-4 py-3 flex items-center gap-2 flex-shrink-0">
-                  <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-[#f43f5e]/60" />
-                    <div className="w-3 h-3 rounded-full bg-[#f59e0b]/60" />
-                    <div className="w-3 h-3 rounded-full bg-[#10b981]/60" />
-                  </div>
-                  <div className="flex-1 mx-3 bg-white border border-[#E8E3DA] rounded-md px-3 py-1">
-                    <p className="text-[10px] text-[#8B8378] font-mono">dashboard/email/create</p>
-                  </div>
-                </div>
-
-                <div className="p-5 flex-1 flex flex-col gap-4">
-                  {/* Campaign Title & Banner Area */}
-                  <div>
-                    <p className="text-[9px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Banner Image Preview</p>
-                    <div className="w-full h-16 bg-[#F9F7F4] border-2 border-dashed border-[#E8E3DA] rounded-lg flex items-center justify-center">
-                       <span className="text-[10px] text-[#8B8378]">Attach Header Banner Area</span>
-                    </div>
-                  </div>
-
-                  {/* Subject */}
-                  <div>
-                    <p className="text-[9px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5 flex justify-between">
-                       <span>Subject Line</span>
-                       <span className="text-[#6366f1] font-bold">🪄 AI Polish</span>
-                    </p>
-                    <div className="w-full bg-[#F5F1EA] border border-[#E8E3DA] rounded-md px-3 py-2 text-xs text-[#3E3B36]">
-                      🎁 Exclusive Offer Just For You — Limited Stock!
-                    </div>
-                  </div>
-
-                  {/* AI Polish Before/After */}
-                  <div>
-                    <p className="text-[9px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5 flex justify-between">
-                       <span>Email Body</span>
-                       <span className="text-[#6366f1] font-bold">🤖 Ask AI to Write (Gemini/Groq)</span>
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {/* Before */}
-                      <div className="p-3 bg-[#F9F7F4] border-2 border-dashed border-[#E8E3DA] rounded-lg relative">
-                        <span className="absolute -top-2 left-2 bg-[#F9F7F4] px-1.5 text-[8px] uppercase tracking-widest font-bold text-[#8B8378]">Raw Draft</span>
-                        <p className="text-[10px] text-[#8B8378] font-mono leading-relaxed">
-                          hi customer we have sale going on. come and buy. very good quality.
-                        </p>
-                      </div>
-                      {/* After */}
-                      <div className="p-3 bg-white border-2 border-[#6366f1]/30 rounded-lg relative shadow-sm">
-                        <span className="absolute -top-2 left-2 bg-white px-1.5 text-[8px] uppercase tracking-widest font-bold text-[#6366f1]">✦ AI Polished</span>
-                        <p className="text-[10px] text-[#3E3B36] font-medium leading-relaxed">
-                          Dear valued customer, our exclusive Eid collection is here — premium quality, limited pieces. Shop now before it sells out. ✨
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Audience tags */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-[9px] text-[#8B8378] tracking-widest uppercase">Targeting Segment:</p>
-                    {['VIP', 'Regular', 'New'].map((t, i) => (
-                      <span key={t} className={`text-[9px] px-2.5 py-1 ${i < 2 ? 'bg-[#6366f1]/10 text-[#6366f1] border border-[#6366f1]/20' : 'bg-gray-100 text-gray-500 border border-gray-200'} rounded-full font-semibold tracking-wide`}>
-                        {t}
-                      </span>
                     ))}
-                    <span className="ml-auto text-[9px] text-[#8B8378]">1,240 recipients</span>
                   </div>
+                </div>
+              </div>
 
-                  {/* Dispatch button */}
-                  <div className="flex items-center justify-between bg-[#3E3B36] rounded-xl px-4 py-3 mt-auto">
-                    <div>
-                      <p className="text-[10px] text-white font-semibold">Ready to send to 1,240 recipients</p>
-                      <p className="text-[9px] text-white/50 uppercase tracking-wider">1 credit per email</p>
+              <div className="pt-4 border-t border-slate-100 mt-6 flex items-center justify-between text-[9px] text-slate-400 font-bold uppercase tracking-widest shrink-0">
+                <span>Random Throttling Delay</span>
+                <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-100">{simulatedDelay} Seconds</span>
+              </div>
+            </div>
+
+            {/* Unified Manifest Parsers */}
+            <div className="bg-white border border-[#E8E3DA] rounded-2xl p-6 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-slate-800">
+                  <Database size={18} className="text-[#C4A896] shrink-0" />
+                  <h3 className="font-bold text-xs uppercase tracking-wider">Unified Manifest Parsers</h3>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Serverless-safe Excel/CSV ingest algorithms masking raw phone formats via 10-digit regex filters to protect privacy and filter anomalies.
+                </p>
+
+                {/* CSV Uploader Simulator */}
+                <div className="border-t pt-4 border-slate-100 space-y-3">
+                  {csvStatus === 'idle' && (
+                    <div
+                      onClick={handleSimulatedCsvUpload}
+                      className="border-2 border-dashed border-slate-200 hover:border-[#C4A896] rounded-xl p-6 text-center cursor-pointer transition-colors bg-[#FCFBF9]"
+                    >
+                      <Upload size={20} className="mx-auto text-slate-400 mb-2 animate-bounce" />
+                      <span className="text-[9px] text-slate-600 block font-bold uppercase tracking-wider">Drop excel/csv here</span>
+                      <span className="text-[8px] text-slate-400 block mt-0.5">Click to simulate auto-parse &amp; clean</span>
                     </div>
-                    <div className="flex items-center gap-1.5 bg-[#6366f1] px-3 py-1.5 rounded-lg text-white text-[10px] font-bold tracking-wider uppercase">
-                      <Mail size={11} /> Dispatch
+                  )}
+
+                  {csvStatus === 'uploading' && (
+                    <div className="border border-slate-200 rounded-xl p-6 text-center bg-[#FCFBF9] flex flex-col items-center justify-center">
+                      <Loader2 size={20} className="text-[#C4A896] animate-spin mb-2" />
+                      <span className="text-[9px] text-slate-600 font-bold uppercase tracking-wider">Parsing raw phone formats...</span>
+                    </div>
+                  )}
+
+                  {csvStatus === 'parsed' && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[9px] font-bold">
+                        <span className="text-emerald-700">✓ Parsed {parsedRowsCount} contacts</span>
+                        <button onClick={() => setCsvStatus('idle')} className="text-slate-400 hover:text-slate-600"><X size={10} /></button>
+                      </div>
+                      
+                      <div className="max-h-[110px] overflow-y-auto space-y-1 pr-1">
+                        {parsedContacts.map((contact, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-1.5 bg-slate-50 border border-slate-200 rounded text-[9px] font-mono text-slate-700">
+                            <span className="truncate max-w-[80px] font-bold">{contact.name}</span>
+                            <span>{contact.maskedPhone}</span>
+                            <span className="bg-emerald-50 text-emerald-800 border border-emerald-100 px-1 rounded text-[7px] font-bold uppercase">{contact.status}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <span className="text-[8.5px] font-bold text-slate-400 uppercase tracking-widest pt-6 border-t border-slate-100 mt-6 block shrink-0">10-Digit Masking Regex Filters</span>
+            </div>
+
+            {/* Zero-CLS Skeletons */}
+            <div className="bg-white border border-[#E8E3DA] rounded-2xl p-6 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-slate-800">
+                  <Layers size={18} className="text-[#C4A896] shrink-0" />
+                  <h3 className="font-bold text-xs uppercase tracking-wider">Zero-CLS Skeletons</h3>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Visual layout protections utilizing route skeleton loaders and client-side error boundary catch blocks (<code>error.tsx</code>) for bulletproof loading states.
+                </p>
+
+                {/* Skeletons animation demo */}
+                <div className="border-t pt-4 border-slate-100 space-y-3">
+                  <div className="space-y-2">
+                    <span className="text-[8px] text-slate-400 font-bold block uppercase tracking-widest">Simulated Route Skeleton Loader</span>
+                    
+                    <div className="border border-slate-100 rounded-xl p-3 bg-slate-50/50 space-y-2.5">
+                      {/* Text line skeleton */}
+                      <div className="h-3 bg-slate-200/80 rounded w-3/4 animate-pulse" />
+                      <div className="h-2 bg-slate-200/60 rounded w-1/2 animate-pulse" />
+                      
+                      {/* Grid block skeletons */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="h-8 bg-slate-200/70 rounded animate-pulse" />
+                        <div className="h-8 bg-slate-200/70 rounded animate-pulse" />
+                        <div className="h-8 bg-slate-200/70 rounded animate-pulse" />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+
+              <span className="text-[8.5px] font-bold text-slate-400 uppercase tracking-widest pt-6 border-t border-slate-100 mt-6 block shrink-0">Client-Side Error Boundaries (error.tsx)</span>
             </div>
 
-            {/* RIGHT — Feature Pillars */}
-            <div className="lg:w-1/2 w-full flex flex-col gap-4">
-
-              {[
-                {
-                  icon: '✦',
-                  color: '#6366f1',
-                  bg: 'rgba(99,102,241,0.08)',
-                  title: 'Layout & Ask AI to Write Framework',
-                  desc: 'Attach a top banner preview, write a dynamic subject line with the "🪄 AI Polish" controller, and use the Email Body Rich textarea reinforced by our "🤖 Ask AI to Write (Gemini/Groq Failover Engine)" capability to instantly generate premium copy.',
-                },
-                {
-                  icon: '◎',
-                  color: '#10b981',
-                  bg: 'rgba(16,185,129,0.08)',
-                  title: 'Tag-Based Audience Targeting',
-                  desc: 'Trigger precision sends using dynamic targeting tags for VIP, Regular, and New segments. Recipient counts update instantly as you refine your audience.',
-                },
-                {
-                  icon: '◈',
-                  color: '#C4A896',
-                  bg: 'rgba(196,168,150,0.12)',
-                  title: 'Dedicated History & Analytics Routing',
-                  desc: 'Access a specialized History Routing page with an aggregate block (Total Sent | Success Ratio | Delivered | Failed) at the top, equipped with Search, Sort, Filtering, and Infinite Scrolling.',
-                },
-                {
-                  icon: '⬇',
-                  color: '#8B7BA8',
-                  bg: 'rgba(139,123,168,0.08)',
-                  title: 'Dual-Mode Exporting Manifests',
-                  desc: 'Instantly download your intelligence with two side-by-side mechanisms: "Export All Data" or "Export Filtered View" for instant CSV/Excel manifests—configured on both WhatsApp and Email histories.',
-                },
-                {
-                  icon: '🛡️',
-                  color: '#f43f5e',
-                  bg: 'rgba(244,63,94,0.08)',
-                  title: 'Safety Transaction Popup Modal',
-                  desc: 'Operate with zero fear. A mandatory secure firewall popup requires manual user verification before triggering any dispatch loop, eliminating accidental launches.',
-                },
-              ].map(f => (
-                <div
-                  key={f.title}
-                  className="bg-white rounded-xl border border-[#E8E3DA] p-4 flex items-start gap-4 hover:border-[#E8E3DA] transition-colors group"
-                  style={{ '--hover-border': f.color } as React.CSSProperties}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = f.color + '50')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = '#E8E3DA')}
-                >
-                  <div
-                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-base font-bold"
-                    style={{ backgroundColor: f.bg, color: f.color }}
-                  >
-                    {f.icon}
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="lexend-subheading text-sm font-semibold text-[#3E3B36] mb-1.5" style={{ color: '#3E3B36' }}>
-                      {f.title}
-                    </h3>
-                    <p className="text-xs leading-relaxed text-[#8B8378]">{f.desc}</p>
-                  </div>
-                </div>
-              ))}
-
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 5 — BOTTOM CTA (Dark)
-      ══════════════════════════════════════════════════════════ */}
-      <section
-        id="contact"
-        className="py-28 scroll-reveal-section"
-        style={{ backgroundColor: '#3E3B36' }}
-      >
-        <div className="max-w-lg mx-auto px-6 text-center space-y-7">
-
-          <div className="gsap-reveal">
-            <p
-              className="text-xs tracking-[0.25em] uppercase mb-5"
-              style={{ color: '#C4A896' }}
-            >
-              Get Started Today
-            </p>
-            <h2
-              className="serif-headline text-3xl sm:text-4xl text-white leading-tight"
-            >
-              Your Customers Are Waiting for Your Next Message.
-            </h2>
-          </div>
-
-          <div className="gsap-reveal">
-            <p className="text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.70)' }}>
-              Join retail brands using Attendly Broadcast to stay connected, drive repeat purchases,
-              and build loyal communities - one WhatsApp message at a time.
-            </p>
-          </div>
-
-          <div className="gsap-reveal flex items-center justify-center gap-4 flex-wrap pt-2">
-            <Link href="/auth/register" className="btn-primary rounded-sm">
-              Create Free Workspace
-            </Link>
-            <Link href="/auth/login" className="btn-secondary-dark rounded-sm">
-              Sign In →
-            </Link>
           </div>
 
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════
-          SECTION 5.5 — OWNER CONTACT & SUPPORT
+          SECTION 7 — FOOTER ACQUISITION MATRIX
       ══════════════════════════════════════════════════════════ */}
-      <section className="bg-[#F5F1EA] py-12 scroll-reveal-section border-t border-[#E8E3DA]">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden shadow-sm flex flex-col md:flex-row gsap-reveal">
-            
-            <div className="p-10 md:w-1/2 flex flex-col justify-center border-b md:border-b-0 md:border-r border-[#E8E3DA]">
-              <p className="uppercase tracking-[0.2em] text-[10px] text-[#C4A896] font-bold mb-3">Priority Access</p>
-              <h2 className="serif-headline text-3xl text-[#3E3B36] mb-4">24/7 Concierge Support.</h2>
-              <p className="text-sm leading-relaxed text-[#8B8378] mb-6">
-                Have an urgent dispatch issue or billing question? Our founding team is available around the clock to keep your retail pipelines running smoothly.
-              </p>
-              <div className="text-xs text-[#3E3B36] space-y-1.5 font-medium border-t border-[#E8E3DA] pt-4">
-                <p>Founder: <span className="font-semibold text-[#C4A896]">Sharafath</span></p>
-                <p>Head Office: Aykarapadi, Malappuram, Kerala, India</p>
-              </div>
-            </div>
-
-            <div className="p-10 md:w-1/2 bg-[#FCFCFC] flex flex-col justify-center space-y-4">
-              <a 
-                href="mailto:trueattendly@gmail.com"
-                className="flex items-center justify-center gap-2 w-full py-5 border border-[#3E3B36] text-[#3E3B36] hover:bg-[#3E3B36] hover:text-[#FFFFFF] transition-colors rounded-lg text-xs font-semibold tracking-[0.15em] uppercase"
-              >
-                <Mail size={16} />
-                trueattendly@gmail.com
-              </a>
-              <a 
-                href="tel:+916282560928" 
-                className="flex items-center justify-center gap-2 w-full py-5 border border-[#3E3B36] text-[#3E3B36] hover:bg-[#3E3B36] hover:text-[#FFFFFF] transition-colors rounded-lg text-xs font-semibold tracking-[0.15em] uppercase"
-              >
-                <Phone size={16} />
-                DIRECT VOICE LINE
-              </a>
-              <a 
-                href="https://wa.me/916282560928?text=Hello%20Sharafath,%20I%20am%20interested%20in%20Attendly%20Broadcast." 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="flex items-center justify-center gap-2 w-full py-5 bg-[#25D366] hover:bg-[#1DA851] text-white transition-colors rounded-lg text-xs font-semibold tracking-[0.15em] uppercase"
-              >
-                <MessageCircle size={16} />
-                WHATSAPP DISPATCH HELP
-              </a>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 6 — FOOTER
-      ══════════════════════════════════════════════════════════ */}
-      <footer
-        className="py-12"
-        style={{ backgroundColor: '#FFFFFF', borderTop: '1px solid #E8E3DA' }}
-      >
+      <section className="bg-[#3E3B36] text-white pt-24 pb-12 scroll-reveal-section">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
-
-            {/* Logo */}
-            <div className="flex items-center gap-2">
-              <div
-                className="relative w-8 h-8 rounded-sm flex items-center justify-center"
-              >
-                <Image src="/images/logo-dark.png" alt="Attendly Logo" fill sizes="32px" className="object-contain" />
-              </div>
-            </div>
-
-            {/* Center */}
-            <p
-              className="text-[10px] tracking-[0.25em] uppercase text-center"
-              style={{ color: '#8B8378' }}
-            >
-              True Attendly Broadcast · broadcast.trueattendly.online
+          
+          {/* Final Call to Action Prompts */}
+          <div className="max-w-3xl mx-auto text-center mb-16 space-y-6 gsap-reveal">
+            <h2 className="serif-headline text-3xl sm:text-4xl font-light">
+              Elevate Your Checkout Flow &amp; Boost Customer Retention.
+            </h2>
+            <p className="text-sm text-slate-300 leading-relaxed max-w-xl mx-auto">
+              Start capturing walk-in customer leads, whitelisting contacts automatically, and dispatching premium marketing campaigns today.
             </p>
-
-            {/* Version Badge */}
-            <div className="border border-[#E8E3DA] bg-transparent py-1 px-3 rounded-md hidden md:block">
-              <span className="text-[10px] tracking-[0.15em] text-[#C4A896] font-mono">
-                {APP_VERSION}
-              </span>
-            </div>
-
-          </div>
-
-          <div className="border-t border-[#E8E3DA] pt-8 flex flex-col md:flex-row items-center justify-center md:justify-between gap-6">
-            {/* Nav & Compliance Links */}
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-5">
-              {[
-                { label: 'About', href: '#about' },
-                { label: 'Pricing', href: '#services' },
-                { label: 'Contact', href: '#contact' },
-                { label: 'Privacy Policy', href: '/privacy' },
-                { label: 'Terms of Service', href: '/terms' },
-                { label: 'Refund Policy', href: '/refund-policy' },
-              ].map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className="text-[10px] tracking-[0.15em] uppercase transition-colors duration-200"
-                  style={{ color: '#8B8378' }}
-                  onMouseEnter={(e) => ((e.target as HTMLElement).style.color = '#C4A896')}
-                  onMouseLeave={(e) => ((e.target as HTMLElement).style.color = '#8B8378')}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-            
-            <div className="flex items-center gap-5">
+            <div className="flex items-center justify-center gap-4 flex-wrap pt-4">
+              <Link
+                href="/auth/register"
+                className="btn-primary rounded-sm border border-[#C4A896]/20 bg-[#C4A896] hover:bg-[#b09380] text-white font-bold uppercase py-3 px-6 text-xs tracking-wider"
+              >
+                Create Free Workspace
+              </Link>
               <Link
                 href="/auth/login"
-                className="text-[10px] tracking-[0.15em] uppercase transition-colors duration-200 font-semibold"
-                style={{ color: '#3E3B36' }}
-                onMouseEnter={(e) => ((e.target as HTMLElement).style.color = '#C4A896')}
-                onMouseLeave={(e) => ((e.target as HTMLElement).style.color = '#3E3B36')}
+                className="btn-secondary-dark rounded-sm border border-slate-500 hover:border-white text-white font-bold uppercase py-3 px-6 text-xs tracking-wider"
               >
                 Sign In →
               </Link>
             </div>
           </div>
+
+          {/* Priority Access Support Banner */}
+          <div className="border-t border-slate-700 pt-12 pb-16 grid grid-cols-1 md:grid-cols-2 gap-8 items-center gsap-reveal">
+            <div>
+              <span className="bg-amber-950/40 text-[#C4A896] border border-[#C4A896]/35 text-[9px] font-bold px-3 py-1 uppercase tracking-widest rounded-full mb-3 inline-block">
+                Priority Concierge Access
+              </span>
+              <h3 className="serif-headline text-2xl text-white font-medium mb-3">24/7 Concierge Support</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Have an urgent broadcast issue or template routing query? Our founding team is available around the clock to keep your retail pipelines running smoothly.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <a
+                href="mailto:trueattendly@gmail.com"
+                className="flex items-center justify-center gap-2 py-4 bg-slate-800 border border-slate-700 hover:border-white transition-colors rounded-lg text-xs font-semibold tracking-wider uppercase"
+              >
+                <Mail size={14} className="text-[#C4A896]" />
+                trueattendly@gmail.com
+              </a>
+              <a
+                href="https://wa.me/916282560928?text=Hello%20Sharafath,%20I%20am%20interested%20in%20Attendly%20Broadcast."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 py-4 bg-emerald-600 hover:bg-emerald-500 text-white transition-colors rounded-lg text-xs font-semibold tracking-wider uppercase border border-emerald-500"
+              >
+                <MessageCircle size={14} />
+                WhatsApp Founder
+              </a>
+            </div>
+          </div>
+
+          {/* Baseline Metadata & Links */}
+          <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-3">
+              <img 
+                src="/images/logo-dark.png" 
+                alt="True Attendly Logo" 
+                className="h-8 w-8 min-w-[32px] min-h-[32px] object-contain bg-white p-1 rounded-lg mr-2 inline-block transition-transform duration-200"
+              />
+              <span className="text-[10px] text-slate-400 font-mono">True Attendly Broadcast</span>
+            </div>
+
+            {/* Corporate Metadata Baseline */}
+            <div className="text-center md:text-right text-[10px] text-slate-400 space-y-1 font-mono">
+              <p>Founder: Sharafath</p>
+              <p>Head Office: Aykarapadi, Malappuram, Kerala, India</p>
+              <p>Support: trueattendly@gmail.com</p>
+              <p className="text-slate-500 mt-1">Version Track: v3.11.1 Live · broadcast.trueattendly.online</p>
+            </div>
+          </div>
+
         </div>
-      </footer>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          8. NATIVE HTML MODAL OVERLAY IN PREVIEW (View Bill)
+      ══════════════════════════════════════════════════════════ */}
+      {showBillModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
+            {/* Modal header */}
+            <div className="bg-[#3E3B36] text-white px-5 py-4 flex items-center justify-between border-b shrink-0">
+              <span className="text-xs font-bold uppercase tracking-widest flex items-center gap-1.5">
+                <FileText size={14} className="text-[#C4A896]" />
+                INV-1002 - Bill Preview
+              </span>
+              <button
+                onClick={() => setShowBillModal(false)}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal bill body (Dynamic Theme Mirroring demo layout) */}
+            <div className="p-6 flex-1 overflow-y-auto space-y-6">
+              {/* Theme Mirror indicator */}
+              <div className="flex items-center justify-between p-2 rounded text-[10px] bg-slate-50 border border-dashed border-slate-200">
+                <span className="text-slate-500 font-bold uppercase tracking-wider">Dynamic Theme Config</span>
+                <span className="font-semibold" style={{ color: brandColor }}>{brandColor}</span>
+              </div>
+
+              {/* Invoice Layout */}
+              <div className="border p-6 rounded-lg relative overflow-hidden" style={{ borderColor: brandColor }}>
+                {/* Brand border strip */}
+                <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: brandColor }} />
+                
+                {/* Logo and Shop Header */}
+                <div className="flex justify-between items-start border-b pb-4 mb-4" style={{ borderBottomColor: `${brandColor}20` }}>
+                  <div>
+                    <div className="relative w-20 h-6 mb-1">
+                      <Image
+                        src="/images/logo-dark.png"
+                        alt="Shop Logo"
+                        fill
+                        sizes="80px"
+                        className="object-contain object-left"
+                      />
+                    </div>
+                    <h3 className="serif-headline text-base font-bold text-slate-800">True Broadcast Store</h3>
+                    <p className="text-[9px] text-slate-500 font-mono mt-0.5">GSTIN: 32AABCT8840M1Z3</p>
+                  </div>
+                  <span className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">INV-1002</span>
+                </div>
+
+                {/* Items Table */}
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between font-bold text-slate-500 border-b pb-1.5 mb-1.5" style={{ borderBottomColor: `${brandColor}10` }}>
+                    <span>Description</span>
+                    <span>Total</span>
+                  </div>
+                  {cart.map((item) => (
+                    <div key={item.id} className="flex justify-between text-slate-700">
+                      <span>{item.qty} × {item.name}</span>
+                      <span>₹{item.price * item.qty}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Subtotals & Taxes */}
+                <div className="border-t pt-3 mt-4 space-y-1 text-xs text-slate-600" style={{ borderTopColor: `${brandColor}15` }}>
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>₹{subtotal}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>GST (18%)</span>
+                    <span>₹{gst}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-slate-900 text-sm border-t pt-1.5 mt-1.5" style={{ borderTopColor: `${brandColor}20` }}>
+                    <span>Total Bill</span>
+                    <span>₹{total}</span>
+                  </div>
+                </div>
+
+                {/* Styled Invoice Footer note */}
+                <div className="mt-6 text-center border-t pt-4 text-xs italic" style={{ borderTopColor: `${brandColor}15` }}>
+                  <p className="font-serif font-bold" style={{ color: brandColor }}>
+                    "{invoiceFooterNote}"
+                  </p>
+                  <p className="text-[8px] text-slate-400 mt-2 font-bold uppercase tracking-wider">Powered by True Attendly</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal actions */}
+            <div className="bg-slate-50 p-4 border-t flex justify-end gap-2 shrink-0">
+              <button
+                onClick={() => setShowBillModal(false)}
+                className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 px-4 py-2 rounded text-[10px] font-bold uppercase tracking-widest transition-colors"
+              >
+                Close Preview
+              </button>
+              <button
+                onClick={handleDownloadBill}
+                className="text-white px-4 py-2 rounded text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1.5"
+                style={{ backgroundColor: brandColor }}
+              >
+                <Download size={12} /> Download PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          9. TRANSACTION SECURITY BARRIER POPUP MODAL
+      ══════════════════════════════════════════════════════════ */}
+      {securityModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-[#E8E3DA] shadow-2xl max-w-md w-full overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
+            
+            {/* Modal Header */}
+            <div className="bg-[#B45309] text-white px-5 py-4 flex items-center gap-2 border-b shrink-0">
+              <AlertTriangle size={18} className="text-white animate-pulse" />
+              <span className="text-xs font-bold uppercase tracking-widest">
+                Critical Transaction Security Firewall
+              </span>
+              <button
+                onClick={() => setSecurityModalOpen(false)}
+                className="text-white/60 hover:text-white transition-colors ml-auto"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
+                <strong>Attention Required:</strong> You are about to initiate an active broadcast loop. This will consume wallet credits and dispatch communications instantly to opt-in cohorts.
+              </div>
+
+              <div className="space-y-1.5 text-xs text-slate-700">
+                <div className="flex justify-between border-b pb-1.5">
+                  <span className="text-slate-500 font-semibold">Broadcasting Channel</span>
+                  <span className="font-bold text-slate-800 uppercase">{securityPayloadType === 'email' ? 'Email (Resend Suite)' : 'WhatsApp (Official API)'}</span>
+                </div>
+                <div className="flex justify-between border-b pb-1.5">
+                  <span className="text-slate-500 font-semibold">Target Cohorts</span>
+                  <span className="font-bold text-slate-800">{selectedCohorts.join(' + ')}</span>
+                </div>
+                <div className="flex justify-between border-b pb-1.5">
+                  <span className="text-slate-500 font-semibold">Ready Recipients</span>
+                  <span className="font-bold text-slate-800">{totalEmailsCount.toLocaleString()} Contacts</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-semibold">Unified Balance Deducted</span>
+                  <span className="font-bold text-amber-700">{creditsDeducted.toLocaleString()} Credits</span>
+                </div>
+              </div>
+
+              {/* Progress simulation state */}
+              {dispatchStatus === 'broadcasting' && (
+                <div className="py-4 text-center space-y-2">
+                  <Loader2 size={24} className="text-[#B45309] animate-spin mx-auto" />
+                  <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Dispatching broadcast queue packets...</p>
+                </div>
+              )}
+
+              {dispatchStatus === 'completed' && (
+                <div className="py-4 text-center space-y-1 text-emerald-600">
+                  <CheckCircle size={24} className="mx-auto" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest">Queue Dispatched Successfully!</p>
+                  <p className="text-[8px] text-slate-400">Credits deducted from ledger balance.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions requiring multi-click confirmation */}
+            <div className="bg-slate-50 p-4 border-t flex justify-between items-center shrink-0">
+              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
+                Double confirmation firewall
+              </span>
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSecurityModalOpen(false)}
+                  disabled={dispatchStatus !== 'idle'}
+                  className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 px-4 py-2 rounded text-[10px] font-bold uppercase tracking-widest transition-colors"
+                >
+                  Cancel
+                </button>
+
+                {dispatchStatus === 'idle' && (
+                  <button
+                    onClick={handleSecurityVerification}
+                    className={`px-4 py-2 rounded text-[10px] font-bold uppercase tracking-widest transition-all ${
+                      securityClickCount === 0 ? 'bg-[#3E3B36] text-white hover:bg-[#C4A896]' :
+                      securityClickCount === 1 ? 'bg-red-600 text-white animate-bounce' :
+                      'bg-emerald-600 text-white'
+                    }`}
+                  >
+                    {securityClickCount === 0 ? 'Confirm Broadcast Pipeline' : 'Click to Launch Broadcast Loop'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </main>
   );
 }

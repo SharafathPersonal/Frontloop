@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import axios from 'axios';
 import crypto from 'crypto';
 
-const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || 'trueattendly_secure_webhook_token';
+const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN || process.env.META_WEBHOOK_VERIFY_TOKEN || 'trueattendly_secure_webhook_token';
 
 // ── GATE 1: ACTIVE IN-MEMORY DE-DUPLICATION CACHE ────────────────────────────
 const processedMessageIds = new Map<string, number>();
@@ -29,41 +29,41 @@ const isInMemoryDuplicate = (messageId: string): boolean => {
 const extractMetaText = (msg: any): string => {
   if (!msg) return "";
   
-  if (msg.type === 'text' && msg.text?.body) {
+  if (msg?.type === 'text' && msg?.text?.body) {
     return msg.text.body;
   }
-  if (msg.type === 'image' && msg.image?.caption) {
+  if (msg?.type === 'image' && msg?.image?.caption) {
     return msg.image.caption;
   }
-  if (msg.type === 'video' && msg.video?.caption) {
+  if (msg?.type === 'video' && msg?.video?.caption) {
     return msg.video.caption;
   }
-  if (msg.type === 'document' && msg.document?.caption) {
+  if (msg?.type === 'document' && msg?.document?.caption) {
     return msg.document.caption;
   }
   
   // Fallbacks for nested media captions
-  const m = msg.message || msg;
-  if (m.imageMessage?.caption) return m.imageMessage.caption;
-  if (m.videoMessage?.caption) return m.videoMessage.caption;
-  if (m.documentMessage?.caption) return m.documentMessage.caption;
+  const m = msg?.message || msg;
+  if (m?.imageMessage?.caption) return m.imageMessage.caption;
+  if (m?.videoMessage?.caption) return m.videoMessage.caption;
+  if (m?.documentMessage?.caption) return m.documentMessage.caption;
 
-  if (msg.type === 'interactive') {
-    const interactive = msg.interactive;
-    if (interactive?.type === 'button_reply' && interactive.button_reply?.title) {
+  if (msg?.type === 'interactive') {
+    const interactive = msg?.interactive;
+    if (interactive?.type === 'button_reply' && interactive?.button_reply?.title) {
       return interactive.button_reply.title;
     }
-    if (interactive?.type === 'button_reply' && interactive.button_reply?.id) {
+    if (interactive?.type === 'button_reply' && interactive?.button_reply?.id) {
       return interactive.button_reply.id;
     }
-    if (interactive?.type === 'list_reply' && interactive.list_reply?.title) {
+    if (interactive?.type === 'list_reply' && interactive?.list_reply?.title) {
       return interactive.list_reply.title;
     }
-    if (interactive?.type === 'list_reply' && interactive.list_reply?.id) {
+    if (interactive?.type === 'list_reply' && interactive?.list_reply?.id) {
       return interactive.list_reply.id;
     }
   }
-  if (msg.type === 'button' && msg.button?.text) {
+  if (msg?.type === 'button' && msg?.button?.text) {
     return msg.button.text;
   }
   
@@ -177,8 +177,13 @@ export async function POST(req: Request) {
                 const rawText = extractMetaText(msg);
                 const cleanText = sanitizeText(rawText);
 
+                // Strict type gating: check for text shapes only for digital bill matching pattern
+                const isBillMatch = (msg?.type === 'text' && msg?.text?.body)
+                  ? /(?:✨\s*)?Get\s*my\s*Bill\s+/i.test(msg.text.body)
+                  : false;
+                
                 const isExactMatch = allowedKeywordsSanitized.some(k => k === cleanText);
-                if (!isExactMatch) {
+                if (!isExactMatch && !isBillMatch) {
                   console.log(`[GATE 4] Meta message ${messageId} rejected due to non-matching keyword: "${cleanText}"`);
                   continue;
                 }
@@ -215,6 +220,13 @@ async function processWebhookPayload(payload: any) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
+
+  const allowedKeywordsSanitized = [
+    "add me to broadcast",
+    "true attendly connect",
+    "addmetobroadcast",
+    "trueattendlyconnect"
+  ];
 
   if (payload.object === 'whatsapp_business_account' && payload.entry) {
     for (const entry of payload.entry) {
@@ -294,7 +306,7 @@ async function processWebhookPayload(payload: any) {
           }
         }
 
-        // Parse INBOUND messages (e.g. "Add me to Broadcast" QR Lead capture)
+        // Parse INBOUND messages (e.g. "Add me to Broadcast" QR Lead capture & "Get my Bill" digital bill engine)
         if (change.value && change.value.messages) {
           const wabaId = entry.id;
           const phoneNumberId = change.value.metadata?.phone_number_id;
@@ -331,22 +343,6 @@ async function processWebhookPayload(payload: any) {
                 continue;
               }
 
-              // 🚦 GATE 4: MARKOV-SAFE MEDIA & CAPTION INTENT GATEWAY
-              const rawText = extractMetaText(msg);
-              const cleanText = sanitizeText(rawText);
-
-              const allowedKeywordsSanitized = [
-                "add me to broadcast",
-                "true attendly connect",
-                "addmetobroadcast",
-                "trueattendlyconnect"
-              ];
-              const isExactMatch = allowedKeywordsSanitized.some(k => k === cleanText);
-              if (!isExactMatch) {
-                console.log(`[GATE 4] Background process: keyword mismatch: "${cleanText}"`);
-                continue;
-              }
-
               // 🚦 GATE 6: ADVANCED LID-TO-MSISDN FOOTPRINT RESOLUTION
               let customerPhone = msg.from || '';
               const waId = change.value.contacts && change.value.contacts[0] ? change.value.contacts[0].wa_id : null;
@@ -374,6 +370,172 @@ async function processWebhookPayload(payload: any) {
               const isFinalLid = customerPhone.length === 15 && customerPhone.startsWith('1');
               if (isFinalLid || customerPhone.length < 10 || customerPhone.length > 15) {
                 console.warn(`[GATE 6 WARNING] Could not resolve LID to standard MSISDN: ${customerPhone}. Aborting.`);
+                continue;
+              }
+
+              // 🚦 GATE 4: MARKOV-SAFE MEDIA & CAPTION INTENT GATEWAY
+              const rawText = extractMetaText(msg);
+              const cleanText = sanitizeText(rawText);
+
+              // Strict type gating: check for text shapes only for digital bill matching pattern
+              const isBillMatch = (msg?.type === 'text' && msg?.text?.body)
+                ? /(?:✨\s*)?Get\s*my\s*Bill\s+/i.test(msg.text.body)
+                : false;
+              
+              const isExactMatch = allowedKeywordsSanitized.some(k => k === cleanText);
+              if (!isExactMatch && !isBillMatch) {
+                console.log(`[GATE 4] Background process: keyword mismatch: "${cleanText}"`);
+                continue;
+              }
+
+              // ── NEW PATHWAY: DIGITAL BILL CHECKOUT ──
+              if (isBillMatch) {
+                let invoiceNumber = '';
+                const match = rawText.match(/(?:✨\s*)?Get\s*my\s*Bill\s+([A-Za-z0-9_-]+)/i);
+                if (match) {
+                  invoiceNumber = match[1].trim();
+                }
+
+                if (!invoiceNumber) {
+                  console.log('[Digital Bill] Regex match failed to parse invoice number from text:', rawText);
+                  continue;
+                }
+
+                // 🚦 GATE 5: ATOMIC DB DEDUPLICATION (THE TRANS-LOCK) for digital bills
+                if (msgId) {
+                  try {
+                    const { error: commitError } = await adminSupabase.from('whatsapp_sessions').insert({
+                      shop_id: shopId,
+                      session_key: `bill_dedup_${msgId}`,
+                      session_value: { created_at: new Date().toISOString() },
+                      updated_at: new Date().toISOString()
+                    });
+
+                    if (commitError) {
+                      if (commitError.code === '23505') {
+                        console.log(`[GATE 5] Meta Message ${msgId} already processed for digital bill. Aborting.`);
+                        continue;
+                      }
+                      throw commitError;
+                    }
+                  } catch (dbErr: any) {
+                    if (dbErr && (dbErr.code === '23505' || dbErr.message?.includes('23505'))) {
+                      console.log(`[GATE 5] Meta Message ${msgId} already processed for digital bill (caught). Aborting.`);
+                      continue;
+                    }
+                    console.error(`[GATE 5] DB error during digital bill de-duplication:`, dbErr);
+                    continue;
+                  }
+                }
+
+                // Bind matching shop_id constraints onto the lookup execution
+                const { data: invoiceData, error: invoiceErr } = await adminSupabase
+                  .from('digital_invoices')
+                  .select('*')
+                  .eq('invoice_number', invoiceNumber)
+                  .eq('shop_id', shopId)
+                  .maybeSingle();
+
+                const invoice = invoiceData;
+
+                if (invoiceErr || !invoice) {
+                  console.error(`[Digital Bill] Invoice ${invoiceNumber} not found or query error:`, invoiceErr);
+                  continue;
+                }
+
+                // 2. Perform a secure database upsert on the core contacts mapping table atomically using RPC
+                const dbPhone = `${customerPhone}@s.whatsapp.net`;
+                const customerName = invoice.customer_name || 'Valued Customer';
+
+                try {
+                  const { error: upsertError } = await adminSupabase.rpc('upsert_customer_lead_tags', {
+                    p_shop_id: shopId,
+                    p_customer_name: customerName,
+                    p_whatsapp_number: dbPhone,
+                    p_tag: 'DIGITAL_BILL'
+                  });
+
+                  if (upsertError) {
+                    console.error('[Digital Bill] Failed atomic contact upsert:', upsertError);
+                  }
+                } catch (upsertErr) {
+                  console.error('[Digital Bill] Exception caught during atomic contact upsert (lock/timeout safety):', upsertErr);
+                }
+
+                // 3. Atomically update digital_invoices to map the customer_phone and switch status to delivered
+                try {
+                  const { error: invoiceUpdateErr } = await adminSupabase
+                    .from('digital_invoices')
+                    .update({
+                      customer_phone: customerPhone,
+                      status: 'delivered'
+                    })
+                    .eq('id', invoice.id);
+
+                  if (invoiceUpdateErr) {
+                    console.error('[Digital Bill] Failed to update invoice status:', invoiceUpdateErr);
+                    continue;
+                  }
+                } catch (updateErr) {
+                  console.error('[Digital Bill] Exception caught during digital bill invoice update (lock/timeout safety):', updateErr);
+                  continue;
+                }
+
+                // 4. System Permanent Access Token Dispatch
+                const { data: shopInfo } = await adminSupabase
+                  .from('shops')
+                  .select('shop_name, meta_access_token, meta_phone_number_id')
+                  .eq('id', shopId)
+                  .single();
+
+                if (shopInfo) {
+                  const shopName = shopInfo.shop_name || 'Our Store';
+                  const metaAccessToken = shopInfo.meta_access_token;
+                  const phoneNumberIdToSend = shopInfo.meta_phone_number_id || phoneNumberId;
+
+                  if (metaAccessToken && phoneNumberIdToSend) {
+                    try {
+                      // Generate dynamic hmac signature for the invoice PDF link
+                      const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+                      const signature = crypto.createHmac('sha256', secret).update(invoiceNumber).digest('hex');
+                      const signedPdfUrl = `${invoice.pdf_url}?sig=${signature}`;
+
+                      // Send inline document object so that PDF renders as interactive, clickable asset
+                      await axios.post(
+                        `https://graph.facebook.com/v20.0/${phoneNumberIdToSend}/messages`,
+                        {
+                          messaging_product: "whatsapp",
+                          recipient_type: "individual",
+                          to: customerPhone,
+                          type: "document",
+                          document: {
+                            link: signedPdfUrl,
+                            filename: `invoice-${invoiceNumber}.pdf`,
+                            caption: `Hello ${customerName}, here is your digital bill of ₹${Number(invoice.total_amount).toFixed(2)} from ${shopName}.`
+                          }
+                        },
+                        {
+                          headers: {
+                            'Authorization': `Bearer ${metaAccessToken}`,
+                            'Content-Type': 'application/json'
+                          }
+                        }
+                      );
+                      console.log(`[Digital Bill] Outbound dispatch success for invoice ${invoiceNumber} to ${customerPhone}`);
+                    } catch (sendError: any) {
+                      console.error(`[Digital Bill] Failed to dispatch outbound message:`, sendError?.response?.data || sendError.message);
+                      // In case of Meta sending exception, update invoice status to failed
+                      await adminSupabase
+                        .from('digital_invoices')
+                        .update({ status: 'failed' })
+                        .eq('id', invoice.id);
+                    }
+                  } else {
+                    console.error('[Digital Bill] Missing meta_access_token or meta_phone_number_id for shopId:', shopId);
+                  }
+                }
+                
+                // Done processing this message as a digital bill, skip welcome flow
                 continue;
               }
 

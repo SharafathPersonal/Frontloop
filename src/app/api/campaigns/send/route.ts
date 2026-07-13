@@ -265,12 +265,12 @@ export async function POST(req: Request) {
       }
     }
 
-    if (whatsapp_mode === 'QR_EXPRESS' && qr_express_status === 'disconnected') {
+    if (whatsapp_mode === 'QR_EXPRESS') {
       return NextResponse.json(
         {
           ok: false,
           error:
-            'Your WhatsApp device is disconnected. Please reconnect in Settings to resume broadcasts.',
+            'QR_EXPRESS connection mode is decommissioned. Please switch your connection mode to META_API in settings.',
         },
         { status: 400 },
       );
@@ -280,27 +280,28 @@ export async function POST(req: Request) {
     let recipients: CustomerRecord[] = [];
     
     if (targetSource === 'TAGS') {
-      const { data: allContacts, error: contactsError } = await userClient
-        .from('customers_master')
-        .select('customer_name, whatsapp_number, tags')
-        .eq('shop_id', user.id);
-
-      if (contactsError) {
-        return NextResponse.json({ ok: false, error: 'Failed to load contacts' }, { status: 500 });
-      }
-
       let targetTags: string[] = [];
       if (Array.isArray(payload.targetTags)) {
         targetTags = payload.targetTags;
       } else if (typeof payload.targetTags === 'string') {
         targetTags = (payload.targetTags as string).split(',').map(t => t.trim()).filter(Boolean);
       }
-      const targetTagsLower = targetTags.map((t) => t.toLowerCase().trim());
 
-      recipients = (allContacts ?? []).filter((c) => {
-        const parsedTags = parseTags(c.tags);
-        return parsedTags.some((tag: string) => targetTagsLower.includes(tag.toLowerCase().trim()));
-      });
+      const { data: matchedContacts, error: contactsError } = await userClient
+        .from('customers_master')
+        .select('customer_name, whatsapp_number, tags')
+        .eq('shop_id', user.id)
+        .overlaps('tags', targetTags);
+
+      if (contactsError) {
+        return NextResponse.json({ ok: false, error: 'Failed to load contacts' }, { status: 500 });
+      }
+
+      recipients = (matchedContacts ?? []).map((c) => ({
+        customer_name: c.customer_name || 'Customer',
+        whatsapp_number: c.whatsapp_number,
+        tags: parseTags(c.tags)
+      }));
     } else if (targetSource === 'QR_LEADS') {
       const { data: qrLeads, error: qrError } = await userClient
         .from('customers_master')
@@ -491,248 +492,7 @@ export async function POST(req: Request) {
     const creditCostSnapshot = whatsappCreditCost;
 
     // ── 12. Background dispatch ──────────────────────────────────────────
-    if (whatsapp_mode === 'QR_EXPRESS') {
-      // ── QR EXPRESS: anti-ban throttled queue (decoupled delegation to Render server) ──────────────────────────
-      const renderServerUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
 
-      waitUntil(
-        (async () => {
-          let successCount = 0;
-          let failedCount = 0;
-          let loopErrorCaptured = '';
-
-          try {
-            // ── PRE-LOOP: active WebSocket connection stream re-verification ──
-            // Preflight check
-            const statusRes = await fetch(`${renderServerUrl}/api/whatsapp/status?shop_id=${shopId}`);
-            const statusData = await statusRes.json().catch(() => ({}));
-            
-            if (statusData.status !== 'CONNECTED') {
-              // Socket not connected. Bootstrapping connect...
-              const connectRes = await fetch(`${renderServerUrl}/api/whatsapp/connect?shop_id=${shopId}`);
-              const connectText = await connectRes.text();
-              if (connectText !== 'CONNECTED') {
-                throw new Error("WhatsApp phone is completely disconnected or offline. Handshake failed.");
-              }
-            }
-
-            for (const recipient of recipientsSnapshot) {
-              const formattedPhone = recipient.whatsapp_number.split('@')[0];
-              const messageText = buildMessage(
-                messageBodySnapshot,
-                recipient.customer_name || formattedPhone || 'Customer',
-                shopNameSnapshot,
-                templateParamsSnapshot,
-              );
-
-              try {
-                // Update ledger log status to 'processing' before dispatching
-                await adminClient
-                  .from('message_logs')
-                  .update({ status: 'processing' })
-                  .eq('campaign_id', campaignId)
-                  .eq('recipient_phone', formattedPhone)
-                  .eq('status', 'pending_dispatch');
-
-                // ── API relay call via HTTP POST to dedicated Render engine instance ──
-                const response = await withTimeout(
-                  fetch(`${renderServerUrl}/api/whatsapp/send-message`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      shop_id: shopId,
-                      to: formattedPhone,
-                      message: messageText,
-                      image_url: campaign.image_url || null,
-                    }),
-                  }),
-                  15_000,
-                );
-
-                if (!response.ok) {
-                  const errorData = await response.json().catch(() => ({}));
-                  throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-                }
-
-                const responseData = await response.json();
-                const sendReceipt = responseData.log;
-                const confirmedMsgId = sendReceipt?.key?.id;
-
-                if (!confirmedMsgId) {
-                  throw new Error(`Render socket API returned no message JID/id`);
-                }
-
-                // Credit deducted ONLY after confirmed receipt from WhatsApp
-                const { error: deductError } = await adminClient.rpc('deduct_credits', {
-                  p_shop_id: shopId,
-                  p_amount: creditCostSnapshot,
-                });
-
-                if (deductError) {
-                  throw new Error(`Credit deduction failed: ${deductError.message}`);
-                }
-
-                successCount++;
-
-                // Ledger: processing → delivered (confirmed by WA servers)
-                await adminClient
-                  .from('message_logs')
-                  .update({ meta_message_id: confirmedMsgId, status: 'delivered' })
-                  .eq('campaign_id', campaignId)
-                  .eq('recipient_phone', formattedPhone)
-                  .eq('status', 'processing');
-
-                // Increment campaign sent + delivered counters
-                await adminClient.rpc('increment_campaign_sent', {
-                  campaign_row_id: campaignId,
-                  quantity: 1,
-                });
-                await adminClient.rpc('increment_campaign_metric', {
-                  campaign_row_id: campaignId,
-                  metric_name: 'delivered',
-                  quantity: 1,
-                });
-
-              } catch (perContactError: any) {
-                console.error(`[QR Express] Failed for ${formattedPhone}:`, perContactError);
-                failedCount++;
-
-                const contactErrMsg = perContactError instanceof Error ? perContactError.message : String(perContactError);
-
-                // Update campaigns table failure_reason with this exception message
-                try {
-                  await adminClient
-                    .from('campaigns')
-                    .update({ failure_reason: contactErrMsg })
-                    .eq('id', campaignId);
-                } catch (campaignErr) {
-                  console.error('[QR Express] Failed to update campaigns table failure_reason:', campaignErr);
-                }
-
-                // Log per-contact error to system_logs for premium transparency
-                try {
-                  await adminClient.from('system_logs').insert({
-                    shop_id: shopId,
-                    campaign_id: campaignId,
-                    error_type: 'WHATSAPP_TRANSMISSION_ERROR',
-                    failure_reason: `Recipient ${formattedPhone} failed: ${contactErrMsg}`,
-                    meta_data: { recipient_phone: formattedPhone }
-                  });
-                } catch (logErr) {
-                  console.error('[QR Express] Failed to write per-contact log to system_logs:', logErr);
-                }
-
-                // Ledger: update processing or pending_dispatch to failed (no credit deducted)
-                await adminClient
-                  .from('message_logs')
-                  .update({
-                    meta_message_id: `failed_${campaignId}_${formattedPhone}_${Date.now()}`,
-                    status: 'failed',
-                  })
-                  .eq('campaign_id', campaignId)
-                  .eq('recipient_phone', formattedPhone)
-                  .in('status', ['pending_dispatch', 'processing']);
-
-                await adminClient.rpc('increment_campaign_metric', {
-                  campaign_row_id: campaignId,
-                  metric_name: 'failed',
-                  quantity: 1,
-                });
-              }
-
-              // Anti-ban delay: bounded random in [30 s, 60 s]
-              const baseMs     = antiBanDelaySeconds * 1_000;
-              const jitterMs   = Math.floor(Math.random() * 10_000) - 5_000; // ±5 s
-              const throttleMs = Math.max(30_000, Math.min(60_000, baseMs + jitterMs));
-              await delay(throttleMs);
-            }
-          } catch (loopError: any) {
-            console.error('[QR Express] Unexpected loop-level or preflight error:', loopError);
-            failedCount = recipientsSnapshot.length - successCount;
-            loopErrorCaptured = loopError instanceof Error ? loopError.message : String(loopError);
-
-            // Write global runtime failure to system_logs
-            try {
-              await adminClient.from('system_logs').insert({
-                shop_id: shopId,
-                campaign_id: campaignId,
-                error_type: 'WHATSAPP_SOCKET_ERROR',
-                failure_reason: loopErrorCaptured,
-                meta_data: { success_count: successCount, failed_count: failedCount }
-              });
-            } catch (logErr) {
-              console.error('[QR Express] Failed to write to system_logs:', logErr);
-            }
-
-            // Update campaigns table with failure reason
-            try {
-              await adminClient
-                .from('campaigns')
-                .update({ failure_reason: loopErrorCaptured })
-                .eq('id', campaignId);
-            } catch (campaignErr) {
-              console.error('[QR Express] Failed to update campaigns table:', campaignErr);
-            }
-          } finally {
-            try {
-              // Clean up any stuck pending_dispatch or processing rows
-              await adminClient
-                .from('message_logs')
-                .update({
-                  meta_message_id: `failed_incomplete_${campaignId}_${Date.now()}`,
-                  status: 'failed',
-                })
-                .eq('campaign_id', campaignId)
-                .in('status', ['pending_dispatch', 'processing']);
-            } catch (err) {
-              console.error('[QR Express] Failed to clean up stuck pending/processing logs:', err);
-            }
-
-            // ── GUARANTEED STATUS TRANSITION ──────────────────────────────
-            const finalStatus = successCount > 0 ? 'completed' : 'failed';
-
-            try {
-              const updatePayload: any = {
-                status: finalStatus,
-                total_failed: failedCount,
-              };
-              if (loopErrorCaptured) {
-                updatePayload.failure_reason = loopErrorCaptured;
-              }
-              await adminClient
-                .from('campaigns')
-                .update(updatePayload)
-                .eq('id', campaignId);
-            } catch (err) {
-              console.error('[QR Express] Failed to update campaign status:', err);
-            }
-
-            console.log(
-              `[QR Express] Campaign ${campaignId} finished — ` +
-              `sent=${successCount} failed=${failedCount} status=${finalStatus}`,
-            );
-          }
-        })(),
-      );
-
-      return NextResponse.json(
-        {
-          ok: true,
-          data: {
-            status: 'queued',
-            mode: 'QR_EXPRESS',
-            campaign_id: campaignId,
-            total_recipients: recipients.length,
-            estimated_time_minutes: Math.ceil(
-              (recipients.length * antiBanDelaySeconds) / 60,
-            ),
-          },
-        },
-        { status: 202 },
-      );
-    } else {
       // ── META API: sequential HTTPS dispatch ───────────────────────────
       waitUntil(
         (async () => {
@@ -868,8 +628,9 @@ export async function POST(req: Request) {
                   quantity: 1,
                 });
               }
-              // Rate limit for Meta API to prevent spam blocks (approx 100-200ms per message)
-              await delay(200);
+              // Replace the hardcoded loop timer with this safe throttling handler
+              const jitter = Math.floor(Math.random() * 5000); // 0 to 5 seconds human jitter
+              await delay((antiBanDelaySeconds * 1000) + jitter);
             }
           } catch (loopError: any) {
             console.error('[Meta API] Unexpected loop-level error:', loopError);
@@ -953,7 +714,6 @@ export async function POST(req: Request) {
         },
         { status: 202 },
       );
-    }
   } catch (err: unknown) {
     console.error('[Campaign Dispatcher] Unhandled top-level error:', err);
     return NextResponse.json(

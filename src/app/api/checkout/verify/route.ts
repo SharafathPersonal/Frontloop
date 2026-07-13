@@ -91,33 +91,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Unauthorized to verify this order' }, { status: 403 });
     }
 
-    // Atomic Idempotency Check & Logging
-    const { error: logError } = await supabaseAdmin
-      .from('payment_logs')
-      .insert({
-        shop_id,
-        order_id,
-        amount: order_amount,
-        credits_credited: credit_count,
-        payment_status: 'SUCCESS'
-      });
-
-    if (logError) {
-      if (logError.code === '23505') { // Postgres Unique Violation
-        return NextResponse.json({ ok: true, message: 'Transaction already processed atomically' });
-      }
-      throw logError;
-    }
-
-    // Atomic Wallet Update via RPC
-    const { error: rpcError } = await supabaseAdmin.rpc('add_credits', { 
-      p_shop_id: shop_id, 
-      p_amount: credit_count 
+    // Atomic Transaction & Idempotency Guard via RPC
+    const { data: wasProcessed, error: rpcError } = await supabaseAdmin.rpc('process_payment_atomically', {
+      p_order_id: order_id,
+      p_shop_id: shop_id,
+      p_amount: order_amount,
+      p_credits: credit_count,
+      p_payment_status: 'SUCCESS'
     });
 
     if (rpcError) throw rpcError;
 
-    return NextResponse.json({ ok: true, message: 'Wallet credited successfully via fallback verification' });
+    if (wasProcessed) {
+      return NextResponse.json({ ok: true, message: 'Wallet credited successfully via fallback verification' });
+    } else {
+      return NextResponse.json({ ok: true, message: 'Transaction already processed atomically' });
+    }
   } catch (error) {
     console.error('Verify Checkout API Error:', error);
     return NextResponse.json({ ok: false, error: 'Internal Server Error' }, { status: 500 });

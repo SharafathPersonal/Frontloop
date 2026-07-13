@@ -85,6 +85,10 @@ export interface Shop {
   whatsapp_mode: WhatsAppConnectionMode;
   anti_ban_delay: number;
   qr_express_status?: string | null;
+  logo_url?: string | null;
+  invoice_theme_color?: string | null;
+  invoice_footer_note?: string | null;
+  gst_number: string | null;
   created_at: string;         // ISO 8601 timestamp
 }
 

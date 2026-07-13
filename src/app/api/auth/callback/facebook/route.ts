@@ -110,6 +110,23 @@ export async function GET(request: Request) {
         }
       }
       
+      // ── Retrieve meta_phone_number_id (Phone Number ID) ──
+      let meta_phone_number_id = requestUrl.searchParams.get('phone_number_id') || 
+                                 requestUrl.searchParams.get('meta_phone_number_id');
+
+      if (!meta_phone_number_id && meta_business_id) {
+        try {
+          const phoneResponse = await fetch(`https://graph.facebook.com/v17.0/${meta_business_id}/phone_numbers?access_token=${meta_access_token}`);
+          const phoneData = await phoneResponse.json();
+          if (phoneData?.data && phoneData.data.length > 0) {
+            meta_phone_number_id = phoneData.data[0].id;
+            console.log(`[META_CALLBACK] Resolved phone number ID: ${meta_phone_number_id}`);
+          }
+        } catch (err) {
+          console.error('[META_CALLBACK_WARN] phone_numbers lookup failed:', err);
+        }
+      }
+
       const { error: upsertError } = await supabase.from('meta_configs').upsert({
         shop_id: user.id,
         meta_access_token,
@@ -125,6 +142,7 @@ export async function GET(request: Request) {
       await supabase.from('shops').update({ 
         meta_access_token,
         meta_business_account_id: meta_business_id,
+        meta_phone_number_id: meta_phone_number_id || null,
         whatsapp_mode: 'META_API'
       }).eq('id', user.id);
 

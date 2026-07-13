@@ -40,7 +40,7 @@ const navLinks: NavLink[] = [
   { label: 'Email Campaigns', href: '/dashboard/email', icon: <Mail size={14} strokeWidth={1.5} /> },
   { label: 'WhatsApp Campaigns', href: '/dashboard/campaigns', icon: <Radio size={14} strokeWidth={1.5} /> },
   { label: 'Message Templates', href: '/dashboard/templates', icon: <MessageSquareText size={14} strokeWidth={1.5} /> },
-  { label: 'In-Store QR Leads', href: '/dashboard/qr-leads', icon: <QrCode size={14} strokeWidth={1.5} /> },
+  { label: 'Digital Bill Engine', href: '/dashboard/digital-bill', icon: <QrCode size={14} strokeWidth={1.5} /> },
   { label: 'Transactions', href: '/dashboard/transactions', icon: <Receipt size={14} strokeWidth={1.5} /> },
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings size={14} strokeWidth={1.5} /> },
   { label: 'Support', href: '/dashboard/support', icon: <HelpCircle size={14} strokeWidth={1.5} /> },
@@ -107,19 +107,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex flex-col h-full">
 
       {/* Brand Header */}
-      <div className="px-6 py-8 border-b border-[#E8E3DA]">
-        <div className="flex items-center gap-2.5 mb-1">
-          <div className="relative w-7 h-7 flex items-center justify-center flex-shrink-0">
-             <Image src="/images/logo-dark.png" alt="Attendly Logo" fill sizes="28px" className="object-contain" />
+      <div className="px-6 py-6 border-b border-[#E8E3DA]">
+        {shop ? (
+          <div className="flex items-center gap-3">
+            {shop.logo_url ? (
+              <div className="relative h-8 w-8 rounded-md overflow-hidden flex-shrink-0 border border-[#E8E3DA]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={shop.logo_url} alt={shop.shop_name} className="h-8 w-8 object-contain" />
+              </div>
+            ) : (
+              <div className="h-8 w-8 rounded-md bg-[#3E3B36] text-[#F5F1EA] flex items-center justify-center flex-shrink-0 text-xs font-bold uppercase">
+                {shop.shop_name.slice(0, 2)}
+              </div>
+            )}
+            <span className="font-semibold text-sm text-[#3E3B36] truncate max-w-[150px]" title={shop.shop_name}>
+              {shop.shop_name}
+            </span>
           </div>
-          <h1 className="serif-headline text-base text-[#3E3B36] leading-tight">
-            Attendly<br />Broadcast
-          </h1>
-        </div>
-        {shop && (
-          <p className="text-xs tracking-[0.1em] text-[#8B8378] uppercase mt-3 truncate">
-            {shop.shop_name}
-          </p>
+        ) : (
+          <div className="h-8 w-28 bg-[#3E3B36]/10 rounded-md animate-pulse" />
         )}
       </div>
 
@@ -177,9 +183,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           Sign Out
         </button>
 
-        <div className="mt-auto pt-6 border-t border-[#E8E3DA]/40 text-center">
-          <p className="text-[10px] tracking-[0.25em] font-medium text-[#8B8378]/60 uppercase">
-            VERSION {APP_VERSION}
+        {/* Subtle, premium platform white-label footprint */}
+        <div className="px-2 pt-4 border-t border-[#E8E3DA]/40">
+          <div className="flex items-center gap-2">
+            <div className="relative w-4 h-4 flex-shrink-0">
+              <Image src="/images/logo-dark.png" alt="Attendly Logo" fill sizes="16px" className="object-contain" />
+            </div>
+            <span className="text-[10px] font-bold tracking-[0.1em] text-[#3E3B36] uppercase">
+              True Attendly Broadcast
+            </span>
+          </div>
+          <p className="text-[9px] tracking-wider text-[#8B8378]/60 mt-0.5">
+            Version v3.11.1 Live
           </p>
         </div>
       </div>

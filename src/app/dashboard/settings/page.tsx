@@ -30,8 +30,53 @@ function SettingsContent() {
     city: '', district: '', state: '', country: '', industry_type: '',
     meta_access_token: '', meta_phone_number_id: '', meta_business_account_id: '', meta_template_name: '',
     whatsapp_mode: 'NONE' as WhatsAppConnectionMode,
-    anti_ban_delay: 45
+    anti_ban_delay: 45,
+    gst_number: '',
+    logo_url: '',
+    invoice_theme_color: '#5C4033',
+    invoice_footer_note: ''
   });
+  const [logoUploading, setLogoUploading] = useState(false);
+  const logoRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+
+    const allowed = ['image/png', 'image/jpeg', 'image/jpg'];
+    if (!allowed.includes(file.type)) {
+      alert('Only PNG, JPG, or JPEG images are allowed.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Logo file size must be less than 5MB.');
+      return;
+    }
+
+    setLogoUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/campaigns/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        alert(data.error || 'Failed to upload logo.');
+      } else {
+        setShopForm(prev => ({ ...prev, logo_url: data.publicUrl }));
+      }
+    } catch (err: any) {
+      alert('Error uploading logo: ' + err.message);
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
   const [creditPacks, setCreditPacks] = useState<any[]>([]);
   const [selectedPack, setSelectedPack] = useState<number>(100);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
@@ -41,9 +86,6 @@ function SettingsContent() {
   const [loading, setLoading] = useState(true);
   const [manualProviderOpen, setManualProviderOpen] = useState(false);
   const [isMetaConnected, setIsMetaConnected] = useState(false);
-  const [pairingCode, setPairingCode] = useState<string | null>(null);
-  const [phoneNumber, setPhoneNumber] = useState<string>('');
-  const [connectionStatus, setConnectionStatus] = useState<string>('DISCONNECTED');
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -55,121 +97,6 @@ function SettingsContent() {
   const [globalError, setGlobalError] = useState<{title: string, message: string} | null>(null);
 
 
-
-  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
-
-  // Canonical status normalizer — maps all backend status variants to a single uppercase key
-  // used by the JSX render conditions below.
-  //   CONNECTED         → 'CONNECTED'
-  //   qr_ready          → 'QR_READY'
-  //   WAITING_FOR_SCAN  → 'QR_READY'   (same visual: show the QR image)
-  //   DISCONNECTED      → 'DISCONNECTED'
-  //   everything else   → 'DISCONNECTED'
-  const normalizeStatus = (raw: string): string => {
-    const s = (raw || '').toUpperCase();
-    if (s === 'CONNECTED') return 'CONNECTED';
-    if (s === 'PAIRING_CODE_READY') return 'PAIRING_CODE_READY';
-    return 'DISCONNECTED';
-  };
-
-  const fetchLiveStatus = useCallback(async () => {
-    try {
-      const backendUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
-      const explicitShopId = shop?.id;
-      if (!explicitShopId) return;
-      const res = await fetch(`${backendUrl}/api/whatsapp/status?shop_id=${explicitShopId}`, {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-        }
-      }).catch(() => null);
-      if (res && res.ok) {
-        const data = await res.json();
-        const normalized = normalizeStatus(data.status);
-        setConnectionStatus(normalized);
-
-        if (normalized === 'PAIRING_CODE_READY') {
-          if (data.pairingCode) {
-            setPairingCode(data.pairingCode);
-          }
-        } else if (normalized === 'CONNECTED' || normalized === 'DISCONNECTED') {
-          setPairingCode(null);
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }, [shop]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (connectionStatus !== 'CONNECTED') {
-      interval = setInterval(fetchLiveStatus, 1500);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [connectionStatus, fetchLiveStatus]);
-
-  const handleGeneratePairingCode = async (forceRefresh: boolean = false) => {
-    if (!shop || !shop.id) return;
-    if (!phoneNumber) {
-      if (forceRefresh) {
-        // If they click "Generate a New One" but the phone number was lost (e.g. page reload),
-        // we forcefully disconnect the stale backend session to return them to the clean input form.
-        await handleDisconnectQrConnection();
-        return;
-      }
-      setGlobalError({ title: 'Validation Error', message: 'Please enter a valid phone number with country code.' });
-      return;
-    }
-    setConnectionStatus('INITIALIZING');
-    try {
-      const backendUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
-      const res = await fetch(`${backendUrl}/api/whatsapp/connect`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shop_id: shop.id, phoneNumber, force_refresh: forceRefresh })
-      }).catch(() => null);
-      if (res && res.ok) {
-        const data = await res.json();
-        const normalized = normalizeStatus(data.status);
-        setConnectionStatus(normalized);
-        if (data.pairingCode) {
-          setPairingCode(data.pairingCode);
-        }
-      } else if (res) {
-        const errData = await res.json().catch(() => ({}));
-        setGlobalError({ title: 'Connection Error', message: errData.error || 'Failed to generate pairing code. Please check your phone number format.' });
-        setConnectionStatus('DISCONNECTED');
-      } else {
-        setGlobalError({ title: 'Network Error', message: 'Could not connect to the backend server.' });
-        setConnectionStatus('DISCONNECTED');
-      }
-    } catch (err) {
-      console.error(err);
-      setGlobalError({ title: 'Network Error', message: 'An unexpected error occurred.' });
-      setConnectionStatus('DISCONNECTED');
-    }
-  };
-
-  const handleDisconnectQrConnection = async () => {
-    if (!shop || !shop.id) return;
-    try {
-      const backendUrl = process.env.NEXT_PUBLIC_RENDER_SERVER_URL || 'http://localhost:3001';
-      await fetch(`${backendUrl}/api/whatsapp/disconnect`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shop_id: shop.id })
-      }).catch(e => console.warn('Backend unavailable, forcing UI disconnect.', e));
-      setConnectionStatus('DISCONNECTED');
-      setPairingCode(null);
-      await fetchLiveStatus();
-    } catch (err) {
-      console.error(err);
-    }
-  };
 const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
   const [passwordStatus, setPasswordStatus] = useState<SaveStatus>('idle');
   const [passwordMsg, setPasswordMsg] = useState('');
@@ -249,7 +176,6 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
       if (shopData) {
         setBrandStory(shopData.brand_story || '');
         setShop(shopData);
-        setConnectionStatus(normalizeStatus(shopData.qr_express_status || 'disconnected'));
         setShopForm({
           shop_name: shopData.shop_name || '',
           owner_phone: shopData.owner_phone || '',
@@ -266,6 +192,10 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
           meta_template_name: shopData.meta_template_name || '',
           whatsapp_mode: shopData.whatsapp_mode || 'NONE',
           anti_ban_delay: shopData.anti_ban_delay || 45,
+          gst_number: shopData.gst_number || '',
+          logo_url: shopData.logo_url || '',
+          invoice_theme_color: shopData.invoice_theme_color || '#5C4033',
+          invoice_footer_note: shopData.invoice_footer_note || '',
         });
       }
       if (walletData) setWallet(walletData);
@@ -319,6 +249,10 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
       meta_template_name: shopForm.meta_template_name,
       whatsapp_mode: shopForm.whatsapp_mode,
       anti_ban_delay: shopForm.anti_ban_delay,
+      gst_number: shopForm.gst_number,
+      logo_url: shopForm.logo_url,
+      invoice_theme_color: shopForm.invoice_theme_color,
+      invoice_footer_note: shopForm.invoice_footer_note,
     }, { onConflict: 'id' });
     setSaveStatus(error ? 'error' : 'saved');
     if (!error) {
@@ -747,107 +681,8 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
         </section>
 
       
-      {/* ── QR LEADS INBOUND LISTENER ──────────────────────────────── */}
-      <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
-        <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center gap-3">
-          <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
-            <Smartphone size={14} className="text-amber-600" strokeWidth={1.5} />
-          </div>
-          <div>
-            <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">🔌 Connect your WhatsApp to get In-store QR Leads</h2>
-            <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Zero ban-risk listener for inbound traffic</p>
-          </div>
-          <div className="ml-auto">
-            {connectionStatus === 'CONNECTED' ? (
-               <div className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
-                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                 <span className="text-[10px] font-bold tracking-[0.15em] uppercase">Listening</span>
-               </div>
-            ) : (
-               <div className="flex items-center gap-1.5 text-[#8B8378] bg-[#F5F1EA] px-3 py-1 rounded-full border border-[#E8E3DA]">
-                 <span className="text-[10px] font-bold tracking-[0.15em] uppercase">Offline</span>
-               </div>
-            )}
-          </div>
-        </div>
-        <div className="p-6">
-          <div className="bg-[#F9F7F4] border border-[#E8E3DA] rounded-xl p-5 mb-5 flex flex-col items-center justify-center min-h-[250px] transition-all">
-            {connectionStatus === 'CONNECTED' ? (
-              <div className="text-center">
-                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle size={32} />
-                </div>
-                <h3 className="text-lg font-bold text-[#3E3B36] mb-2">Listener Active</h3>
-                <p className="text-xs text-[#8B8378] max-w-sm mx-auto leading-relaxed">
-                  Your WhatsApp is actively listening for "Add me to Broadcast" messages. Outbound marketing is disabled on this socket to guarantee sender safety.
-                </p>
-                <button
-                  onClick={() => setShowDisconnectModal(true)}
-                  className="mt-6 text-[10px] font-bold text-rose-600 tracking-[0.1em] uppercase hover:underline"
-                >
-                  Disconnect Listener
-                </button>
-              </div>
-            ) : pairingCode && connectionStatus === 'PAIRING_CODE_READY' ? (
-              <div className="text-center animate-fade-in">
-                <p className="text-xs font-bold text-[#3E3B36] mb-4 uppercase tracking-[0.1em]">Link with Phone Number</p>
-                <div className="bg-white p-6 rounded-xl shadow-sm inline-block border border-[#E8E3DA]">
-                  <p className="text-3xl font-mono tracking-[0.2em] font-bold text-[#3E3B36]">{pairingCode}</p>
-                </div>
-                <div className="mt-6 space-y-2 text-left bg-white p-4 rounded-lg border border-[#E8E3DA] max-w-sm mx-auto">
-                  <p className="text-xs text-[#8B8378] font-medium"><span className="text-emerald-600 font-bold">1.</span> Open WhatsApp on your phone.</p>
-                  <p className="text-xs text-[#8B8378] font-medium"><span className="text-emerald-600 font-bold">2.</span> Tap Settings or the 3 dots.</p>
-                  <p className="text-xs text-[#8B8378] font-medium"><span className="text-emerald-600 font-bold">3.</span> Tap <strong>Linked Devices</strong> &gt; <strong>Link a device</strong>.</p>
-                  <p className="text-xs text-[#8B8378] font-medium"><span className="text-emerald-600 font-bold">4.</span> Tap <strong>Link with phone number instead</strong> at the bottom.</p>
-                  <p className="text-xs text-[#8B8378] font-medium"><span className="text-emerald-600 font-bold">5.</span> Enter the 8-digit code shown above.</p>
-                </div>
-                <div className="flex flex-col items-center gap-2 mt-4">
-                  <p className="text-[10px] text-[#8B8378] uppercase tracking-wider animate-pulse flex items-center gap-2">
-                    <RefreshCw size={10} className="animate-spin" /> Awaiting pairing confirmation...
-                  </p>
-                  <button 
-                    onClick={() => handleGeneratePairingCode(true)}
-                    className="text-[10px] font-bold text-[#C4A896] uppercase tracking-wider hover:text-[#A88B79] hover:underline transition-colors mt-2"
-                  >
-                    Code Expired? Generate a New One
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center w-full max-w-sm mx-auto">
-                <Smartphone size={32} className="text-[#C4A896] mx-auto mb-4 opacity-50" />
-                <h3 className="text-sm font-bold text-[#3E3B36] mb-2 uppercase tracking-wide">Socket Disconnected</h3>
-                <p className="text-xs text-[#8B8378] mb-6 leading-relaxed">
-                  Enter your phone number with country code (e.g. 919876543210) to generate an 8-digit activation code and securely link your WhatsApp.
-                </p>
-                
-                <div className="mb-4 text-left">
-                  <label className="block text-[10px] font-bold text-[#8B8378] uppercase tracking-[0.1em] mb-1">Phone Number (with Country Code)</label>
-                  <input
-                    type="text"
-                    placeholder="919876543210"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="w-full h-11 px-4 bg-white border border-[#E8E3DA] rounded-lg text-sm text-[#3E3B36] focus:outline-none focus:border-[#C4A896] transition-colors"
-                  />
-                </div>
 
-                <button
-                  onClick={() => handleGeneratePairingCode(false)}
-                  disabled={connectionStatus === 'INITIALIZING'}
-                  className="btn-primary w-full rounded-lg flex items-center justify-center gap-2 h-11 disabled:opacity-50"
-                >
-                  {connectionStatus === 'INITIALIZING' ? (
-                    <><Spinner /> Initializing...</>
-                  ) : (
-                    <><QrCode size={14} /> Generate Activation Code</>
-                  )}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+
 
 {/* ── SHOP PROFILE ─────────────────────────────────────────── */}
       <section className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl overflow-hidden">
@@ -894,6 +729,55 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
               <option value="Other">Other</option>
             </select>
           </div>
+          <div>
+            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">GST Number (Optional)</label>
+            <input type="text" value={shopForm.gst_number} onChange={(e) => setShopForm({ ...shopForm, gst_number: e.target.value })} className="input-editorial" placeholder="e.g. 22AAAAA1111A1Z1" />
+          </div>
+          <div>
+            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Invoice Theme Accent Color</label>
+            <div className="flex items-center gap-3">
+              <input type="color" value={shopForm.invoice_theme_color} onChange={(e) => setShopForm({ ...shopForm, invoice_theme_color: e.target.value })} className="w-10 h-10 border border-[#E8E3DA] rounded-lg cursor-pointer bg-white" />
+              <input type="text" value={shopForm.invoice_theme_color} onChange={(e) => setShopForm({ ...shopForm, invoice_theme_color: e.target.value })} className="input-editorial w-32 font-mono uppercase" placeholder="#5C4033" />
+              <span className="text-xs text-[#8B8378]">Default: Warm Brown (#5C4033)</span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Store Logo (Transparent PNG)</label>
+            <div className="border border-dashed border-[#E8E3DA] rounded-xl p-6 text-center hover:bg-[#F9F7F4]/50 transition-colors">
+              <input type="file" ref={logoRef} onChange={handleLogoUpload} accept="image/png,image/jpeg,image/jpg" className="hidden" />
+              {shopForm.logo_url ? (
+                <div className="flex flex-col items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={shopForm.logo_url} alt="Store logo" className="max-h-20 object-contain bg-[#F5F1EA] p-2 rounded-lg border border-[#E8E3DA]" />
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => logoRef.current?.click()} className="text-xs text-[#C4A896] hover:text-[#b09482] font-semibold uppercase tracking-wider">Change Logo</button>
+                    <span className="text-[#E8E3DA]">|</span>
+                    <button type="button" onClick={() => setShopForm(prev => ({ ...prev, logo_url: '' }))} className="text-xs text-red-500 hover:text-red-600 font-semibold uppercase tracking-wider">Remove</button>
+                  </div>
+                </div>
+              ) : (
+                <div onClick={() => logoRef.current?.click()} className="cursor-pointer">
+                  <Building size={24} className="text-[#8B8378] mx-auto mb-2" />
+                  <p className="text-xs font-semibold text-[#3E3B36] uppercase tracking-wider">Upload Store Logo</p>
+                  <p className="text-[10px] text-[#8B8378] mt-1">Please upload your logo with background removed (PNG/Transparent format)</p>
+                </div>
+              )}
+              {logoUploading && (
+                <p className="text-xs text-[#C4A896] mt-2 animate-pulse">Uploading store logo...</p>
+              )}
+            </div>
+          </div>
+          <div>
+             <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Invoice Footer Note</label>
+             <input
+               type="text"
+               value={shopForm.invoice_footer_note}
+               onChange={(e) => setShopForm({ ...shopForm, invoice_footer_note: e.target.value })}
+               className="input-editorial"
+               placeholder="Thank you for visiting! Please come again. ✨"
+             />
+             <span className="text-[10px] text-[#8B8378] mt-1 block">A premium message printed at the bottom of customer invoices.</span>
+           </div>
           <div className="flex items-center gap-4 pt-1">
             <button type="submit" disabled={saveStatus === 'saving'} className="btn-primary rounded-lg disabled:opacity-50">
               {saveStatus === 'saving' ? 'Saving...' : 'Save Profile'}
@@ -1012,18 +896,7 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
       </section>
 
       
-      {showDisconnectModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 transition-opacity duration-300">
-          <div className="bg-white rounded-2xl p-6 max-w-md shadow-xl border-t-4 border-red-500 scale-100 transition-transform duration-300">
-            <h3 className="text-lg font-bold text-red-600 mb-3">🚨 Disconnect Listener?</h3>
-            <p className="text-sm text-[#8B8378] mb-6">This will stop processing incoming QR lead scans immediately.</p>
-            <div className="flex justify-end gap-3">
-              <button onClick={() => setShowDisconnectModal(false)} className="px-4 py-2 bg-[#3E3B36] text-white rounded-lg hover:bg-black transition-colors text-sm font-medium shadow-sm">Keep Connected</button>
-              <button onClick={() => { setShowDisconnectModal(false); handleDisconnectQrConnection(); }} className="px-4 py-2 border border-red-200 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium">Force Disconnect</button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
 {/* MODALS */}
       <CustomConfirm

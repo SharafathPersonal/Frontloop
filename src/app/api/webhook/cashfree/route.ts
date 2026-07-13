@@ -58,33 +58,22 @@ export async function POST(req: Request) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // 4. Atomic Idempotency Check & Logging
-    const { error: logError } = await supabaseAdmin
-      .from('payment_logs')
-      .insert({
-        shop_id,
-        order_id,
-        amount: order_amount,
-        credits_credited: credit_count,
-        payment_status: payment_status
-      });
-
-    if (logError) {
-      if (logError.code === '23505') { // Postgres Unique Violation
-        return NextResponse.json({ message: 'Transaction already processed atomically' }, { status: 200 });
-      }
-      throw logError;
-    }
-
-    // 5. Atomic Wallet Update via RPC
-    const { error: rpcError } = await supabaseAdmin.rpc('add_credits', { 
-      p_shop_id: shop_id, 
-      p_amount: credit_count 
+    // Atomic Transaction & Idempotency Guard via RPC
+    const { data: wasProcessed, error: rpcError } = await supabaseAdmin.rpc('process_payment_atomically', {
+      p_order_id: order_id,
+      p_shop_id: shop_id,
+      p_amount: order_amount,
+      p_credits: credit_count,
+      p_payment_status: payment_status
     });
 
     if (rpcError) throw rpcError;
 
-    return NextResponse.json({ ok: true, message: 'Wallet credited atomically' });
+    if (wasProcessed) {
+      return NextResponse.json({ ok: true, message: 'Wallet credited atomically' });
+    } else {
+      return NextResponse.json({ message: 'Transaction already processed atomically' }, { status: 200 });
+    }
 
   } catch (error: unknown) {
     console.error('Webhook Error:', error);

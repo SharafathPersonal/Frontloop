@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import { useEffect, useRef, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -9,7 +10,7 @@ import CustomConfirm from '@/components/ui/CustomConfirm';
 import { Spinner } from '@/components/ui/Spinner';
 
 type StepState = 'compose' | 'dispatching' | 'success' | 'error';
-type CustomerTag = 'VIP' | 'Regular' | 'New';
+type CustomerTag = 'VIP' | 'Regular' | 'New' | 'DIGITAL_BILL';
 
 interface RecipientTag { value: CustomerTag; label: string; count: number; }
 
@@ -93,13 +94,17 @@ function BroadcastPageInner() {
       const [{ data: w }, { data: s }, tagCounts, { data: tmplData }, { data: configData }] = await Promise.all([
         supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle(),
         supabase.from('shops').select('shop_name, qr_express_status').eq('id', user.id).maybeSingle(),
-        Promise.all(['VIP', 'Regular', 'New'].map(async (tag) => {
+        Promise.all(['VIP', 'Regular', 'New', 'DIGITAL_BILL'].map(async (tag) => {
           const { count } = await supabase
             .from('customers_master')
             .select('*', { count: 'exact', head: true })
             .eq('shop_id', user.id)
             .contains('tags', [tag]);
-          return { value: tag as CustomerTag, label: tag, count: count ?? 0 };
+          return { 
+            value: tag as CustomerTag, 
+            label: tag === 'DIGITAL_BILL' ? 'Digital Bill Customers 🧾' : tag, 
+            count: count ?? 0 
+          };
         })),
         supabase.from('message_templates').select('*').eq('shop_id', user.id).eq('status', 'APPROVED'),
         supabase.from('system_settings').select('value').eq('key', 'whatsapp_credit_cost').maybeSingle()
@@ -253,9 +258,10 @@ function BroadcastPageInner() {
       }
 
       return data.publicUrl;
-    } catch (err: any) {
+    } catch (err: unknown) {
       setImageUploading(false);
-      setErrorMsg(`Image upload failed: ${err.message || 'Network error'}`);
+      const errMsg = err instanceof Error ? err.message : 'Network error';
+      setErrorMsg(`Image upload failed: ${errMsg}`);
       return null;
     }
   };

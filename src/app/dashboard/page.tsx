@@ -22,6 +22,7 @@ export default function DashboardPage() {
   const [waCampaigns, setWaCampaigns] = useState<Campaign[]>([]);
   const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>([]);
   const [qrLeads, setQrLeads] = useState<Customer[]>([]);
+  const [digitalInvoices, setDigitalInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,12 +36,14 @@ export default function DashboardPage() {
         { data: waData },
         { data: emailData },
         { data: qrData },
+        { data: invoicesData },
       ] = await Promise.all([
         supabase.from('shops').select('*').eq('id', user.id).maybeSingle(),
         supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle(),
         supabase.from('campaigns').select('*').eq('shop_id', user.id).order('created_at', { ascending: true }),
         supabase.from('email_campaigns').select('*').eq('shop_id', user.id).order('created_at', { ascending: true }),
-        supabase.from('customers_master').select('*').eq('shop_id', user.id).contains('tags', ['IN_STORE_QR_LEAD']).order('created_at', { ascending: true })
+        supabase.from('customers_master').select('*').eq('shop_id', user.id).order('created_at', { ascending: true }),
+        supabase.from('digital_invoices').select('*').eq('shop_id', user.id).order('created_at', { ascending: true })
       ]);
 
       if (shopData) setShop(shopData);
@@ -48,6 +51,7 @@ export default function DashboardPage() {
       if (waData) setWaCampaigns(waData);
       if (emailData) setEmailCampaigns(emailData);
       if (qrData) setQrLeads(qrData);
+      if (invoicesData) setDigitalInvoices(invoicesData);
 
       setLoading(false);
     }
@@ -99,28 +103,37 @@ export default function DashboardPage() {
   }, [emailCampaigns]);
 
   const { qrMetrics, qrChartData } = useMemo(() => {
-    let total = qrLeads.length;
-    let synced = qrLeads.filter(l => l.is_saved_to_phone).length;
+    const totalInvoices = digitalInvoices.length;
+    const deliveredInvoices = digitalInvoices.filter(i => i.status === 'delivered').length;
+    const pendingInvoices = digitalInvoices.filter(i => i.status === 'pending').length;
+    const failedInvoices = digitalInvoices.filter(i => i.status === 'failed').length;
+    const deliveryRate = totalInvoices > 0 ? Math.round((deliveredInvoices / totalInvoices) * 100) : 0;
     
     let cumulative = 0;
-    const timeline: Record<string, { date: string; leads: number }> = {};
+    const timeline: Record<string, { date: string; count: number }> = {};
     
-    qrLeads.forEach(l => {
-      const dateStr = new Date(l.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-      if (!timeline[dateStr]) timeline[dateStr] = { date: dateStr, leads: 0 };
-      timeline[dateStr].leads += 1;
+    digitalInvoices.forEach(i => {
+      const dateStr = new Date(i.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      if (!timeline[dateStr]) timeline[dateStr] = { date: dateStr, count: 0 };
+      timeline[dateStr].count += 1;
     });
 
     const chartData = Object.values(timeline).map(pt => {
-      cumulative += pt.leads;
+      cumulative += pt.count;
       return { date: pt.date, Total: cumulative };
     });
 
     return {
-      qrMetrics: { total, synced, pending: total - synced },
+      qrMetrics: {
+        total: totalInvoices,
+        delivered: deliveredInvoices,
+        pending: pendingInvoices,
+        failed: failedInvoices,
+        deliveryRate
+      },
       qrChartData: chartData
     };
-  }, [qrLeads]);
+  }, [digitalInvoices]);
 
   const recentActivity = useMemo(() => {
     const activities: ActivityItem[] = [];
@@ -139,9 +152,12 @@ export default function DashboardPage() {
       });
     });
 
-    qrLeads.slice(-5).forEach(l => {
+    digitalInvoices.slice(-5).forEach(i => {
       activities.push({
-        id: l.id, type: 'qr', description: `Captured Lead: ${l.customer_name}`, created_at: l.created_at,
+        id: i.id,
+        type: 'qr',
+        description: `POS Bill ${i.invoice_number} generated for ${i.customer_name || 'Valued Customer'} (₹${Number(i.total_amount).toFixed(2)})`,
+        created_at: i.created_at,
         icon: <QrCode size={14} className="text-[#C4A896]" />
       });
     });
@@ -149,7 +165,7 @@ export default function DashboardPage() {
     return activities
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5);
-  }, [waCampaigns, emailCampaigns, qrLeads]);
+  }, [waCampaigns, emailCampaigns, digitalInvoices]);
 
   if (loading) {
     return (
@@ -169,7 +185,7 @@ export default function DashboardPage() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>
           <h1 className="serif-headline text-2xl md:text-3xl text-[#3E3B36]">
-            {shop ? `Good morning, ${shop.shop_name}` : 'Dashboard'}
+            {shop ? `Keep growing, ${shop.shop_name}` : 'Dashboard'}
           </h1>
           <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mt-1.5">Omnichannel Revenue Hub</p>
         </div>
@@ -261,35 +277,35 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Channel C: QR Leads */}
+        {/* Channel C: Digital Bill Engine */}
         <div className="bg-white border border-[#E8E3DA] rounded-xl p-6 hover:shadow-lg transition-all hover:-translate-y-1 duration-300">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-full bg-[#F5F1EA] flex items-center justify-center border border-[#E8E3DA]">
               <QrCode size={18} className="text-[#C4A896]" />
             </div>
             <div>
-              <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">Counter QR Engine</h2>
+              <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">Digital Bill Engine</h2>
               <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">Retail Lead Intake</p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Total Scans</p>
+              <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Total Invoices</p>
               <p className="text-xl font-medium text-[#3E3B36]">{qrMetrics.total.toLocaleString()}</p>
             </div>
             <div>
-              <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Sync Progress</p>
-              <p className="text-xl font-medium text-[#3E3B36]">{qrMetrics.total > 0 ? Math.round((qrMetrics.synced / qrMetrics.total) * 100) : 0}%</p>
+              <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Delivery Rate</p>
+              <p className="text-xl font-medium text-[#3E3B36]">{qrMetrics.deliveryRate}%</p>
             </div>
             <div>
-              <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Saved Contacts</p>
+              <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Delivered Bills</p>
               <p className="text-xl font-medium text-emerald-600 flex items-center gap-1">
-                {qrMetrics.synced.toLocaleString()} <CheckCircle2 size={12} />
+                {qrMetrics.delivered.toLocaleString()} <CheckCircle2 size={12} />
               </p>
             </div>
             <div>
-              <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Pending Action</p>
-              <p className="text-xl font-medium text-amber-500">{qrMetrics.pending.toLocaleString()}</p>
+              <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Pending/Failed</p>
+              <p className="text-xl font-medium text-amber-500">{(qrMetrics.pending + qrMetrics.failed).toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -352,7 +368,7 @@ export default function DashboardPage() {
         {/* Chart 3: Live Shop Counter Growth */}
         <div className="bg-white border border-[#E8E3DA] rounded-xl p-6 lg:col-span-1">
           <h3 className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mb-6 flex items-center gap-2">
-            <Users size={14} className="text-[#C4A896]" /> QR Retail Growth Rate
+            <Users size={14} className="text-[#C4A896]" /> Digital Bill Growth Rate
           </h3>
           <div className="h-[250px] lg:h-[200px] w-full">
             {qrChartData.length > 0 ? (
