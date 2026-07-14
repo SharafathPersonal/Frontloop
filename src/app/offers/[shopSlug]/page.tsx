@@ -113,7 +113,7 @@ function OfferCardComponent({
           </div>
 
           {offer.offer_description && (
-            <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-1 leading-normal">
+            <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed break-words whitespace-normal">
               {offer.offer_description}
             </p>
           )}
@@ -127,23 +127,23 @@ function OfferCardComponent({
         </div>
 
         {/* Bottom row: creation date metadata, button, label */}
-        <div className="flex items-end justify-between mt-3 pt-2 border-t border-black/[0.03]">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mt-3 pt-2 border-t border-black/[0.03]">
           {/* Creation Date Metadata */}
-          <div className="flex flex-col">
-            <span className="text-[10px] text-slate-500 font-serif">
+          <div className="flex flex-col shrink-0">
+            <span className="text-[9px] sm:text-[10px] text-slate-500 font-serif">
               {formatCreatedAt(offer.created_at)}
             </span>
           </div>
 
           {/* Button */}
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-start sm:items-end shrink-0">
             <button
               className="px-3.5 py-1 rounded text-[8px] font-bold uppercase tracking-wider text-white shadow-sm hover:scale-[1.02] transition-transform"
               style={{ backgroundColor: themeColor }}
             >
               CLAIM IN-STORE
             </button>
-            <span className="text-[6px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+            <span className="text-[5.5px] sm:text-[6px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
               Available In-Store Only
             </span>
           </div>
@@ -445,6 +445,16 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
             </span>
           </div>
+        </div>
+      </div>
+
+      {/* Active Offers Counter Row */}
+      <div className="w-full bg-[#FAF6F0] border-b border-[#E8E3DA] py-2.5 px-6 shadow-sm">
+        <div className="max-w-lg mx-auto flex items-center justify-between">
+          <span className="text-[10px] tracking-[0.2em] font-semibold text-[#5C4033] uppercase">
+            {offers.length} Active Offers Available
+          </span>
+          <span className="text-[9px] tracking-wider text-[#8B8378]/80 font-serif">Verified Merchant Catalog</span>
         </div>
       </div>
 

@@ -652,6 +652,10 @@
 - 🌟 **What Changed:** Overhauled all merchant dashboard routes to ensure 100% mobile-friendly compliance down to 360px without content loss. Constrained navigation sidebars to max-w-[280px], added automatic scroll and word-wrap properties, stacked quick actions and select credit packs vertically on small viewports, and integrated the active Web Push button. Additionally polished settings page layouts (wallet balance card, Facebook badge text wraps, accent color labels, and Workspace UUID rows) to fit perfectly on small screens.
 - 💡 **User/Business Benefit:** Delivers a seamless, high-end dashboard interface for store owners running businesses from mobile devices, preventing overflows and maintaining brand consistency.
 
+### [14/07/2026] - Public Storefront Catalog UI/UX Overhaul
+- 🌟 **What Changed:** Audited and refactored the storefront dynamic offers page (`src/app/offers/[shopSlug]/page.tsx`). Removed the truncation/line-clamping on the offer description card layout so the text wraps naturally within the standard card bounds. Injected a dynamic Active Offers counter row below the brand header styled in luxury warm-brown (#5C4033) and warm-cream (#FAF6F0), and stacked metadata and action button fields on small viewports.
+- 💡 **User/Business Benefit:** Creates a clean, premium, and truncation-free storefront catalog that loads quickly and displays offer details beautifully on mobile devices down to 360px.
+
 ---
 
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*
