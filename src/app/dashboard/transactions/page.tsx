@@ -12,7 +12,8 @@ import {
   Search, 
   IndianRupee, 
   Coins, 
-  BarChart3
+  BarChart3,
+  Zap
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 
@@ -318,10 +319,10 @@ export default function TransactionsPage() {
         </div>
       )}
 
-      {/* ⚡ Wallet Token Ledger Breakdown */}
+      {/* Wallet Token Ledger Breakdown */}
       <div className="bg-[#F5F1EA]/50 border border-[#E8E3DA] rounded-2xl p-6 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-sm">⚡</span>
+          <Zap size={14} className="text-[#C4A896]" />
           <h2 className="lexend-subheading text-xs font-bold text-[#3E3B36] uppercase tracking-[0.15em]">
             Wallet Token Ledger Breakdown
           </h2>

@@ -153,7 +153,7 @@ export default function MobilePOSDigitalBillPage() {
             setActiveInvoice(prev => {
               if (prev && prev.id === updatedRecord.id) {
                 if (updatedRecord.status === 'delivered' && prev.status !== 'delivered') {
-                  showToast(`✨ Invoice #${updatedRecord.invoice_number} successfully delivered & lead captured!`, 'success');
+                  showToast(`Invoice #${updatedRecord.invoice_number} successfully delivered & lead captured!`, 'success');
                   // Collapse modal viewport & clear local basket state
                   setCart([]);
                   setItemName('');
@@ -361,7 +361,7 @@ export default function MobilePOSDigitalBillPage() {
         status: invoiceData.status
       });
 
-      showToast('🚀 QR Code generated! Stream active at counter.', 'success');
+      showToast('QR Code generated! Stream active at counter.', 'success');
     } catch (err: any) {
       console.error(err);
       showToast(err.message || 'Failed to submit invoice transaction.', 'error');

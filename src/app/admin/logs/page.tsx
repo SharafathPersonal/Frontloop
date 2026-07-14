@@ -322,7 +322,7 @@ export default function AdminLogsPage() {
       {/* Finished all logs banner */}
       {!hasMore && logs.length > 0 && (
         <div className="text-center py-4 text-xs tracking-wider uppercase text-[#8E8B85] font-semibold bg-[#FFFFFF] border border-[#E8E3DA] rounded">
-          🎉 All system logs fully loaded
+          All system logs fully loaded
         </div>
       )}
     </div>

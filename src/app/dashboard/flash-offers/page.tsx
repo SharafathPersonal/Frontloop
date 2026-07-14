@@ -345,7 +345,7 @@ export default function FlashOffersPage() {
             <img src={qrSrc!} alt="Flash Offers QR" width={140} height={140} className="object-contain" />
           </div>
           <div className="flex-1 text-center sm:text-left">
-            <p className="text-sm font-semibold text-[#3E3B36] mb-1">✨ Scan to see Today&apos;s Live Flash Offers!</p>
+            <p className="text-sm font-semibold text-[#3E3B36] mb-1 flex items-center justify-center sm:justify-start gap-1.5"><Sparkles size={14} className="text-[#C4A896]" /> Scan to see Today&apos;s Live Flash Offers!</p>
             <p className="text-[11px] text-[#8B8378] mb-3 break-all font-mono">{portalUrl}</p>
             <a href={qrSrc!} download={`flash-offers-qr-${shop?.slug}.png`}
               className="inline-flex items-center gap-2 bg-[#F5F1EA] border border-[#E8E3DA] text-[#3E3B36] px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:bg-[#E8E3DA] transition-colors">
@@ -686,10 +686,10 @@ export default function FlashOffersPage() {
                 <div className="flex gap-1.5 mt-3 flex-wrap items-center">
                   <span className="text-[9px] text-[#8B8378] self-center mr-1 font-bold uppercase tracking-wider">Presets:</span>
                   {[
-                    { name: '🥑 Avocado', url: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?auto=format&fit=crop&q=80&w=200' },
-                    { name: '⌚ Watch', url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=200' },
-                    { name: '👜 Tote Bag', url: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80&w=200' },
-                    { name: '🧣 Scarf', url: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=200' },
+                    { name: 'Avocado', url: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?auto=format&fit=crop&q=80&w=200' },
+                    { name: 'Watch', url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=200' },
+                    { name: 'Tote Bag', url: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80&w=200' },
+                    { name: 'Scarf', url: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=200' },
                   ].map(preset => (
                     <button
                       key={preset.name}

@@ -656,6 +656,10 @@
 - 🌟 **What Changed:** Audited and refactored the storefront dynamic offers page (`src/app/offers/[shopSlug]/page.tsx`). Removed the truncation/line-clamping on the offer description card layout so the text wraps naturally within the standard card bounds. Injected a dynamic Active Offers counter row below the brand header styled in luxury warm-brown (#5C4033) and warm-cream (#FAF6F0), and stacked metadata and action button fields on small viewports. Also, updated the storefront landing page (`src/app/page.tsx`) to completely hide the heavy interactive POS simulator and phone emulator playground elements on mobile viewports using a responsive `hidden lg:flex` display state.
 - 💡 **User/Business Benefit:** Creates a clean, premium, and truncation-free storefront catalog that loads quickly and displays offer details beautifully on mobile devices down to 360px.
 
+### [14/07/2026] - Purged Residual Markdown Emojis
+- 🌟 **What Changed:** Conducted a comprehensive audit of UI components to replace and remove residual markdown emojis (`✨`, `⚡`, `🎉`, and other item presets). Swapped custom elements with clean typography or native Lucide React icons (e.g., `Sparkles`, `Zap`, `Key`). Affected routes include the Settings page, Flash Offers dashboard, Mobile POS Digital Bill terminal, Transaction ledger breakdown, password recovery gateways, and admin logs.
+- 💡 **User/Business Benefit:** Establishes a highly-polished, premium visual aesthetic devoid of raw emoji characters, aligned with luxury warm cream backgrounds and rich brown typography.
+
 ---
 
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*

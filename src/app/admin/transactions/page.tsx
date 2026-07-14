@@ -378,7 +378,7 @@ export default function AdminTransactionsPage() {
         {/* Finished all transactions banner */}
         {!hasMore && transactions.length > 0 && (
           <div className="text-center py-4 text-xs tracking-wider uppercase text-[#8E8B85] font-semibold bg-[#FFFFFF] border border-[#E8E3DA] rounded">
-            🎉 All transactions fully loaded
+            All transactions fully loaded
           </div>
         )}
       </main>

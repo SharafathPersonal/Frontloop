@@ -305,7 +305,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ⚡ Flash Offers Feature Spotlight */}
+      {/* Flash Offers Feature Spotlight */}
       <div className="relative overflow-hidden bg-gradient-to-br from-[#3E3B36] to-[#2A2825] rounded-2xl p-6 border border-[#3E3B36] shadow-lg">
         {/* Decorative orbs */}
         <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-[#C4A896]/10 -translate-y-1/2 translate-x-1/4 pointer-events-none" />

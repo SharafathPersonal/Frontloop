@@ -826,7 +826,7 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
                value={shopForm.invoice_footer_note}
                onChange={(e) => setShopForm({ ...shopForm, invoice_footer_note: e.target.value })}
                className="input-editorial"
-               placeholder="Thank you for visiting! Please come again. ✨"
+               placeholder="Thank you for visiting! Please come again."
              />
              <span className="text-[10px] text-[#8B8378] mt-1 block">A premium message printed at the bottom of customer invoices.</span>
            </div>
@@ -860,7 +860,7 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
             <Zap size={14} className="text-[#C4A896]" strokeWidth={1.5} />
           </div>
           <div>
-            <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">✨ AI Brand Intelligence</h2>
+            <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">AI Brand Intelligence</h2>
             <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Tell AI the story of your brand to generate hyper-personalized responses.</p>
           </div>
         </div>

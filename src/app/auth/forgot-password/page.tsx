@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
 import { Spinner } from '@/components/ui/Spinner';
 import { useToast } from '@/contexts/ToastContext';
+import { Key } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -97,7 +98,7 @@ export default function ForgotPasswordPage() {
                 <button
                     type="submit"
                     disabled={loading}
-                    className="btn-primary w-full rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="btn-primary w-full rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
                 >
                     {loading ? (
                     <>
@@ -105,7 +106,10 @@ export default function ForgotPasswordPage() {
                         <span>SENDING LINK...</span>
                     </>
                     ) : (
-                    '⚡ Send Reset Secure Link'
+                    <>
+                      <Key size={14} />
+                      <span>Send Reset Secure Link</span>
+                    </>
                     )}
                 </button>
                 </div>
