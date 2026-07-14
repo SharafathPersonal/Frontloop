@@ -607,4 +607,19 @@
 
 ---
 
+## 2026-07-14 — Phase 33: Settings Responsive Layout Hardening & Coming Soon Badge Integration
+
+### [UI/UX] Settings Page Layout Refactoring & Reset Actions
+- **Module:** Merchant Settings / Profile Management
+- **Nature:** Refactored the layout structures in `/src/app/dashboard/settings/page.tsx`. Replaced the legacy single-column vertical stack with a responsive grid (`grid-cols-1 md:grid-cols-2 gap-5`). Applied a flex-wrap container on the Store Logo modifiers and built an adaptive container for the submit and a new "Reset Changes" button, scaling inputs down to 360px without layout breaking. Added a `handleResetProfile` callback to revert input values to the saved DB profile.
+- **Files:** `/src/app/dashboard/settings/page.tsx`
+
+### [UI/UX] Navigation Hardening & "Coming Soon" Badge Additions
+- **Module:** Dashboard Sidebar / Global Navigation Layout
+- **Nature:** Added "SMTP Settings" and "Email Marketing Setup" options to the navigation schema in `/src/app/dashboard/layout.tsx`. Kept these options and "Email Campaigns" visible to the user while disabling their navigation bindings. Implemented a custom `Soon` badge using the system warm-brown muted colors (`bg-[#F5F1EA]` and `text-[#8B8378]`), positioning it inline to the right of the menu labels.
+- **Files:** `/src/app/dashboard/layout.tsx`
+
+---
+
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*
+

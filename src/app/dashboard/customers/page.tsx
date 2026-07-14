@@ -206,7 +206,7 @@ export default function CustomersUploadPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       {/* Page Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="serif-headline text-2xl md:text-3xl text-[#3E3B36]">Upload Contacts</h1>
           <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mt-1.5">
@@ -216,7 +216,7 @@ export default function CustomersUploadPage() {
         <div className="flex items-center gap-4">
           <Link 
             href="/dashboard/customers/management"
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#3E3B36] hover:bg-[#C4A896] text-[#F5F1EA] text-xs tracking-[0.15em] uppercase rounded-lg transition-colors"
+            className="flex items-center gap-2 w-full sm:w-auto justify-center px-5 py-2.5 bg-[#3E3B36] hover:bg-[#C4A896] text-[#F5F1EA] text-xs tracking-[0.15em] uppercase rounded-lg transition-colors min-h-[44px]"
           >
             Manage Audience <ArrowRight size={14} />
           </Link>
@@ -234,7 +234,7 @@ export default function CustomersUploadPage() {
               <Tag size={14} className="text-[#C4A896]" strokeWidth={1.5} />
               <p className="text-xs tracking-[0.2em] text-[#8B8378] uppercase">Upload Tag Classification</p>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {TAG_OPTIONS.map((t) => (
                 <button
                   key={t.value}

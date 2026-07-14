@@ -7,8 +7,8 @@ import { useToast } from '@/contexts/ToastContext';
 import Link from 'next/link';
 import {
   Zap, Eye, EyeOff, Plus, Pencil, Trash2, X, Loader2,
-  TrendingUp, Package, Search, Sparkles, ArrowLeft, SlidersHorizontal,
-  ChevronDown
+  TrendingUp, Package, Search, Sparkles, ArrowLeft,
+  ChevronDown, UploadCloud
 } from 'lucide-react';
 
 const PAGE_SIZE = 12;
@@ -35,6 +35,10 @@ export default function ManageOffersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  // Drag and Drop uploader state
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [formName, setFormName] = useState('');
   const [formOriginal, setFormOriginal] = useState('');
@@ -230,6 +234,39 @@ export default function ManageOffersPage() {
     setFormDiscount(disc.toFixed(2));
   };
 
+  const handleImageUpload = async (file: File) => {
+    if (!shop) {
+      showToast('Shop data not loaded yet.', 'error');
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const cleanFileName = file.name.replace(/[^a-zA-Z0-9]/g, '_');
+      const filePath = `${shop.id}/${Date.now()}-${cleanFileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('flash-offers')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('flash-offers')
+        .getPublicUrl(filePath);
+
+      setFormImageUrl(publicUrl);
+      showToast('Image uploaded successfully!', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Image upload failed.', 'error');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!shop) return;
     const orig = parseFloat(formOriginal);
@@ -397,7 +434,7 @@ export default function ManageOffersPage() {
         </div>
       </div>
 
-      {/* Grid of Offers */}
+      {/* List of Offers */}
       {loading && offers.length === 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3, 4, 5, 6].map(i => (
@@ -411,52 +448,173 @@ export default function ManageOffersPage() {
           <button onClick={openCreate} className="mt-3 text-xs text-[#C4A896] font-bold uppercase tracking-wider hover:text-[#b09482]">Create a new offer</button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {offers.map(offer => (
-            <div key={offer.id} className="bg-white border border-[#E8E3DA] rounded-xl overflow-hidden hover:shadow-md transition-shadow group flex flex-col justify-between">
-              <div className="p-5 flex gap-4">
-                {/* Left Column: Preview Image */}
-                <div className="w-16 h-16 bg-[#FAFAF8] rounded-xl border border-black/5 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden self-start">
-                  {offer.image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={offer.image_url} alt={offer.product_name} className="object-contain w-full h-full p-0.5" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-sm font-serif font-bold text-amber-800 bg-amber-50">
-                      {offer.product_name.charAt(0).toUpperCase()}
+        <div>
+          {/* Desktop Table View */}
+          <div className="hidden lg:block bg-white border border-[#E8E3DA] rounded-xl overflow-hidden shadow-sm">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-[#F5F1EA] border-b border-[#E8E3DA]">
+                <tr>
+                  <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Product</th>
+                  <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Pricing / Badges</th>
+                  <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Views</th>
+                  <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Active Status</th>
+                  <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {offers.map(offer => {
+                  const isPercentage = offer.show_percentage_badge !== false;
+                  const isDiscounted = offer.show_discount_price !== false;
+                  const pct = discountPct(Number(offer.original_price), Number(offer.discount_price));
+
+                  return (
+                    <tr key={offer.id} className="border-b border-[#E8E3DA]/60 last:border-0 hover:bg-[#F5F1EA]/30 transition-colors group">
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-lg border border-[#E8E3DA] overflow-hidden bg-[#FAFAF8] flex items-center justify-center shrink-0">
+                            {offer.image_url ? (
+                              <img src={offer.image_url} alt={offer.product_name} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="font-serif font-bold text-amber-800 text-sm">{offer.product_name.charAt(0).toUpperCase()}</span>
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-[#3E3B36]">{offer.product_name}</h4>
+                            {offer.offer_description && (
+                              <p className="text-xs text-[#8B8378] line-clamp-1 max-w-xs">{offer.offer_description}</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="space-y-1">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-sm font-bold text-[#3E3B36]">₹{Number(offer.discount_price).toFixed(2)}</span>
+                            {isDiscounted && (
+                              <span className="text-xs text-[#8B8378] line-through">₹{Number(offer.original_price).toFixed(2)}</span>
+                            )}
+                          </div>
+                          {isPercentage && (
+                            <span className="inline-block text-[9px] font-bold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100">
+                              {pct}% OFF
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-xs text-[#8B8378] font-medium flex items-center gap-1">
+                          <Eye size={12} /> {offer.views_count}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <button
+                          onClick={() => toggleActive(offer)}
+                          className={`relative w-11 h-6 rounded-full transition-colors ${offer.is_active ? 'bg-emerald-500' : 'bg-[#E8E3DA]'}`}
+                        >
+                          <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${offer.is_active ? 'left-[22px]' : 'left-0.5'}`} />
+                        </button>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => openEdit(offer)}
+                            className="p-2 border border-[#E8E3DA] rounded-lg bg-white text-[#8B8378] hover:text-[#C4A896] transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirm(offer.id)}
+                            className="p-2 border border-[#E8E3DA] rounded-lg bg-white text-[#8B8378] hover:text-red-500 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile View */}
+          <div className="block lg:hidden space-y-4 w-full">
+            {offers.map(offer => {
+              const isPercentage = offer.show_percentage_badge !== false;
+              const isDiscounted = offer.show_discount_price !== false;
+              const pct = discountPct(Number(offer.original_price), Number(offer.discount_price));
+
+              return (
+                <div key={offer.id} className="bg-white border border-[#E8E3DA] rounded-xl p-5 shadow-sm space-y-4">
+                  {/* Header Row */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-md border border-[#E8E3DA] overflow-hidden bg-[#FAFAF8] flex items-center justify-center shrink-0">
+                      {offer.image_url ? (
+                        <img src={offer.image_url} alt={offer.product_name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="font-serif font-bold text-amber-800 text-sm">{offer.product_name.charAt(0).toUpperCase()}</span>
+                      )}
                     </div>
-                  )}
-                </div>
-                {/* Right Column: details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <h3 className="text-sm font-bold text-[#3E3B36] leading-snug flex-1 truncate">{offer.product_name}</h3>
-                    <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full border border-emerald-100 flex-shrink-0">
-                      {discountPct(Number(offer.original_price), Number(offer.discount_price))}% OFF
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-bold text-[#3E3B36] truncate">{offer.product_name}</h4>
+                      {offer.offer_description && (
+                        <p className="text-[11px] text-[#8B8378] line-clamp-1">{offer.offer_description}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Pricing Badge Row */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-b border-[#E8E3DA]/30 py-2.5">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-sm font-bold text-[#3E3B36]">₹{Number(offer.discount_price).toFixed(0)}</span>
+                      {isDiscounted && (
+                        <span className="text-xs text-[#8B8378] line-through">₹{Number(offer.original_price).toFixed(0)}</span>
+                      )}
+                    </div>
+                    {isPercentage && (
+                      <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded border border-emerald-100">
+                        {pct}% OFF
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Active/Inactive Toggle & Views */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] tracking-wider text-[#8B8378] uppercase">Status:</span>
+                      <button
+                        onClick={() => toggleActive(offer)}
+                        className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${offer.is_active ? 'bg-emerald-500' : 'bg-[#E8E3DA]'}`}
+                      >
+                        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${offer.is_active ? 'left-[22px]' : 'left-0.5'}`} />
+                      </button>
+                    </div>
+                    <span className="text-[11px] text-[#8B8378] flex items-center gap-1 font-medium">
+                      <Eye size={12} /> {offer.views_count} views
                     </span>
                   </div>
-                  {offer.offer_description && (
-                    <p className="text-[11px] text-[#8B8378] leading-relaxed mb-1.5 line-clamp-1">{offer.offer_description}</p>
-                  )}
-                  <div className="flex items-baseline gap-2 mb-3">
-                    <span className="text-base font-bold text-[#3E3B36]">₹{Number(offer.discount_price).toFixed(0)}</span>
-                    <span className="text-xs text-[#8B8378] line-through">₹{Number(offer.original_price).toFixed(0)}</span>
+
+                  {/* Touch-Friendly Bottom Bar */}
+                  <div className="flex justify-end items-center gap-3 pt-1 border-t border-[#E8E3DA]/30">
+                    <button
+                      onClick={() => openEdit(offer)}
+                      className="p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-[#F5F1EA]/50 hover:bg-[#E8E3DA]/50 text-[#8B8378] hover:text-[#3E3B36] transition-colors"
+                      title="Edit Offer"
+                    >
+                      <Pencil size={16} />
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(offer.id)}
+                      className="p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-rose-50 hover:bg-rose-100/80 text-[#C4A896] hover:text-rose-600 transition-colors"
+                      title="Delete Offer"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 </div>
-              </div>
-              <div className="border-t border-[#E8E3DA]/60 bg-gray-50/50 p-4 flex items-center justify-between">
-                {/* Toggle */}
-                <button onClick={() => toggleActive(offer)}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${offer.is_active ? 'bg-emerald-500' : 'bg-[#E8E3DA]'}`}>
-                  <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${offer.is_active ? 'left-[22px]' : 'left-0.5'}`} />
-                </button>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-[#8B8378] flex items-center gap-1 mr-2"><Eye size={12} />{offer.views_count}</span>
-                  <button onClick={() => openEdit(offer)} className="p-2 border border-[#E8E3DA] rounded-lg bg-white text-[#8B8378] hover:text-[#C4A896] transition-colors"><Pencil size={12} /></button>
-                  <button onClick={() => setDeleteConfirm(offer.id)} className="p-2 border border-[#E8E3DA] rounded-lg bg-white text-[#8B8378] hover:text-red-500 transition-colors"><Trash2 size={12} /></button>
-                </div>
-              </div>
-            </div>
-          ))}
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -502,11 +660,67 @@ export default function ManageOffersPage() {
                 <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Product Name</label>
                 <input type="text" value={formName} onChange={e => setFormName(e.target.value)} className="input-editorial" placeholder="e.g. Organic Tomatoes" />
               </div>
+              
               <div>
-                <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Product Image (URL)</label>
-                <input type="text" value={formImageUrl} onChange={e => setFormImageUrl(e.target.value)} className="input-editorial" placeholder="https://example.com/product-image.jpg" />
-                <div className="flex gap-1.5 mt-2 flex-wrap">
-                  <span className="text-[9px] text-[#8B8378] self-center mr-1">Presets:</span>
+                <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Product Image</label>
+                
+                {formImageUrl ? (
+                  <div className="relative border border-[#E8E3DA] rounded-xl overflow-hidden aspect-video bg-[#F5F1EA]/30 group">
+                    <img src={formImageUrl} alt="Preview" className="w-full h-full object-contain" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormImageUrl('')}
+                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors min-h-[44px]"
+                      >
+                        <Trash2 size={14} /> Remove Image
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={async (e) => {
+                      e.preventDefault();
+                      setIsDragging(false);
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) handleImageUpload(file);
+                    }}
+                    onClick={() => document.getElementById('image-upload-input')?.click()}
+                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                      isDragging ? 'border-[#C4A896] bg-[#F5F1EA]/50' : 'border-[#E8E3DA] hover:border-[#C4A896]/50 bg-white'
+                    }`}
+                  >
+                    <input
+                      type="file"
+                      id="image-upload-input"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload(file);
+                      }}
+                    />
+                    {uploadingImage ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <Loader2 className="w-8 h-8 animate-spin text-[#C4A896]" />
+                        <p className="text-xs text-[#8B8378]">Uploading image to storage...</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="w-10 h-10 bg-[#F5F1EA] rounded-lg flex items-center justify-center mx-auto">
+                          <UploadCloud size={20} className="text-[#8B8378]" />
+                        </div>
+                        <p className="text-xs font-semibold text-[#3E3B36]">Drag & drop product image here</p>
+                        <p className="text-[10px] text-[#8B8378]">or click to select file from device (JPEG, PNG)</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex gap-1.5 mt-3 flex-wrap items-center">
+                  <span className="text-[9px] text-[#8B8378] self-center mr-1 font-bold uppercase tracking-wider">Presets:</span>
                   {[
                     { name: '🥑 Avocado', url: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?auto=format&fit=crop&q=80&w=200' },
                     { name: '⌚ Watch', url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=200' },
@@ -524,6 +738,7 @@ export default function ManageOffersPage() {
                   ))}
                 </div>
               </div>
+
               {/* Bidirectional Mode Selector */}
               <div className="space-y-1.5">
                 <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase">Pricing Entry Mode</label>

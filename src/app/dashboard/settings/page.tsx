@@ -77,6 +77,33 @@ function SettingsContent() {
     }
   };
 
+  const handleResetProfile = () => {
+    if (shop) {
+      setShopForm({
+        shop_name: shop.shop_name || '',
+        owner_phone: shop.owner_phone || '',
+        contact_number: shop.contact_number || '',
+        location_address: shop.location_address || '',
+        city: shop.city || '',
+        district: shop.district || '',
+        state: shop.state || '',
+        country: shop.country || '',
+        industry_type: shop.industry_type || '',
+        meta_access_token: shop.meta_access_token || '',
+        meta_phone_number_id: shop.meta_phone_number_id || '',
+        meta_business_account_id: shop.meta_business_account_id || '',
+        meta_template_name: shop.meta_template_name || '',
+        whatsapp_mode: shop.whatsapp_mode || 'NONE',
+        anti_ban_delay: shop.anti_ban_delay || 45,
+        gst_number: shop.gst_number || '',
+        logo_url: shop.logo_url || '',
+        invoice_theme_color: shop.invoice_theme_color || '#5C4033',
+        invoice_footer_note: shop.invoice_footer_note || '',
+      });
+    }
+  };
+
+
   const [creditPacks, setCreditPacks] = useState<any[]>([]);
   const [selectedPack, setSelectedPack] = useState<number>(100);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
@@ -695,52 +722,76 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
             <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase">Business identity node</p>
           </div>
         </div>
-        <form onSubmit={handleConfirmSaveProfile} className="p-6 space-y-5">
-          <div>
-            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Shop / Brand Name</label>
-            <input type="text" required value={shopForm.shop_name} onChange={(e) => setShopForm({ ...shopForm, shop_name: e.target.value })} className="input-editorial" placeholder={shop?.shop_name || "Your shop name"} />
+        <form onSubmit={handleConfirmSaveProfile} className="p-4 sm:p-6 space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Shop Name */}
+            <div>
+              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Shop / Brand Name</label>
+              <input type="text" required value={shopForm.shop_name} onChange={(e) => setShopForm({ ...shopForm, shop_name: e.target.value })} className="input-editorial" placeholder={shop?.shop_name || "Your shop name"} />
+            </div>
+
+            {/* Industry Type */}
+            <div>
+              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Industry Type</label>
+              <div className="relative">
+                <select value={shopForm.industry_type} onChange={(e) => setShopForm({ ...shopForm, industry_type: e.target.value })} className="input-editorial appearance-none cursor-pointer pr-10">
+                  <option value="" disabled>{shop?.industry_type || "Select Industry Type"}</option>
+                  <option value="Fashion & Apparel">Fashion & Apparel</option>
+                  <option value="Food & Beverage">Food & Beverage</option>
+                  <option value="Health & Beauty">Health & Beauty</option>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Education">Education</option>
+                  <option value="Other">Other</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#8B8378]">
+                  <ChevronDown size={14} />
+                </div>
+              </div>
+            </div>
+
+            {/* Owner WhatsApp Number */}
+            <div>
+              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Owner WhatsApp Number</label>
+              <input type="tel" required value={shopForm.owner_phone} onChange={(e) => setShopForm({ ...shopForm, owner_phone: e.target.value })} className="input-editorial" placeholder={shop?.owner_phone || "+91 98765 43210"} />
+            </div>
+
+            {/* Official Contact Number */}
+            <div>
+              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Official Contact Number (Voice)</label>
+              <input type="tel" value={shopForm.contact_number} onChange={(e) => setShopForm({ ...shopForm, contact_number: e.target.value })} className="input-editorial" placeholder={shop?.contact_number || "+91 98765 43210"} />
+            </div>
+
+            {/* GST Number */}
+            <div>
+              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">GST Number (Optional)</label>
+              <input type="text" value={shopForm.gst_number} onChange={(e) => setShopForm({ ...shopForm, gst_number: e.target.value })} className="input-editorial" placeholder="e.g. 22AAAAA1111A1Z1" />
+            </div>
+
+            {/* Invoice Theme Accent Color */}
+            <div>
+              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Invoice Theme Accent Color</label>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div className="flex items-center gap-3 flex-1">
+                  <input type="color" value={shopForm.invoice_theme_color} onChange={(e) => setShopForm({ ...shopForm, invoice_theme_color: e.target.value })} className="w-10 h-10 border border-[#E8E3DA] rounded-lg cursor-pointer bg-white flex-shrink-0" />
+                  <input type="text" value={shopForm.invoice_theme_color} onChange={(e) => setShopForm({ ...shopForm, invoice_theme_color: e.target.value })} className="input-editorial font-mono uppercase flex-1" placeholder="#5C4033" />
+                </div>
+                <span className="text-xs text-[#8B8378] whitespace-nowrap">Default: Warm Brown (#5C4033)</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Owner WhatsApp Number</label>
-            <input type="tel" required value={shopForm.owner_phone} onChange={(e) => setShopForm({ ...shopForm, owner_phone: e.target.value })} className="input-editorial" placeholder={shop?.owner_phone || "+91 98765 43210"} />
-          </div>
-          <div>
-            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Official Contact Number (Voice)</label>
-            <input type="tel" value={shopForm.contact_number} onChange={(e) => setShopForm({ ...shopForm, contact_number: e.target.value })} className="input-editorial" placeholder={shop?.contact_number || "+91 98765 43210"} />
-          </div>
+
+          {/* Physical Store Location */}
           <div>
             <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Physical Store Location</label>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
               <input type="text" value={shopForm.city} onChange={(e) => setShopForm({ ...shopForm, city: e.target.value })} className="input-editorial" placeholder="City / Locality" />
               <input type="text" value={shopForm.district} onChange={(e) => setShopForm({ ...shopForm, district: e.target.value })} className="input-editorial" placeholder="District" />
               <input type="text" value={shopForm.state} onChange={(e) => setShopForm({ ...shopForm, state: e.target.value })} className="input-editorial" placeholder="State" />
               <input type="text" value={shopForm.country} onChange={(e) => setShopForm({ ...shopForm, country: e.target.value })} className="input-editorial" placeholder="Country" />
             </div>
           </div>
-          <div>
-            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Industry Type</label>
-            <select value={shopForm.industry_type} onChange={(e) => setShopForm({ ...shopForm, industry_type: e.target.value })} className="input-editorial appearance-none cursor-pointer">
-              <option value="" disabled>{shop?.industry_type || "Select Industry Type"}</option>
-              <option value="Fashion & Apparel">Fashion & Apparel</option>
-              <option value="Food & Beverage">Food & Beverage</option>
-              <option value="Health & Beauty">Health & Beauty</option>
-              <option value="Electronics">Electronics</option>
-              <option value="Education">Education</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">GST Number (Optional)</label>
-            <input type="text" value={shopForm.gst_number} onChange={(e) => setShopForm({ ...shopForm, gst_number: e.target.value })} className="input-editorial" placeholder="e.g. 22AAAAA1111A1Z1" />
-          </div>
-          <div>
-            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Invoice Theme Accent Color</label>
-            <div className="flex items-center gap-3">
-              <input type="color" value={shopForm.invoice_theme_color} onChange={(e) => setShopForm({ ...shopForm, invoice_theme_color: e.target.value })} className="w-10 h-10 border border-[#E8E3DA] rounded-lg cursor-pointer bg-white" />
-              <input type="text" value={shopForm.invoice_theme_color} onChange={(e) => setShopForm({ ...shopForm, invoice_theme_color: e.target.value })} className="input-editorial w-32 font-mono uppercase" placeholder="#5C4033" />
-              <span className="text-xs text-[#8B8378]">Default: Warm Brown (#5C4033)</span>
-            </div>
-          </div>
+
+          {/* Logo Upload Section */}
           <div>
             <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Store Logo (Transparent PNG)</label>
             <div className="border border-dashed border-[#E8E3DA] rounded-xl p-6 text-center hover:bg-[#F9F7F4]/50 transition-colors">
@@ -749,14 +800,14 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
                 <div className="flex flex-col items-center gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={shopForm.logo_url} alt="Store logo" className="max-h-20 object-contain bg-[#F5F1EA] p-2 rounded-lg border border-[#E8E3DA]" />
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => logoRef.current?.click()} className="text-xs text-[#C4A896] hover:text-[#b09482] font-semibold uppercase tracking-wider">Change Logo</button>
-                    <span className="text-[#E8E3DA]">|</span>
-                    <button type="button" onClick={() => setShopForm(prev => ({ ...prev, logo_url: '' }))} className="text-xs text-red-500 hover:text-red-600 font-semibold uppercase tracking-wider">Remove</button>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <button type="button" onClick={() => logoRef.current?.click()} className="text-xs text-[#C4A896] hover:text-[#b09482] font-semibold uppercase tracking-wider min-h-[44px] px-3 flex items-center justify-center">Change Logo</button>
+                    <span className="text-[#E8E3DA] self-center">|</span>
+                    <button type="button" onClick={() => setShopForm(prev => ({ ...prev, logo_url: '' }))} className="text-xs text-red-500 hover:text-red-600 font-semibold uppercase tracking-wider min-h-[44px] px-3 flex items-center justify-center">Remove</button>
                   </div>
                 </div>
               ) : (
-                <div onClick={() => logoRef.current?.click()} className="cursor-pointer">
+                <div onClick={() => logoRef.current?.click()} className="cursor-pointer py-4 min-h-[44px] flex flex-col justify-center items-center">
                   <Building size={24} className="text-[#8B8378] mx-auto mb-2" />
                   <p className="text-xs font-semibold text-[#3E3B36] uppercase tracking-wider">Upload Store Logo</p>
                   <p className="text-[10px] text-[#8B8378] mt-1">Please upload your logo with background removed (PNG/Transparent format)</p>
@@ -767,6 +818,7 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
               )}
             </div>
           </div>
+
           <div>
              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Invoice Footer Note</label>
              <input
@@ -778,12 +830,25 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
              />
              <span className="text-[10px] text-[#8B8378] mt-1 block">A premium message printed at the bottom of customer invoices.</span>
            </div>
-          <div className="flex items-center gap-4 pt-1">
-            <button type="submit" disabled={saveStatus === 'saving'} className="btn-primary rounded-lg disabled:opacity-50">
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2 w-full">
+            <button 
+              type="submit" 
+              disabled={saveStatus === 'saving'} 
+              className="btn-primary rounded-lg disabled:opacity-50 w-full sm:w-auto min-h-[44px] px-6 flex items-center justify-center"
+            >
               {saveStatus === 'saving' ? 'Saving...' : 'Save Profile'}
             </button>
-            {saveStatus === 'saved' && <div className="flex items-center gap-1.5 text-[#C4A896]"><CheckCircle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Saved!</span></div>}
-            {saveStatus === 'error' && <div className="flex items-center gap-1.5 text-[#8B8378]"><AlertTriangle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Save failed</span></div>}
+            <button 
+              type="button" 
+              onClick={handleResetProfile}
+              className="border border-[#E8E3DA] hover:bg-[#F5F1EA] text-[#3E3B36] rounded-lg w-full sm:w-auto min-h-[44px] px-6 text-xs font-bold tracking-[0.2em] uppercase transition-colors flex items-center justify-center cursor-pointer"
+            >
+              Reset Changes
+            </button>
+            {saveStatus === 'saved' && <div className="flex items-center justify-center gap-1.5 text-[#C4A896] py-1"><CheckCircle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Saved!</span></div>}
+            {saveStatus === 'error' && <div className="flex items-center justify-center gap-1.5 text-[#8B8378] py-1"><AlertTriangle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Save failed</span></div>}
           </div>
         </form>
       </section>
@@ -810,12 +875,16 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
               placeholder="e.g., We are a boutique organic clothing store in Kozhikode focusing on sustainable fashion. Our tone is friendly and warm..." 
             />
           </div>
-          <div className="flex items-center gap-4 pt-1">
-            <button type="submit" disabled={brandStoryStatus === 'saving'} className="btn-primary rounded-lg disabled:opacity-50">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1 w-full">
+            <button 
+              type="submit" 
+              disabled={brandStoryStatus === 'saving'} 
+              className="btn-primary rounded-lg disabled:opacity-50 w-full sm:w-auto min-h-[44px] px-6 flex items-center justify-center"
+            >
               {brandStoryStatus === 'saving' ? 'Saving...' : 'Save Brand Story'}
             </button>
-            {brandStoryStatus === 'saved' && <div className="flex items-center gap-1.5 text-[#C4A896]"><CheckCircle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Saved!</span></div>}
-            {brandStoryStatus === 'error' && <div className="flex items-center gap-1.5 text-[#8B8378]"><AlertTriangle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Save failed</span></div>}
+            {brandStoryStatus === 'saved' && <div className="flex items-center justify-center gap-1.5 text-[#C4A896] py-1"><CheckCircle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Saved!</span></div>}
+            {brandStoryStatus === 'error' && <div className="flex items-center justify-center gap-1.5 text-[#8B8378] py-1"><AlertTriangle size={14} strokeWidth={1.5} /><span className="text-xs tracking-[0.1em] uppercase">Save failed</span></div>}
           </div>
         </form>
       </section>
@@ -854,18 +923,22 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
               placeholder="Confirm new password" 
             />
           </div>
-          <div className="flex items-center gap-4 pt-1">
-            <button type="submit" disabled={passwordStatus === 'saving'} className="btn-primary rounded-lg disabled:opacity-50">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1 w-full">
+            <button 
+              type="submit" 
+              disabled={passwordStatus === 'saving'} 
+              className="btn-primary rounded-lg disabled:opacity-50 w-full sm:w-auto min-h-[44px] px-6 flex items-center justify-center"
+            >
               {passwordStatus === 'saving' ? 'Updating...' : 'Update Password'}
             </button>
             {passwordStatus === 'saved' && (
-              <div className="flex items-center gap-1.5 text-[#C4A896]">
+              <div className="flex items-center justify-center gap-1.5 text-[#C4A896] py-1">
                 <CheckCircle size={14} strokeWidth={1.5} />
                 <span className="text-xs tracking-[0.1em] uppercase">{passwordMsg}</span>
               </div>
             )}
             {passwordStatus === 'error' && (
-              <div className="flex items-center gap-1.5 text-[#8B8378]">
+              <div className="flex items-center justify-center gap-1.5 text-[#8B8378] py-1">
                 <AlertTriangle size={14} strokeWidth={1.5} />
                 <span className="text-xs tracking-[0.1em] uppercase">{passwordMsg}</span>
               </div>

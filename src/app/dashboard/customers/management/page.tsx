@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import type { Wallet } from '@/types/broadcast';
 import Link from 'next/link';
-import { Users, Trash2, Edit, Search, Filter, ArrowUpDown, ChevronLeft } from 'lucide-react';
+import { Users, Trash2, Edit, Search, Filter, ArrowUpDown, ChevronLeft, Send, Clock, ArrowRight } from 'lucide-react';
 import { Spinner } from '@/components/ui/Spinner';
 import { Skeleton } from '@/components/ui/Skeleton';
 import CustomConfirm from '@/components/ui/CustomConfirm';
@@ -16,6 +16,7 @@ interface CustomerRow {
   whatsapp_number: string;
   email?: string;
   tags: CustomerTag[];
+  created_at?: string;
 }
 
 export default function AudienceManagementPage() {
@@ -26,7 +27,6 @@ export default function AudienceManagementPage() {
   const [totalInDB, setTotalInDB] = useState(0);
   const [loadingDb, setLoadingDb] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
 
   // Filter & Sort States
@@ -43,7 +43,6 @@ export default function AudienceManagementPage() {
   const [editStatus, setEditStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [globalError, setGlobalError] = useState<{title: string, message: string} | null>(null);
 
-  const observerTarget = useRef<HTMLDivElement>(null);
   const PAGE_SIZE = 50;
 
   const fetchDbCustomers = useCallback(async (currentPage: number, reset: boolean = false) => {
@@ -78,9 +77,6 @@ export default function AudienceManagementPage() {
     
     if (data) {
       setDbCustomers(prev => reset ? data : [...prev, ...data]);
-      setHasMore(data.length === PAGE_SIZE);
-    } else {
-      setHasMore(false);
     }
     
     if (count !== null) setTotalInDB(count);
@@ -107,29 +103,9 @@ export default function AudienceManagementPage() {
     initUser();
   }, []);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => {
-        if (entries[0].isIntersecting && hasMore && !loadingDb && !isFetchingMore) {
-          const nextPage = page + 1;
-          setPage(nextPage);
-          fetchDbCustomers(nextPage, false);
-        }
-      },
-      { threshold: 0.1 }
-    );
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-    return () => observer.disconnect();
-  }, [hasMore, loadingDb, isFetchingMore, page, fetchDbCustomers]);
-
   const validatePhone = (num: string): string | null => {
     const pureNum = num.split('@')[0];
-    // Replace the old regex string with this robust absolute numbers filter
-    const cleanNumber = pureNum.replace(/\D/g, ''); // Strips all non-digit characters completely
-    
-    // Enforce standard 10-digit validation check (adjust country prefixes as required by architecture)
+    const cleanNumber = pureNum.replace(/\D/g, '');
     const isValid = cleanNumber.length >= 10 && cleanNumber.length <= 15;
     if (!isValid) return null;
 
@@ -188,10 +164,12 @@ export default function AudienceManagementPage() {
     }
   };
 
+  const totalPages = Math.ceil(totalInDB / PAGE_SIZE) || 1;
+
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       {/* Navigation & Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
           <Link href="/dashboard/customers" className="inline-flex items-center gap-1.5 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase hover:text-[#3E3B36] transition-colors mb-3">
             <ChevronLeft size={12} /> Back to Upload
@@ -201,17 +179,17 @@ export default function AudienceManagementPage() {
             Manage your synchronized contact list
           </p>
         </div>
-        <div className="flex items-center gap-4 mt-8">
+        <div className="flex flex-wrap items-center gap-3 md:mt-8">
           {totalInDB > 0 && (
             <button 
               onClick={() => setIsClearConfirmOpen(true)}
-              className="hidden md:flex items-center gap-1.5 text-xs text-[#8B8378] tracking-[0.15em] uppercase hover:text-[#3E3B36] transition-colors"
+              className="flex items-center gap-1.5 text-xs text-[#8B8378] tracking-[0.15em] uppercase hover:text-[#3E3B36] transition-colors min-h-[44px]"
             >
               <Trash2 size={12} /> Clear Audience List
             </button>
           )}
           {wallet && (
-            <div className="hidden sm:flex items-center gap-2 bg-[#FFFFFF] border border-[#E8E3DA] rounded-lg px-4 py-2.5">
+            <div className="flex items-center gap-2 bg-[#FFFFFF] border border-[#E8E3DA] rounded-lg px-4 py-2">
               <div className="w-2 h-2 bg-[#C4A896] rounded-full" />
               <span className="text-xs tracking-[0.15em] text-[#8B8378] uppercase">{wallet.credits_remaining.toLocaleString()} Credits</span>
             </div>
@@ -231,7 +209,7 @@ export default function AudienceManagementPage() {
       </div>
 
       {/* Search, Sort, and Tag Filtration Matrix */}
-      <div className="bg-[#FFFFFF] border border-[#E8E3DA] border-b-0 rounded-t-xl p-4 flex flex-col sm:flex-row items-center gap-3 relative z-10 mt-8">
+      <div className="bg-[#FFFFFF] border border-[#E8E3DA] border-b-0 rounded-t-xl p-4 flex flex-col md:flex-row items-center gap-3 relative z-10 mt-8 w-full">
         {/* Search */}
         <div className="relative flex-1 w-full">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B8378]" />
@@ -240,18 +218,18 @@ export default function AudienceManagementPage() {
             placeholder="Search by name or number..." 
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-white border border-[#E8E3DA] rounded-lg focus:border-[#C4A896] outline-none text-[#3E3B36] transition-colors"
+            className="w-full pl-9 pr-4 py-2.5 text-sm bg-white border border-[#E8E3DA] rounded-lg focus:border-[#C4A896] outline-none text-[#3E3B36] transition-colors"
           />
         </div>
         
         {/* Filters */}
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-36">
+        <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto shrink-0">
+          <div className="relative w-full md:w-40">
             <Filter size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B8378]" />
             <select 
               value={filterTag} 
               onChange={e => setFilterTag(e.target.value as CustomerTag | 'All')}
-              className="w-full pl-8 pr-4 py-2 text-sm bg-white border border-[#E8E3DA] rounded-lg focus:border-[#C4A896] outline-none text-[#3E3B36] appearance-none cursor-pointer"
+              className="w-full pl-8 pr-4 py-2.5 text-sm bg-white border border-[#E8E3DA] rounded-lg focus:border-[#C4A896] outline-none text-[#3E3B36] appearance-none cursor-pointer"
             >
               <option value="All">All Tags</option>
               <option value="VIP">VIP</option>
@@ -263,7 +241,7 @@ export default function AudienceManagementPage() {
           
           <button 
             onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-[#F5F1EA] hover:bg-[#E8E3DA] border border-[#E8E3DA] text-[#3E3B36] text-sm rounded-lg transition-colors whitespace-nowrap"
+            className="flex items-center justify-center gap-2 w-full md:w-auto px-4 py-2.5 bg-[#F5F1EA] hover:bg-[#E8E3DA] border border-[#E8E3DA] text-[#3E3B36] text-sm rounded-lg transition-colors whitespace-nowrap min-h-[44px]"
           >
             <ArrowUpDown size={14} className="text-[#8B8378]" />
             {sortOrder === 'asc' ? 'A-Z' : 'Z-A'}
@@ -271,7 +249,7 @@ export default function AudienceManagementPage() {
         </div>
       </div>
 
-      {/* DB Data Table with Infinite Scroll */}
+      {/* DB Data Table with Pagination */}
       <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-b-xl overflow-hidden shadow-sm">
         {loadingDb ? (
           <div className="p-5 space-y-4">
@@ -284,8 +262,9 @@ export default function AudienceManagementPage() {
             <p className="text-[11px] tracking-[0.1em] uppercase text-[#8B8378]">No contacts match these filters.</p>
           </div>
         ) : (
-          <div className="max-h-[600px] overflow-y-auto relative">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-y-auto relative">
+            {/* Desktop Table View */}
+            <table className="hidden lg:table w-full text-left border-collapse">
               <thead className="sticky top-0 bg-[#F5F1EA] border-b border-[#E8E3DA] z-10 shadow-sm">
                 <tr>
                   <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Customer Name</th>
@@ -316,19 +295,127 @@ export default function AudienceManagementPage() {
                 ))}
               </tbody>
             </table>
-            
-            {/* Infinite Scroll Sentinel */}
-            <div ref={observerTarget} className="h-10 flex items-center justify-center p-4">
-              {isFetchingMore && (
-                <div className="w-full space-y-3">
-                  <Skeleton className="h-8 w-full rounded-md" />
-                  <Skeleton className="h-8 w-full rounded-md" />
-                </div>
-              )}
+
+            {/* Mobile Stacked Card View */}
+            <div className="block lg:hidden space-y-4 p-4 w-full">
+              {dbCustomers.map((c, i) => {
+                const cleanPhone = c.whatsapp_number.split('@')[0];
+                const formattedDate = c.created_at
+                  ? new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                  : 'N/A';
+                
+                return (
+                  <div key={i} className="bg-white border border-[#E8E3DA] rounded-xl p-5 shadow-sm space-y-3">
+                    {/* Header Block */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-[9px] tracking-[0.2em] text-[#8B8378] uppercase">Customer Name</p>
+                        <h4 className="font-bold text-sm text-[#3E3B36]">{c.customer_name || 'Valued Customer'}</h4>
+                      </div>
+                      <div className="flex flex-wrap gap-1 justify-end max-w-[150px]">
+                        {c.tags?.map(t => (
+                          <span 
+                            key={t} 
+                            className="inline-block bg-[#F5F1EA] border border-[#E8E3DA] text-[#8B8378] text-[9px] px-1.5 py-0.5 rounded font-medium"
+                          >
+                            {t === 'DIGITAL_BILL' ? 'Digital Bill' : t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Data Rows */}
+                    <div className="border-t border-b border-[#E8E3DA]/30 py-2.5 space-y-1.5 text-xs text-[#8B8378]">
+                      <div className="flex justify-between items-center py-0.5">
+                        <span>📞 Phone:</span>
+                        <a 
+                          href={`tel:${cleanPhone}`} 
+                          className="font-mono text-[#3E3B36] hover:text-[#C4A896] transition-colors underline decoration-dotted"
+                        >
+                          {cleanPhone}
+                        </a>
+                      </div>
+                      <div className="flex justify-between items-center py-0.5">
+                        <span>🕒 Added Date:</span>
+                        <span className="text-[#3E3B36] font-medium">{formattedDate}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-0.5">
+                        <span>💬 Broadcast History:</span>
+                        <span className="text-[#3E3B36] font-medium bg-[#F5F1EA] px-2 py-0.5 rounded text-[10px]">
+                          Active Recipient
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Touch-Friendly Bottom Bar */}
+                    <div className="flex justify-end items-center gap-3 pt-1">
+                      {/* Trigger manual campaign */}
+                      <Link
+                        href={`/dashboard/campaigns/create?recipient=${cleanPhone}`}
+                        className="p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-[#F5F1EA]/50 hover:bg-[#E8E3DA]/50 text-[#8B8378] hover:text-[#3E3B36] transition-colors"
+                        title="Trigger Manual Campaign"
+                      >
+                        <Send size={16} />
+                      </Link>
+                      {/* Edit metadata */}
+                      <button
+                        onClick={() => { setEditCustomer(c); setEditModalOpen(true); }}
+                        className="p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-[#F5F1EA]/50 hover:bg-[#E8E3DA]/50 text-[#8B8378] hover:text-[#3E3B36] transition-colors"
+                        title="Edit Metadata"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      {/* Soft-Delete toggle */}
+                      <button
+                        onClick={() => { setCustomerToDelete(c.whatsapp_number); setIsDeleteConfirmOpen(true); }}
+                        className="p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-rose-50 hover:bg-rose-100/80 text-[#C4A896] hover:text-rose-600 transition-colors"
+                        title="Delete Customer"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
       </div>
+
+      {/* Pagination Bar */}
+      {!loadingDb && dbCustomers.length > 0 && (
+        <div className="flex items-center justify-between w-full mt-4 bg-white border border-[#E8E3DA] rounded-xl px-4 py-3 shadow-sm select-none gap-2">
+          <button
+            onClick={() => {
+              const prevPage = Math.max(0, page - 1);
+              setPage(prevPage);
+              fetchDbCustomers(prevPage, true);
+            }}
+            disabled={page === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E8E3DA] bg-white text-xs font-semibold text-[#3E3B36] hover:bg-[#F5F1EA] transition-colors disabled:opacity-40 disabled:hover:bg-white min-h-[44px] min-w-[80px] justify-center"
+          >
+            <ChevronLeft size={14} />
+            <span className="text-[10px] sm:text-xs uppercase tracking-wider">Prev</span>
+          </button>
+
+          <span className="text-[10px] sm:text-xs font-bold text-[#8B8378] tracking-widest uppercase text-center truncate">
+            Page {page + 1} of {totalPages}
+          </span>
+
+          <button
+            onClick={() => {
+              const nextPage = page + 1;
+              setPage(nextPage);
+              fetchDbCustomers(nextPage, true);
+            }}
+            disabled={(page + 1) * PAGE_SIZE >= totalInDB}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E8E3DA] bg-white text-xs font-semibold text-[#3E3B36] hover:bg-[#F5F1EA] transition-colors disabled:opacity-40 disabled:hover:bg-white min-h-[44px] min-w-[80px] justify-center"
+          >
+            <span className="text-[10px] sm:text-xs uppercase tracking-wider">Next</span>
+            <ArrowRight size={14} className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Edit Modal */}
       {editModalOpen && editCustomer && (

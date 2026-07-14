@@ -600,7 +600,8 @@ export default function ManageDigitalLedgerPage() {
             /* Premium List View */
             <div className="bg-white rounded-3xl border border-[#E8E3DA] shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                {/* Desktop Table View */}
+                <table className="hidden lg:table w-full text-left border-collapse">
                   <thead className="sticky top-0 bg-[#F9F7F4] z-10 border-b border-[#E8E3DA]">
                     <tr>
                       <th className="px-6 py-5 text-[10px] tracking-[0.15em] uppercase text-[#8B8378] font-bold">Invoice ID</th>
@@ -684,6 +685,82 @@ export default function ManageDigitalLedgerPage() {
                     )}
                   </tbody>
                 </table>
+
+                {/* Mobile Stacked Card View */}
+                <div className="block lg:hidden space-y-4 p-4">
+                  {allInvoices.length === 0 && !isFetchingBatch ? (
+                    <div className="py-12 text-center bg-white border border-[#E8E3DA] rounded-xl text-sm text-[#8B8378]">
+                      No digital transactions found matching your criteria.
+                    </div>
+                  ) : (
+                    allInvoices.map((inv) => (
+                      <div key={inv.id} className="bg-white border border-[#E8E3DA] rounded-xl p-5 shadow-sm space-y-3">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-[9px] tracking-[0.2em] text-[#8B8378] uppercase">Invoice ID</p>
+                            <span className="inline-block px-2.5 py-1 bg-[#1E1B18] text-[#F5F1EA] rounded font-mono text-xs font-bold shadow-sm mt-1">
+                              #{inv.invoice_number}
+                            </span>
+                          </div>
+                          <div>
+                            {inv.status === 'delivered' ? (
+                              <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 text-[9px] font-bold tracking-wide uppercase">
+                                <Check size={11} className="text-emerald-500" />
+                                Delivered
+                              </div>
+                            ) : inv.status === 'failed' ? (
+                              <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-red-50 text-red-700 border border-red-100 text-[9px] font-bold tracking-wide uppercase">
+                                Failed
+                              </div>
+                            ) : (
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-50 text-amber-700 border border-amber-100 text-[9px] font-bold tracking-wide uppercase">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                Pending
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="border-t border-b border-[#E8E3DA]/30 py-2.5 space-y-1.5 text-xs text-[#8B8378]">
+                          <div className="flex justify-between items-center py-0.5">
+                            <span>Customer Name:</span>
+                            <span className="font-bold text-[#3E3B36]">{inv.customer_name || 'Valued Customer'}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-0.5">
+                            <span>Mobile Connection:</span>
+                            <span className="font-mono text-[#3E3B36]">{maskPhoneNumber(inv.customer_phone)}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-0.5">
+                            <span>Bill Value:</span>
+                            <span className="font-bold text-emerald-600 font-mono">₹{Number(inv.total_amount).toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-0.5">
+                            <span>Time Proximity:</span>
+                            <span className="text-[#3E3B36] flex items-center gap-1">
+                              <Clock size={11} className="text-[#C4A896]" />
+                              {formatRelativeTime(inv.created_at)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end items-center gap-3">
+                          {inv.pdf_url ? (
+                            <button
+                              onClick={() => setPreviewInvoiceNumber(inv.invoice_number)}
+                              className="min-h-[44px] px-4 flex items-center justify-center gap-1.5 rounded-lg border border-[#E8E3DA] hover:bg-[#F5F1EA] text-xs font-semibold text-[#3E3B36] transition-colors"
+                              title="View Invoice PDF"
+                            >
+                              <Eye size={14} className="text-[#C4A896]" />
+                              <span>View PDF</span>
+                            </button>
+                          ) : (
+                            <span className="text-xs text-[#8B8378]">—</span>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
               <div className="bg-[#F9F7F4] border-t border-[#E8E3DA] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-xs text-[#8B8378] font-medium">

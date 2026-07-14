@@ -268,66 +268,129 @@ export default function EmailHistoryPage() {
             <p className="text-xs tracking-[0.1em] uppercase text-[#8B8378]">No email campaigns found.</p>
           </div>
         ) : (
-          <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-              <thead className="bg-[#F5F1EA] border-b border-[#E8E3DA]">
-                <tr>
-                  <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Campaign / Subject</th>
-                  <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Date</th>
-                  <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Tags</th>
-                  <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Status</th>
-                  <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium text-right">Metrics</th>
-                  <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium text-center">View</th>
-                </tr>
-              </thead>
-              <tbody>
+          <>
+            <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
+              {/* Desktop Table View */}
+              <table className="hidden lg:table w-full text-left border-collapse min-w-[800px]">
+                <thead className="bg-[#F5F1EA] border-b border-[#E8E3DA]">
+                  <tr>
+                    <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Campaign / Subject</th>
+                    <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Date</th>
+                    <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Tags</th>
+                    <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium">Status</th>
+                    <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium text-right">Metrics</th>
+                    <th className="px-5 py-3 text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-medium text-center">View</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {campaigns.map((c) => (
+                    <tr key={c.id} className="border-b border-[#E8E3DA]/60 last:border-0 hover:bg-[#F5F1EA]/30 transition-colors">
+                      <td className="px-5 py-4">
+                        <p className="text-sm font-medium text-[#3E3B36] truncate max-w-[200px]">{c.title}</p>
+                        <p className="text-[11px] text-[#8B8378] truncate max-w-[200px] mt-0.5">{c.subject}</p>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-1.5 text-xs text-[#8B8378]">
+                          <Clock size={12} />
+                          {new Date(c.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex flex-wrap gap-1">
+                          {c.target_tags?.map(t => (
+                            <span key={t} className="bg-[#6366f1]/10 text-[#6366f1] border border-[#6366f1]/20 text-[10px] px-2 py-0.5 rounded-md">{t}</span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={`text-[10px] px-2 py-1 uppercase tracking-widest font-semibold rounded-md ${
+                          c.status === 'completed' ? 'bg-[#10B981]/10 text-[#10B981]' :
+                          c.status === 'failed' ? 'bg-[#ef4444]/10 text-[#ef4444]' :
+                          c.status === 'processing' ? 'bg-[#f59e0b]/10 text-[#f59e0b]' :
+                          'bg-[#8B8378]/10 text-[#8B8378]'
+                        }`}>
+                          {c.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <p className="text-xs font-medium text-[#3E3B36]">{c.total_delivered.toLocaleString()} <span className="text-[#8B8378] font-normal">/ {c.total_sent.toLocaleString()} Deliv.</span></p>
+                        {c.total_failed > 0 && <p className="text-[10px] text-[#ef4444] mt-0.5">{c.total_failed.toLocaleString()} failed</p>}
+                      </td>
+                      <td className="px-5 py-4 text-center">
+                        <Link href={`/dashboard/email/history/${c.id}`} className="inline-flex bg-[#F5F1EA] hover:bg-[#E8E3DA] border border-[#E8E3DA] text-[#3E3B36] text-[10px] tracking-widest uppercase px-3 py-1.5 rounded-lg transition-colors font-medium">
+                          Details
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Mobile Stacked Card View */}
+              <div className="block lg:hidden space-y-4 p-4">
                 {campaigns.map((c) => (
-                  <tr key={c.id} className="border-b border-[#E8E3DA]/60 last:border-0 hover:bg-[#F5F1EA]/30 transition-colors">
-                    <td className="px-5 py-4">
-                      <p className="text-sm font-medium text-[#3E3B36] truncate max-w-[200px]">{c.title}</p>
-                      <p className="text-[11px] text-[#8B8378] truncate max-w-[200px] mt-0.5">{c.subject}</p>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-1.5 text-xs text-[#8B8378]">
-                        <Clock size={12} />
-                        {new Date(c.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                  <div key={c.id} className="bg-white border border-[#E8E3DA] rounded-xl p-5 shadow-sm space-y-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-[9px] tracking-[0.2em] text-[#8B8378] uppercase">Campaign / Subject</p>
+                        <h4 className="font-bold text-sm text-[#3E3B36] truncate max-w-[200px]">{c.title}</h4>
+                        <p className="text-xs text-[#8B8378] truncate max-w-[200px] mt-0.5">{c.subject}</p>
                       </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex flex-wrap gap-1">
-                        {c.target_tags?.map(t => (
-                          <span key={t} className="bg-[#6366f1]/10 text-[#6366f1] border border-[#6366f1]/20 text-[10px] px-2 py-0.5 rounded-md">{t}</span>
-                        ))}
+                      <div>
+                        <span className={`text-[9px] px-2 py-0.5 uppercase tracking-widest font-semibold rounded ${
+                          c.status === 'completed' ? 'bg-[#10B981]/10 text-[#10B981]' :
+                          c.status === 'failed' ? 'bg-[#ef4444]/10 text-[#ef4444]' :
+                          c.status === 'processing' ? 'bg-[#f59e0b]/10 text-[#f59e0b]' :
+                          'bg-[#8B8378]/10 text-[#8B8378]'
+                        }`}>
+                          {c.status}
+                        </span>
                       </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`text-[10px] px-2 py-1 uppercase tracking-widest font-semibold rounded-md ${
-                        c.status === 'completed' ? 'bg-[#10B981]/10 text-[#10B981]' :
-                        c.status === 'failed' ? 'bg-[#ef4444]/10 text-[#ef4444]' :
-                        c.status === 'processing' ? 'bg-[#f59e0b]/10 text-[#f59e0b]' :
-                        'bg-[#8B8378]/10 text-[#8B8378]'
-                      }`}>
-                        {c.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <p className="text-xs font-medium text-[#3E3B36]">{c.total_delivered.toLocaleString()} <span className="text-[#8B8378] font-normal">/ {c.total_sent.toLocaleString()} Deliv.</span></p>
-                      {c.total_failed > 0 && <p className="text-[10px] text-[#ef4444] mt-0.5">{c.total_failed.toLocaleString()} failed</p>}
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <Link href={`/dashboard/email/history/${c.id}`} className="inline-flex bg-[#F5F1EA] hover:bg-[#E8E3DA] border border-[#E8E3DA] text-[#3E3B36] text-[10px] tracking-widest uppercase px-3 py-1.5 rounded-lg transition-colors font-medium">
+                    </div>
+
+                    <div className="border-t border-[#E8E3DA]/30 pt-2.5 space-y-2 text-xs text-[#8B8378]">
+                      <div className="flex justify-between items-center">
+                        <span>Date:</span>
+                        <span className="flex items-center gap-1 text-[#3E3B36] font-medium">
+                          <Clock size={11} />
+                          {new Date(c.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Tags:</span>
+                        <div className="flex flex-wrap gap-1 justify-end max-w-[180px]">
+                          {c.target_tags?.map(t => (
+                            <span key={t} className="bg-[#6366f1]/10 text-[#6366f1] border border-[#6366f1]/20 text-[9px] px-1.5 py-0.5 rounded font-medium">{t}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Metrics:</span>
+                        <span className="text-[#3E3B36] font-medium">
+                          {c.total_delivered.toLocaleString()} / {c.total_sent.toLocaleString()} Delivered
+                          {c.total_failed > 0 && <span className="text-[#ef4444] ml-1">({c.total_failed.toLocaleString()} failed)</span>}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-1">
+                      <Link
+                        href={`/dashboard/email/history/${c.id}`}
+                        className="min-h-[44px] px-4 flex items-center justify-center bg-[#F5F1EA] hover:bg-[#E8E3DA] border border-[#E8E3DA] text-[#3E3B36] text-[10px] tracking-widest uppercase rounded-lg transition-colors font-medium"
+                      >
                         Details
                       </Link>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-            
+              </div>
+            </div>
+
+            {/* Observer target positioned outside table/cards */}
             <div ref={observerTarget} className="h-10 flex items-center justify-center p-4">
               {isFetchingMore && <Spinner className="w-5 h-5 border-t-[#6366f1]" />}
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>

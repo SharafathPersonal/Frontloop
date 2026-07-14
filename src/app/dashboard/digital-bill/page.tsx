@@ -79,8 +79,6 @@ export default function MobilePOSDigitalBillPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const scanLoopActive = useRef(false);
 
-  // Simulated barcode scan for testing environments
-  const [simulatedCode, setSimulatedCode] = useState('');
 
   // Active streamed QR state
   const [activeInvoice, setActiveInvoice] = useState<{
@@ -645,38 +643,11 @@ export default function MobilePOSDigitalBillPage() {
               </div>
             </div>
 
-            {/* Simulating code scanner when camera is not supported or for desktop developers */}
-            <div className="w-full p-4 space-y-3 bg-[#1E1B18] border-t border-white/5">
+            {/* Camera scanner status and guidance */}
+            <div className="w-full p-4 space-y-2 bg-[#1E1B18] border-t border-white/5">
               {scannerError && (
                 <p className="text-[10px] text-red-400 text-center font-medium leading-relaxed">{scannerError}</p>
               )}
-              
-              <div className="space-y-1.5">
-                <label className="block text-[9px] tracking-widest uppercase font-bold text-white/50">Simulate Scan (For Testing)</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="e.g. 8901030752104"
-                    value={simulatedCode}
-                    onChange={(e) => setSimulatedCode(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-xs text-white focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (simulatedCode.trim()) {
-                        setItemBarcode(simulatedCode.trim());
-                        showToast(`Simulated Scan: ${simulatedCode.trim()}`, 'success');
-                        stopCamera();
-                      }
-                    }}
-                    className="px-3 py-2 bg-[#C4A896] text-[#1E1B18] rounded-lg text-xs font-bold uppercase tracking-wider"
-                  >
-                    Apply
-                  </button>
-                </div>
-              </div>
-
               <p className="text-[10px] text-white/40 text-center">Place barcode/QR inside the scanner viewfinder frame.</p>
             </div>
             

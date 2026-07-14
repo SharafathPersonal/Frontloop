@@ -33,12 +33,15 @@ interface NavLink {
   label: string;
   href: string;
   icon: React.ReactNode;
+  comingSoon?: boolean;
 }
 
 const navLinks: NavLink[] = [
   { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={14} strokeWidth={1.5} /> },
   { label: 'Audience', href: '/dashboard/customers', icon: <Users size={14} strokeWidth={1.5} /> },
-  { label: 'Email Campaigns', href: '/dashboard/email', icon: <Mail size={14} strokeWidth={1.5} /> },
+  { label: 'Email Campaigns', href: '/dashboard/email', icon: <Mail size={14} strokeWidth={1.5} />, comingSoon: true },
+  { label: 'SMTP Settings', href: '#', icon: <Settings size={14} strokeWidth={1.5} />, comingSoon: true },
+  { label: 'Email Marketing Setup', href: '#', icon: <Zap size={14} strokeWidth={1.5} />, comingSoon: true },
   { label: 'WhatsApp Campaigns', href: '/dashboard/campaigns', icon: <Radio size={14} strokeWidth={1.5} /> },
   { label: 'Message Templates', href: '/dashboard/templates', icon: <MessageSquareText size={14} strokeWidth={1.5} /> },
   { label: 'Digital Bill Engine', href: '/dashboard/digital-bill', icon: <QrCode size={14} strokeWidth={1.5} /> },
@@ -150,6 +153,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <nav className="flex-1 px-3 py-4 space-y-0.5">
         <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase px-3 mb-3">Navigation</p>
         {navLinks.map((link) => {
+          if (link.comingSoon) {
+            return (
+              <div
+                key={link.label}
+                className="flex items-center justify-between py-2.5 px-3 rounded-lg text-[#8B8378]/50 select-none text-xs tracking-[0.15em] uppercase border border-transparent"
+              >
+                <div className="flex items-center gap-3">
+                  {link.icon}
+                  <span>{link.label}</span>
+                </div>
+                <span className="text-[8px] tracking-[0.05em] font-bold bg-[#F5F1EA] text-[#8B8378] px-1.5 py-0.5 rounded border border-[#E8E3DA] uppercase whitespace-nowrap ml-auto">
+                  Soon
+                </span>
+              </div>
+            );
+          }
+
           const active = isActive(link.href);
 
           return (
@@ -222,41 +242,65 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </aside>
 
         {/* Mobile Sidebar Overlay */}
-        {sidebarOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden">
-            <div
-              className="absolute inset-0 bg-[#3E3B36]/40 backdrop-blur-sm"
+        <div className={`fixed inset-0 z-50 lg:hidden transition-opacity duration-300 ${sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+          <div
+            className={`absolute inset-0 bg-[#3E3B36]/40 backdrop-blur-sm transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}
+            onClick={() => setSidebarOpen(false)}
+          />
+          <aside className={`absolute left-0 top-0 bottom-0 w-72 bg-[#FFFFFF] border-r border-[#E8E3DA] overflow-y-auto z-10 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <button
               onClick={() => setSidebarOpen(false)}
-            />
-            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#FFFFFF] border-r border-[#E8E3DA] overflow-y-auto z-10">
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="absolute top-4 right-4 text-[#8B8378] hover:text-[#C4A896] transition-colors"
-              >
-                <X size={18} />
-              </button>
-              {sidebarJsx}
-            </aside>
-          </div>
-        )}
+              className="absolute top-4 right-4 text-[#8B8378] hover:text-[#C4A896] transition-colors p-1.5"
+            >
+              <X size={18} />
+            </button>
+            {sidebarJsx}
+          </aside>
+        </div>
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
 
-          {/* Mobile top bar */}
-          <div className="lg:hidden flex items-center justify-between px-4 py-4 bg-[#FFFFFF] border-b border-[#E8E3DA]">
-            <div className="flex items-center gap-2">
-              <div className="relative w-7 h-7 flex items-center justify-center">
-                <Image src="/images/logo-dark.png" alt="Attendly Logo" fill className="object-contain" />
-              </div>
-              <span className="serif-headline text-base text-[#3E3B36]">Broadcast</span>
+          {/* Fixed Mobile Top Bar with Glassmorphism */}
+          <div className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-[#FFFFFF]/80 backdrop-blur-md border-b border-[#E8E3DA]/80">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {shop ? (
+                <>
+                  {shop.logo_url ? (
+                    <div className="relative h-7 w-7 rounded overflow-hidden flex-shrink-0 border border-[#E8E3DA]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={shop.logo_url} alt={shop.shop_name} className="h-7 w-7 object-contain" />
+                    </div>
+                  ) : (
+                    <div className="h-7 w-7 rounded bg-[#3E3B36] text-[#F5F1EA] flex items-center justify-center flex-shrink-0 text-[10px] font-bold uppercase">
+                      {shop.shop_name.slice(0, 2)}
+                    </div>
+                  )}
+                  <span className="font-semibold text-xs sm:text-sm text-[#3E3B36] truncate max-w-[110px] sm:max-w-[160px]" title={shop.shop_name}>
+                    {shop.shop_name}
+                  </span>
+                </>
+              ) : (
+                <div className="h-7 w-20 bg-[#3E3B36]/10 rounded animate-pulse" />
+              )}
             </div>
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="text-[#8B8378] hover:text-[#C4A896] transition-colors"
-            >
-              <Menu size={20} />
-            </button>
+
+            <div className="flex items-center gap-3">
+              {/* Wallet Credit counter pill */}
+              <div className="bg-[#3E3B36]/5 hover:bg-[#3E3B36]/10 transition-colors border border-[#E8E3DA] rounded-full px-2.5 py-1 flex items-center gap-1.5 text-xs text-[#3E3B36]">
+                <WalletIcon size={11} className="text-[#8B8378]" />
+                <span className="font-semibold">{wallet ? wallet.credits_remaining.toLocaleString() : '-'}</span>
+              </div>
+
+              {/* Hamburger Menu Trigger */}
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="p-1.5 text-[#8B8378] hover:text-[#3E3B36] hover:bg-[#3E3B36]/5 rounded-md transition-all shrink-0"
+                aria-label="Open navigation menu"
+              >
+                <Menu size={20} />
+              </button>
+            </div>
           </div>
 
           {/* Page Content */}

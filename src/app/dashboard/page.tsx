@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import type { Campaign, Shop, Wallet, EmailCampaign, Customer } from '@/types/broadcast';
-import { Mail, MessageSquare, QrCode, ArrowRight, Activity, Smartphone, CheckCircle2, AlertTriangle, Users, TrendingUp, Zap } from 'lucide-react';
+import { Mail, MessageSquare, QrCode, ArrowRight, Activity, Smartphone, CheckCircle2, AlertTriangle, Users, TrendingUp, Zap, Coins, Send } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -217,8 +217,59 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Top Stats Matrix Panel */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Wallet State */}
+        <div className="bg-white border border-[#E8E3DA] rounded-xl p-5 hover:shadow-lg transition-all duration-300">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-semibold">Wallet Balance</p>
+            <Coins size={15} className="text-[#C4A896]" strokeWidth={1.5} />
+          </div>
+          <p className="serif-headline text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">
+            {wallet ? `${wallet.credits_remaining.toLocaleString()}` : '-'}
+          </p>
+          <span className="text-[9px] text-[#8B8378] mt-1 block">Remaining Credits</span>
+        </div>
+
+        {/* Total Sent Volume */}
+        <div className="bg-white border border-[#E8E3DA] rounded-xl p-5 hover:shadow-lg transition-all duration-300">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-semibold">Sent Volume</p>
+            <Send size={15} className="text-[#C4A896]" strokeWidth={1.5} />
+          </div>
+          <p className="serif-headline text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">
+            {(waMetrics.sent + emailMetrics.sent).toLocaleString()}
+          </p>
+          <span className="text-[9px] text-[#8B8378] mt-1 block">WhatsApp + Email</span>
+        </div>
+
+        {/* Live Conversion / Read Analytics */}
+        <div className="bg-white border border-[#E8E3DA] rounded-xl p-5 hover:shadow-lg transition-all duration-300">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-semibold">WhatsApp Read</p>
+            <MessageSquare size={15} className="text-[#25D366]" strokeWidth={1.5} />
+          </div>
+          <p className="serif-headline text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">
+            {waMetrics.sent > 0 ? `${Math.round((waMetrics.read / waMetrics.sent) * 100)}%` : '0%'}
+          </p>
+          <span className="text-[9px] text-[#8B8378] mt-1 block">Read Ratio</span>
+        </div>
+
+        {/* Live POS Invoices */}
+        <div className="bg-white border border-[#E8E3DA] rounded-xl p-5 hover:shadow-lg transition-all duration-300">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-semibold">POS Invoices</p>
+            <QrCode size={15} className="text-[#C4A896]" strokeWidth={1.5} />
+          </div>
+          <p className="serif-headline text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">
+            {qrMetrics.total.toLocaleString()}
+          </p>
+          <span className="text-[9px] text-[#8B8378] mt-1 block">Total Retail Bills</span>
+        </div>
+      </div>
+
       {/* Tri-Channel Analytics Engine */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Channel A: WhatsApp */}
         <div className="bg-white border border-[#E8E3DA] rounded-xl p-6 hover:shadow-lg transition-all hover:-translate-y-1 duration-300">
           <div className="flex items-center gap-3 mb-6">
@@ -230,22 +281,22 @@ export default function DashboardPage() {
               <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">Broadcast Analytics</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Total Sent</p>
-              <p className="text-xl font-medium text-[#3E3B36]">{waMetrics.sent.toLocaleString()}</p>
+              <p className="text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">{waMetrics.sent.toLocaleString()}</p>
             </div>
             <div>
               <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Delivered</p>
-              <p className="text-xl font-medium text-[#3E3B36]">{waMetrics.delivered.toLocaleString()}</p>
+              <p className="text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">{waMetrics.delivered.toLocaleString()}</p>
             </div>
             <div>
               <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Read Ratio</p>
-              <p className="text-xl font-medium text-[#3E3B36]">{waMetrics.sent > 0 ? Math.round((waMetrics.read / waMetrics.sent) * 100) : 0}%</p>
+              <p className="text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">{waMetrics.sent > 0 ? Math.round((waMetrics.read / waMetrics.sent) * 100) : 0}%</p>
             </div>
             <div>
               <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Failed</p>
-              <p className="text-xl font-medium text-rose-500">{waMetrics.failed.toLocaleString()}</p>
+              <p className="text-lg sm:text-2xl font-bold text-rose-500 truncate">{waMetrics.failed.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -261,22 +312,22 @@ export default function DashboardPage() {
               <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">Corporate Reach</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Dispatched</p>
-              <p className="text-xl font-medium text-[#3E3B36]">{emailMetrics.sent.toLocaleString()}</p>
+              <p className="text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">{emailMetrics.sent.toLocaleString()}</p>
             </div>
             <div>
               <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Delivered</p>
-              <p className="text-xl font-medium text-[#3E3B36]">{emailMetrics.delivered.toLocaleString()}</p>
+              <p className="text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">{emailMetrics.delivered.toLocaleString()}</p>
             </div>
             <div>
               <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Open Rate</p>
-              <p className="text-xl font-medium text-[#3E3B36]">{emailMetrics.delivered > 0 ? '42%' : '0%'}</p>
+              <p className="text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">{emailMetrics.delivered > 0 ? '42%' : '0%'}</p>
             </div>
             <div>
               <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Bounce</p>
-              <p className="text-xl font-medium text-amber-500">{emailMetrics.failed.toLocaleString()}</p>
+              <p className="text-lg sm:text-2xl font-bold text-amber-500 truncate">{emailMetrics.failed.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -292,24 +343,24 @@ export default function DashboardPage() {
               <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">Retail Lead Intake</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Total Invoices</p>
-              <p className="text-xl font-medium text-[#3E3B36]">{qrMetrics.total.toLocaleString()}</p>
+              <p className="text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">{qrMetrics.total.toLocaleString()}</p>
             </div>
             <div>
               <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Delivery Rate</p>
-              <p className="text-xl font-medium text-[#3E3B36]">{qrMetrics.deliveryRate}%</p>
+              <p className="text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">{qrMetrics.deliveryRate}%</p>
             </div>
             <div>
               <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Delivered Bills</p>
-              <p className="text-xl font-medium text-emerald-600 flex items-center gap-1">
+              <p className="text-lg sm:text-2xl font-bold text-emerald-600 truncate flex items-center gap-1">
                 {qrMetrics.delivered.toLocaleString()} <CheckCircle2 size={12} />
               </p>
             </div>
             <div>
               <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Pending/Failed</p>
-              <p className="text-xl font-medium text-amber-500">{(qrMetrics.pending + qrMetrics.failed).toLocaleString()}</p>
+              <p className="text-lg sm:text-2xl font-bold text-amber-500 truncate">{(qrMetrics.pending + qrMetrics.failed).toLocaleString()}</p>
             </div>
           </div>
         </div>

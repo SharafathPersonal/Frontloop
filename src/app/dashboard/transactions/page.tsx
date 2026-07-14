@@ -371,7 +371,8 @@ export default function TransactionsPage() {
       {/* Main Ledger Content List */}
       <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-2xl overflow-hidden shadow-sm">
         <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
-          <table className="w-full text-left border-collapse">
+          {/* Desktop Table View */}
+          <table className="hidden lg:table w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#F9F7F4] border-b border-[#E8E3DA]">
                 {activeTab === 'purchases' ? (
@@ -502,21 +503,122 @@ export default function TransactionsPage() {
                   </tr>
                 ))
               )}
-              
-              {/* Infinite Scroll Loader Target */}
-              {hasMore && !loading && dataList.length > 0 && (
-                <tr ref={loaderRef}>
-                  <td colSpan={activeTab === 'purchases' ? 5 : 4} className="py-6 text-center">
-                    <div className="flex items-center justify-center gap-2 text-[#8B8378]">
-                      <div className="w-4 h-4 border-2 border-[#E8E3DA] border-t-[#C4A896] rounded-full animate-spin" />
-                      <span className="text-[10px] uppercase tracking-widest font-medium">Loading More...</span>
-                    </div>
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
+
+          {/* Mobile Stacked Card View */}
+          <div className="block lg:hidden space-y-4 p-4">
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="bg-white border border-[#E8E3DA] rounded-xl p-5 space-y-3 animate-pulse">
+                  <div className="h-4 w-1/3 bg-[#3E3B36]/10 rounded" />
+                  <div className="h-3 w-1/2 bg-[#3E3B36]/5 rounded" />
+                  <div className="h-3 w-2/3 bg-[#3E3B36]/5 rounded" />
+                </div>
+              ))
+            ) : dataList.length === 0 ? (
+              <div className="py-12 text-center bg-white border border-[#E8E3DA] rounded-xl">
+                <div className="w-12 h-12 bg-[#F5F1EA] rounded-full flex items-center justify-center mx-auto mb-3">
+                  <CreditCard className="text-[#C4A896]" size={20} />
+                </div>
+                <p className="text-sm font-medium text-[#3E3B36]">No entries found</p>
+              </div>
+            ) : (
+              dataList.map((row) => (
+                <div key={row.id} className="bg-white border border-[#E8E3DA] rounded-xl p-5 shadow-sm space-y-3">
+                  {activeTab === 'purchases' ? (
+                    <>
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-[9px] tracking-[0.2em] text-[#8B8378] uppercase">Gateway ID</p>
+                          <h4 className="font-mono font-bold text-xs text-[#3E3B36] truncate max-w-[170px]">{row.order_id || 'N/A'}</h4>
+                        </div>
+                        <div>
+                          {row.payment_status?.toUpperCase() === 'SUCCESS' || row.payment_status?.toUpperCase() === 'CHARGED' ? (
+                            <div className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase border border-emerald-100">
+                              <CheckCircle size={9} strokeWidth={2.5} />
+                              Success
+                            </div>
+                          ) : row.payment_status?.toUpperCase() === 'FAILED' ? (
+                            <div className="flex items-center gap-1 bg-red-50 text-red-700 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase border border-red-100">
+                              <XCircle size={9} strokeWidth={2.5} />
+                              Failed
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase border border-amber-100">
+                              <Clock size={9} strokeWidth={2.5} />
+                              Pending
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="border-t border-[#E8E3DA]/30 pt-2.5 space-y-1.5 text-xs text-[#8B8378]">
+                        <div className="flex justify-between items-center py-0.5">
+                          <span>Amount (INR):</span>
+                          <span className="font-semibold text-[#3E3B36]">₹{Number(row.amount).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5">
+                          <span>Credits Added:</span>
+                          <span className="font-bold text-[#C4A896]">+{row.credits_credited}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5">
+                          <span>Date & Time:</span>
+                          <span className="text-[#3E3B36] font-medium">
+                            {new Date(row.created_at).toLocaleString('en-GB', { 
+                              day: 'numeric', month: 'short', year: 'numeric', 
+                              hour: '2-digit', minute: '2-digit' 
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-[9px] tracking-[0.2em] text-[#8B8378] uppercase">Engine Type</p>
+                          <div className="mt-1">{renderEngineBadge(row.usage_type)}</div>
+                        </div>
+                        <div className="text-right">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-100 text-[10px] font-bold font-mono">
+                            -{Number(row.credits).toFixed(1)} Credits
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-[#E8E3DA]/30 pt-2.5 space-y-1.5 text-xs text-[#8B8378]">
+                        <div className="flex justify-between items-start py-0.5">
+                          <span>Reference Name:</span>
+                          <span className="font-semibold text-[#3E3B36] text-right truncate max-w-[180px]">{row.reference_name || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5">
+                          <span>Execution Time:</span>
+                          <span className="text-[#3E3B36] font-medium">
+                            {new Date(row.created_at).toLocaleString('en-GB', { 
+                              day: 'numeric', month: 'short', year: 'numeric', 
+                              hour: '2-digit', minute: '2-digit' 
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
         </div>
+      </div>
+
+      {/* Infinite Scroll Observer Sentinel */}
+      <div ref={loaderRef} className="h-4 flex items-center justify-center p-4">
+        {hasMore && !loading && dataList.length > 0 && (
+          <div className="flex items-center justify-center gap-2 text-[#8B8378]">
+            <div className="w-4 h-4 border-2 border-[#E8E3DA] border-t-[#C4A896] rounded-full animate-spin" />
+            <span className="text-[10px] uppercase tracking-widest font-medium">Loading More...</span>
+          </div>
+        )}
       </div>
     </div>
   );
