@@ -624,7 +624,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right side live interactive emulator playground */}
-            <div className="lg:col-span-7 hero-animate w-full flex flex-col md:flex-row gap-6 relative">
+            <div className="hidden lg:flex lg:col-span-7 hero-animate w-full flex-col md:flex-row gap-6 relative">
               
               {/* Visual Box 1: POS cash register terminal */}
               <div className="flex-1 bg-white text-[#2D1E17] rounded-2xl shadow-2xl border border-[#E5DCD3] overflow-hidden flex flex-col h-[520px]">
