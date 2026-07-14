@@ -164,9 +164,12 @@ export default function DashboardPage() {
           <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mt-1.5">Omnichannel Revenue Hub</p>
         </div>
         
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <Link href="/dashboard/campaigns/create" className="btn-primary bg-[#25D366] hover:bg-[#1DA851] text-white rounded-lg flex-1 md:flex-none flex items-center justify-center gap-2 !py-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          <Link href="/dashboard/campaigns/create" className="btn-primary bg-[#25D366] hover:bg-[#1DA851] text-white rounded-lg flex items-center justify-center gap-2 !py-3 text-xs sm:text-sm tracking-wider uppercase font-semibold">
             <Smartphone size={16} strokeWidth={2} /> WhatsApp Campaign
+          </Link>
+          <Link href="/dashboard/flash-offers" className="btn-primary bg-[#5C4033] hover:bg-[#4a3329] text-white rounded-lg flex items-center justify-center gap-2 !py-3 text-xs sm:text-sm tracking-wider uppercase font-semibold">
+            <Zap size={16} strokeWidth={2} /> Web Push Broadcast
           </Link>
         </div>
       </div>
@@ -207,7 +210,7 @@ export default function DashboardPage() {
           <p className="serif-headline text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">
             {waMetrics.sent.toLocaleString()}
           </p>
-          <span className="text-[9px] text-[#8B8378] mt-1 block">WhatsApp Broadcasts</span>
+          <span className="text-[9px] text-[#8B8378] mt-1 block">WhatsApp Messaging Logs</span>
         </div>
 
         {/* Live Conversion / Read Analytics */}

@@ -648,6 +648,10 @@
 - 🌟 **What Changed:** Overhauled the storefront landing page copy and layout to focus on dynamic QR and push notifications, purged all emojis, aligned the ledger to display exact credit usage rows, and verified responsive rendering.
 - 💡 **User/Business Benefit:** Boosts acquisition and retail trust by presenting a clean, professional, and zero-friction digital receipt engine for store owners.
 
+### [14/07/2026] - Merchant Dashboard UI/UX and Mobile Refactor
+- 🌟 **What Changed:** Overhauled all merchant dashboard routes to ensure 100% mobile-friendly compliance down to 360px without content loss. Constrained navigation sidebars to max-w-[280px], added automatic scroll and word-wrap properties, stacked quick actions and select credit packs vertically on small viewports, and integrated the active Web Push button.
+- 💡 **User/Business Benefit:** Delivers a seamless, high-end dashboard interface for store owners running businesses from mobile devices, preventing overflows and maintaining brand consistency.
+
 ---
 
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*

@@ -569,7 +569,7 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
           {/* Credit pack selection */}
           <div>
             <p className="text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-3">Select Credit Pack</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
               {creditPacks.map((pack) => (
                 <button
                   key={pack.amount}
@@ -583,9 +583,9 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
                   {selectedPack === pack.amount && (
                     <div className="absolute top-2 right-2"><CheckCircle size={12} className="text-[#C4A896]" strokeWidth={1.5} /></div>
                   )}
-                  <p className="text-sm font-medium text-[#3E3B36]">{pack.label}</p>
+                  <p className="text-sm sm:text-base font-medium text-[#3E3B36]">{pack.label}</p>
                   <p className="text-[10px] text-[#8B8378] tracking-[0.1em] uppercase mt-0.5">{pack.desc}</p>
-                  <p className="text-base font-semibold text-[#3E3B36] mt-2">{pack.price}</p>
+                  <p className="text-base sm:text-lg font-semibold text-[#3E3B36] mt-2">{pack.price}</p>
                 </button>
               ))}
             </div>

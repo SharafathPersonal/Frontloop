@@ -147,7 +147,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto min-h-0">
         <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase px-3 mb-3">Navigation</p>
         {navLinks.map((link) => {
           if (link.comingSoon) {
@@ -156,9 +156,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={link.label}
                 className="flex items-center justify-between py-2.5 px-3 rounded-lg text-[#8B8378]/50 select-none text-xs tracking-[0.15em] uppercase border border-transparent"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   {link.icon}
-                  <span>{link.label}</span>
+                  <span className="break-words whitespace-normal">{link.label}</span>
                 </div>
                 <span className="text-[8px] tracking-[0.05em] font-bold bg-[#F5F1EA] text-[#8B8378] px-1.5 py-0.5 rounded border border-[#E8E3DA] uppercase whitespace-nowrap ml-auto">
                   Soon
@@ -174,21 +174,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               key={link.href}
               href={link.href}
               onClick={() => setSidebarOpen(false)}
-              className={`flex items-center gap-3 py-2.5 px-3 rounded-lg transition-all text-xs tracking-[0.15em] uppercase ${
+              className={`flex items-center gap-3 py-2.5 px-3 rounded-lg transition-all text-xs tracking-[0.15em] uppercase min-w-0 ${
                 active
                   ? 'bg-[#F5F1EA] text-[#3E3B36] font-medium'
                   : 'text-[#8B8378] hover:text-[#C4A896]'
               }`}
             >
               {link.icon}
-              {link.label}
+              <span className="break-words whitespace-normal">{link.label}</span>
             </Link>
           );
         })}
       </nav>
 
       {/* Footer — Sign Out */}
-      <div className="px-4 py-5 border-t border-[#E8E3DA]">
+      <div className="px-4 py-5 border-t border-[#E8E3DA] flex-shrink-0">
         {shop && (
           <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-3 px-2 truncate">
             {shop.industry_type}
@@ -208,8 +208,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="relative w-4 h-4 flex-shrink-0">
               <Image src="/images/logo-dark.png" alt="Attendly Logo" fill sizes="16px" className="object-contain" />
             </div>
-            <span className="text-[10px] font-bold tracking-[0.1em] text-[#3E3B36] uppercase">
-              True Attendly Broadcast
+            <span className="text-[10px] font-bold tracking-[0.1em] text-[#3E3B36] uppercase break-words">
+              True Attendly
             </span>
           </div>
           <p className="text-[9px] tracking-wider text-[#8B8378]/60 mt-0.5">
@@ -244,7 +244,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className={`absolute inset-0 bg-[#3E3B36]/40 backdrop-blur-sm transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}
             onClick={() => setSidebarOpen(false)}
           />
-          <aside className={`absolute left-0 top-0 bottom-0 w-72 bg-[#FFFFFF] border-r border-[#E8E3DA] overflow-y-auto z-10 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <aside className={`absolute left-0 top-0 bottom-0 w-80 max-w-[280px] sm:max-w-xs bg-[#FFFFFF] border-r border-[#E8E3DA] overflow-y-auto z-10 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
             <button
               onClick={() => setSidebarOpen(false)}
               className="absolute top-4 right-4 text-[#8B8378] hover:text-[#C4A896] transition-colors p-1.5"
@@ -301,7 +301,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           {/* Page Content */}
-          <main className="flex-1 overflow-y-auto p-6 lg:p-4 sm:p-6 md:p-8 flex flex-col gap-6">
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 flex flex-col gap-6">
             {shop?.whatsapp_mode === 'QR_EXPRESS' && shop?.qr_express_status?.toUpperCase() !== 'CONNECTED' && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm shrink-0">
                 <div className="flex items-center gap-3">
