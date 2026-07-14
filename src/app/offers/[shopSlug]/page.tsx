@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, use, useCallback, useRef } from 'react';
-import { Search, Tag, Sparkles, Loader2, ChevronDown } from 'lucide-react';
+import { Search, Tag, Sparkles, Loader2, ChevronDown, Share2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 interface OfferItem {
@@ -14,6 +14,7 @@ interface OfferItem {
   show_discount_price: boolean;
   image_url?: string | null;
   created_at?: string;
+  push_shared_count?: number;
 }
 
 interface ShopBrand {
@@ -57,6 +58,7 @@ function OfferCardComponent({
   themeColor: string;
   discountPct: (orig: number, disc: number) => number;
 }) {
+  const [shares, setShares] = useState(offer.push_shared_count || 0);
   const computedPct = discountPct(Number(offer.original_price), Number(offer.discount_price));
 
   const formatCreatedAt = (dateStr?: string) => {
@@ -137,12 +139,45 @@ function OfferCardComponent({
 
           {/* Button */}
           <div className="flex flex-col items-start sm:items-end shrink-0">
-            <button
-              className="px-3.5 py-1 rounded text-[8px] font-bold uppercase tracking-wider text-white shadow-sm hover:scale-[1.02] transition-transform"
-              style={{ backgroundColor: themeColor }}
-            >
-              CLAIM IN-STORE
-            </button>
+            <div className="flex gap-2 items-center">
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (navigator.share) {
+                    try {
+                      await navigator.share({
+                        title: offer.product_name,
+                        text: offer.offer_description || `Check out this amazing offer for ${offer.product_name}!`,
+                        url: window.location.href,
+                      });
+                      setShares(prev => prev + 1);
+                      await supabase.rpc('increment_flash_offer_shares', { p_offer_id: offer.id });
+                    } catch (err) {
+                      console.error('Error sharing:', err);
+                    }
+                  } else {
+                    try {
+                      await navigator.clipboard.writeText(window.location.href);
+                      alert('Offer link copied to clipboard!');
+                      setShares(prev => prev + 1);
+                      await supabase.rpc('increment_flash_offer_shares', { p_offer_id: offer.id });
+                    } catch (err) {
+                      console.error('Failed to copy link:', err);
+                    }
+                  }
+                }}
+                className="px-2.5 py-1 rounded text-[8px] font-bold uppercase tracking-wider border flex items-center gap-1 hover:bg-[#FAF6F0] transition-colors"
+                style={{ borderColor: themeColor, color: themeColor }}
+              >
+                <Share2 size={10} /> Share {shares > 0 && `(${shares})`}
+              </button>
+              <button
+                className="px-3.5 py-1 rounded text-[8px] font-bold uppercase tracking-wider text-white shadow-sm hover:scale-[1.02] transition-transform"
+                style={{ backgroundColor: themeColor }}
+              >
+                CLAIM IN-STORE
+              </button>
+            </div>
             <span className="text-[5.5px] sm:text-[6px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
               Available In-Store Only
             </span>

@@ -662,6 +662,12 @@
 
 ---
 
+### [14/07/2026] - Viral Flash Share Analytics Integration
+- 🌟 **What Changed:** Integrated the "Total Shared" database metric system for flash offers. Added `push_shared_count` (INT, default 0) to `public.shop_flash_offers` and created the atomic RPC function `public.increment_flash_offer_shares`. Refactored the merchant dashboard metrics grid into a 6-card grid with a vertical divider, and updated type definitions. Embedded the Web Share API in the customer catalog cards (`src/app/offers/[shopSlug]/page.tsx` and `src/app/catalog/page.tsx`) to trigger the RPC increment on share resolution. Added the "Organic Share Engine" feature card to the landing page trinity grid using professional Lucide icons (`Share2`, `Layers`, `Radio`, `Users`).
+- 💡 **User/Business Benefit:** Empowers merchants to track organic word-of-mouth referral scaling of their offers and ensures rigorous data integrity via atomic, secure PostgreSQL operations.
+
+---
+
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*
 
 

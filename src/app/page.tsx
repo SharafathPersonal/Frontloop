@@ -10,7 +10,8 @@ import {
   Image as ImageIcon, AlertTriangle, X, Search, Loader2, Plus,
   Trash2, Download, Eye, Check, RefreshCw, HelpCircle,
   Settings, ChevronRight, Copy, Database, FileText, Lock, Sparkles,
-  CreditCard, TrendingUp, Sliders, Users, Megaphone, Target, Zap, ShoppingBag
+  CreditCard, TrendingUp, Sliders, Users, Megaphone, Target, Zap, ShoppingBag,
+  Share2, Layers, Radio
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -873,7 +874,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             
             {/* COLUMN 1: Live In-Store Flash Offers */}
             <article className="gsap-reveal bg-white border border-[#E5DCD3] rounded-2xl p-8 flex flex-col justify-between hover:shadow-xl hover:scale-[1.01] transition-all duration-300">
@@ -882,7 +883,7 @@ export default function LandingPage() {
                 {/* Feature Header */}
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-[#FAF6F0] text-[#5C4033] rounded-xl flex items-center justify-center border border-[#E5DCD3] shadow-sm">
-                    <Megaphone size={20} />
+                    <Radio size={20} />
                   </div>
                   <div>
                     <h3 className="font-bold text-[#5C4033] text-sm tracking-wide">Live In-Store Flash Offers</h3>
@@ -1004,7 +1005,7 @@ export default function LandingPage() {
                 {/* Feature Header */}
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-[#FAF6F0] text-[#5C4033] rounded-xl flex items-center justify-center border border-[#E5DCD3] shadow-sm">
-                    <ShoppingBag size={20} />
+                    <Layers size={20} />
                   </div>
                   <div>
                     <h3 className="font-bold text-[#5C4033] text-sm tracking-wide">Frictionless Digital Billing</h3>
@@ -1192,6 +1193,67 @@ export default function LandingPage() {
                   >
                     <Target size={10} /> Launch Campaign Broadcast
                   </button>
+                </div>
+              </div>
+            </article>
+
+            {/* COLUMN 4: Organic Viral Share Engine */}
+            <article className="gsap-reveal bg-white border border-[#E5DCD3] rounded-2xl p-8 flex flex-col justify-between hover:shadow-xl hover:scale-[1.01] transition-all duration-300">
+              <div className="space-y-6">
+                
+                {/* Feature Header */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#FAF6F0] text-[#5C4033] rounded-xl flex items-center justify-center border border-[#E5DCD3] shadow-sm">
+                    <Share2 size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-[#5C4033] text-sm tracking-wide">Organic Share Engine</h3>
+                    <p className="text-[9px] text-[#C4A896] font-bold uppercase tracking-widest mt-0.5">Organic Store Growth</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-[#7A6A5E] leading-relaxed">
+                  Organic Viral Share Engine — Track instant discount dispatches, viewer click interactions, and monitor share counts as users organically scale your active store audience app-less.
+                </p>
+
+                {/* Sub-capabilities list */}
+                <ul className="space-y-3 text-xs text-[#5C4033]/85 border-t border-[#E5DCD3]/50 pt-4">
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
+                    <span>Viral Mechanics — Enable customers to easily recommend live shop offers directly to family and friends.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
+                    <span>Real-time Metrics — Track share counts and conversion loops from public customer catalog pages.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
+                    <span>No App Barriers — Zero sign-up friction or native downloads for recipient traffic to see discounts.</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Dynamic Interactive Share Engine Simulator Widget */}
+              <div className="pt-6 mt-6 border-t border-[#E5DCD3] space-y-4">
+                <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  <span>Viral Engine Monitor</span>
+                  <span className="text-[#C4A896] font-bold">Live State</span>
+                </div>
+
+                <div className="bg-[#FAF6F0] p-4 rounded-xl border border-[#E5DCD3] space-y-3">
+                  {/* Share tracker simulator */}
+                  <div className="flex items-center justify-between text-xs border-b border-[#E5DCD3]/50 pb-2">
+                    <span className="text-slate-500">Demo Share Count:</span>
+                    <span className="font-bold text-[#5C4033]">24 Shares</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs border-b border-[#E5DCD3]/50 pb-2">
+                    <span className="text-slate-500">Recipient Clicks:</span>
+                    <span className="font-bold text-[#5C4033]">182 Clicks</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-500">Audience Growth:</span>
+                    <span className="font-bold text-emerald-600">+15 Subscribers</span>
+                  </div>
                 </div>
               </div>
             </article>

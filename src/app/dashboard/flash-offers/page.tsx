@@ -8,7 +8,7 @@ import Link from 'next/link';
 import {
   Zap, Eye, EyeOff, Plus, Pencil, Trash2, X, Loader2,
   TrendingUp, Package, Download, Sparkles, Settings, UploadCloud,
-  Send, MousePointerClick, Users
+  Send, MousePointerClick, Users, Share2
 } from 'lucide-react';
 
 export default function FlashOffersPage() {
@@ -318,23 +318,43 @@ export default function FlashOffersPage() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[
-          { label: 'Active Offers', value: activeOffers.length, icon: <Zap size={16} className="text-emerald-500" />, bg: 'bg-emerald-50', border: 'border-emerald-100' },
-          { label: 'Total Views', value: totalViews.toLocaleString(), icon: <TrendingUp size={16} className="text-[#C4A896]" />, bg: 'bg-[#F5F1EA]', border: 'border-[#E8E3DA]' },
-          { label: 'Disabled Offers', value: disabledOffers.length, icon: <EyeOff size={16} className="text-[#8B8378]" />, bg: 'bg-gray-50', border: 'border-gray-100' },
-          { label: 'Total Sent', value: totalPushSent.toLocaleString(), icon: <Send size={16} className="text-amber-600" />, bg: 'bg-amber-50/40', border: 'border-amber-100/60' },
-          { label: 'Opened/Clicked', value: totalPushOpened.toLocaleString(), icon: <MousePointerClick size={16} className="text-rose-500" />, bg: 'bg-rose-50/30', border: 'border-rose-100/50' },
-          { label: 'Subscribers', value: subscribers.toLocaleString(), icon: <Users size={16} className="text-purple-600" />, bg: 'bg-purple-50/40', border: 'border-purple-100/65' }
-        ].map((stat, i) => (
-          <div key={i} className={`${stat.bg} border ${stat.border} rounded-xl p-5 flex items-center gap-4`}>
-            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">{stat.icon}</div>
-            <div>
-              <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase">{stat.label}</p>
-              <p className="serif-headline text-2xl text-[#3E3B36] leading-tight">{stat.value}</p>
+      <div className="flex flex-col md:flex-row gap-6 items-stretch w-full">
+        {/* Group A (Catalog Overview) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+          {[
+            { label: 'Active Offers', value: activeOffers.length, icon: <Zap size={16} className="text-emerald-500" />, bg: 'bg-emerald-50', border: 'border-emerald-100' },
+            { label: 'Total Viewers', value: totalViews.toLocaleString(), icon: <TrendingUp size={16} className="text-[#C4A896]" />, bg: 'bg-[#F5F1EA]', border: 'border-[#E8E3DA]' },
+            { label: 'Disabled Offers', value: disabledOffers.length, icon: <EyeOff size={16} className="text-[#8B8378]" />, bg: 'bg-gray-50', border: 'border-gray-100' },
+          ].map((stat, i) => (
+            <div key={i} className={`${stat.bg} border ${stat.border} rounded-xl p-5 flex items-center gap-4`}>
+              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0">{stat.icon}</div>
+              <div className="min-w-0">
+                <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase truncate">{stat.label}</p>
+                <p className="serif-headline text-2xl text-[#3E3B36] leading-tight">{stat.value}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+
+        {/* Vertical Divider */}
+        <div className="hidden md:block border-r border-[#5C4033]/20" />
+
+        {/* Group B (Push Broadcast Engine) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+          {[
+            { label: 'Total Sent', value: totalPushSent.toLocaleString(), icon: <Send size={16} className="text-amber-600" />, bg: 'bg-amber-50/40', border: 'border-amber-100/60' },
+            { label: 'Opened/Clicked', value: totalPushOpened.toLocaleString(), icon: <MousePointerClick size={16} className="text-rose-500" />, bg: 'bg-rose-50/30', border: 'border-rose-100/50' },
+            { label: 'Subscribers', value: subscribers.toLocaleString(), icon: <Users size={16} className="text-purple-600" />, bg: 'bg-purple-50/40', border: 'border-purple-100/65' }
+          ].map((stat, i) => (
+            <div key={i} className={`${stat.bg} border ${stat.border} rounded-xl p-5 flex items-center gap-4`}>
+              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0">{stat.icon}</div>
+              <div className="min-w-0">
+                <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase truncate">{stat.label}</p>
+                <p className="serif-headline text-2xl text-[#3E3B36] leading-tight">{stat.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* QR Section */}
@@ -465,7 +485,7 @@ export default function FlashOffersPage() {
                                     <div className="flex items-center gap-1.5 text-[#8B8378] text-[9px] uppercase font-bold tracking-wider shrink-0 pl-1">
                                       <TrendingUp size={11} className="text-[#C4A896]" /> Engagement Stats
                                     </div>
-                                    <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-6 w-full sm:w-auto">
+                                    <div className="grid grid-cols-4 gap-2 sm:flex sm:items-center sm:gap-6 w-full sm:w-auto">
                                       <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-left">
                                         <span className="text-[9px] text-[#8B8378] font-medium whitespace-nowrap flex items-center gap-1"><Send size={10} className="text-amber-600" /> Total Sent:</span>
                                         <span className="text-xs font-bold text-[#3E3B36]">{offer.push_sent_count || 0}</span>
@@ -473,6 +493,10 @@ export default function FlashOffersPage() {
                                       <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-left">
                                         <span className="text-[9px] text-[#8B8378] font-medium whitespace-nowrap flex items-center gap-1"><MousePointerClick size={10} className="text-rose-500" /> Opened/Clicked:</span>
                                         <span className="text-xs font-bold text-[#3E3B36]">{offer.push_opened_count || 0}</span>
+                                      </div>
+                                      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-left">
+                                        <span className="text-[9px] text-[#8B8378] font-medium whitespace-nowrap flex items-center gap-1"><Share2 size={10} className="text-[#5C4033]" /> Total Shared:</span>
+                                        <span className="text-xs font-bold text-[#3E3B36]">{offer.push_shared_count || 0}</span>
                                       </div>
                                       <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-left">
                                         <span className="text-[9px] text-[#8B8378] font-medium whitespace-nowrap flex items-center gap-1"><Users size={10} className="text-purple-600" /> Subscribers:</span>
@@ -554,7 +578,7 @@ export default function FlashOffersPage() {
                       <div className="flex items-center gap-1.5 text-[#8B8378] text-[9px] uppercase font-bold tracking-wider pl-1">
                         <TrendingUp size={11} className="text-[#C4A896]" /> Engagement Stats
                       </div>
-                      <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="grid grid-cols-4 gap-2 text-center">
                         <div className="bg-white border border-[#E8E3DA]/45 rounded p-1.5 flex flex-col items-center">
                           <span className="text-[8px] text-[#8B8378] font-medium leading-tight">Sent</span>
                           <span className="text-xs font-bold text-[#3E3B36]">{offer.push_sent_count || 0}</span>
@@ -562,6 +586,10 @@ export default function FlashOffersPage() {
                         <div className="bg-white border border-[#E8E3DA]/45 rounded p-1.5 flex flex-col items-center">
                           <span className="text-[8px] text-[#8B8378] font-medium leading-tight">Opened</span>
                           <span className="text-xs font-bold text-[#3E3B36]">{offer.push_opened_count || 0}</span>
+                        </div>
+                        <div className="bg-white border border-[#E8E3DA]/45 rounded p-1.5 flex flex-col items-center">
+                          <span className="text-[8px] text-[#8B8378] font-medium leading-tight">Shared</span>
+                          <span className="text-xs font-bold text-[#3E3B36]">{offer.push_shared_count || 0}</span>
                         </div>
                         <div className="bg-white border border-[#E8E3DA]/45 rounded p-1.5 flex flex-col items-center">
                           <span className="text-[8px] text-[#8B8378] font-medium leading-tight">Subscribers</span>

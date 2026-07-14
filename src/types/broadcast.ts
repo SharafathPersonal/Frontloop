@@ -318,6 +318,7 @@ export interface FlashOffer {
   views_count: number;
   push_sent_count?: number;
   push_opened_count?: number;
+  push_shared_count?: number;
   image_url?: string | null;
   created_at: string;
   updated_at: string;
