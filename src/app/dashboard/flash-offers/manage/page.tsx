@@ -8,13 +8,49 @@ import Link from 'next/link';
 import {
   Zap, Eye, EyeOff, Plus, Pencil, Trash2, X, Loader2,
   TrendingUp, Package, Search, Sparkles, ArrowLeft,
-  ChevronDown, UploadCloud, Send, MousePointerClick, Users
+  ChevronDown, UploadCloud, Send, MousePointerClick, Users,
+  Calendar, Clock, Activity, Share2
 } from 'lucide-react';
 
 const PAGE_SIZE = 12;
 
 type SortOption = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'views-desc';
-type FilterOption = 'all' | 'active' | 'disabled';
+type FilterOption = 'all' | 'live' | 'scheduled' | 'concluded' | 'disabled';
+
+const toLocalDatetimeString = (isoString?: string | null) => {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return '';
+  const pad = (num: number) => String(num).padStart(2, '0');
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+const renderStatusBadge = (status: string) => {
+  if (status === 'draft') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-[#FAF6F0] text-[#5C4033] border border-[#E8E3DA] uppercase tracking-wider">
+        <Calendar size={10} className="text-[#5C4033]" /> Scheduled
+      </span>
+    );
+  }
+  if (status === 'active') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wider">
+        <Activity size={10} className="text-emerald-700" /> Live Now
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-gray-50 text-gray-500 border border-gray-200 uppercase tracking-wider">
+      <Clock size={10} className="text-gray-500" /> Concluded
+    </span>
+  );
+};
 
 export default function ManageOffersPage() {
   const { showToast } = useToast();
@@ -50,7 +86,42 @@ export default function ManageOffersPage() {
   const [formShowPercentageBadge, setFormShowPercentageBadge] = useState(true);
   const [formShowDiscountPrice, setFormShowDiscountPrice] = useState(true);
   const [formBroadcastWebPush, setFormBroadcastWebPush] = useState(false);
+  const [formStartAt, setFormStartAt] = useState('');
+  const [formEndAt, setFormEndAt] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [subscribers, setSubscribers] = useState(0);
+
+  const validateDates = (startVal: string, endVal: string): string | null => {
+    if (startVal) {
+      const start = new Date(startVal);
+      const now = new Date();
+      if (start.getTime() <= now.getTime() - 5000) {
+        return "Start time must be in the future. Past timestamps are not allowed.";
+      }
+      if (endVal) {
+        const end = new Date(endVal);
+        if (end.getTime() <= start.getTime()) {
+          return "End time must be after the start time.";
+        }
+      }
+    } else if (endVal) {
+      const start = new Date();
+      const end = new Date(endVal);
+      if (end.getTime() <= start.getTime()) {
+        return "End time must be after the start time.";
+      }
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    if (formStartAt || formEndAt) {
+      const err = validateDates(formStartAt, formEndAt);
+      setValidationError(err);
+    } else {
+      setValidationError(null);
+    }
+  }, [formStartAt, formEndAt]);
 
   // Infinite Scroll Anchor Ref
   const loaderRef = useRef<HTMLDivElement>(null);
@@ -91,8 +162,12 @@ export default function ManageOffersPage() {
       .eq('is_deleted', false);
 
     // Apply filter state
-    if (filterBy === 'active') {
-      query = query.eq('is_active', true);
+    if (filterBy === 'live') {
+      query = query.eq('is_active', true).eq('status', 'active');
+    } else if (filterBy === 'scheduled') {
+      query = query.eq('is_active', true).eq('status', 'draft');
+    } else if (filterBy === 'concluded') {
+      query = query.eq('is_active', true).eq('status', 'expired');
     } else if (filterBy === 'disabled') {
       query = query.eq('is_active', false);
     }
@@ -179,6 +254,9 @@ export default function ManageOffersPage() {
     setFormShowPercentageBadge(true);
     setFormShowDiscountPrice(true);
     setFormBroadcastWebPush(false);
+    setFormStartAt('');
+    setFormEndAt('');
+    setValidationError(null);
   };
 
   const openCreate = () => { resetForm(); setEditOffer(null); setIsCreateOpen(true); };
@@ -193,8 +271,11 @@ export default function ManageOffersPage() {
     setFormImageUrl(o.image_url || '');
     setFormShowPercentageBadge(o.show_percentage_badge !== false);
     setFormShowDiscountPrice(o.show_discount_price !== false);
-    setFormBroadcastWebPush(false);
+    setFormBroadcastWebPush(false); // Default OFF for edit mode safety (Rule 128)
     setPricingMode('A');
+    setFormStartAt(toLocalDatetimeString(o.start_at));
+    setFormEndAt(toLocalDatetimeString(o.end_at));
+    setValidationError(null);
     setEditOffer(o);
     setIsCreateOpen(true);
   };
@@ -284,6 +365,13 @@ export default function ManageOffersPage() {
     if (isNaN(disc) || disc <= 0) { showToast('Valid discount price required.', 'error'); return; }
     if (disc >= orig) { showToast('Discount price must be less than original price.', 'error'); return; }
 
+    const err = validateDates(formStartAt, formEndAt);
+    if (err) {
+      setValidationError(err);
+      showToast(err, 'error');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const payload = {
@@ -295,11 +383,14 @@ export default function ManageOffersPage() {
         show_percentage_badge: formShowPercentageBadge,
         show_discount_price: formShowDiscountPrice,
         image_url: formImageUrl.trim() || null,
-        broadcast_web_push: formBroadcastWebPush
+        broadcast_web_push: formBroadcastWebPush,
+        start_at: formStartAt ? new Date(formStartAt).toISOString() : new Date().toISOString(),
+        end_at: formEndAt ? new Date(formEndAt).toISOString() : null,
+        status: formStartAt ? 'draft' : 'active'
       };
 
-      const res = await fetch('/api/flash-offers/create', {
-        method: 'POST',
+      const res = await fetch('/api/flash-offers', {
+        method: editOffer ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
@@ -328,9 +419,19 @@ export default function ManageOffersPage() {
 
   const toggleActive = async (offer: FlashOffer) => {
     const newState = !offer.is_active;
-    setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, is_active: newState } : o));
+    const now = new Date();
+    const start = offer.start_at ? new Date(offer.start_at) : now;
+    const end = offer.end_at ? new Date(offer.end_at) : null;
+    let newStatus: 'draft' | 'active' | 'expired' = 'active';
+    if (start > now) {
+      newStatus = 'draft';
+    } else if (end && end <= now) {
+      newStatus = 'expired';
+    }
+
+    setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, is_active: newState, status: newStatus } : o));
     const { error } = await supabase.from('shop_flash_offers')
-      .update({ is_active: newState }).eq('id', offer.id);
+      .update({ is_active: newState, status: newStatus }).eq('id', offer.id);
     if (error) {
       setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, is_active: !newState } : o));
       showToast('Failed to toggle status.', 'error');
@@ -414,10 +515,12 @@ export default function ManageOffersPage() {
               <select
                 value={filterBy}
                 onChange={e => setFilterBy(e.target.value as FilterOption)}
-                className="appearance-none bg-white border border-[#E8E3DA] text-xs text-[#3E3B36] py-3 pl-4 pr-10 rounded-xl focus:outline-none focus:border-[#C4A896] cursor-pointer font-medium w-full sm:w-36"
+                className="appearance-none bg-white border border-[#E8E3DA] text-xs text-[#3E3B36] py-3 pl-4 pr-10 rounded-xl focus:outline-none focus:border-[#C4A896] cursor-pointer font-medium w-full sm:w-44"
               >
                 <option value="all">All Offers</option>
-                <option value="active">Active Only</option>
+                <option value="live">Live Now</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="concluded">Concluded</option>
                 <option value="disabled">Disabled Only</option>
               </select>
               <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8B8378] pointer-events-none" />
@@ -521,13 +624,16 @@ export default function ManageOffersPage() {
                                   <Eye size={12} /> {offer.views_count}
                                 </span>
                               </td>
-                              <td className="px-5 py-4 w-[12%]">
-                                <button
-                                  onClick={() => toggleActive(offer)}
-                                  className={`relative w-11 h-6 rounded-full transition-colors ${offer.is_active ? 'bg-emerald-500' : 'bg-[#E8E3DA]'}`}
-                                >
-                                  <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${offer.is_active ? 'left-[22px]' : 'left-0.5'}`} />
-                                </button>
+                               <td className="px-5 py-4 w-[12%]">
+                                <div className="flex flex-col gap-2 items-start">
+                                  {renderStatusBadge(offer.status)}
+                                  <button
+                                    onClick={() => toggleActive(offer)}
+                                    className={`relative w-11 h-6 rounded-full transition-colors ${offer.is_active ? 'bg-emerald-500' : 'bg-[#E8E3DA]'}`}
+                                  >
+                                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${offer.is_active ? 'left-[22px]' : 'left-0.5'}`} />
+                                  </button>
+                                </div>
                               </td>
                               <td className="px-5 py-4 text-right w-[13%]">
                                 <div className="flex items-center justify-end gap-2">
@@ -622,14 +728,17 @@ export default function ManageOffersPage() {
 
                   {/* Active/Inactive Toggle & Views */}
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] tracking-wider text-[#8B8378] uppercase">Status:</span>
-                      <button
-                        onClick={() => toggleActive(offer)}
-                        className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${offer.is_active ? 'bg-emerald-500' : 'bg-[#E8E3DA]'}`}
-                      >
-                        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${offer.is_active ? 'left-[22px]' : 'left-0.5'}`} />
-                      </button>
+                    <div className="flex flex-col gap-2 items-start">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] tracking-wider text-[#8B8378] uppercase">Status:</span>
+                        <button
+                          onClick={() => toggleActive(offer)}
+                          className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${offer.is_active ? 'bg-emerald-500' : 'bg-[#E8E3DA]'}`}
+                        >
+                          <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${offer.is_active ? 'left-[22px]' : 'left-0.5'}`} />
+                        </button>
+                      </div>
+                      {renderStatusBadge(offer.status)}
                     </div>
                     <span className="text-[11px] text-[#8B8378] flex items-center gap-1 font-medium">
                       <Eye size={12} /> {offer.views_count} views
@@ -785,10 +894,10 @@ export default function ManageOffersPage() {
                 <div className="flex gap-1.5 mt-3 flex-wrap items-center">
                   <span className="text-[9px] text-[#8B8378] self-center mr-1 font-bold uppercase tracking-wider">Presets:</span>
                   {[
-                    { name: '🥑 Avocado', url: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?auto=format&fit=crop&q=80&w=200' },
-                    { name: '⌚ Watch', url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=200' },
-                    { name: '👜 Tote Bag', url: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80&w=200' },
-                    { name: '🧣 Scarf', url: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=200' },
+                    { name: 'Avocado', url: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?auto=format&fit=crop&q=80&w=200' },
+                    { name: 'Watch', url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=200' },
+                    { name: 'Tote Bag', url: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80&w=200' },
+                    { name: 'Scarf', url: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=200' },
                   ].map(preset => (
                     <button
                       key={preset.name}
@@ -878,6 +987,31 @@ export default function ManageOffersPage() {
                 )}
               </div>
 
+              {/* Scheduling Engine Inputs */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5 flex items-center gap-1"><Calendar size={12} className="text-[#5C4033]" /> Start Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    value={formStartAt}
+                    onChange={e => setFormStartAt(e.target.value)}
+                    className="input-editorial focus:border-[#5C4033] focus:ring-[#5C4033]/20"
+                    placeholder="Now"
+                  />
+                  <span className="text-[9px] text-[#8B8378] mt-1 block">Defaults to now if empty</span>
+                </div>
+                <div>
+                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5 flex items-center gap-1"><Clock size={12} className="text-[#8B8378]" /> End Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    value={formEndAt}
+                    onChange={e => setFormEndAt(e.target.value)}
+                    className="input-editorial focus:border-[#5C4033] focus:ring-[#5C4033]/20"
+                  />
+                  <span className="text-[9px] text-[#8B8378] mt-1 block">Optional (never expires)</span>
+                </div>
+              </div>
+
               {/* Broadcast Web Push Control */}
               <div className="flex items-center justify-between p-4 bg-[#F5F1EA]/50 border border-[#E8E3DA] rounded-xl">
                 <div className="flex flex-col gap-0.5">
@@ -935,7 +1069,13 @@ export default function ManageOffersPage() {
                 <textarea value={formDescription} onChange={e => setFormDescription(e.target.value)}
                   className="input-editorial min-h-[80px] resize-none" placeholder="AI-generated or manual offer description..." />
               </div>
-              <button onClick={handleSubmit} disabled={isSubmitting}
+              {validationError && (
+                <div className="bg-[#FAF6F0] border border-[#5C4033]/30 rounded-xl p-4 text-[#5C4033] text-xs font-medium space-y-1 mb-4">
+                  <p className="font-bold uppercase tracking-wider text-[10px] flex items-center gap-1.5"><Clock size={12} /> Scheduling Validation Warning</p>
+                  <p>{validationError}</p>
+                </div>
+              )}
+              <button onClick={handleSubmit} disabled={isSubmitting || !!validationError}
                 className="w-full bg-[#3E3B36] text-[#F5F1EA] py-3.5 rounded-xl text-xs font-bold tracking-widest uppercase hover:bg-[#2A2825] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                 {isSubmitting ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : editOffer ? 'Update Offer' : 'Create Offer'}
               </button>

@@ -202,6 +202,7 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
   const loaderRef = useRef<HTMLDivElement>(null);
+  const viewLoggedRef = useRef(false);
 
   const [showPushBanner, setShowPushBanner] = useState(false);
 
@@ -232,6 +233,31 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
     }
   }, []);
 
+  // Record view count exactly once per unique visitor session
+  useEffect(() => {
+    if (!shop?.id || viewLoggedRef.current) return;
+    
+    // Check localized browser session tracking parameters (sessionStorage)
+    const sessionKey = `view_logged_${shop.id}`;
+    if (sessionStorage.getItem(sessionKey) === 'true') {
+      return;
+    }
+    
+    viewLoggedRef.current = true;
+    sessionStorage.setItem(sessionKey, 'true');
+    
+    fetch('/api/offers/view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shop_id: shop.id })
+    })
+    .then(res => res.json())
+    .then(data => console.log('View successfully recorded:', data))
+    .catch(err => {
+      console.error('Failed to record view:', err);
+    });
+  }, [shop?.id]);
+
   // Check if we should display push prompt banner
   // Trigger push registration instantly on mount if shop is loaded
   useEffect(() => {
@@ -255,11 +281,6 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
     return outputArray;
   };
 
-  const arrayBufferToBase64 = (buffer: ArrayBuffer | null) => {
-    if (!buffer) return null;
-    const binary = String.fromCharCode.apply(null, new Uint8Array(buffer) as any);
-    return window.btoa(binary);
-  };
 
   const handleSubscribe = async () => {
     if (!shop || !('Notification' in window)) return;
@@ -281,28 +302,35 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
           }
         }
         
-        const endpoint = subscription?.endpoint || `https://updates.trueattendly.online/push/mock-endpoint-${crypto.randomUUID()}`;
-        const p256dh = subscription ? arrayBufferToBase64(subscription.getKey('p256dh')) : 'mock-p256dh';
-        const auth = subscription ? arrayBufferToBase64(subscription.getKey('auth')) : 'mock-auth';
+        const rawSubscription = subscription ? subscription.toJSON() : null;
+        const endpoint = rawSubscription?.endpoint || `https://updates.trueattendly.online/push/mock-endpoint-${crypto.randomUUID()}`;
+        const p256dh = rawSubscription?.keys?.p256dh || 'mock-p256dh';
+        const auth = rawSubscription?.keys?.auth || 'mock-auth';
 
-        // Direct client-side insertion into Supabase
-        const { error } = await supabase
-          .from('push_subscriptions')
-          .upsert({
+        // Dispatch complete JSON payload to the subscription API containing shop_id alongside token metrics
+        const res = await fetch('/api/push-subscriptions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
             shop_id: shop.id,
             endpoint,
-            p256dh: p256dh || null,
-            auth: auth || null,
-            created_at: new Date().toISOString()
-          }, {
-            onConflict: 'endpoint'
-          });
+            keys: {
+              p256dh,
+              auth
+            },
+            p256dh,
+            auth
+          })
+        });
 
-        if (!error) {
-          console.log('Push subscription recorded to Supabase.');
-        } else {
-          console.error('Supabase push insertion error:', error);
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || 'Failed to sync push subscription');
         }
+
+        console.log('Push subscription synced via API successfully.');
       }
     } catch (err) {
       console.error('Subscription workflow failed:', err);

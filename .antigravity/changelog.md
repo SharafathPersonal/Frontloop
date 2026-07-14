@@ -668,6 +668,68 @@
 
 ---
 
+## 2026-07-14 — Phase 35: Web Push Notification Engine, View Deduplication & VAPID Hardening
+
+### [ENGINE] Web Push Subscription Intake & API Route Overhaul
+- **Module:** Push Notifications / Client Intake
+- **Nature:** Audited client-side intake mechanism inside storefront catalog (`src/app/offers/[shopSlug]/page.tsx`). Replaced direct client-side Supabase writes with a POST API call to `/api/push-subscriptions` passing a complete JSON payload containing `shop_id` alongside deep properties `endpoint`, `keys.p256dh`, and `keys.auth` extracted from the valid subscription object. Created a new API route `/src/app/api/push-subscriptions/route.ts` and updated `/src/app/api/offers/subscribe/route.ts` to resolve both nested and flat properties.
+- **Files:** `/src/app/offers/[shopSlug]/page.tsx`, `/src/app/api/push-subscriptions/route.ts`, `/src/app/api/offers/subscribe/route.ts`
+
+### [DATABASE] Unique Subscription Endpoint Constraint
+- **Module:** Database Schema / Migrations
+- **Nature:** Ensured the database safely handles duplicate endpoints by validating the `endpoint` UNIQUE constraint on the `push_subscriptions` table. Created an explicit catch-up constraint migration script `/supabase-migration-web-push-unique.sql` containing a DROP/ADD sequence to prevent runtime database execution blocks.
+- **Files:** `/supabase-migration-web-push-unique.sql`
+
+### [ENGINE] Broadcast Pipeline, VAPID Configuration & Endpoint Purging
+- **Module:** Web Push Broadcast / Workers
+- **Nature:** Generated corporate VAPID public/private key pairs and bound them to the server execution frame via `.env.local` and `webpush.setVapidDetails` configurations. Refactored the broadcast trigger logic in `/src/app/api/flash-offers/create/route.ts` to map strictly to the originating `shop_id` and execute dispatch in parallel. Wrapped each notification delivery inside an absolute try-catch filter to auto-purge expired browser endpoints (404/410) instantly from the database array.
+- **Files:** `/src/app/api/flash-offers/create/route.ts`, `/.env.local`
+
+### [ANALYTICS] Multi-Trigger View Deduplication & View API
+- **Module:** Storefront Analytics / Page Views
+- **Nature:** Exised the automatic view increment trigger from `/src/app/api/offers/route.ts` to stop duplicate view tracking on catalog query/search/sort triggers. Created a dedicated view tracking POST route `/src/app/api/offers/view/route.ts`. Added a client-side layout analytics initialization hook in `/src/app/offers/[shopSlug]/page.tsx` that ensures view tracking triggers exactly ONCE per unique visitor session using a client-side React `useRef` debounce flag and localized browser `sessionStorage` tracking keys.
+- **Files:** `/src/app/api/offers/route.ts`, `/src/app/api/offers/view/route.ts`, `/src/app/offers/[shopSlug]/page.tsx`
+
+---
+
+## 2026-07-14 — Phase 36: Flash Offer Auto-Publish & Expiry Scheduling Engine
+
+### [SCHEMA] Temporal Scheduling Columns Addition
+- **Module:** Database Schema / Migrations
+- **Nature:** Added migration script `supabase-migration-flash-offers-scheduling.sql` to introduce scheduling columns `start_at` (TIMESTAMP WITH TIME ZONE), `end_at` (TIMESTAMP WITH TIME ZONE), `status` (TEXT, default 'draft'), and `push_sent` (BOOLEAN, default FALSE) to `public.shop_flash_offers`. Backfilled existing records to maintain data safety.
+- **Files:** `/supabase-migration-flash-offers-scheduling.sql`
+
+### [BACKEND] Unified API Handlers & Temporal Polling Cron
+- **Module:** Backend API / Scheduling Controls
+- **Nature:** 
+  - Unified all flash offer creation/updates to `/api/flash-offers/route.ts` (POST/PUT), ensuring server-side status calculation based on current time versus start/end bounds, atomic credit deductions via `deduct_credits` RPC, and input validations.
+  - Implemented `/api/flash-offers/cron/route.ts` endpoint for automated status transitions (draft → active → expired) and push notification broadcasting.
+  - Refactored the public storefront route `/api/offers/route.ts` to enforce temporal filtering, ensuring only `active` status offers are queried.
+- **Files:** `/src/app/api/flash-offers/route.ts`, `/src/app/api/flash-offers/cron/route.ts`, `/src/app/api/offers/route.ts`
+
+### [UI/UX] Dashboard & Management Page Overhaul
+- **Module:** Merchant Dashboard / Scheduling Forms
+- **Nature:** 
+  - Updated `dashboard/flash-offers/page.tsx` and `dashboard/flash-offers/manage/page.tsx` to integrate luxury warm-brown (#5C4033) datetime-local pickers for `start_at` and `end_at`.
+  - Added visual status badges (Scheduled, Live Now, Concluded) to the desktop and mobile tables.
+  - Expanded filter options in the management page to support filtering by status (Live, Scheduled, Concluded).
+  - Purged legacy emojis from image presets in the management forms.
+- **Files:** `/src/app/dashboard/flash-offers/page.tsx`, `/src/app/dashboard/flash-offers/manage/page.tsx`
+
+---
+
+## 2026-07-14 — Phase 37: Flash Offer Scheduling Validation Matrix Hardening
+
+### [UI/UX] Modal Form Validations & Warning Prompts
+- **Module:** Merchant Dashboard / Scheduling Forms
+- **Nature:** Added `validationError` reactive state and a validation check hook (`validateDates`) in `/src/app/dashboard/flash-offers/page.tsx` and `/src/app/dashboard/flash-offers/manage/page.tsx`. If a merchant enters a past date or chronological sequence anomaly, a premium warm-brown styled warning card is displayed within the modal, and the submission/confirmation action buttons are dynamically disabled.
+- **Files:** `/src/app/dashboard/flash-offers/page.tsx`, `/src/app/dashboard/flash-offers/manage/page.tsx`
+
+### [BACKEND] Server-Side Payload Inspections & HTTP 400 Enforcement
+- **Module:** Flash Offers API
+- **Nature:** Refactored date parsing in the POST and PUT endpoints inside `/src/app/api/flash-offers/route.ts`. Ensured that if `start_at` is left empty or omitted, it defaults to the server execution timestamp (`NOW()`) and status `'active'`. Enforces that if `start_at` is explicitly provided, it evaluates to a future timestamp (relative to the runtime, with a 5-second drift tolerance) and `end_at` is chronologically after `start_at`. Returns HTTP `400 Bad Request` if bounds are breached.
+- **Files:** `/src/app/api/flash-offers/route.ts`
+
+---
+
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*
-
-

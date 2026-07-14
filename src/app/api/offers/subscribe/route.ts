@@ -3,7 +3,13 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: Request) {
   try {
-    const { shop_id, endpoint, p256dh, auth } = await req.json();
+    const body = await req.json();
+    const { shop_id, endpoint, keys, p256dh: flatP256dh, auth: flatAuth } = body;
+
+    // Resolve nested keys or flat keys
+    const p256dh = keys?.p256dh || flatP256dh || null;
+    const auth = keys?.auth || flatAuth || null;
+
     if (!shop_id || !endpoint) {
       return NextResponse.json({ error: 'Missing shop ID or subscription endpoint' }, { status: 400 });
     }
@@ -29,8 +35,8 @@ export async function POST(req: Request) {
       .upsert({
         shop_id,
         endpoint,
-        p256dh: p256dh || null,
-        auth: auth || null,
+        p256dh,
+        auth,
         created_at: new Date().toISOString()
       }, {
         onConflict: 'endpoint'

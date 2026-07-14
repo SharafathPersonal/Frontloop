@@ -320,16 +320,22 @@ export interface FlashOffer {
   push_opened_count?: number;
   push_shared_count?: number;
   image_url?: string | null;
+  start_at: string;
+  end_at?: string | null;
+  status: 'draft' | 'active' | 'expired';
+  push_sent: boolean;
   created_at: string;
   updated_at: string;
 }
 
-export type FlashOfferInsert = Omit<FlashOffer, 'id' | 'created_at' | 'updated_at' | 'views_count' | 'is_deleted'> & {
+export type FlashOfferInsert = Omit<FlashOffer, 'id' | 'created_at' | 'updated_at' | 'views_count' | 'is_deleted' | 'status' | 'push_sent'> & {
   id?: string;
   created_at?: string;
   updated_at?: string;
   views_count?: number;
   is_deleted?: boolean;
+  status?: 'draft' | 'active' | 'expired';
+  push_sent?: boolean;
 };
 
 export type FlashOfferUpdate = Partial<Omit<FlashOffer, 'id' | 'shop_id' | 'created_at'>>;

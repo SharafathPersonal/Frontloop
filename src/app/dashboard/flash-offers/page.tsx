@@ -8,8 +8,43 @@ import Link from 'next/link';
 import {
   Zap, Eye, EyeOff, Plus, Pencil, Trash2, X, Loader2,
   TrendingUp, Package, Download, Sparkles, Settings, UploadCloud,
-  Send, MousePointerClick, Users, Share2
+  Send, MousePointerClick, Users, Share2, Calendar, Clock, Activity
 } from 'lucide-react';
+
+const toLocalDatetimeString = (isoString?: string | null) => {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return '';
+  const pad = (num: number) => String(num).padStart(2, '0');
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+const renderStatusBadge = (status: string) => {
+  if (status === 'draft') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-[#FAF6F0] text-[#5C4033] border border-[#E8E3DA] uppercase tracking-wider">
+        <Calendar size={10} className="text-[#5C4033]" /> Scheduled
+      </span>
+    );
+  }
+  if (status === 'active') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wider">
+        <Activity size={10} className="text-emerald-700" /> Live Now
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-gray-50 text-gray-500 border border-gray-200 uppercase tracking-wider">
+      <Clock size={10} className="text-gray-500" /> Concluded
+    </span>
+  );
+};
 
 export default function FlashOffersPage() {
   const { showToast } = useToast();
@@ -38,7 +73,44 @@ export default function FlashOffersPage() {
   const [formShowPercentageBadge, setFormShowPercentageBadge] = useState(true);
   const [formShowDiscountPrice, setFormShowDiscountPrice] = useState(true);
   const [formBroadcastWebPush, setFormBroadcastWebPush] = useState(false);
+  const [formStartAt, setFormStartAt] = useState('');
+  const [formEndAt, setFormEndAt] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [subscribers, setSubscribers] = useState(0);
+
+  const validateDates = (startVal: string, endVal: string): string | null => {
+    if (startVal) {
+      const start = new Date(startVal);
+      const now = new Date();
+      // Rule A: Start must be in the future (past timestamps illegal)
+      if (start.getTime() <= now.getTime() - 5000) {
+        return "Start time must be in the future. Past timestamps are not allowed.";
+      }
+      if (endVal) {
+        const end = new Date(endVal);
+        // Rule B: End must be after Start
+        if (end.getTime() <= start.getTime()) {
+          return "End time must be after the start time.";
+        }
+      }
+    } else if (endVal) {
+      const start = new Date();
+      const end = new Date(endVal);
+      if (end.getTime() <= start.getTime()) {
+        return "End time must be after the start time.";
+      }
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    if (formStartAt || formEndAt) {
+      const err = validateDates(formStartAt, formEndAt);
+      setValidationError(err);
+    } else {
+      setValidationError(null);
+    }
+  }, [formStartAt, formEndAt]);
 
   const loadData = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -58,8 +130,12 @@ export default function FlashOffersPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const activeOffers = offers.filter(o => o.is_active && !o.is_deleted);
-  const disabledOffers = offers.filter(o => !o.is_active && !o.is_deleted);
+  const nonDeleted = offers.filter(o => !o.is_deleted);
+  const liveOffers = nonDeleted.filter(o => o.is_active && o.status === 'active');
+  const scheduledOffers = nonDeleted.filter(o => o.is_active && o.status === 'draft');
+  const concludedOffers = nonDeleted.filter(o => o.is_active && o.status === 'expired');
+  const disabledOffers = nonDeleted.filter(o => !o.is_active);
+
   const totalViews = offers.reduce((s, o) => s + (o.views_count || 0), 0);
   const totalPushSent = offers.reduce((s, o) => s + (o.push_sent_count || 0), 0);
   const totalPushOpened = offers.reduce((s, o) => s + (o.push_opened_count || 0), 0);
@@ -78,6 +154,9 @@ export default function FlashOffersPage() {
     setFormShowPercentageBadge(true);
     setFormShowDiscountPrice(true);
     setFormBroadcastWebPush(false);
+    setFormStartAt('');
+    setFormEndAt('');
+    setValidationError(null);
     setShowConfirmation(false);
   };
 
@@ -93,8 +172,11 @@ export default function FlashOffersPage() {
     setFormImageUrl(o.image_url || '');
     setFormShowPercentageBadge(o.show_percentage_badge !== false);
     setFormShowDiscountPrice(o.show_discount_price !== false);
-    setFormBroadcastWebPush(false);
+    setFormBroadcastWebPush(false); // Default OFF for edit mode safety (Rule 128)
     setPricingMode('A');
+    setFormStartAt(toLocalDatetimeString(o.start_at));
+    setFormEndAt(toLocalDatetimeString(o.end_at));
+    setValidationError(null);
     setEditOffer(o);
     setIsCreateOpen(true);
   };
@@ -114,8 +196,8 @@ export default function FlashOffersPage() {
     } else {
       const pct = parseFloat(formPercentage);
       if (!isNaN(pct) && pct >= 0 && pct <= 100) {
-        const disc = orig - (orig * (pct / 100));
-        setFormDiscount(disc.toFixed(2));
+        const disc = orig - (orig * pct) / 100;
+        setFormDiscount(String(disc));
       }
     }
   };
@@ -138,8 +220,8 @@ export default function FlashOffersPage() {
     const orig = parseFloat(formOriginal);
     if (isNaN(pct) || pct < 0 || pct > 100 || isNaN(orig) || orig <= 0) return;
 
-    const disc = orig - (orig * (pct / 100));
-    setFormDiscount(disc.toFixed(2));
+    const disc = orig - (orig * pct) / 100;
+    setFormDiscount(String(disc));
   };
 
   const handleImageUpload = async (file: File) => {
@@ -182,6 +264,13 @@ export default function FlashOffersPage() {
     if (isNaN(orig) || orig <= 0) { showToast('Valid original price required.', 'error'); return; }
     if (isNaN(disc) || disc <= 0) { showToast('Valid discount price required.', 'error'); return; }
     if (disc >= orig) { showToast('Discount price must be less than original price.', 'error'); return; }
+
+    const err = validateDates(formStartAt, formEndAt);
+    if (err) {
+      setValidationError(err);
+      showToast(err, 'error');
+      return;
+    }
     setShowConfirmation(true);
   };
 
@@ -194,6 +283,13 @@ export default function FlashOffersPage() {
     if (isNaN(disc) || disc <= 0) { showToast('Valid discount price required.', 'error'); return; }
     if (disc >= orig) { showToast('Discount price must be less than original price.', 'error'); return; }
 
+    const err = validateDates(formStartAt, formEndAt);
+    if (err) {
+      setValidationError(err);
+      showToast(err, 'error');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const payload = {
@@ -205,11 +301,14 @@ export default function FlashOffersPage() {
         show_percentage_badge: formShowPercentageBadge,
         show_discount_price: formShowDiscountPrice,
         image_url: formImageUrl.trim() || null,
-        broadcast_web_push: formBroadcastWebPush
+        broadcast_web_push: formBroadcastWebPush,
+        start_at: formStartAt ? new Date(formStartAt).toISOString() : new Date().toISOString(),
+        end_at: formEndAt ? new Date(formEndAt).toISOString() : null,
+        status: formStartAt ? 'draft' : 'active'
       };
 
-      const res = await fetch('/api/flash-offers/create', {
-        method: 'POST',
+      const res = await fetch('/api/flash-offers', {
+        method: editOffer ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
@@ -229,7 +328,7 @@ export default function FlashOffersPage() {
         showToast('Flash offer created!', 'success');
       }
       setIsCreateOpen(false); resetForm(); setEditOffer(null);
-      loadData(); // Refresh metrics and subscriber counts
+      loadData();
     } catch (err: any) {
       showToast(err.message || 'Failed to save offer.', 'error');
     } finally { setIsSubmitting(false); }
@@ -237,9 +336,19 @@ export default function FlashOffersPage() {
 
   const toggleActive = async (offer: FlashOffer) => {
     const newState = !offer.is_active;
-    setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, is_active: newState } : o));
+    const now = new Date();
+    const start = offer.start_at ? new Date(offer.start_at) : now;
+    const end = offer.end_at ? new Date(offer.end_at) : null;
+    let newStatus: 'draft' | 'active' | 'expired' = 'active';
+    if (start > now) {
+      newStatus = 'draft';
+    } else if (end && end <= now) {
+      newStatus = 'expired';
+    }
+
+    setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, is_active: newState, status: newStatus } : o));
     const { error } = await supabase.from('shop_flash_offers')
-      .update({ is_active: newState }).eq('id', offer.id);
+      .update({ is_active: newState, status: newStatus }).eq('id', offer.id);
     if (error) {
       setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, is_active: !newState } : o));
       showToast('Failed to toggle status.', 'error');
@@ -318,43 +427,23 @@ export default function FlashOffersPage() {
       </div>
 
       {/* Stats Row */}
-      <div className="flex flex-col md:flex-row gap-6 items-stretch w-full">
-        {/* Group A (Catalog Overview) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
-          {[
-            { label: 'Active Offers', value: activeOffers.length, icon: <Zap size={16} className="text-emerald-500" />, bg: 'bg-emerald-50', border: 'border-emerald-100' },
-            { label: 'Total Viewers', value: totalViews.toLocaleString(), icon: <TrendingUp size={16} className="text-[#C4A896]" />, bg: 'bg-[#F5F1EA]', border: 'border-[#E8E3DA]' },
-            { label: 'Disabled Offers', value: disabledOffers.length, icon: <EyeOff size={16} className="text-[#8B8378]" />, bg: 'bg-gray-50', border: 'border-gray-100' },
-          ].map((stat, i) => (
-            <div key={i} className={`${stat.bg} border ${stat.border} rounded-xl p-5 flex items-center gap-4`}>
-              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0">{stat.icon}</div>
-              <div className="min-w-0">
-                <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase truncate">{stat.label}</p>
-                <p className="serif-headline text-2xl text-[#3E3B36] leading-tight">{stat.value}</p>
-              </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[
+          { label: 'Live Now', value: liveOffers.length, icon: <Activity size={16} className="text-emerald-600" />, bg: 'bg-emerald-50', border: 'border-emerald-100' },
+          { label: 'Scheduled', value: scheduledOffers.length, icon: <Calendar size={16} className="text-[#5C4033]" />, bg: 'bg-[#F5F1EA]', border: 'border-[#E8E3DA]' },
+          { label: 'Concluded', value: concludedOffers.length, icon: <Clock size={16} className="text-[#8B8378]" />, bg: 'bg-gray-50', border: 'border-gray-100' },
+          { label: 'Total Viewers', value: totalViews.toLocaleString(), icon: <TrendingUp size={16} className="text-[#C4A896]" />, bg: 'bg-[#F5F1EA]', border: 'border-[#E8E3DA]' },
+          { label: 'Total Sent', value: totalPushSent.toLocaleString(), icon: <Send size={16} className="text-amber-600" />, bg: 'bg-amber-50/40', border: 'border-amber-100/60' },
+          { label: 'Subscribers', value: subscribers.toLocaleString(), icon: <Users size={16} className="text-purple-600" />, bg: 'bg-purple-50/40', border: 'border-purple-100/65' }
+        ].map((stat, i) => (
+          <div key={i} className={`${stat.bg} border ${stat.border} rounded-xl p-5 flex items-center gap-4`}>
+            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0">{stat.icon}</div>
+            <div>
+              <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase">{stat.label}</p>
+              <p className="serif-headline text-2xl text-[#3E3B36] leading-tight">{stat.value}</p>
             </div>
-          ))}
-        </div>
-
-        {/* Vertical Divider */}
-        <div className="hidden md:block border-r border-[#5C4033]/20" />
-
-        {/* Group B (Push Broadcast Engine) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
-          {[
-            { label: 'Total Sent', value: totalPushSent.toLocaleString(), icon: <Send size={16} className="text-amber-600" />, bg: 'bg-amber-50/40', border: 'border-amber-100/60' },
-            { label: 'Opened/Clicked', value: totalPushOpened.toLocaleString(), icon: <MousePointerClick size={16} className="text-rose-500" />, bg: 'bg-rose-50/30', border: 'border-rose-100/50' },
-            { label: 'Subscribers', value: subscribers.toLocaleString(), icon: <Users size={16} className="text-purple-600" />, bg: 'bg-purple-50/40', border: 'border-purple-100/65' }
-          ].map((stat, i) => (
-            <div key={i} className={`${stat.bg} border ${stat.border} rounded-xl p-5 flex items-center gap-4`}>
-              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0">{stat.icon}</div>
-              <div className="min-w-0">
-                <p className="text-[10px] tracking-[0.2em] text-[#8B8378] uppercase truncate">{stat.label}</p>
-                <p className="serif-headline text-2xl text-[#3E3B36] leading-tight">{stat.value}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
       {/* QR Section */}
@@ -455,12 +544,15 @@ export default function FlashOffersPage() {
                                   </span>
                                 </td>
                                 <td className="px-5 py-4 w-[12%]">
-                                  <button
-                                    onClick={() => toggleActive(offer)}
-                                    className={`relative w-11 h-6 rounded-full transition-colors ${offer.is_active ? 'bg-emerald-500' : 'bg-[#E8E3DA]'}`}
-                                  >
-                                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${offer.is_active ? 'left-[22px]' : 'left-0.5'}`} />
-                                  </button>
+                                  <div className="flex flex-col gap-2 items-start">
+                                    {renderStatusBadge(offer.status)}
+                                    <button
+                                      onClick={() => toggleActive(offer)}
+                                      className={`relative w-11 h-6 rounded-full transition-colors ${offer.is_active ? 'bg-emerald-500' : 'bg-[#E8E3DA]'}`}
+                                    >
+                                      <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${offer.is_active ? 'left-[22px]' : 'left-0.5'}`} />
+                                    </button>
+                                  </div>
                                 </td>
                                 <td className="px-5 py-4 text-right w-[13%]">
                                   <div className="flex items-center justify-end gap-2">
@@ -559,14 +651,17 @@ export default function FlashOffersPage() {
 
                     {/* Active/Inactive Toggle & Views */}
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] tracking-wider text-[#8B8378] uppercase">Status:</span>
-                        <button
-                          onClick={() => toggleActive(offer)}
-                          className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${offer.is_active ? 'bg-emerald-500' : 'bg-[#E8E3DA]'}`}
-                        >
-                          <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${offer.is_active ? 'left-[22px]' : 'left-0.5'}`} />
-                        </button>
+                      <div className="flex flex-col gap-2 items-start">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] tracking-wider text-[#8B8378] uppercase">Status:</span>
+                          <button
+                            onClick={() => toggleActive(offer)}
+                            className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${offer.is_active ? 'bg-emerald-500' : 'bg-[#E8E3DA]'}`}
+                          >
+                            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${offer.is_active ? 'left-[22px]' : 'left-0.5'}`} />
+                          </button>
+                        </div>
+                        {renderStatusBadge(offer.status)}
                       </div>
                       <span className="text-[11px] text-[#8B8378] flex items-center gap-1 font-medium">
                         <Eye size={12} /> {offer.views_count} views
@@ -807,6 +902,31 @@ export default function FlashOffersPage() {
                 )}
               </div>
 
+              {/* Scheduling Engine Inputs */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5 flex items-center gap-1"><Calendar size={12} className="text-[#5C4033]" /> Start Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    value={formStartAt}
+                    onChange={e => setFormStartAt(e.target.value)}
+                    className="input-editorial focus:border-[#5C4033] focus:ring-[#5C4033]/20"
+                    placeholder="Now"
+                  />
+                  <span className="text-[9px] text-[#8B8378] mt-1 block">Defaults to now if empty</span>
+                </div>
+                <div>
+                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5 flex items-center gap-1"><Clock size={12} className="text-[#8B8378]" /> End Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    value={formEndAt}
+                    onChange={e => setFormEndAt(e.target.value)}
+                    className="input-editorial focus:border-[#5C4033] focus:ring-[#5C4033]/20"
+                  />
+                  <span className="text-[9px] text-[#8B8378] mt-1 block">Optional (never expires)</span>
+                </div>
+              </div>
+
               {/* Broadcast Web Push Control */}
               <div className="flex items-center justify-between p-4 bg-[#F5F1EA]/50 border border-[#E8E3DA] rounded-xl">
                 <div className="flex flex-col gap-0.5">
@@ -885,6 +1005,14 @@ export default function FlashOffersPage() {
                       <span className="font-bold text-[#3E3B36]">Final Price:</span>
                       <span className="font-bold text-[#3E3B36]">₹{Number(formDiscount || 0).toFixed(2)}</span>
                     </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#8B8378]">Start Time:</span>
+                      <span className="font-medium text-[#3E3B36]">{formStartAt ? new Date(formStartAt).toLocaleString() : 'Immediate (Now)'}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#8B8378]">End Time:</span>
+                      <span className="font-medium text-[#3E3B36]">{formEndAt ? new Date(formEndAt).toLocaleString() : 'Permanent (Never)'}</span>
+                    </div>
                     <div className="flex justify-between items-center text-xs bg-amber-50/50 p-3 rounded-lg border border-amber-100/60 mt-4">
                       <span className="font-bold text-amber-700 flex items-center gap-1.5"><Zap size={12} /> Wallet Cost:</span>
                       <span className="font-bold text-amber-700 text-right">
@@ -896,8 +1024,14 @@ export default function FlashOffersPage() {
                   </div>
                 </div>
               )}
+              {validationError && (
+                <div className="bg-[#FAF6F0] border border-[#5C4033]/30 rounded-xl p-4 text-[#5C4033] text-xs font-medium space-y-1">
+                  <p className="font-bold uppercase tracking-wider text-[10px] flex items-center gap-1.5"><Clock size={12} /> Scheduling Validation Warning</p>
+                  <p>{validationError}</p>
+                </div>
+              )}
               {!showConfirmation ? (
-                <button onClick={handleInitialSubmit} disabled={isSubmitting}
+                <button onClick={handleInitialSubmit} disabled={isSubmitting || !!validationError}
                   className="w-full bg-[#3E3B36] text-[#F5F1EA] py-3.5 rounded-xl text-xs font-bold tracking-widest uppercase hover:bg-[#2A2825] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                   {editOffer ? 'Review Update' : 'Review Offer'}
                 </button>
@@ -907,7 +1041,7 @@ export default function FlashOffersPage() {
                     className="flex-1 py-3.5 border border-[#E8E3DA] rounded-xl text-xs font-bold tracking-widest uppercase text-[#8B8378] hover:bg-[#F5F1EA] transition-colors disabled:opacity-50">
                     Back
                   </button>
-                  <button onClick={handleSubmit} disabled={isSubmitting}
+                  <button onClick={handleSubmit} disabled={isSubmitting || !!validationError}
                     className="flex-1 bg-[#3E3B36] text-[#F5F1EA] py-3.5 rounded-xl text-xs font-bold tracking-widest uppercase hover:bg-[#2A2825] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                     {isSubmitting ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : 'Confirm & Publish'}
                   </button>
