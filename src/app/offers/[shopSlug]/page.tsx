@@ -246,16 +246,19 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
     viewLoggedRef.current = true;
     sessionStorage.setItem(sessionKey, 'true');
     
+    const controller = new AbortController();
     fetch('/api/offers/view', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ shop_id: shop.id })
+      body: JSON.stringify({ shop_id: shop.id }),
+      signal: controller.signal
     })
     .then(res => res.json())
-    .then(data => console.log('View successfully recorded:', data))
-    .catch(err => {
-      console.error('Failed to record view:', err);
-    });
+    .catch(() => {});
+
+    return () => {
+      controller.abort();
+    };
   }, [shop?.id]);
 
   // Check if we should display push prompt banner
@@ -271,14 +274,19 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
 
   // Helper functions for VAPID base64 conversion
   const urlBase64ToUint8Array = (base64String: string) => {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
+    try {
+      const cleaned = base64String.split('=')[0];
+      const padding = '='.repeat((4 - (cleaned.length % 4)) % 4);
+      const base64 = (cleaned + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    } catch {
+      return new Uint8Array();
     }
-    return outputArray;
   };
 
 
@@ -352,7 +360,7 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
-  const fetchOffers = useCallback(async (isInitial = false) => {
+  const fetchOffers = useCallback(async (isInitial = false, signal?: AbortSignal) => {
     try {
       if (isInitial) {
         setLoading(true);
@@ -361,7 +369,7 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
       }
 
       const currentPage = isInitial ? 1 : page;
-      const res = await fetch(`/api/offers?slug=${encodeURIComponent(shopSlug)}&page=${currentPage}&limit=10&search=${encodeURIComponent(debouncedSearch)}&sort=${sortBy}`);
+      const res = await fetch(`/api/offers?slug=${encodeURIComponent(shopSlug)}&page=${currentPage}&limit=10&search=${encodeURIComponent(debouncedSearch)}&sort=${sortBy}`, { signal });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || 'Failed to fetch offers');
@@ -386,8 +394,10 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
         setPage(prev => prev + 1);
       }
       setHasMore(newOffers.length === 10);
-    } catch {
-      setError('Failed to load offers.');
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        setError('Failed to load offers.');
+      }
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -396,7 +406,11 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
 
   // Refetch when filters or sorting change
   useEffect(() => {
-    fetchOffers(true);
+    const controller = new AbortController();
+    fetchOffers(true, controller.signal);
+    return () => {
+      controller.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, sortBy]);
 
@@ -441,11 +455,119 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
 
   if (loading && offers.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: `${themeColor}05` }}>
-        <div className="text-center">
-          <Loader2 size={32} className="animate-spin mx-auto mb-3" style={{ color: themeColor }} />
-          <p className="text-sm text-gray-500">Loading offers...</p>
+      <div className="min-h-screen" style={{ backgroundColor: `${themeColor}05` }}>
+        {/* Shop Header Skeleton */}
+        <div 
+          className="w-full py-5 px-6 border-b shadow-sm"
+          style={{ 
+            backgroundColor: themeColor,
+            borderColor: 'rgba(255, 255, 255, 0.15)'
+          }}
+        >
+          <div className="max-w-lg mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              {/* Round profile avatar block */}
+              <div className="h-12 w-12 rounded-full shimmer-dark shrink-0" />
+              {/* 2 horizontal text lines for the shop title/branding */}
+              <div className="flex flex-col gap-2 min-w-0">
+                <div className="h-5 w-32 shimmer-dark rounded" />
+                <div className="h-3 w-12 shimmer-dark rounded" />
+              </div>
+            </div>
+            {/* Live indicator badge skeleton */}
+            <div className="h-6 w-20 shimmer-dark rounded-full" />
+          </div>
         </div>
+
+        {/* Active Offers Counter Row Skeleton */}
+        <div className="w-full bg-[#FAF6F0] border-b border-[#E8E3DA] py-2.5 px-6 shadow-sm">
+          <div className="max-w-lg mx-auto flex items-center justify-between">
+            <div className="h-3 w-36 bg-neutral-200 animate-pulse rounded" />
+            <div className="h-2.5 w-28 bg-neutral-200 animate-pulse rounded" />
+          </div>
+        </div>
+
+        {/* Search & Sort Band Skeleton */}
+        <div
+          className="relative overflow-hidden"
+          style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}dd)` }}
+        >
+          <div className="px-5 pt-5 pb-6 max-w-lg mx-auto flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 h-9 shimmer-dark rounded-xl" />
+            <div className="w-full sm:w-40 h-9 shimmer-dark rounded-xl" />
+          </div>
+        </div>
+
+        {/* Offers Grid Array Skeleton */}
+        <main className="px-4 py-6 max-w-lg mx-auto space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="rounded-2xl border p-4 shadow-sm flex gap-4"
+              style={{
+                borderColor: `${themeColor}20`,
+                background: 'linear-gradient(135deg, #FCFBF9, #F5F1EA)'
+              }}
+            >
+              {/* Left side: cover image placeholder */}
+              <div className="w-20 h-20 bg-neutral-200 shimmer rounded-xl border border-black/5 shrink-0 shadow-sm" />
+
+              {/* Right side: details skeleton */}
+              <div className="flex-1 flex flex-col justify-between min-w-0">
+                <div>
+                  <div className="flex justify-between items-start gap-2">
+                    {/* title skeleton */}
+                    <div className="h-3 w-28 bg-neutral-200 shimmer rounded" />
+                    {/* badge skeleton */}
+                    <div className="h-3 w-12 bg-neutral-200 shimmer rounded" />
+                  </div>
+                  {/* description skeleton */}
+                  <div className="space-y-1.5 mt-2">
+                    <div className="h-2.5 w-full bg-neutral-200/80 shimmer rounded" />
+                    <div className="h-2.5 w-5/6 bg-neutral-200/80 shimmer rounded" />
+                  </div>
+                  {/* price skeleton */}
+                  <div className="flex items-center gap-2 mt-3">
+                    <div className="h-4 w-12 bg-neutral-200 shimmer rounded" />
+                    <div className="h-3 w-8 bg-neutral-200/60 shimmer rounded" />
+                  </div>
+                </div>
+
+                {/* Bottom row: creation date metadata, button, label */}
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mt-3 pt-2 border-t border-black/[0.03]">
+                  {/* Date skeleton */}
+                  <div className="h-3 w-20 bg-neutral-200/60 shimmer rounded shrink-0" />
+
+                  {/* Buttons skeleton */}
+                  <div className="flex flex-col items-start sm:items-end shrink-0">
+                    <div className="flex gap-2 items-center">
+                      <div className="h-6 w-16 bg-neutral-200 shimmer rounded" />
+                      <div className="h-6 w-24 bg-neutral-200 shimmer rounded" />
+                    </div>
+                    <div className="h-1.5 w-20 bg-neutral-200/50 shimmer rounded mt-1.5" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </main>
+
+        <style jsx>{`
+          @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+          }
+          .shimmer {
+            background: linear-gradient(90deg, #e5e5e5 25%, rgba(92, 64, 51, 0.08) 50%, #e5e5e5 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite linear;
+          }
+          .shimmer-dark {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.15) 25%, rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0.15) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite linear;
+          }
+        `}</style>
       </div>
     );
   }

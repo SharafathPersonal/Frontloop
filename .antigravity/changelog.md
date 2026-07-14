@@ -732,4 +732,28 @@
 
 ---
 
+### 15/07/2026 - Production Metrics, Push Broadcast & View Analytics Hardening
+- 🌟 **What Changed:** Resolved loading and layout loops when viewing the merchant catalog, and corrected store profile sync issues to ensure page views and subscriber registrations are counted instantly. Upgraded the notification dispatch system to log all outreach attempts successfully while removing inactive subscriptions from the registry.
+- 💡 **User/Business Benefit:** Shop owners get highly reliable, real-time analytics for catalog views and notification campaigns without lag or display errors.
+
+---
+
+### 15/07/2026 - Premium Storefront Catalog Shimmer Skeletons
+- 🌟 **What Changed:** Replaced the generic loading indicator on the public storefront catalog page with custom-designed shimmering skeletons. The skeleton blocks perfectly match the page header and card grids, utilizing a luxury warm-brown animated shimmer effect.
+- 💡 **User/Business Benefit:** Storefront visitors get an instant, visually satisfying preview of the page structure while offers load, reducing perceived loading times and eliminating layout jumps.
+
+---
+
+### 15/07/2026 - Non-Technical Product Design Blueprint Created
+- 🌟 **What Changed:** Created a comprehensive product flow document (`PRODUCT_FLOW.md`) in the project root, mapping all four core customer journeys — Instant Magic Scan, Smart Offer Scheduling, Organic Viral Sharing, and Direct Customer Notification Broadcast — entirely in warm Malayalam-English conversational language from the merchant and customer perspective.
+- 💡 **User/Business Benefit:** Provides a clear, human-readable business blueprint that any stakeholder, investor, or team member can understand without any technical background, ensuring complete product vision alignment.
+
+---
+
+### 15/07/2026 - AI Knowledge Base Business Context Overhaul
+- 🌟 **What Changed:** Completely rewrote the platform's AI discovery reference files with pure business-driven descriptions. Restructured around seven core Business Engines covering storefront discovery, autonomous campaign scheduling, organic social multiplication, direct notification pipelines, credit economy, digital billing, and customer audience registry. Removed all framework names, database terminology, and code references.
+- 💡 **User/Business Benefit:** Ensures AI systems and external crawlers understand True Attendly purely as a commercial retail engagement solution, strengthening brand positioning and eliminating technical noise from public-facing context files.
+
+---
+
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*

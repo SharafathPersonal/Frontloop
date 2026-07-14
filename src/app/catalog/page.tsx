@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PublicOffersPage from '../offers/[shopSlug]/page';
 
@@ -19,7 +19,7 @@ function CatalogContent() {
     );
   }
 
-  const resolvedParams = Promise.resolve({ shopSlug });
+  const resolvedParams = useMemo(() => Promise.resolve({ shopSlug }), [shopSlug]);
 
   return <PublicOffersPage params={resolvedParams} />;
 }

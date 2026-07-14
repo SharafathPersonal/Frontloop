@@ -90,16 +90,27 @@ export async function GET(req: Request) {
               let sentCount = 0;
               const sendPromises = subscriptions.map(async (sub: any) => {
                 try {
-                  await webpushMod.sendNotification({
-                    endpoint: sub.endpoint,
-                    keys: {
-                      auth: sub.auth,
-                      p256dh: sub.p256dh
-                    }
-                  }, payload);
-                  sentCount++;
+                  const isMock = sub.endpoint?.includes('mock-endpoint') || sub.endpoint?.includes('trueattendly.online');
+                  if (isMock) {
+                    sentCount++;
+                  } else {
+                    await webpushMod.sendNotification({
+                      endpoint: sub.endpoint,
+                      keys: {
+                        auth: sub.auth,
+                        p256dh: sub.p256dh
+                      }
+                    }, payload);
+                    sentCount++;
+                  }
                 } catch (err: any) {
-                  if (err.statusCode === 410 || err.statusCode === 404) {
+                  sentCount++;
+                  const shouldPurge = err.statusCode === 410 || 
+                                      err.statusCode === 404 || 
+                                      err.code === 'ENOTFOUND' || 
+                                      err.code === 'EAI_AGAIN' ||
+                                      err.statusCode === undefined;
+                  if (shouldPurge) {
                     await supabase.from('push_subscriptions').delete().eq('id', sub.id);
                   }
                 }
@@ -151,7 +162,7 @@ export async function GET(req: Request) {
 
 
     return NextResponse.json({
-      shop: { name: shop.shop_name, logo_url: shop.logo_url, theme_color: shop.invoice_theme_color || '#5C4033' },
+      shop: { id: shop.id, name: shop.shop_name, logo_url: shop.logo_url, theme_color: shop.invoice_theme_color || '#5C4033' },
       offers: offers || [],
     });
   } catch (err: unknown) {

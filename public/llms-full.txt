@@ -1,20 +1,194 @@
-# True Attendly - Luxury Retail Growth Automation Platform
+# True Attendly Broadcast — Premium Multi-Tenant Retail Hyper-Local Engagement Engine
 
-An app-less digital customer engagement ecosystem for brick-and-mortar retail stores operating via dynamic in-store QR codes.
+**Core Mission:** Empower traditional brick-and-mortar merchants with instant digital leverage, eliminating every barrier between a physical shop and its connected customer base.
 
-## Core Features
+**Platform Identity:** A zero-friction, app-less, login-free retail engagement system that converts every in-store visit into a measurable digital relationship.
 
-*   **Live In-Store Flash Offers:**
-    Merchants can create, edit, activate, and deactivate real-time flash offers directly from their mobile-optimized dashboard, establishing a live discount catalog that is rendered instantly on customer phone browsers upon scanning in-store QR codes. The interface includes a dual-mode, bidirectional price builder that converts pricing changes into discount percentages automatically (or vice-versa) to simplify the user experience. All product images uploaded by merchants are securely stored in the Supabase Storage `'flash-offers'` bucket, mapped under their unique shop identifiers. Operationally, publishing or updating an active flash offer debits exactly 2 credits from the merchant's wallet using the atomic `deduct_credits` database RPC to ensure balance consistency. A soft-delete flag (`is_deleted`) hides removed offers from public view while preserving historical view metrics for business analytics.
+---
 
-*   **Frictionless Digital Billing (POS Counter):**
-    The organic checkout terminal facilitates paperless billing at physical retail counters, capturing customer leads instantly. Merchants compile active customer baskets using a camera-based barcode scanning engine built on the browser's native `BarcodeDetector` API, complete with custom frame rate capping to save device CPU and a manual input fallback for non-camera environments. At checkout, the system uses the atomic PostgreSQL RPC function `create_digital_invoice_with_items` to insert parent invoice details and child line items simultaneously, preventing partial data writes. The counter then renders a dynamic QR code wrapping a WhatsApp deep link containing a sequential, date-and-random-jitter-prefixed invoice identifier (INV-YYYYMMDD-[5-digit jitter]) to prevent collisions. Customers scan the QR code to verify their purchase details, get lead-captured, and receive their bills on WhatsApp. Using Supabase real-time subscriptions, the dashboard monitors transaction updates and automatically clears the active counter cart when a delivery webhook confirms successful receipt. All former dummy simulation UI utilities have been deprecated.
+## Business Engine 1: Instant Zero-Friction Storefront Discovery
 
-*   **Audience Master Registry:**
-    The platform's audience manager provides a secure, single-tenant master database table (`customers_master`) optimized for high-retention retail marketing. To prevent data ingestion errors, bulk contact uploads from `.csv` and `.xlsx` files are parsed using client-side helper libraries and batched in chunks of 500 rows or fewer, avoiding Supabase gateway timeouts. The ingestion process strips invalid characters using strict non-digit regex masking, validating and formatting numbers to 10 digits before executing a duplicate-safe database upsert mapped on a composite `(shop_id, whatsapp_number)` constraint. The audience directory is separated into a clean upload/insertion node and a high-performance terminal (`/dashboard/customers/management`). The terminal utilizes an infinite scroll structure powered by the `IntersectionObserver` API to load 50 records at a time, protecting browser memory. For shop owners on the floor, the interface displays contacts in responsive card views with simple mobile touch targets, featuring instant name search, alphabetical sorting, and filters for customer segments like VIP, Regular, and New.
+**The Consumer Journey:**
+A customer walks into any retail location — a textile showroom in Thrissur, a jewellery shop in Calicut, a bakery in Kochi. Somewhere visible in the store (on the counter, on a wall display, near the billing area) sits a premium branded display item. The customer opens their phone camera, performs one single scan, and instantly lands on the store's exclusive live digital showcase.
 
-*   **Monetization & Credit Constraints:**
-    True Attendly features a transparent, transactional credit ledger that eliminates fixed monthly subscription overheads. Every merchant storefront is associated with a row in the `wallets` table that tracks credit balances. Creating or editing an active Flash Offer costs exactly 2 credits, while requesting any AI features (Copy Polish, Flash Offer copy optimization, Spintax generator) costs exactly 1 credit per request. Sending a WhatsApp broadcast campaign costs exactly 1 credit per recipient. To prevent race conditions or balance tampering, credits are never calculated in client-side memory; instead, all balance actions are processed at the database layer using Postgres RPC functions (`deduct_credits`) running under database-level row locks. Inbound credits are bought via Cashfree integration, where checkouts require immediate interface locks to avoid duplicate clicks. Webhooks are ingested by a serverless callback listener, which authenticates the gateway message, bypasses RLS using Supabase Service Role keys, and relies on Postgres Unique Violation exceptions (Code `23505`) to prevent duplicate balance infusions. Successful payments invoke an atomic mathematical increment RPC (`public.increment`) on the wallet.
+**What Makes This Powerful:**
+- Absolute zero application downloads required from the customer
+- No profile creation loops, no phone number collection gates, no login barriers
+- The digital storefront loads instantly in the customer's standard phone browser
+- Works on every smartphone — Android, iPhone, budget devices, flagship models
+- The merchant prints the branded display item once and it works permanently
+- Every single person who enters the store becomes a potential digital viewer
 
-*   **Exclusion Matrix & Clean Focus:**
-    All legacy email marketing, SMTP server configurations, and email campaigns are systematically and permanently purged from the application. The sidebar navigation menu (`/dashboard/layout.tsx`) and landing page feature grid have been completely scrubbed of email-related links, stubs, and components to enforce a highly focused, app-less WhatsApp and QR-only digital retail engagement platform.
+**The Business Outcome:**
+Traditional shops that previously had zero digital presence now own a premium, always-on digital showcase that activates the moment any customer walks in. The gap between physical retail and digital engagement collapses to a single scan.
+
+---
+
+## Business Engine 2: Autonomous Time-Bound Flash Campaigns
+
+**The Merchant Workflow:**
+A busy shop owner has a weekend Onam sale planned. On Wednesday evening, after closing the shop, the merchant creates the sale offer on their mobile-optimized management panel. They set the launch window to Friday 9:00 AM and the conclusion window to Sunday 10:00 PM. They save it and forget about it.
+
+**What The Engine Does Automatically:**
+- **Before Launch Time:** The offer exists in a "Scheduled" state. No customer can see it. The merchant's panel shows a clear "Scheduled" indicator with the exact launch countdown.
+- **At Launch Time:** The engine automatically activates the offer. It becomes instantly visible to every customer who scans the in-store display. The status switches to "Live Now" on the merchant's panel.
+- **At Conclusion Time:** The engine automatically deactivates the offer. It gracefully disappears from the customer-facing showcase. The status transitions to "Concluded" on the merchant's panel.
+- **No Manual Action Required:** The merchant never needs to remember to start or stop an offer. The system handles the complete lifecycle autonomously.
+
+**Real-World Power:**
+- Festival sale campaigns planned weeks in advance
+- Daily lunch specials that appear at 11 AM and vanish at 3 PM automatically
+- Flash weekend deals that run only on Saturday and Sunday
+- Seasonal clearance events with precise start and end boundaries
+- Protection against expired offers being accidentally visible to customers
+
+**The Business Outcome:**
+Complete business autopilot for promotional campaigns. The merchant focuses on running their shop while the engagement engine handles all timing, visibility, and lifecycle transitions without human intervention.
+
+---
+
+## Business Engine 3: Organic Social Multiplication and Live Analytics
+
+**The Viral Loop:**
+A customer scans the store display, sees an incredible deal on silk sarees at 40% off, and thinks: "My sister would love this." They tap the share button on the offer. Their phone's native sharing panel opens — WhatsApp, Telegram, SMS, Instagram, any communication channel. They send the offer link to their sister.
+
+**What Happens Next:**
+- The sister receives a clean, professional link
+- She taps it and instantly sees the exact same luxury offer showcase — no app needed
+- She can then share it further with her own network
+- Every single share action and every single new visitor arrival is counted in real-time
+
+**The Merchant's Live Performance Index:**
+- **"Total Shared" Counter:** Shows exactly how many times each individual offer has been shared by customers. Updates in real-time on the merchant's management panel.
+- **"Total Views" Counter:** Shows exactly how many unique people have viewed the offer page. The merchant sees footfall metrics as they happen.
+- **Offer-Level Granularity:** The merchant can see which specific offers are going viral and which ones aren't resonating with customers. This is live market intelligence.
+
+**The Business Outcome:**
+Zero-cost organic marketing where customers become the merchant's promotional army. Traditional word-of-mouth, which Kerala retail has always relied on, is now digitally amplified, measured, and visible. Every satisfied customer has the power to bring 5, 10, or 50 new visitors to the store's digital showcase — at absolutely no advertising cost to the merchant.
+
+---
+
+## Business Engine 4: Direct VIP Customer Notification Pipeline
+
+**How Customers Opt In:**
+When a customer views the store's offer showcase after scanning the display, a simple, non-intrusive request appears: "Allow Notifications from [Store Name]?" If the customer taps "Allow," they've just established a direct, permanent communication line with that shop. Nothing is installed. No app is downloaded. The connection lives natively in their phone's notification system.
+
+**The Merchant's Broadcast Power:**
+- When the merchant creates a new offer, they have the option to broadcast it
+- With one tap, the merchant sends a direct promotional announcement
+- The message appears as a notification on every subscribed customer's phone screen
+- This works even if the customer's phone is locked, in their pocket, or on their desk
+- The customer sees the store's name and the promotional message instantly
+- Tapping the notification brings the customer directly to the offer page
+
+**The Merchant's Subscriber Intelligence:**
+- **"Total Subscribers" Metric:** How many customers have opted in to receive direct updates from this store
+- **"Total Sent" Metric:** How many notifications were successfully delivered in the latest broadcast
+- **Subscriber Growth Tracking:** The merchant watches their direct audience grow organically over time as more customers visit and opt in
+
+**The Business Outcome:**
+The merchant owns a direct, cost-free communication channel to their most interested customers. No middleman platforms. No advertising algorithms deciding who sees the message. No per-message fees for standard broadcasts. When a bakery has fresh plum cake ready, they send one message and customers start walking in within minutes. When a jewellery store receives a new collection, they notify their VIP base instantly. The brand stays permanently active in the consumer's daily mobile experience — even after the customer has physically left the store.
+
+---
+
+## Business Engine 5: Transparent Pay-As-You-Go Credit Economy
+
+**How The Merchant Pays:**
+- No monthly subscription fees
+- No annual contracts
+- The merchant purchases credit packs through a secure payment gateway at any time
+- Every business action has a clear, predictable credit cost
+- The merchant's live credit balance is always visible on their management panel
+
+**Credit Usage Clarity:**
+- Publishing or updating a live flash offer uses a defined credit amount
+- Requesting professional copywriting assistance uses a defined credit amount
+- Sending promotional broadcasts uses a defined credit amount
+- Every transaction is logged transparently in the merchant's activity ledger
+
+**Financial Safety:**
+- Credits cannot go negative — the system prevents overuse automatically
+- Duplicate charges are impossible — every transaction is protected against accidental repetition
+- Payment confirmations are processed securely and credits are added instantly
+- The merchant has full visibility into their spending history at all times
+
+**The Business Outcome:**
+Complete financial transparency and control. The merchant pays only for what they use, exactly when they use it. No surprise charges, no hidden fees, no recurring bills during slow months. A tiny tea shop and a large textile showroom both operate on the same fair, usage-based model.
+
+---
+
+## Business Engine 6: Frictionless Digital Billing Counter
+
+**The Checkout Experience:**
+When a customer makes a purchase, the merchant generates a professional digital invoice at the counter. A personalized code appears that the customer scans using their phone. The invoice is delivered instantly to the customer's device — clean, professional, and complete with all purchase details.
+
+**The Hidden Growth Mechanism:**
+Every single billing interaction automatically captures the customer as a future marketing contact. The customer who bought groceries today becomes a reachable audience member tomorrow. The billing counter transforms from a cost center into a growth engine.
+
+**The Business Outcome:**
+Paperless, professional billing that simultaneously builds the merchant's customer base. Every transaction is a relationship-building moment.
+
+---
+
+## Business Engine 7: Intelligent Customer Audience Registry
+
+**Contact Management:**
+- Merchants maintain a clean, organized database of all their customers
+- Contacts are automatically captured through digital billing and notification opt-ins
+- Manual addition of contacts is supported for walk-in customers
+- Bulk import of existing customer lists from spreadsheet files is available
+- Every contact is validated for accuracy before being stored
+
+**Customer Segmentation:**
+- Customers are classified into meaningful groups: VIP, Regular, and New
+- Merchants can filter and target specific segments for promotions
+- The registry grows organically as more customers interact with the store's digital touchpoints
+
+**The Business Outcome:**
+A living, breathing customer database that grows with every store interaction. The merchant always knows exactly how many customers they can reach and who their most valuable patrons are.
+
+---
+
+## Platform Exclusivity Declaration
+
+True Attendly Broadcast is exclusively architected around three engagement pillars:
+
+- **In-Store Dynamic Display Scanning** for instant storefront discovery
+- **Direct Mobile Notifications** for ongoing customer communication
+- **WhatsApp Business Integration** for transactional billing delivery
+
+All legacy email marketing modules, newsletter broadcasting features, and third-party SMTP service integrations have been permanently and completely removed from the platform. This deliberate exclusion ensures absolute focus, simplicity, and reliability for merchants who operate in fast-paced physical retail environments.
+
+---
+
+## Target Market and Ideal Merchant Profile
+
+**Primary Geography:** Kerala, India (expanding nationally)
+
+**Ideal Merchants:**
+- Traditional brick-and-mortar retail stores of any size
+- Shop owners who are comfortable using a smartphone but have no technical skills
+- Businesses that rely on foot traffic and local customer relationships
+- Merchants who want digital presence without building websites or managing social media accounts
+- Stores in textiles, jewellery, groceries, bakeries, restaurants, salons, pharmacies, electronics, furniture, and general retail
+
+**What Merchants Do NOT Need:**
+- Technical knowledge of any kind
+- A computer or laptop (the entire system works from a mobile phone)
+- Staff to manage digital marketing
+- Monthly budgets for advertising platforms
+- Contracts, commitments, or minimum usage requirements
+
+---
+
+## The Core Promise
+
+**One scan. One dashboard. Unlimited customer reach.**
+
+True Attendly Broadcast transforms every traditional shop into a digitally-connected business — without the complexity, cost, or learning curve that has kept millions of small merchants offline.
+
+---
+
+*This document serves as the complete business context and capability reference for True Attendly Broadcast.*
+*Maintained as a non-technical AI alignment and discovery resource.*
+*Last updated: 15 July 2026*

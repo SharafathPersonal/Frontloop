@@ -129,3 +129,9 @@ Format Template to Append:
 
 ---
 
+### RULE 13: AUTONOMOUS AI KNOWLEDGE BASE & LLM SYNC MANDATE
+- **The Requirement:** Whenever any new business capabilities, platform features, or operational modifications are introduced, updated, or refactored within the system, the corresponding description must be simultaneously injected into all AI context/memory files (including `public/llm.txt` and `llm-full.txt`).
+- **Presentation Matrix:** The injected updates must adhere strictly to pure, high-value business terms and consumer experience flows, completely avoiding code blocks, database properties, or frameworks.
+- **Verification Rule:** No feature pull request or development phase can be marked complete unless the model confirms that both the codebase and the LLM context files are perfectly synchronized.
+
+---
