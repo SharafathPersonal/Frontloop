@@ -553,13 +553,13 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
 
         <div className="p-6 space-y-6">
           {/* Balance */}
-          <div className="bg-[#3E3B36] rounded-xl p-6 flex items-center justify-between">
+          <div className="bg-[#3E3B36] rounded-xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <p className="text-[10px] tracking-[0.25em] text-[#F5F1EA]/50 uppercase mb-1">Current Balance</p>
-              <p className="serif-headline text-4xl text-[#F5F1EA]">{wallet ? wallet.credits_remaining.toLocaleString() : '0'}</p>
+              <p className="serif-headline text-3xl sm:text-4xl text-[#F5F1EA]">{wallet ? wallet.credits_remaining.toLocaleString() : '0'}</p>
               <p className="text-xs text-[#C4A896] mt-1 tracking-[0.1em] uppercase">Credits</p>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right">
               <p className="text-[10px] tracking-[0.15em] text-[#F5F1EA]/50 uppercase mb-1">Rate</p>
               <p className="text-sm text-[#F5F1EA]/80">1 Credit</p>
               <p className="text-[10px] text-[#C4A896] tracking-[0.1em]">= 1 Message</p>
@@ -638,11 +638,11 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
               </p>
               {isMetaConnected ? (
                 <div className="mt-2">
-                  <div className="inline-flex items-center gap-2 bg-[#F5F1EA] text-[#3E3B36] px-4 py-2.5 rounded-lg border border-[#E8E3DA]">
-                    <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <div className="flex items-center gap-2 bg-[#F5F1EA] text-[#3E3B36] px-4 py-2.5 rounded-lg border border-[#E8E3DA] max-w-full">
+                    <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
                       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     </div>
-                    <span className="text-sm font-medium">✓ Connected to Meta Business Node</span>
+                    <span className="text-xs sm:text-sm font-medium break-words whitespace-normal">✓ Connected to Meta Business Node</span>
                   </div>
                   <button
                     onClick={handleDisconnectFacebook}
@@ -654,7 +654,7 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
               ) : (
                 <button
                   onClick={handleFacebookConnect}
-                  className="flex items-center gap-3 bg-[#3E3B36] hover:bg-[#2A2825] text-[#F5F1EA] px-5 py-3 rounded-xl transition-colors font-medium text-sm"
+                  className="flex items-center gap-3 bg-[#3E3B36] hover:bg-[#2A2825] text-[#F5F1EA] px-5 py-3 rounded-xl transition-colors font-medium text-xs sm:text-sm w-full sm:w-auto justify-center"
                 >
                   <FacebookIcon size={16} />
                   Connect with Facebook
@@ -775,7 +775,7 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
                   <input type="color" value={shopForm.invoice_theme_color} onChange={(e) => setShopForm({ ...shopForm, invoice_theme_color: e.target.value })} className="w-10 h-10 border border-[#E8E3DA] rounded-lg cursor-pointer bg-white flex-shrink-0" />
                   <input type="text" value={shopForm.invoice_theme_color} onChange={(e) => setShopForm({ ...shopForm, invoice_theme_color: e.target.value })} className="input-editorial font-mono uppercase flex-1" placeholder="#5C4033" />
                 </div>
-                <span className="text-xs text-[#8B8378] whitespace-nowrap">Default: Warm Brown (#5C4033)</span>
+                <span className="text-xs text-[#8B8378] whitespace-normal sm:whitespace-nowrap">Default: Warm Brown (#5C4033)</span>
               </div>
             </div>
           </div>
@@ -959,9 +959,9 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
               { label: 'Workspace ID', value: shop?.id ?? '-' },
               { label: 'Created', value: shop ? new Date(shop.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '-' },
             ].map((item) => (
-              <div key={item.label} className="flex items-start justify-between py-3 border-b border-[#E8E3DA] last:border-0">
-                <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase">{item.label}</p>
-                <p className="text-xs text-[#3E3B36] font-mono max-w-xs truncate text-right">{item.value}</p>
+              <div key={item.label} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4 py-3 border-b border-[#E8E3DA] last:border-0">
+                <p className="text-[10px] sm:text-xs tracking-[0.15em] text-[#8B8378] uppercase">{item.label}</p>
+                <p className="text-xs text-[#3E3B36] font-mono break-all text-left sm:text-right">{item.value}</p>
               </div>
             ))}
           </div>

@@ -649,7 +649,7 @@
 - 💡 **User/Business Benefit:** Boosts acquisition and retail trust by presenting a clean, professional, and zero-friction digital receipt engine for store owners.
 
 ### [14/07/2026] - Merchant Dashboard UI/UX and Mobile Refactor
-- 🌟 **What Changed:** Overhauled all merchant dashboard routes to ensure 100% mobile-friendly compliance down to 360px without content loss. Constrained navigation sidebars to max-w-[280px], added automatic scroll and word-wrap properties, stacked quick actions and select credit packs vertically on small viewports, and integrated the active Web Push button.
+- 🌟 **What Changed:** Overhauled all merchant dashboard routes to ensure 100% mobile-friendly compliance down to 360px without content loss. Constrained navigation sidebars to max-w-[280px], added automatic scroll and word-wrap properties, stacked quick actions and select credit packs vertically on small viewports, and integrated the active Web Push button. Additionally polished settings page layouts (wallet balance card, Facebook badge text wraps, accent color labels, and Workspace UUID rows) to fit perfectly on small screens.
 - 💡 **User/Business Benefit:** Delivers a seamless, high-end dashboard interface for store owners running businesses from mobile devices, preventing overflows and maintaining brand consistency.
 
 ---
