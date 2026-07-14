@@ -546,6 +546,19 @@ export default function FlashOffersPage() {
                                 <td className="px-5 py-4 w-[12%]">
                                   <div className="flex flex-col gap-2 items-start">
                                     {renderStatusBadge(offer.status)}
+                                    {offer.status === 'draft' && offer.start_at && (
+                                      <div className="text-[10px] text-[#8B8378] space-y-0.5 mt-1 font-medium">
+                                        <p className="flex items-center gap-1"><Calendar size={10} /> Starts: {new Date(offer.start_at).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</p>
+                                        {offer.end_at && (
+                                          <p className="flex items-center gap-1"><Clock size={10} /> Ends: {new Date(offer.end_at).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</p>
+                                        )}
+                                      </div>
+                                    )}
+                                    {offer.status === 'active' && offer.end_at && (
+                                      <div className="text-[10px] text-[#8B8378] space-y-0.5 mt-1 font-medium">
+                                        <p className="flex items-center gap-1"><Clock size={10} /> Expires: {new Date(offer.end_at).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</p>
+                                      </div>
+                                    )}
                                     <button
                                       onClick={() => toggleActive(offer)}
                                       className={`relative w-11 h-6 rounded-full transition-colors ${offer.is_active ? 'bg-emerald-500' : 'bg-[#E8E3DA]'}`}
@@ -662,6 +675,19 @@ export default function FlashOffersPage() {
                           </button>
                         </div>
                         {renderStatusBadge(offer.status)}
+                        {offer.status === 'draft' && offer.start_at && (
+                          <div className="text-[10px] text-[#8B8378] space-y-0.5 mt-1 font-medium">
+                            <p className="flex items-center gap-1"><Calendar size={10} /> Starts: {new Date(offer.start_at).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</p>
+                            {offer.end_at && (
+                              <p className="flex items-center gap-1"><Clock size={10} /> Ends: {new Date(offer.end_at).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</p>
+                            )}
+                          </div>
+                        )}
+                        {offer.status === 'active' && offer.end_at && (
+                          <div className="text-[10px] text-[#8B8378] space-y-0.5 mt-1 font-medium">
+                            <p className="flex items-center gap-1"><Clock size={10} /> Expires: {new Date(offer.end_at).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</p>
+                          </div>
+                        )}
                       </div>
                       <span className="text-[11px] text-[#8B8378] flex items-center gap-1 font-medium">
                         <Eye size={12} /> {offer.views_count} views
