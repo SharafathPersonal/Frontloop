@@ -50,20 +50,21 @@ export async function POST(req: Request) {
     if (upsertError) {
       return NextResponse.json({ error: upsertError.message }, { status: 500 });
     }
-
     if (settings) {
       if (
         isNaN(Number(settings.whatsapp_credit_cost)) || Number(settings.whatsapp_credit_cost) < 0 ||
-        isNaN(Number(settings.email_credit_cost)) || Number(settings.email_credit_cost) < 0 ||
-        isNaN(Number(settings.qr_leads_credit_cost)) || Number(settings.qr_leads_credit_cost) < 0
+        isNaN(Number(settings.qr_leads_credit_cost)) || Number(settings.qr_leads_credit_cost) < 0 ||
+        isNaN(Number(settings.flash_offer_base_cost)) || Number(settings.flash_offer_base_cost) < 0 ||
+        isNaN(Number(settings.flash_offer_push_cost)) || Number(settings.flash_offer_push_cost) < 0
       ) {
         return NextResponse.json({ error: 'Invalid credit costs' }, { status: 400 });
       }
 
       const settingsUpsert = [
         { key: 'whatsapp_credit_cost', value: Number(settings.whatsapp_credit_cost), updated_at: new Date().toISOString() },
-        { key: 'email_credit_cost', value: Number(settings.email_credit_cost), updated_at: new Date().toISOString() },
-        { key: 'qr_leads_credit_cost', value: Number(settings.qr_leads_credit_cost), updated_at: new Date().toISOString() }
+        { key: 'qr_leads_credit_cost', value: Number(settings.qr_leads_credit_cost), updated_at: new Date().toISOString() },
+        { key: 'flash_offer_base_cost', value: Number(settings.flash_offer_base_cost), updated_at: new Date().toISOString() },
+        { key: 'flash_offer_push_cost', value: Number(settings.flash_offer_push_cost), updated_at: new Date().toISOString() }
       ];
       const { error: settingsError } = await supabaseAdmin
         .from('system_settings')

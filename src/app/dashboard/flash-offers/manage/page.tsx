@@ -8,7 +8,7 @@ import Link from 'next/link';
 import {
   Zap, Eye, EyeOff, Plus, Pencil, Trash2, X, Loader2,
   TrendingUp, Package, Search, Sparkles, ArrowLeft,
-  ChevronDown, UploadCloud
+  ChevronDown, UploadCloud, Send, MousePointerClick, Users
 } from 'lucide-react';
 
 const PAGE_SIZE = 12;
@@ -49,6 +49,8 @@ export default function ManageOffersPage() {
   const [pricingMode, setPricingMode] = useState<'A' | 'B'>('A');
   const [formShowPercentageBadge, setFormShowPercentageBadge] = useState(true);
   const [formShowDiscountPrice, setFormShowDiscountPrice] = useState(true);
+  const [formBroadcastWebPush, setFormBroadcastWebPush] = useState(false);
+  const [subscribers, setSubscribers] = useState(0);
 
   // Infinite Scroll Anchor Ref
   const loaderRef = useRef<HTMLDivElement>(null);
@@ -58,8 +60,12 @@ export default function ManageOffersPage() {
     async function loadShop() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = await supabase.from('shops').select('*').eq('id', user.id).maybeSingle();
-      if (data) setShop(data);
+      const [{ data: shopData }, { count: subscribersCount }] = await Promise.all([
+        supabase.from('shops').select('*').eq('id', user.id).maybeSingle(),
+        supabase.from('push_subscriptions').select('*', { count: 'exact', head: true }).eq('shop_id', user.id)
+      ]);
+      if (shopData) setShop(shopData);
+      setSubscribers(subscribersCount || 0);
     }
     loadShop();
   }, []);
@@ -172,6 +178,7 @@ export default function ManageOffersPage() {
     setPricingMode('A');
     setFormShowPercentageBadge(true);
     setFormShowDiscountPrice(true);
+    setFormBroadcastWebPush(false);
   };
 
   const openCreate = () => { resetForm(); setEditOffer(null); setIsCreateOpen(true); };
@@ -186,6 +193,7 @@ export default function ManageOffersPage() {
     setFormImageUrl(o.image_url || '');
     setFormShowPercentageBadge(o.show_percentage_badge !== false);
     setFormShowDiscountPrice(o.show_discount_price !== false);
+    setFormBroadcastWebPush(false);
     setPricingMode('A');
     setEditOffer(o);
     setIsCreateOpen(true);
@@ -287,6 +295,7 @@ export default function ManageOffersPage() {
         show_percentage_badge: formShowPercentageBadge,
         show_discount_price: formShowDiscountPrice,
         image_url: formImageUrl.trim() || null,
+        broadcast_web_push: formBroadcastWebPush
       };
 
       const res = await fetch('/api/flash-offers/create', {
@@ -310,6 +319,8 @@ export default function ManageOffersPage() {
         showToast('Flash offer created!', 'success');
       }
       setIsCreateOpen(false); resetForm(); setEditOffer(null);
+      // Refetch offers to refresh statistics and page state
+      fetchOffers(true);
     } catch (err: any) {
       showToast(err.message || 'Failed to save offer.', 'error');
     } finally { setIsSubmitting(false); }
@@ -469,66 +480,97 @@ export default function ManageOffersPage() {
 
                   return (
                     <tr key={offer.id} className="border-b border-[#E8E3DA]/60 last:border-0 hover:bg-[#F5F1EA]/30 transition-colors group">
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-lg border border-[#E8E3DA] overflow-hidden bg-[#FAFAF8] flex items-center justify-center shrink-0">
-                            {offer.image_url ? (
-                              <img src={offer.image_url} alt={offer.product_name} className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="font-serif font-bold text-amber-800 text-sm">{offer.product_name.charAt(0).toUpperCase()}</span>
-                            )}
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-bold text-[#3E3B36]">{offer.product_name}</h4>
-                            {offer.offer_description && (
-                              <p className="text-xs text-[#8B8378] line-clamp-1 max-w-xs">{offer.offer_description}</p>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="space-y-1">
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-sm font-bold text-[#3E3B36]">₹{Number(offer.discount_price).toFixed(2)}</span>
-                            {isDiscounted && (
-                              <span className="text-xs text-[#8B8378] line-through">₹{Number(offer.original_price).toFixed(2)}</span>
-                            )}
-                          </div>
-                          {isPercentage && (
-                            <span className="inline-block text-[9px] font-bold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100">
-                              {pct}% OFF
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="text-xs text-[#8B8378] font-medium flex items-center gap-1">
-                          <Eye size={12} /> {offer.views_count}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <button
-                          onClick={() => toggleActive(offer)}
-                          className={`relative w-11 h-6 rounded-full transition-colors ${offer.is_active ? 'bg-emerald-500' : 'bg-[#E8E3DA]'}`}
-                        >
-                          <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${offer.is_active ? 'left-[22px]' : 'left-0.5'}`} />
-                        </button>
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => openEdit(offer)}
-                            className="p-2 border border-[#E8E3DA] rounded-lg bg-white text-[#8B8378] hover:text-[#C4A896] transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirm(offer.id)}
-                            className="p-2 border border-[#E8E3DA] rounded-lg bg-white text-[#8B8378] hover:text-red-500 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                      <td colSpan={5} className="p-0">
+                        <table className="w-full text-left border-collapse">
+                          <tbody>
+                            <tr className="hover:bg-[#F5F1EA]/30 transition-colors">
+                              <td className="px-5 py-4 w-[40%]">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-12 h-12 rounded-lg border border-[#E8E3DA] overflow-hidden bg-[#FAFAF8] flex items-center justify-center shrink-0">
+                                    {offer.image_url ? (
+                                      <img src={offer.image_url} alt={offer.product_name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span className="font-serif font-bold text-amber-800 text-sm">{offer.product_name.charAt(0).toUpperCase()}</span>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <h4 className="text-sm font-bold text-[#3E3B36]">{offer.product_name}</h4>
+                                    {offer.offer_description && (
+                                      <p className="text-xs text-[#8B8378] line-clamp-1 max-w-xs">{offer.offer_description}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-5 py-4 w-[20%]">
+                                <div className="space-y-1">
+                                  <div className="flex items-baseline gap-2">
+                                    <span className="text-sm font-bold text-[#3E3B36]">₹{Number(offer.discount_price).toFixed(2)}</span>
+                                    {isDiscounted && (
+                                      <span className="text-xs text-[#8B8378] line-through">₹{Number(offer.original_price).toFixed(2)}</span>
+                                    )}
+                                  </div>
+                                  {isPercentage && (
+                                    <span className="inline-block text-[9px] font-bold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100">
+                                      {pct}% OFF
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-5 py-4 w-[15%]">
+                                <span className="text-xs text-[#8B8378] font-medium flex items-center gap-1">
+                                  <Eye size={12} /> {offer.views_count}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 w-[12%]">
+                                <button
+                                  onClick={() => toggleActive(offer)}
+                                  className={`relative w-11 h-6 rounded-full transition-colors ${offer.is_active ? 'bg-emerald-500' : 'bg-[#E8E3DA]'}`}
+                                >
+                                  <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${offer.is_active ? 'left-[22px]' : 'left-0.5'}`} />
+                                </button>
+                              </td>
+                              <td className="px-5 py-4 text-right w-[13%]">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => openEdit(offer)}
+                                    className="p-2 border border-[#E8E3DA] rounded-lg bg-white text-[#8B8378] hover:text-[#C4A896] transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                  >
+                                    <Pencil size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => setDeleteConfirm(offer.id)}
+                                    className="p-2 border border-[#E8E3DA] rounded-lg bg-white text-[#8B8378] hover:text-red-500 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr className="bg-[#FAF9F6]">
+                              <td colSpan={5} className="px-5 py-2.5">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-2 bg-[#FDFCFB] border border-[#E8E3DA]/80 rounded-lg">
+                                  <div className="flex items-center gap-1.5 text-[#8B8378] text-[9px] uppercase font-bold tracking-wider shrink-0 pl-1">
+                                    <TrendingUp size={11} className="text-[#C4A896]" /> Engagement Stats
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-6 w-full sm:w-auto">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-left">
+                                      <span className="text-[9px] text-[#8B8378] font-medium whitespace-nowrap flex items-center gap-1"><Send size={10} className="text-amber-600" /> Total Sent:</span>
+                                      <span className="text-xs font-bold text-[#3E3B36]">{offer.push_sent_count || 0}</span>
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-left">
+                                      <span className="text-[9px] text-[#8B8378] font-medium whitespace-nowrap flex items-center gap-1"><MousePointerClick size={10} className="text-rose-500" /> Opened/Clicked:</span>
+                                      <span className="text-xs font-bold text-[#3E3B36]">{offer.push_opened_count || 0}</span>
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-left">
+                                      <span className="text-[9px] text-[#8B8378] font-medium whitespace-nowrap flex items-center gap-1"><Users size={10} className="text-purple-600" /> Subscribers:</span>
+                                      <span className="text-xs font-bold text-[#3E3B36]">{subscribers}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
                       </td>
                     </tr>
                   );
@@ -593,6 +635,27 @@ export default function ManageOffersPage() {
                       <Eye size={12} /> {offer.views_count} views
                     </span>
                   </div>
+
+                    {/* Engagement Stats Micro-Dashboard */}
+                    <div className="bg-[#FAF9F6] border border-[#E8E3DA]/80 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-1.5 text-[#8B8378] text-[9px] uppercase font-bold tracking-wider pl-1">
+                        <TrendingUp size={11} className="text-[#C4A896]" /> Engagement Stats
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="bg-white border border-[#E8E3DA]/45 rounded p-1.5 flex flex-col items-center">
+                          <span className="text-[8px] text-[#8B8378] font-medium leading-tight">Sent</span>
+                          <span className="text-xs font-bold text-[#3E3B36]">{offer.push_sent_count || 0}</span>
+                        </div>
+                        <div className="bg-white border border-[#E8E3DA]/45 rounded p-1.5 flex flex-col items-center">
+                          <span className="text-[8px] text-[#8B8378] font-medium leading-tight">Opened</span>
+                          <span className="text-xs font-bold text-[#3E3B36]">{offer.push_opened_count || 0}</span>
+                        </div>
+                        <div className="bg-white border border-[#E8E3DA]/45 rounded p-1.5 flex flex-col items-center">
+                          <span className="text-[8px] text-[#8B8378] font-medium leading-tight">Subscribers</span>
+                          <span className="text-xs font-bold text-[#3E3B36]">{subscribers}</span>
+                        </div>
+                      </div>
+                    </div>
 
                   {/* Touch-Friendly Bottom Bar */}
                   <div className="flex justify-end items-center gap-3 pt-1 border-t border-[#E8E3DA]/30">
@@ -813,6 +876,22 @@ export default function ManageOffersPage() {
                     )}
                   </div>
                 )}
+              </div>
+
+              {/* Broadcast Web Push Control */}
+              <div className="flex items-center justify-between p-4 bg-[#F5F1EA]/50 border border-[#E8E3DA] rounded-xl">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-bold text-[#3E3B36] uppercase tracking-wider">Broadcast via Web Push</span>
+                  <span className="text-[10px] text-[#8B8378]">Instantly notify all store browsers (+2 Credits)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormBroadcastWebPush(!formBroadcastWebPush)}
+                  className="relative w-11 h-6 rounded-full transition-colors flex-shrink-0"
+                  style={{ backgroundColor: formBroadcastWebPush ? '#5C4033' : '#E8E3DA' }}
+                >
+                  <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${formBroadcastWebPush ? 'left-[22px]' : 'left-0.5'}`} />
+                </button>
               </div>
 
               {/* Customer UI Visibility Checkboxes */}

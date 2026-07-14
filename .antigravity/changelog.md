@@ -621,5 +621,35 @@
 
 ---
 
+### [14/07/2026] - LLM Integration and Capabilities Documentation Update
+- 🌟 **What Changed:** Synchronized the platform capability reference files based on code-level definition analysis of active and de-scoped features (including audience, billing counter, flash offers, and wallet/monetization).
+- 💡 **User/Business Benefit:** Ensures external systems and AI integrations have correct details of the active and de-scoped modules directly matching codebase behavior.
+
+---
+
+## 2026-07-14 — Phase 34: Legacy Email Marketing & SMTP Infrastructure Purge
+
+### [EXCISION] Platform-Wide Email Infrastructure Deletion
+- **Module:** Email Marketing / SMTP
+- **Nature:** Performed a complete, definitive purge of all legacy email marketing, SMTP, and Resend-related functionalities. Permanently deleted `/src/app/dashboard/email/`, `/src/app/api/email/`, and `/src/app/api/ai/email/` routes. Removed all `EmailCampaign` types and interfaces from `src/types/broadcast.ts`.
+- **Files:** `src/types/broadcast.ts`, `/src/app/dashboard/email/` (deleted), `/src/app/api/email/` (deleted), `/src/app/api/ai/email/` (deleted)
+
+### [UI/UX] Navigation & Landing Page Realignment
+- **Module:** Sidebar Navigation / Landing Page / Security Firewall
+- **Nature:** Purged the "Coming Soon" email navigation links and placeholder items from the merchant dashboard layout (`src/app/dashboard/layout.tsx`). Completely rewrote the public landing page (`src/app/page.tsx`) to excise the "Premium Email Suites" feature simulator. Refactored the core transaction ledger to display only "WhatsApp Campaign" and "Digital Invoice" dispatches, and simplified the Transaction Security Barrier to focus exclusively on WhatsApp Meta API workflows.
+- **Files:** `src/app/page.tsx`, `src/app/dashboard/layout.tsx`
+
+### [AI] Persona & Prompts Alignment
+- **Module:** AI Assistants / Prompt Context
+- **Nature:** Updated the system instructions for the AI copywriter in `src/app/api/ai/spintax/route.ts` to excise references to email modules and explicitly align with the WhatsApp/QR credit economy (2 credits for Flash Offers, 1 credit for AI Polisher/Spintax, 1 credit for WhatsApp).
+- **Files:** `src/app/api/ai/spintax/route.ts`
+
+### [14/07/2026] - Premium Landing Page Structural and Visual Overhaul
+- 🌟 **What Changed:** Overhauled the customer-facing storefront landing page with a warm luxury chocolate and cream brand theme. Built a dynamic split-screen checkout simulation alongside an interactive three-column capability matrix showing off the automated camera barcode scanner, live flash offers console, and responsive customer list filtering.
+- 💡 **User/Business Benefit:** Attracts and converts walk-in store owners by demonstrating a frictionless, paperless checkout experience that captures customer loyalty leads instantly without app downloads.
+
+---
+
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*
+
 

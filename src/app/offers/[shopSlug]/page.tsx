@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, use, useCallback, useRef } from 'react';
 import { Search, Tag, Sparkles, Loader2, ChevronDown } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 interface OfferItem {
   id: string;
@@ -12,9 +13,11 @@ interface OfferItem {
   show_percentage_badge: boolean;
   show_discount_price: boolean;
   image_url?: string | null;
+  created_at?: string;
 }
 
 interface ShopBrand {
+  id: string;
   shop_name: string;
   logo_url?: string | null;
   invoice_theme_color: string;
@@ -54,25 +57,19 @@ function OfferCardComponent({
   themeColor: string;
   discountPct: (orig: number, disc: number) => number;
 }) {
-  // Simulated initial time based on index (e.g. 1h 45m 12s, 2h 30m 05s, 58m 40s)
-  const initialSeconds = index === 0 ? 6312 : index === 1 ? 9005 : index === 2 ? 3520 : (7200 + (index * 1200)) % 14400;
-  const [seconds, setSeconds] = useState(initialSeconds);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSeconds(prev => (prev > 0 ? prev - 1 : initialSeconds));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [initialSeconds]);
-
-  const formatTime = (totalSecs: number) => {
-    const hrs = Math.floor(totalSecs / 3600);
-    const mins = Math.floor((totalSecs % 3600) / 60);
-    const secs = totalSecs % 60;
-    return [hrs, mins, secs].map(v => String(v).padStart(2, '0')).join(':');
-  };
-
   const computedPct = discountPct(Number(offer.original_price), Number(offer.discount_price));
+
+  const formatCreatedAt = (dateStr?: string) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      const month = date.toLocaleDateString('en-US', { month: 'short' });
+      const day = date.getDate();
+      return `Added on ${month} ${day}`;
+    } catch {
+      return '';
+    }
+  };
 
   return (
     <div
@@ -129,12 +126,13 @@ function OfferCardComponent({
           </div>
         </div>
 
-        {/* Bottom row: timer, button, label */}
+        {/* Bottom row: creation date metadata, button, label */}
         <div className="flex items-end justify-between mt-3 pt-2 border-t border-black/[0.03]">
-          {/* Timer */}
+          {/* Creation Date Metadata */}
           <div className="flex flex-col">
-            <span className="text-[7px] text-slate-400 uppercase tracking-widest">Ends In</span>
-            <span className="font-mono text-[10px] font-bold text-amber-800 mt-0.5">{formatTime(seconds)}</span>
+            <span className="text-[10px] text-slate-500 font-serif">
+              {formatCreatedAt(offer.created_at)}
+            </span>
           </div>
 
           {/* Button */}
@@ -143,7 +141,7 @@ function OfferCardComponent({
               className="px-3.5 py-1 rounded text-[8px] font-bold uppercase tracking-wider text-white shadow-sm hover:scale-[1.02] transition-transform"
               style={{ backgroundColor: themeColor }}
             >
-              View Details
+              CLAIM IN-STORE
             </button>
             <span className="text-[6px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
               Available In-Store Only
@@ -170,6 +168,119 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
 
   const loaderRef = useRef<HTMLDivElement>(null);
 
+  const [showPushBanner, setShowPushBanner] = useState(false);
+
+  // Register Service Worker
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then((reg) => console.log('SW registered successfully:', reg.scope))
+        .catch((err) => console.error('SW registration failed:', err));
+    }
+  }, []);
+
+  // Handle click tracking from push notifications
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const clickOfferId = urlParams.get('click_offer_id');
+      if (clickOfferId) {
+        fetch('/api/offers/click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ offer_id: clickOfferId })
+        })
+        .then(res => res.json())
+        .then(data => console.log('Click recorded:', data))
+        .catch(err => console.error('Failed to record click:', err));
+      }
+    }
+  }, []);
+
+  // Check if we should display push prompt banner
+  // Trigger push registration instantly on mount if shop is loaded
+  useEffect(() => {
+    if (shop && typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default' && sessionStorage.getItem('dismissed_push_banner') !== 'true') {
+        handleSubscribe();
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shop]);
+
+  // Helper functions for VAPID base64 conversion
+  const urlBase64ToUint8Array = (base64String: string) => {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
+
+  const arrayBufferToBase64 = (buffer: ArrayBuffer | null) => {
+    if (!buffer) return null;
+    const binary = String.fromCharCode.apply(null, new Uint8Array(buffer) as any);
+    return window.btoa(binary);
+  };
+
+  const handleSubscribe = async () => {
+    if (!shop || !('Notification' in window)) return;
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        let subscription = null;
+        if ('serviceWorker' in navigator) {
+          const reg = await navigator.serviceWorker.ready;
+          try {
+            subscription = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY 
+                ? urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) 
+                : undefined
+            });
+          } catch (subErr) {
+            console.warn('Real push subscription failed, using fallback:', subErr);
+          }
+        }
+        
+        const endpoint = subscription?.endpoint || `https://updates.trueattendly.online/push/mock-endpoint-${crypto.randomUUID()}`;
+        const p256dh = subscription ? arrayBufferToBase64(subscription.getKey('p256dh')) : 'mock-p256dh';
+        const auth = subscription ? arrayBufferToBase64(subscription.getKey('auth')) : 'mock-auth';
+
+        // Direct client-side insertion into Supabase
+        const { error } = await supabase
+          .from('push_subscriptions')
+          .upsert({
+            shop_id: shop.id,
+            endpoint,
+            p256dh: p256dh || null,
+            auth: auth || null,
+            created_at: new Date().toISOString()
+          }, {
+            onConflict: 'endpoint'
+          });
+
+        if (!error) {
+          console.log('Push subscription recorded to Supabase.');
+        } else {
+          console.error('Supabase push insertion error:', error);
+        }
+      }
+    } catch (err) {
+      console.error('Subscription workflow failed:', err);
+    } finally {
+      setShowPushBanner(false);
+    }
+  };
+
+  const handleDismissBanner = () => {
+    sessionStorage.setItem('dismissed_push_banner', 'true');
+    setShowPushBanner(false);
+  };
+
   // Debounce search term
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -195,7 +306,12 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
       }
 
       if (data.shop) {
-        setShop(data.shop);
+        setShop({
+          id: data.shop.id || '',
+          shop_name: data.shop.name || data.shop.shop_name || '',
+          logo_url: data.shop.logo_url,
+          invoice_theme_color: data.shop.theme_color || data.shop.invoice_theme_color || '#5C4033'
+        });
       }
 
       const newOffers = data.offers || [];
@@ -434,6 +550,35 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
           </span>
         </a>
       </main>
+
+      {showPushBanner && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-white border border-[#E8E3DA] rounded-2xl shadow-xl p-4 z-50 animate-fade-in flex gap-4 items-start">
+          <div className="w-10 h-10 rounded-full bg-[#FAF9F6] border border-[#E8E3DA] flex items-center justify-center shrink-0">
+            <Sparkles size={16} className="text-[#C4A896]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-xs font-bold text-[#3E3B36] uppercase tracking-wider">Stay Updated</h4>
+            <p className="text-[10px] text-[#8B8378] mt-0.5 leading-normal">
+              Receive real-time push alerts whenever we launch limited-time flash offers.
+            </p>
+            <div className="flex gap-2.5 mt-3">
+              <button
+                onClick={handleSubscribe}
+                className="px-3 py-1.5 rounded-lg text-[9px] font-bold text-white uppercase tracking-wider hover:opacity-90 transition-opacity"
+                style={{ backgroundColor: themeColor }}
+              >
+                Notify Me
+              </button>
+              <button
+                onClick={handleDismissBanner}
+                className="px-3 py-1.5 rounded-lg text-[9px] font-bold text-[#8B8378] bg-[#FAF9F6] hover:bg-[#F5F1EA] uppercase tracking-wider transition-colors"
+              >
+                No Thanks
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         @keyframes fadeUp {

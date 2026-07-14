@@ -120,3 +120,12 @@ Format Template to Append:
 - Never use terms like: "API endpoints", "Supabase RPC", "state binding", "Tailwind classes", or "Prisma schemas".
 - Convert technical actions into real-world business equivalents (e.g., Instead of "Updated table component to card sub-grids using md grid utilities", write "Optimized the display layout to look stunning and clear on compact smartphone screens").
 
+---
+
+### 🛡️ SUB-RULE: EDIT-MODE BILLING & SPAM PROTECTION
+- **Context:** To prevent accidental double-charging of merchant wallet credits and safeguard customers from duplicate spam notifications during standard offer edits.
+- **Rule:** When a merchant opens an existing Flash Offer in "Edit/Update Mode", the frontend "Broadcast via Web Push" toggle MUST strictly default to OFF, regardless of its state during the initial creation. 
+- **Behavior:** The system must treat the toggle purely as an dynamic action trigger, never as a persistent database state. Saving an edit with the toggle OFF will execute a standard 0-credit metadata update. The merchant must explicitly and manually switch the toggle to ON if they intentionally wish to purchase and blast a fresh update broadcast for an additional 2 Wallet Credits.
+
+---
+

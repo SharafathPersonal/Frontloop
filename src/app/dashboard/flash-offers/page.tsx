@@ -7,7 +7,8 @@ import { useToast } from '@/contexts/ToastContext';
 import Link from 'next/link';
 import {
   Zap, Eye, EyeOff, Plus, Pencil, Trash2, X, Loader2,
-  TrendingUp, Package, Download, Sparkles, Settings, UploadCloud
+  TrendingUp, Package, Download, Sparkles, Settings, UploadCloud,
+  Send, MousePointerClick, Users
 } from 'lucide-react';
 
 export default function FlashOffersPage() {
@@ -16,6 +17,7 @@ export default function FlashOffersPage() {
   const [offers, setOffers] = useState<FlashOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [editOffer, setEditOffer] = useState<FlashOffer | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -35,18 +37,22 @@ export default function FlashOffersPage() {
   const [pricingMode, setPricingMode] = useState<'A' | 'B'>('A');
   const [formShowPercentageBadge, setFormShowPercentageBadge] = useState(true);
   const [formShowDiscountPrice, setFormShowDiscountPrice] = useState(true);
+  const [formBroadcastWebPush, setFormBroadcastWebPush] = useState(false);
+  const [subscribers, setSubscribers] = useState(0);
 
   const loadData = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const [{ data: shopData }, { data: offersData }] = await Promise.all([
+    const [{ data: shopData }, { data: offersData }, { count: subscribersCount }] = await Promise.all([
       supabase.from('shops').select('*').eq('id', user.id).maybeSingle(),
       supabase.from('shop_flash_offers').select('*')
         .eq('shop_id', user.id).eq('is_deleted', false)
         .order('created_at', { ascending: false }),
+      supabase.from('push_subscriptions').select('*', { count: 'exact', head: true }).eq('shop_id', user.id)
     ]);
     if (shopData) setShop(shopData);
     if (offersData) setOffers(offersData);
+    setSubscribers(subscribersCount || 0);
     setLoading(false);
   }, []);
 
@@ -55,6 +61,8 @@ export default function FlashOffersPage() {
   const activeOffers = offers.filter(o => o.is_active && !o.is_deleted);
   const disabledOffers = offers.filter(o => !o.is_active && !o.is_deleted);
   const totalViews = offers.reduce((s, o) => s + (o.views_count || 0), 0);
+  const totalPushSent = offers.reduce((s, o) => s + (o.push_sent_count || 0), 0);
+  const totalPushOpened = offers.reduce((s, o) => s + (o.push_opened_count || 0), 0);
 
   // Only show the latest 5 offers on this dashboard page
   const latestOffers = offers.slice(0, 5);
@@ -69,6 +77,8 @@ export default function FlashOffersPage() {
     setPricingMode('A');
     setFormShowPercentageBadge(true);
     setFormShowDiscountPrice(true);
+    setFormBroadcastWebPush(false);
+    setShowConfirmation(false);
   };
 
   const openCreate = () => { resetForm(); setEditOffer(null); setIsCreateOpen(true); };
@@ -83,6 +93,7 @@ export default function FlashOffersPage() {
     setFormImageUrl(o.image_url || '');
     setFormShowPercentageBadge(o.show_percentage_badge !== false);
     setFormShowDiscountPrice(o.show_discount_price !== false);
+    setFormBroadcastWebPush(false);
     setPricingMode('A');
     setEditOffer(o);
     setIsCreateOpen(true);
@@ -164,6 +175,16 @@ export default function FlashOffersPage() {
     }
   };
 
+  const handleInitialSubmit = () => {
+    const orig = parseFloat(formOriginal);
+    const disc = parseFloat(formDiscount);
+    if (!formName.trim()) { showToast('Product name is required.', 'error'); return; }
+    if (isNaN(orig) || orig <= 0) { showToast('Valid original price required.', 'error'); return; }
+    if (isNaN(disc) || disc <= 0) { showToast('Valid discount price required.', 'error'); return; }
+    if (disc >= orig) { showToast('Discount price must be less than original price.', 'error'); return; }
+    setShowConfirmation(true);
+  };
+
   const handleSubmit = async () => {
     if (!shop) return;
     const orig = parseFloat(formOriginal);
@@ -184,6 +205,7 @@ export default function FlashOffersPage() {
         show_percentage_badge: formShowPercentageBadge,
         show_discount_price: formShowDiscountPrice,
         image_url: formImageUrl.trim() || null,
+        broadcast_web_push: formBroadcastWebPush
       };
 
       const res = await fetch('/api/flash-offers/create', {
@@ -207,6 +229,7 @@ export default function FlashOffersPage() {
         showToast('Flash offer created!', 'success');
       }
       setIsCreateOpen(false); resetForm(); setEditOffer(null);
+      loadData(); // Refresh metrics and subscriber counts
     } catch (err: any) {
       showToast(err.message || 'Failed to save offer.', 'error');
     } finally { setIsSubmitting(false); }
@@ -295,11 +318,14 @@ export default function FlashOffersPage() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {[
           { label: 'Active Offers', value: activeOffers.length, icon: <Zap size={16} className="text-emerald-500" />, bg: 'bg-emerald-50', border: 'border-emerald-100' },
           { label: 'Total Views', value: totalViews.toLocaleString(), icon: <TrendingUp size={16} className="text-[#C4A896]" />, bg: 'bg-[#F5F1EA]', border: 'border-[#E8E3DA]' },
           { label: 'Disabled Offers', value: disabledOffers.length, icon: <EyeOff size={16} className="text-[#8B8378]" />, bg: 'bg-gray-50', border: 'border-gray-100' },
+          { label: 'Total Sent', value: totalPushSent.toLocaleString(), icon: <Send size={16} className="text-amber-600" />, bg: 'bg-amber-50/40', border: 'border-amber-100/60' },
+          { label: 'Opened/Clicked', value: totalPushOpened.toLocaleString(), icon: <MousePointerClick size={16} className="text-rose-500" />, bg: 'bg-rose-50/30', border: 'border-rose-100/50' },
+          { label: 'Subscribers', value: subscribers.toLocaleString(), icon: <Users size={16} className="text-purple-600" />, bg: 'bg-purple-50/40', border: 'border-purple-100/65' }
         ].map((stat, i) => (
           <div key={i} className={`${stat.bg} border ${stat.border} rounded-xl p-5 flex items-center gap-4`}>
             <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">{stat.icon}</div>
@@ -365,69 +391,99 @@ export default function FlashOffersPage() {
                     const isPercentage = offer.show_percentage_badge !== false;
                     const isDiscounted = offer.show_discount_price !== false;
                     const pct = discountPct(Number(offer.original_price), Number(offer.discount_price));
-                    
-                    return (
+                                     return (
                       <tr key={offer.id} className="border-b border-[#E8E3DA]/60 last:border-0 hover:bg-[#F5F1EA]/30 transition-colors group">
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-lg border border-[#E8E3DA] overflow-hidden bg-[#FAFAF8] flex items-center justify-center shrink-0">
-                              {offer.image_url ? (
-                                <img src={offer.image_url} alt={offer.product_name} className="w-full h-full object-cover" />
-                              ) : (
-                                <span className="font-serif font-bold text-amber-800 text-sm">{offer.product_name.charAt(0).toUpperCase()}</span>
-                              )}
-                            </div>
-                            <div>
-                              <h4 className="text-sm font-bold text-[#3E3B36]">{offer.product_name}</h4>
-                              {offer.offer_description && (
-                                <p className="text-xs text-[#8B8378] line-clamp-1 max-w-xs">{offer.offer_description}</p>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="space-y-1">
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-sm font-bold text-[#3E3B36]">₹{Number(offer.discount_price).toFixed(2)}</span>
-                              {isDiscounted && (
-                                <span className="text-xs text-[#8B8378] line-through">₹{Number(offer.original_price).toFixed(2)}</span>
-                              )}
-                            </div>
-                            {isPercentage && (
-                              <span className="inline-block text-[9px] font-bold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100">
-                                {pct}% OFF
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-5 py-4">
-                          <span className="text-xs text-[#8B8378] font-medium flex items-center gap-1">
-                            <Eye size={12} /> {offer.views_count}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4">
-                          <button
-                            onClick={() => toggleActive(offer)}
-                            className={`relative w-11 h-6 rounded-full transition-colors ${offer.is_active ? 'bg-emerald-500' : 'bg-[#E8E3DA]'}`}
-                          >
-                            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${offer.is_active ? 'left-[22px]' : 'left-0.5'}`} />
-                          </button>
-                        </td>
-                        <td className="px-5 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => openEdit(offer)}
-                              className="p-2 border border-[#E8E3DA] rounded-lg bg-white text-[#8B8378] hover:text-[#C4A896] transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                            >
-                              <Pencil size={14} />
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirm(offer.id)}
-                              className="p-2 border border-[#E8E3DA] rounded-lg bg-white text-[#8B8378] hover:text-red-500 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
+                        <td colSpan={5} className="p-0">
+                          <table className="w-full text-left border-collapse">
+                            <tbody>
+                              <tr className="hover:bg-[#F5F1EA]/30 transition-colors">
+                                <td className="px-5 py-4 w-[40%]">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-lg border border-[#E8E3DA] overflow-hidden bg-[#FAFAF8] flex items-center justify-center shrink-0">
+                                      {offer.image_url ? (
+                                        <img src={offer.image_url} alt={offer.product_name} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <span className="font-serif font-bold text-amber-800 text-sm">{offer.product_name.charAt(0).toUpperCase()}</span>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <h4 className="text-sm font-bold text-[#3E3B36]">{offer.product_name}</h4>
+                                      {offer.offer_description && (
+                                        <p className="text-xs text-[#8B8378] line-clamp-1 max-w-xs">{offer.offer_description}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-5 py-4 w-[20%]">
+                                  <div className="space-y-1">
+                                    <div className="flex items-baseline gap-2">
+                                      <span className="text-sm font-bold text-[#3E3B36]">₹{Number(offer.discount_price).toFixed(2)}</span>
+                                      {isDiscounted && (
+                                        <span className="text-xs text-[#8B8378] line-through">₹{Number(offer.original_price).toFixed(2)}</span>
+                                      )}
+                                    </div>
+                                    {isPercentage && (
+                                      <span className="inline-block text-[9px] font-bold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100">
+                                        {pct}% OFF
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-5 py-4 w-[15%]">
+                                  <span className="text-xs text-[#8B8378] font-medium flex items-center gap-1">
+                                    <Eye size={12} /> {offer.views_count}
+                                  </span>
+                                </td>
+                                <td className="px-5 py-4 w-[12%]">
+                                  <button
+                                    onClick={() => toggleActive(offer)}
+                                    className={`relative w-11 h-6 rounded-full transition-colors ${offer.is_active ? 'bg-emerald-500' : 'bg-[#E8E3DA]'}`}
+                                  >
+                                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${offer.is_active ? 'left-[22px]' : 'left-0.5'}`} />
+                                  </button>
+                                </td>
+                                <td className="px-5 py-4 text-right w-[13%]">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <button
+                                      onClick={() => openEdit(offer)}
+                                      className="p-2 border border-[#E8E3DA] rounded-lg bg-white text-[#8B8378] hover:text-[#C4A896] transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                    >
+                                      <Pencil size={14} />
+                                    </button>
+                                    <button
+                                      onClick={() => setDeleteConfirm(offer.id)}
+                                      className="p-2 border border-[#E8E3DA] rounded-lg bg-white text-[#8B8378] hover:text-red-500 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                              <tr className="bg-[#FAF9F6]">
+                                <td colSpan={5} className="px-5 py-2.5">
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-2 bg-[#FDFCFB] border border-[#E8E3DA]/80 rounded-lg">
+                                    <div className="flex items-center gap-1.5 text-[#8B8378] text-[9px] uppercase font-bold tracking-wider shrink-0 pl-1">
+                                      <TrendingUp size={11} className="text-[#C4A896]" /> Engagement Stats
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-6 w-full sm:w-auto">
+                                      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-left">
+                                        <span className="text-[9px] text-[#8B8378] font-medium whitespace-nowrap flex items-center gap-1"><Send size={10} className="text-amber-600" /> Total Sent:</span>
+                                        <span className="text-xs font-bold text-[#3E3B36]">{offer.push_sent_count || 0}</span>
+                                      </div>
+                                      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-left">
+                                        <span className="text-[9px] text-[#8B8378] font-medium whitespace-nowrap flex items-center gap-1"><MousePointerClick size={10} className="text-rose-500" /> Opened/Clicked:</span>
+                                        <span className="text-xs font-bold text-[#3E3B36]">{offer.push_opened_count || 0}</span>
+                                      </div>
+                                      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 text-left">
+                                        <span className="text-[9px] text-[#8B8378] font-medium whitespace-nowrap flex items-center gap-1"><Users size={10} className="text-purple-600" /> Subscribers:</span>
+                                        <span className="text-xs font-bold text-[#3E3B36]">{subscribers}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
                         </td>
                       </tr>
                     );
@@ -493,6 +549,27 @@ export default function FlashOffersPage() {
                       </span>
                     </div>
 
+                    {/* Engagement Stats Micro-Dashboard */}
+                    <div className="bg-[#FAF9F6] border border-[#E8E3DA]/80 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-1.5 text-[#8B8378] text-[9px] uppercase font-bold tracking-wider pl-1">
+                        <TrendingUp size={11} className="text-[#C4A896]" /> Engagement Stats
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="bg-white border border-[#E8E3DA]/45 rounded p-1.5 flex flex-col items-center">
+                          <span className="text-[8px] text-[#8B8378] font-medium leading-tight">Sent</span>
+                          <span className="text-xs font-bold text-[#3E3B36]">{offer.push_sent_count || 0}</span>
+                        </div>
+                        <div className="bg-white border border-[#E8E3DA]/45 rounded p-1.5 flex flex-col items-center">
+                          <span className="text-[8px] text-[#8B8378] font-medium leading-tight">Opened</span>
+                          <span className="text-xs font-bold text-[#3E3B36]">{offer.push_opened_count || 0}</span>
+                        </div>
+                        <div className="bg-white border border-[#E8E3DA]/45 rounded p-1.5 flex flex-col items-center">
+                          <span className="text-[8px] text-[#8B8378] font-medium leading-tight">Subscribers</span>
+                          <span className="text-xs font-bold text-[#3E3B36]">{subscribers}</span>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Touch-Friendly Bottom Bar */}
                     <div className="flex justify-end items-center gap-3 pt-1 border-t border-[#E8E3DA]/30">
                       <button
@@ -541,7 +618,9 @@ export default function FlashOffersPage() {
               <button onClick={() => { setIsCreateOpen(false); resetForm(); setEditOffer(null); }} className="text-[#8B8378] hover:text-[#3E3B36] transition-colors"><X size={18} /></button>
             </div>
             <div className="p-6 space-y-5">
-              <div>
+              {!showConfirmation ? (
+                <>
+                  <div>
                 <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Product Name</label>
                 <input type="text" value={formName} onChange={e => setFormName(e.target.value)} className="input-editorial" placeholder="e.g. Organic Tomatoes" />
               </div>
@@ -700,6 +779,22 @@ export default function FlashOffersPage() {
                 )}
               </div>
 
+              {/* Broadcast Web Push Control */}
+              <div className="flex items-center justify-between p-4 bg-[#F5F1EA]/50 border border-[#E8E3DA] rounded-xl">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-bold text-[#3E3B36] uppercase tracking-wider">Broadcast via Web Push</span>
+                  <span className="text-[10px] text-[#8B8378]">Instantly notify all store browsers (+2 Credits)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormBroadcastWebPush(!formBroadcastWebPush)}
+                  className="relative w-11 h-6 rounded-full transition-colors flex-shrink-0"
+                  style={{ backgroundColor: formBroadcastWebPush ? '#5C4033' : '#E8E3DA' }}
+                >
+                  <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${formBroadcastWebPush ? 'left-[22px]' : 'left-0.5'}`} />
+                </button>
+              </div>
+
               {/* Customer UI Visibility Checkboxes */}
               <div className="bg-[#F5F1EA]/50 border border-[#E8E3DA] rounded-xl p-4 space-y-3">
                 <p className="text-[9px] tracking-wider text-[#8B8378] uppercase font-bold">Public Display Controls</p>
@@ -741,10 +836,55 @@ export default function FlashOffersPage() {
                 <textarea value={formDescription} onChange={e => setFormDescription(e.target.value)}
                   className="input-editorial min-h-[80px] resize-none" placeholder="AI-generated or manual offer description..." />
               </div>
-              <button onClick={handleSubmit} disabled={isSubmitting}
-                className="w-full bg-[#3E3B36] text-[#F5F1EA] py-3.5 rounded-xl text-xs font-bold tracking-widest uppercase hover:bg-[#2A2825] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-                {isSubmitting ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : editOffer ? 'Update Offer' : 'Create Offer'}
-              </button>
+                </>
+              ) : (
+                <div className="space-y-6">
+                  <div className="bg-[#FAF9F6] border border-[#E8E3DA]/80 rounded-xl p-5 space-y-4">
+                    <h3 className="text-sm font-bold text-[#3E3B36] border-b border-[#E8E3DA] pb-2">Confirm Offer Details</h3>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#8B8378]">Product:</span>
+                      <span className="font-bold text-[#3E3B36]">{formName}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#8B8378]">Original Price:</span>
+                      <span className="font-medium line-through text-[#8B8378]">₹{Number(formOriginal || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#8B8378]">Discount:</span>
+                      <span className="font-bold text-emerald-600">{formPercentage}% OFF</span>
+                    </div>
+                    <div className="flex justify-between items-center text-base border-t border-[#E8E3DA] pt-2 mt-2">
+                      <span className="font-bold text-[#3E3B36]">Final Price:</span>
+                      <span className="font-bold text-[#3E3B36]">₹{Number(formDiscount || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs bg-amber-50/50 p-3 rounded-lg border border-amber-100/60 mt-4">
+                      <span className="font-bold text-amber-700 flex items-center gap-1.5"><Zap size={12} /> Wallet Cost:</span>
+                      <span className="font-bold text-amber-700 text-right">
+                        {editOffer 
+                          ? (formBroadcastWebPush ? '2 Credits (Push Broadcast)' : '0 Credits (Update)')
+                          : (formBroadcastWebPush ? '4 Credits (2 Base + 2 Push Broadcast)' : '2 Credits (Base Offer)')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {!showConfirmation ? (
+                <button onClick={handleInitialSubmit} disabled={isSubmitting}
+                  className="w-full bg-[#3E3B36] text-[#F5F1EA] py-3.5 rounded-xl text-xs font-bold tracking-widest uppercase hover:bg-[#2A2825] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                  {editOffer ? 'Review Update' : 'Review Offer'}
+                </button>
+              ) : (
+                <div className="flex gap-3">
+                  <button onClick={() => setShowConfirmation(false)} disabled={isSubmitting}
+                    className="flex-1 py-3.5 border border-[#E8E3DA] rounded-xl text-xs font-bold tracking-widest uppercase text-[#8B8378] hover:bg-[#F5F1EA] transition-colors disabled:opacity-50">
+                    Back
+                  </button>
+                  <button onClick={handleSubmit} disabled={isSubmitting}
+                    className="flex-1 bg-[#3E3B36] text-[#F5F1EA] py-3.5 rounded-xl text-xs font-bold tracking-widest uppercase hover:bg-[#2A2825] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                    {isSubmitting ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : 'Confirm & Publish'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

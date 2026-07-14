@@ -3,14 +3,14 @@
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
-import type { Campaign, Shop, Wallet, EmailCampaign, Customer } from '@/types/broadcast';
-import { Mail, MessageSquare, QrCode, ArrowRight, Activity, Smartphone, CheckCircle2, AlertTriangle, Users, TrendingUp, Zap, Coins, Send } from 'lucide-react';
-import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import type { Campaign, Shop, Wallet, Customer } from '@/types/broadcast';
+import { MessageSquare, QrCode, ArrowRight, Activity, Smartphone, CheckCircle2, AlertTriangle, Users, TrendingUp, Zap, Coins, Send } from 'lucide-react';
+import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatDistanceToNow } from 'date-fns';
 
 type ActivityItem = {
   id: string;
-  type: 'wa' | 'email' | 'qr';
+  type: 'wa' | 'qr';
   description: string;
   created_at: string;
   icon: React.ReactNode;
@@ -20,7 +20,6 @@ export default function DashboardPage() {
   const [shop, setShop] = useState<Shop | null>(null);
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [waCampaigns, setWaCampaigns] = useState<Campaign[]>([]);
-  const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>([]);
   const [qrLeads, setQrLeads] = useState<Customer[]>([]);
   const [digitalInvoices, setDigitalInvoices] = useState<any[]>([]);
   const [flashOffers, setFlashOffers] = useState<any[]>([]);
@@ -35,7 +34,6 @@ export default function DashboardPage() {
         { data: shopData },
         { data: walletData },
         { data: waData },
-        { data: emailData },
         { data: qrData },
         { data: invoicesData },
         { data: flashOffersData },
@@ -43,7 +41,6 @@ export default function DashboardPage() {
         supabase.from('shops').select('*').eq('id', user.id).maybeSingle(),
         supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle(),
         supabase.from('campaigns').select('*').eq('shop_id', user.id).order('created_at', { ascending: true }),
-        supabase.from('email_campaigns').select('*').eq('shop_id', user.id).order('created_at', { ascending: true }),
         supabase.from('customers_master').select('*').eq('shop_id', user.id).order('created_at', { ascending: true }),
         supabase.from('digital_invoices').select('*').eq('shop_id', user.id).order('created_at', { ascending: true }),
         supabase.from('shop_flash_offers').select('id, is_active, views_count, is_deleted').eq('shop_id', user.id).eq('is_deleted', false)
@@ -52,7 +49,6 @@ export default function DashboardPage() {
       if (shopData) setShop(shopData);
       if (walletData) setWallet(walletData);
       if (waData) setWaCampaigns(waData);
-      if (emailData) setEmailCampaigns(emailData);
       if (qrData) setQrLeads(qrData);
       if (invoicesData) setDigitalInvoices(invoicesData);
       if (flashOffersData) setFlashOffers(flashOffersData);
@@ -85,26 +81,7 @@ export default function DashboardPage() {
     };
   }, [waCampaigns]);
 
-  const { emailMetrics, emailChartData } = useMemo(() => {
-    let sent = 0, delivered = 0, failed = 0;
-    const timeline: Record<string, { date: string; clicked: number; converted: number }> = {};
 
-    emailCampaigns.forEach(c => {
-      sent += c.total_sent ?? 0;
-      delivered += c.total_delivered ?? 0;
-      failed += c.total_failed ?? 0;
-
-      const dateStr = new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-      if (!timeline[dateStr]) timeline[dateStr] = { date: dateStr, clicked: 0, converted: 0 };
-      timeline[dateStr].clicked += Math.floor((c.total_delivered ?? 0) * 0.25); // Simulated clicks
-      timeline[dateStr].converted += Math.floor((c.total_delivered ?? 0) * 0.05); // Simulated conversions
-    });
-
-    return {
-      emailMetrics: { sent, delivered, failed },
-      emailChartData: Object.values(timeline)
-    };
-  }, [emailCampaigns]);
 
   const { qrMetrics, qrChartData } = useMemo(() => {
     const totalInvoices = digitalInvoices.length;
@@ -149,13 +126,6 @@ export default function DashboardPage() {
       });
     });
 
-    emailCampaigns.slice(-5).forEach(c => {
-      activities.push({
-        id: c.id, type: 'email', description: `Sent Email Broadcast: ${c.title}`, created_at: c.created_at,
-        icon: <Mail size={14} className="text-[#3b82f6]" />
-      });
-    });
-
     digitalInvoices.slice(-5).forEach(i => {
       activities.push({
         id: i.id,
@@ -169,7 +139,7 @@ export default function DashboardPage() {
     return activities
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5);
-  }, [waCampaigns, emailCampaigns, digitalInvoices]);
+  }, [waCampaigns, digitalInvoices]);
 
   if (loading) {
     return (
@@ -197,9 +167,6 @@ export default function DashboardPage() {
         <div className="flex items-center gap-4 w-full md:w-auto">
           <Link href="/dashboard/campaigns/create" className="btn-primary bg-[#25D366] hover:bg-[#1DA851] text-white rounded-lg flex-1 md:flex-none flex items-center justify-center gap-2 !py-3">
             <Smartphone size={16} strokeWidth={2} /> WhatsApp Campaign
-          </Link>
-          <Link href="/dashboard/email/create" className="btn-primary rounded-lg flex-1 md:flex-none flex items-center justify-center gap-2 !py-3">
-            <Mail size={16} strokeWidth={2} /> Email Campaign
           </Link>
         </div>
       </div>
@@ -238,9 +205,9 @@ export default function DashboardPage() {
             <Send size={15} className="text-[#C4A896]" strokeWidth={1.5} />
           </div>
           <p className="serif-headline text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">
-            {(waMetrics.sent + emailMetrics.sent).toLocaleString()}
+            {waMetrics.sent.toLocaleString()}
           </p>
-          <span className="text-[9px] text-[#8B8378] mt-1 block">WhatsApp + Email</span>
+          <span className="text-[9px] text-[#8B8378] mt-1 block">WhatsApp Broadcasts</span>
         </div>
 
         {/* Live Conversion / Read Analytics */}
@@ -268,8 +235,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Tri-Channel Analytics Engine */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Dual-Channel Analytics Engine */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Channel A: WhatsApp */}
         <div className="bg-white border border-[#E8E3DA] rounded-xl p-6 hover:shadow-lg transition-all hover:-translate-y-1 duration-300">
           <div className="flex items-center gap-3 mb-6">
@@ -301,38 +268,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Channel B: Email */}
-        <div className="bg-white border border-[#E8E3DA] rounded-xl p-6 hover:shadow-lg transition-all hover:-translate-y-1 duration-300">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-              <Mail size={18} className="text-blue-500" />
-            </div>
-            <div>
-              <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">Email Performance</h2>
-              <p className="text-[10px] tracking-[0.1em] text-[#8B8378] uppercase">Corporate Reach</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Dispatched</p>
-              <p className="text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">{emailMetrics.sent.toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Delivered</p>
-              <p className="text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">{emailMetrics.delivered.toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Open Rate</p>
-              <p className="text-lg sm:text-2xl font-bold text-[#3E3B36] truncate">{emailMetrics.delivered > 0 ? '42%' : '0%'}</p>
-            </div>
-            <div>
-              <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mb-1">Bounce</p>
-              <p className="text-lg sm:text-2xl font-bold text-amber-500 truncate">{emailMetrics.failed.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Channel C: Digital Bill Engine */}
+        {/* Channel B: Digital Bill Engine */}
         <div className="bg-white border border-[#E8E3DA] rounded-xl p-6 hover:shadow-lg transition-all hover:-translate-y-1 duration-300">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-full bg-[#F5F1EA] flex items-center justify-center border border-[#E8E3DA]">
@@ -427,10 +363,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Advanced Visual Graph Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Chart 1: WA Read Trends */}
-        <div className="bg-white border border-[#E8E3DA] rounded-xl p-6 lg:col-span-1">
+        <div className="bg-white border border-[#E8E3DA] rounded-xl p-6">
           <h3 className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mb-6 flex items-center gap-2">
             <TrendingUp size={14} className="text-[#25D366]" /> Daily WA Read Trends
           </h3>
@@ -457,31 +393,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Chart 2: Email CTR */}
-        <div className="bg-white border border-[#E8E3DA] rounded-xl p-6 lg:col-span-1">
-          <h3 className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mb-6 flex items-center gap-2">
-            <Activity size={14} className="text-blue-500" /> Email Clicks &amp; Conversions
-          </h3>
-          <div className="h-[250px] lg:h-[200px] w-full">
-            {emailChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={emailChartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E8E3DA" />
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#8B8378' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#8B8378' }} />
-                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #E8E3DA', fontSize: '12px' }} cursor={{ fill: '#F5F1EA' }} />
-                  <Bar dataKey="clicked" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="converted" fill="#C4A896" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-xs text-[#8B8378] uppercase tracking-widest">No Data</div>
-            )}
-          </div>
-        </div>
-
-        {/* Chart 3: Live Shop Counter Growth */}
-        <div className="bg-white border border-[#E8E3DA] rounded-xl p-6 lg:col-span-1">
+        {/* Chart 2: Live Shop Counter Growth */}
+        <div className="bg-white border border-[#E8E3DA] rounded-xl p-6">
           <h3 className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mb-6 flex items-center gap-2">
             <Users size={14} className="text-[#C4A896]" /> Digital Bill Growth Rate
           </h3>

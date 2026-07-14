@@ -198,12 +198,7 @@ export default function TransactionsPage() {
             WhatsApp
           </span>
         );
-      case 'Email Marketing':
-        return (
-          <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-wider uppercase">
-            Email
-          </span>
-        );
+
       case 'Digital Bill Dynamic QR':
         return (
           <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-100 px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-wider uppercase">
@@ -331,37 +326,33 @@ export default function TransactionsPage() {
             Wallet Token Ledger Breakdown
           </h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-4 space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold text-[#3E3B36]">Flash Offer Synchronization</p>
-                <p className="text-[11px] text-[#8B8378] mt-0.5 leading-relaxed">2 Wallet Credits per successfully activated in-store offer.</p>
-              </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-100 rounded-md whitespace-nowrap">2 Credits</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-4 flex flex-col justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold text-[#3E3B36]">Flash Offer Synchronization</p>
+              <p className="text-[11px] text-[#8B8378] mt-0.5 leading-relaxed">2 Wallet Credits per successfully activated in-store offer.</p>
             </div>
-            <div className="border-t border-[#E8E3DA]/45 pt-3 flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold text-[#3E3B36]">AI Text Automation Engine</p>
-                <p className="text-[11px] text-[#8B8378] mt-0.5 leading-relaxed">1 Wallet Credit per successful response generation (Charged strictly upon successful LLM API returns).</p>
-              </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-md whitespace-nowrap">1 Credit</span>
+            <div className="flex justify-end">
+              <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-100 rounded-md whitespace-nowrap">2 Credits</span>
             </div>
           </div>
           
-          <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-4 space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold text-[#3E3B36]">AI Luxury Email Campaigns</p>
-                <p className="text-[11px] text-[#8B8378] mt-0.5 leading-relaxed">1 Wallet Credit per successfully dispatched recipient node.</p>
-              </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-100 rounded-md whitespace-nowrap">1 Credit</span>
+          <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-4 flex flex-col justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold text-[#3E3B36]">AI Text Automation Engine</p>
+              <p className="text-[11px] text-[#8B8378] mt-0.5 leading-relaxed">1 Wallet Credit per successful response generation (Charged strictly upon successful LLM API returns).</p>
             </div>
-            <div className="border-t border-[#E8E3DA]/45 pt-3 flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold text-[#3E3B36]">Meta API Broadcasts</p>
-                <p className="text-[11px] text-[#8B8378] mt-0.5 leading-relaxed">1 Wallet Credit per successfully delivered broadcast message.</p>
-              </div>
+            <div className="flex justify-end">
+              <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-md whitespace-nowrap">1 Credit</span>
+            </div>
+          </div>
+
+          <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-4 flex flex-col justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold text-[#3E3B36]">Meta API Broadcasts</p>
+              <p className="text-[11px] text-[#8B8378] mt-0.5 leading-relaxed">1 Wallet Credit per successfully delivered broadcast message.</p>
+            </div>
+            <div className="flex justify-end">
               <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-md whitespace-nowrap">1 Credit</span>
             </div>
           </div>

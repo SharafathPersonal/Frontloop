@@ -39,9 +39,6 @@ interface NavLink {
 const navLinks: NavLink[] = [
   { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={14} strokeWidth={1.5} /> },
   { label: 'Audience', href: '/dashboard/customers', icon: <Users size={14} strokeWidth={1.5} /> },
-  { label: 'Email Campaigns', href: '/dashboard/email', icon: <Mail size={14} strokeWidth={1.5} />, comingSoon: true },
-  { label: 'SMTP Settings', href: '#', icon: <Settings size={14} strokeWidth={1.5} />, comingSoon: true },
-  { label: 'Email Marketing Setup', href: '#', icon: <Zap size={14} strokeWidth={1.5} />, comingSoon: true },
   { label: 'WhatsApp Campaigns', href: '/dashboard/campaigns', icon: <Radio size={14} strokeWidth={1.5} /> },
   { label: 'Message Templates', href: '/dashboard/templates', icon: <MessageSquareText size={14} strokeWidth={1.5} /> },
   { label: 'Digital Bill Engine', href: '/dashboard/digital-bill', icon: <QrCode size={14} strokeWidth={1.5} /> },
