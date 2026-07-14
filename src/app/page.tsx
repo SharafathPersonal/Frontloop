@@ -5,12 +5,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { APP_VERSION } from '@/lib/config';
 import {
-  Phone, MessageCircle, XCircle, CheckCircle, ArrowRight, Mail,
-  Smartphone, ShieldCheck, Bot, Contact, Zap, Wand2, Upload,
+  XCircle, CheckCircle, ArrowRight, Mail,
+  Smartphone, ShieldCheck, Wand2, Upload,
   Image as ImageIcon, AlertTriangle, X, Search, Loader2, Plus,
-  Trash2, Download, Eye, Check, RefreshCw, HelpCircle, ArrowUpRight,
+  Trash2, Download, Eye, Check, RefreshCw, HelpCircle,
   Settings, ChevronRight, Copy, Database, FileText, Lock, Sparkles,
-  CreditCard, TrendingUp, Sliders, Layers, UserCheck, Bell, Tag
+  CreditCard, TrendingUp, Sliders, Users, Megaphone, Target, Zap, ShoppingBag
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -41,7 +41,7 @@ export default function LandingPage() {
   ]);
   const [newItemName, setNewItemName] = useState('');
   const [newItemPrice, setNewItemPrice] = useState('');
-  const [invoiceFooterNote, setInvoiceFooterNote] = useState('Thank you for visiting! Scan to claim wallet loyalty credits. ✨');
+  const [invoiceFooterNote, setInvoiceFooterNote] = useState('Thank you for visiting. Scan to claim wallet loyalty credits.');
   const [showBillModal, setShowBillModal] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -69,7 +69,7 @@ export default function LandingPage() {
     setIsDownloading(true);
     setTimeout(() => {
       setIsDownloading(false);
-      alert(`INV-1002-BILL.pdf downloaded successfully! (Theme Accent: ${brandColor})`);
+      alert(`INV-1002-BILL.pdf downloaded successfully. (Theme Accent: ${brandColor})`);
     }, 1200);
   };
 
@@ -84,9 +84,9 @@ export default function LandingPage() {
   const [isOfferUploading, setIsOfferUploading] = useState(false);
 
   const offerImages = [
-    { name: 'Fresh Organic Avocados', emoji: '🥑', description: 'Grown locally, ripe & ready.' },
-    { name: 'Premium Coffee Beans', emoji: '☕', description: 'Single origin medium roast Arabica.' },
-    { name: 'Artisan Sourdough Bread', emoji: '🍞', description: 'Freshly baked stone-ground wheat.' }
+    { name: 'Fresh Organic Avocados', description: 'Grown locally, ripe and ready.' },
+    { name: 'Premium Coffee Beans', description: 'Single origin medium roast Arabica.' },
+    { name: 'Artisan Sourdough Bread', description: 'Freshly baked stone-ground wheat.' }
   ];
 
   const computedDiscount = Math.round(((originalPrice - discountPrice) / originalPrice) * 100);
@@ -147,7 +147,7 @@ export default function LandingPage() {
         }
       });
 
-      // Synchronously mirror this item to the POS cart list in the hero section!
+      // Synchronously mirror this item to the POS cart list in the hero section
       setCart(prev => {
         const existing = prev.find(item => item.name === randomItem.name);
         if (existing) {
@@ -192,17 +192,12 @@ export default function LandingPage() {
   const [isLoadingMoreUsages, setIsLoadingMoreUsages] = useState(false);
   const [hasMoreUsages, setHasMoreUsages] = useState(true);
 
+  // Exact credit usages requested
   const generateInitialUsages = () => [
-    { id: 'u-1', type: 'Digital Invoice Dispatch', desc: 'INV-1002', date: 'Just now', credits: '1.0 Credit', status: 'delivered' },
-    { id: 'u-2', type: 'WhatsApp Campaign', desc: 'Weekend Feast BOGO Launch', date: '12 mins ago', credits: '1,420.0 Credits', status: 'delivered' },
-    { id: 'u-3', type: 'WhatsApp Campaign', desc: 'Eid Collection VIP Drop', date: '45 mins ago', credits: '650.0 Credits', status: 'delivered' },
-    { id: 'u-4', type: 'Digital Invoice Dispatch', desc: 'INV-1001', date: '1 hour ago', credits: '1.0 Credit', status: 'delivered' },
-    { id: 'u-5', type: 'WhatsApp Campaign', desc: 'VIP Special Cohort A', date: '2 hours ago', credits: '310.0 Credits', status: 'delivered' },
-    { id: 'u-6', type: 'WhatsApp Campaign', desc: 'Weekly Retention Newsletter v2.1', date: '4 hours ago', credits: '890.0 Credits', status: 'delivered' },
-    { id: 'u-7', type: 'Digital Invoice Dispatch', desc: 'INV-1000', date: '6 hours ago', credits: '1.0 Credit', status: 'delivered' },
-    { id: 'u-8', type: 'WhatsApp Campaign', desc: 'Flash Sale Alert Segment B', date: '8 hours ago', credits: '500.0 Credits', status: 'delivered' },
-    { id: 'u-9', type: 'WhatsApp Campaign', desc: 'Welcome Series Cohort New Users', date: '12 hours ago', credits: '420.0 Credits', status: 'delivered' },
-    { id: 'u-10', type: 'Digital Invoice Dispatch', desc: 'INV-0999', date: '14 hours ago', credits: '1.0 Credit', status: 'delivered' }
+    { id: 'u-1', type: 'Web Push Broadcast', desc: 'Weekend Flash Sale Launch', date: 'Just now', credits: '2.0 Credits', status: 'delivered' },
+    { id: 'u-2', type: 'Digital Invoice Dispatch', desc: 'INV-1002', date: '12 mins ago', credits: '1.0 Credit', status: 'delivered' },
+    { id: 'u-3', type: 'Web Push Broadcast', desc: 'Rain-Day Special Discount', date: '45 mins ago', credits: '2.0 Credits', status: 'delivered' },
+    { id: 'u-4', type: 'Digital Invoice Dispatch', desc: 'INV-1001', date: '1 hour ago', credits: '1.0 Credit', status: 'delivered' }
   ];
 
   useEffect(() => {
@@ -215,11 +210,8 @@ export default function LandingPage() {
 
     setTimeout(() => {
       const nextBatch = [
-        { id: 'u-11', type: 'Digital Invoice Dispatch', desc: 'INV-0998', date: '1 day ago', credits: '1.0 Credit', status: 'delivered' },
-        { id: 'u-12', type: 'WhatsApp Campaign', desc: 'Mid-Season Clearance Sale', date: '1 day ago', credits: '850.0 Credits', status: 'delivered' },
-        { id: 'u-13', type: 'WhatsApp Campaign', desc: 'Product Restock Alert', date: '1 day ago', credits: '1,240.0 Credits', status: 'delivered' },
-        { id: 'u-14', type: 'Digital Invoice Dispatch', desc: 'INV-0997', date: '2 days ago', credits: '1.0 Credit', status: 'delivered' },
-        { id: 'u-15', type: 'WhatsApp Campaign', desc: 'Black Friday Broadcast Opt-in', date: '2 days ago', credits: '2,200.0 Credits', status: 'delivered' }
+        { id: 'u-5', type: 'Digital Invoice Dispatch', desc: 'INV-1000', date: '1 day ago', credits: '1.0 Credit', status: 'delivered' },
+        { id: 'u-6', type: 'Web Push Broadcast', desc: 'Holiday Collection Announcement', date: '2 days ago', credits: '2.0 Credits', status: 'delivered' }
       ];
       setLedgerUsages(prev => [...prev, ...nextBatch]);
       setIsLoadingMoreUsages(false);
@@ -257,10 +249,10 @@ export default function LandingPage() {
         setDispatchStatus('completed');
         const newRecord = {
           id: `u-new-${Date.now()}`,
-          type: 'WhatsApp Campaign',
-          desc: 'AI Polished Custom Broadcast',
+          type: 'Web Push Broadcast',
+          desc: 'Weekend Flash Sale Launch',
           date: 'Just now',
-          credits: '1,240.0 Credits',
+          credits: '2.0 Credits',
           status: 'delivered'
         };
         setLedgerUsages(prev => [newRecord, ...prev]);
@@ -275,7 +267,7 @@ export default function LandingPage() {
   // ──────────────────────────────────────────────────────────────────
   // 8. TECHNICAL ARCHITECTURE STATE
   // ──────────────────────────────────────────────────────────────────
-  const [spintaxInput, setSpintaxInput] = useState('{Hello|Hi|Hey} customer! {Thanks|Thank you} for visiting us today.');
+  const [spintaxInput, setSpintaxInput] = useState('{Hello|Hi|Hey} customer. {Thanks|Thank you} for visiting us today.');
   const [spintaxVariations, setSpintaxVariations] = useState<string[]>([]);
   const [simulatedDelay, setSimulatedDelay] = useState(7);
   const [csvStatus, setCsvStatus] = useState<'idle' | 'uploading' | 'parsed'>('idle');
@@ -294,18 +286,18 @@ export default function LandingPage() {
     }, 1500);
   };
 
-  // AI template polisher
-  const [roughText, setRoughText] = useState('hey buyer we got new clothes in our shop 20% discount if you visit this sunday');
+  // AI template polisher (emoji free)
+  const [roughText, setRoughText] = useState('hey buyer we got new clothes in our shop 20 percent discount if you visit this sunday');
   const [polishedOutput, setPolishedOutput] = useState('');
   const [isPolishing, setIsPolishing] = useState(false);
 
   const handlePolishText = () => {
     if (!roughText.trim()) {
-      alert("Error: Input text cannot be empty! (Rule 8 Safeguard)");
+      alert("Error: Input text cannot be empty. (Rule 8 Safeguard)");
       return;
     }
     if (roughText.length > 300) {
-      alert("Error: Input exceeds maximum 300 characters! Truncation boundary enforced to save wallet credits.");
+      alert("Error: Input exceeds maximum 300 characters. Truncation boundary enforced to save wallet credits.");
       return;
     }
 
@@ -314,7 +306,7 @@ export default function LandingPage() {
     setTimeout(() => {
       setIsPolishing(false);
       setPolishedOutput(
-        `Hi {{1}}! Exclusive new collections are now available at {{2}}. Enjoy an exclusive 20% privilege savings when you visit us this Sunday. View Catalog: {{3}} 🌿`
+        `Hi {{1}}. Exclusive new collections are now available at {{2}}. Enjoy an exclusive 20 percent privilege savings when you visit us this Sunday. View Catalog: {{3}}`
       );
     }, 1200);
   };
@@ -585,15 +577,11 @@ export default function LandingPage() {
             {/* Left copy column */}
             <div className="lg:col-span-5 space-y-8 text-left z-10">
               
-              {/* Trust badges stack */}
+              {/* Trust badge */}
               <div className="hero-animate flex flex-wrap gap-2.5">
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase text-[#C4A896] bg-[#2D1E17]/40 border border-[#C4A896]/30 px-3.5 py-1.5 rounded-full">
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-widest uppercase text-[#C4A896] bg-[#2D1E17]/45 border border-[#C4A896]/30 px-3.5 py-1.5 rounded-full">
                   <ShieldCheck size={12} className="text-[#C4A896]" />
-                  Official Meta API · 0% Ban Risk
-                </span>
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase text-emerald-300 bg-emerald-950/40 border border-emerald-800/40 px-3.5 py-1.5 rounded-full">
-                  <Smartphone size={12} className="text-emerald-300" />
-                  Dynamic QR Billing
+                  0% App Friction · 100% Privacy Compliant
                 </span>
               </div>
 
@@ -695,7 +683,7 @@ export default function LandingPage() {
                       </div>
                     ))}
                     {cart.length === 0 && (
-                      <div className="text-center py-6 text-xs text-slate-400 italic">Cart is empty. Add a product below to trigger QR.</div>
+                      <div className="text-center py-6 text-xs text-slate-400 italic">Cart is empty. Add a product below.</div>
                     )}
                   </div>
 
@@ -762,7 +750,7 @@ export default function LandingPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold truncate">True Broadcast Store</p>
-                    <p className="text-[8px] text-[#C4A896] tracking-wide">Official Verified Merchant</p>
+                    <p className="text-[8px] text-[#C4A896] tracking-wide">Verified Counter Portal</p>
                   </div>
                 </div>
 
@@ -772,7 +760,7 @@ export default function LandingPage() {
                   
                   {/* Customer Inbound Request */}
                   <div className="self-end bg-[#E8DCD3] max-w-[85%] rounded-lg rounded-tr-none px-3 py-1.5 shadow-sm text-xs border border-[#E5DCD3] mt-2">
-                    <p className="text-[#2D1E17]">✨ Get my Bill INV-1002</p>
+                    <p className="text-[#2D1E17]">Get my Bill INV-1002</p>
                     <span className="text-[8px] text-slate-500 float-right mt-1 ml-2">Just now</span>
                   </div>
 
@@ -894,31 +882,31 @@ export default function LandingPage() {
                 {/* Feature Header */}
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-[#FAF6F0] text-[#5C4033] rounded-xl flex items-center justify-center border border-[#E5DCD3] shadow-sm">
-                    <Zap size={20} className="animate-pulse" />
+                    <Megaphone size={20} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-[#5C4033] text-sm tracking-wide">1. Live In-Store Flash Offers</h3>
+                    <h3 className="font-bold text-[#5C4033] text-sm tracking-wide">Live In-Store Flash Offers</h3>
                     <p className="text-[9px] text-[#C4A896] font-bold uppercase tracking-widest mt-0.5">Instant Impulse Sales</p>
                   </div>
                 </div>
 
                 <p className="text-xs text-[#7A6A5E] leading-relaxed">
-                  Broadcast time-limited discounts and instant specials directly to the browser feeds of in-store customers scanning your counter QR.
+                  Broadcast time-limited discounts and specials directly to browser feeds. Convert foot traffic by showing offers instantly on scan.
                 </p>
 
                 {/* Sub-capabilities list */}
                 <ul className="space-y-3 text-xs text-[#5C4033]/85 border-t border-[#E5DCD3]/50 pt-4">
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span><strong>Master Control Switch:</strong> Instantly push or pause live discounts on checkout boards with zero lag.</span>
+                    <span>Master Control Switch — Instantly push or pause live discounts on checkout boards with zero lag.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span><strong>Supabase Media Uploads:</strong> Instantly sync high-quality product images to your customers&apos; digital viewing lists.</span>
+                    <span>Supabase Media Uploads — Instantly sync high-quality product images to your customers&apos; digital viewing lists.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span><strong>Dynamic Web Push Toggle:</strong> Trigger real-time browser notifications to subscriber feeds on campaign dispatches.</span>
+                    <span>Dynamic Web Push Toggle — Trigger real-time browser notifications directly to customer devices on campaign dispatches (+2 Credits).</span>
                   </li>
                 </ul>
               </div>
@@ -938,7 +926,9 @@ export default function LandingPage() {
                     className="border border-dashed border-[#E5DCD3] hover:border-[#5C4033] bg-white rounded-lg p-2 flex items-center justify-between cursor-pointer transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">{offerImages[offerImageIndex].emoji}</span>
+                      <div className="w-6 h-6 bg-[#E5DCD3] rounded flex items-center justify-center text-xs text-[#5C4033]">
+                        <ImageIcon size={12} />
+                      </div>
                       <div className="text-left">
                         <span className="text-[10px] font-bold text-[#5C4033] block truncate max-w-[120px]">{offerImages[offerImageIndex].name}</span>
                         <span className="text-[8px] text-slate-400 block truncate max-w-[120px]">{offerImages[offerImageIndex].description}</span>
@@ -1014,10 +1004,10 @@ export default function LandingPage() {
                 {/* Feature Header */}
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-[#FAF6F0] text-[#5C4033] rounded-xl flex items-center justify-center border border-[#E5DCD3] shadow-sm">
-                    <Smartphone size={20} />
+                    <ShoppingBag size={20} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-[#5C4033] text-sm tracking-wide">2. Frictionless Digital Billing</h3>
+                    <h3 className="font-bold text-[#5C4033] text-sm tracking-wide">Frictionless Digital Billing</h3>
                     <p className="text-[9px] text-[#C4A896] font-bold uppercase tracking-widest mt-0.5">High-Fidelity Scan Streams</p>
                   </div>
                 </div>
@@ -1030,20 +1020,20 @@ export default function LandingPage() {
                 <ul className="space-y-3 text-xs text-[#5C4033]/85 border-t border-[#E5DCD3]/50 pt-4">
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span><strong>Live Barcode Capture:</strong> Instantly process physical UPC/EAN labels using any camera device.</span>
+                    <span>Live Barcode Capture — Instantly process physical UPC/EAN labels using any camera device.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span><strong>Auto GST Computation:</strong> Instant calculation of itemized subtotals, custom rates, and totals.</span>
+                    <span>Auto GST Computation — Instant calculation of itemized subtotals, custom rates, and totals.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span><strong>No Dummy Simulations:</strong> Active local timer loops demonstrate real barcode detection sync with the cashier inventory panel.</span>
+                    <span>No Dummy Simulations — Active local timer loops demonstrate real barcode detection sync with the cashier inventory panel.</span>
                   </li>
                 </ul>
               </div>
 
-              {/* Dynamic Viewfinder Checkout Scanner widget */}
+              {/* Viewfinder Checkout Scanner widget */}
               <div className="pt-6 mt-6 border-t border-[#E5DCD3] space-y-4">
                 <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                   <span>Camera Stream Viewfinder</span>
@@ -1100,38 +1090,38 @@ export default function LandingPage() {
               </div>
             </article>
 
-            {/* COLUMN 3: Audience Registry Management */}
+            {/* COLUMN 3: Audience Registry */}
             <article className="gsap-reveal bg-white border border-[#E5DCD3] rounded-2xl p-8 flex flex-col justify-between hover:shadow-xl hover:scale-[1.01] transition-all duration-300">
               <div className="space-y-6">
                 
                 {/* Feature Header */}
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-[#FAF6F0] text-[#5C4033] rounded-xl flex items-center justify-center border border-[#E5DCD3] shadow-sm">
-                    <Contact size={20} />
+                    <Users size={20} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-[#5C4033] text-sm tracking-wide">3. Audience Registry</h3>
+                    <h3 className="font-bold text-[#5C4033] text-sm tracking-wide">Audience Registry</h3>
                     <p className="text-[9px] text-[#C4A896] font-bold uppercase tracking-widest mt-0.5">Engagement Analytics</p>
                   </div>
                 </div>
 
                 <p className="text-xs text-[#7A6A5E] leading-relaxed">
-                  Manage walk-in customers and segment tags like <code>DIGITAL_BILL</code> automatically. Track visits, lifecycle value, and launch broadcasts.
+                  Manage walk-in customers and segment tags like DIGITAL_BILL automatically. Track visits, lifecycle value, and launch broadcasts.
                 </p>
 
                 {/* Sub-capabilities list */}
                 <ul className="space-y-3 text-xs text-[#5C4033]/85 border-t border-[#E5DCD3]/50 pt-4">
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span><strong>100% Opt-In Legality:</strong> Customers auto-whitelist their profiles when requesting receipts.</span>
+                    <span>100% Opt-In Legality — Customers auto-whitelist their browser profiles when requesting dynamic receipts.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span><strong>PostgreSQL Tag Segments:</strong> Filter registry loops using custom tag definitions.</span>
+                    <span>PostgreSQL Tag Segments — Filter registry loops using custom tag definitions like DIGITAL_BILL.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span><strong>Optimistic UI Hydration:</strong> Trigger simulated broadcast dispatches that immediately update credit ledgers.</span>
+                    <span>Real-time Delivery Counters — Track unique metrics including Total Sent, Opened, and Cumulative Store Subscribers.</span>
                   </li>
                 </ul>
               </div>
@@ -1200,7 +1190,7 @@ export default function LandingPage() {
                     onClick={triggerSecurityModal}
                     className="w-full bg-[#5C4033] hover:bg-[#C4A896] text-white py-1.5 px-3 rounded text-[9px] font-bold tracking-widest uppercase flex items-center justify-center gap-1.5 transition-colors"
                   >
-                    <MessageCircle size={10} /> Launch Campaign Broadcast
+                    <Target size={10} /> Launch Campaign Broadcast
                   </button>
                 </div>
               </div>
@@ -1316,7 +1306,7 @@ export default function LandingPage() {
                       {ledgerUsages.map((usage) => (
                         <tr key={usage.id} className="hover:bg-slate-50/50 transition-colors">
                           <td className="p-4 font-bold flex items-center gap-2 border-r border-slate-100">
-                            <span className={`w-1.5 h-1.5 rounded-full ${usage.type === 'WhatsApp Campaign' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                            <span className={`w-1.5 h-1.5 rounded-full ${usage.type === 'Web Push Broadcast' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                             {usage.type}
                           </td>
                           <td className="p-4 font-mono font-semibold text-[#2D1E17] border-r border-slate-100">{usage.desc}</td>
@@ -1448,9 +1438,9 @@ export default function LandingPage() {
                       onClick={handleSimulatedCsvUpload}
                       className="border-2 border-dashed border-[#E5DCD3] hover:border-[#5C4033] rounded-xl p-6 text-center cursor-pointer transition-colors bg-[#FAF6F0]"
                     >
-                      <Upload size={20} className="mx-auto text-slate-400 mb-2 animate-bounce" />
+                      <Upload size={20} className="mx-auto text-slate-400 mb-2" />
                       <span className="text-[9px] text-[#5C4033] block font-bold uppercase tracking-wider">Drop excel/csv here</span>
-                      <span className="text-[8px] text-slate-400 block mt-0.5">Click to simulate auto-parse &amp; clean</span>
+                      <span className="text-[8px] text-slate-400 block mt-0.5">Click to simulate auto-parse and clean</span>
                     </div>
                   )}
 
@@ -1464,7 +1454,7 @@ export default function LandingPage() {
                   {csvStatus === 'parsed' && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-[9px] font-bold">
-                        <span className="text-emerald-700">✓ Parsed 4 contacts</span>
+                        <span className="text-emerald-700">Parsed 4 contacts</span>
                         <button onClick={() => setCsvStatus('idle')} className="text-slate-400 hover:text-slate-600"><X size={10} /></button>
                       </div>
                       
@@ -1516,7 +1506,7 @@ export default function LandingPage() {
                   
                   {polishedOutput && (
                     <div className="p-2 bg-[#FAF6F0] border border-[#E5DCD3] rounded text-[10px] text-slate-700 leading-relaxed font-medium">
-                      <span className="block font-bold text-[8px] text-[#5C4033] uppercase tracking-widest mb-0.5">✦ Polished (Approved Format)</span>
+                      <span className="block font-bold text-[8px] text-[#5C4033] uppercase tracking-widest mb-0.5">Polished (Approved Format)</span>
                       {polishedOutput}
                     </div>
                   )}
@@ -1560,7 +1550,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-800 text-sm">The Daily Retail Struggle</h3>
-                    <p className="text-[9px] text-red-500 font-semibold uppercase tracking-widest mt-0.5">High Costs &amp; Friction</p>
+                    <p className="text-[9px] text-red-500 font-semibold uppercase tracking-widest mt-0.5">High Costs and Friction</p>
                   </div>
                 </div>
 
@@ -1575,7 +1565,7 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <X size={12} className="text-red-400 shrink-0" />
-                    <span>Customers refuse to spell phone numbers in long public queues.</span>
+                    <span>Customers refuse to spell phone numbers in public queues.</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <X size={12} className="text-red-400 shrink-0" />
@@ -1620,7 +1610,7 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <Check size={12} className="text-emerald-400 shrink-0" />
-                    <span>Tag pipeline saves buyer records under <code>DIGITAL_BILL</code> segment.</span>
+                    <span>Tag pipeline saves buyer records under DIGITAL_BILL segment.</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check size={12} className="text-emerald-400 shrink-0" />
@@ -1645,7 +1635,7 @@ export default function LandingPage() {
           {/* Final Call to Action */}
           <div className="max-w-3xl mx-auto text-center mb-16 space-y-6">
             <h2 className="serif-headline text-3xl sm:text-4xl font-light text-[#FAF6F0]">
-              Elevate Your Checkout Flow &amp; Boost Customer Retention.
+              Elevate Your Checkout Flow and Boost Customer Retention.
             </h2>
             <p className="text-sm text-[#C4A896] leading-relaxed max-w-xl mx-auto">
               Start capturing walk-in customer leads, whitelisting contacts automatically, and dispatching premium marketing campaigns today.
@@ -1686,15 +1676,9 @@ export default function LandingPage() {
                 <Mail size={14} className="text-[#C4A896]" />
                 trueattendly@gmail.com
               </a>
-              <a
-                href="https://wa.me/916282560928?text=Hello%20Sharafath,%20I%20am%20interested%20in%20Attendly%20Broadcast."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 py-4 bg-emerald-600 hover:bg-emerald-500 text-white transition-colors rounded-lg text-xs font-semibold tracking-wider uppercase border border-emerald-500"
-              >
-                <MessageCircle size={14} />
-                WhatsApp Founder
-              </a>
+              <span className="flex items-center justify-center gap-2 py-4 bg-emerald-600 text-white rounded-lg text-xs font-semibold tracking-wider uppercase border border-emerald-500">
+                Counter Portal Support
+              </span>
             </div>
           </div>
 
@@ -1725,7 +1709,7 @@ export default function LandingPage() {
       ══════════════════════════════════════════════════════════ */}
       {showBillModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden flex flex-col">
             
             {/* Modal header */}
             <div className="bg-[#5C4033] text-white px-5 py-4 flex items-center justify-between border-b shrink-0">
@@ -1828,11 +1812,11 @@ export default function LandingPage() {
       ══════════════════════════════════════════════════════════ */}
       {securityModalOpen && (
         <div className="fixed inset-0 bg-[#2D1E17]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-[#E5DCD3] shadow-2xl max-w-md w-full overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
+          <div className="bg-white rounded-2xl border border-[#E5DCD3] shadow-2xl max-w-md w-full overflow-hidden flex flex-col">
             
             {/* Header */}
             <div className="bg-[#B45309] text-white px-5 py-4 flex items-center gap-2 border-b shrink-0">
-              <AlertTriangle size={18} className="text-white animate-pulse" />
+              <AlertTriangle size={18} className="text-white" />
               <span className="text-xs font-bold uppercase tracking-widest">
                 Critical Transaction Security Firewall
               </span>
@@ -1847,17 +1831,17 @@ export default function LandingPage() {
             {/* Modal Content */}
             <div className="p-6 space-y-4 text-left">
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
-                <strong>Attention Required:</strong> You are about to initiate an active campaign broadcast loop. This will consume wallet credits and dispatch communications instantly to opt-in cohorts.
+                <strong>Attention Required:</strong> You are about to initiate an active Web Push campaign broadcast loop. This will consume wallet credits and dispatch communications instantly to opt-in cohorts.
               </div>
 
               <div className="space-y-1.5 text-xs text-slate-700">
                 <div className="flex justify-between border-b pb-1.5">
                   <span className="text-slate-500 font-semibold">Broadcasting Channel</span>
-                  <span className="font-bold text-slate-800 uppercase">WhatsApp (Official API)</span>
+                  <span className="font-bold text-slate-800 uppercase">Web Push Broadcast</span>
                 </div>
                 <div className="flex justify-between border-b pb-1.5">
                   <span className="text-slate-500 font-semibold">Target Cohorts</span>
-                  <span className="font-bold text-slate-800">VIP / Opt-in Customers</span>
+                  <span className="font-bold text-slate-800">Flash Offer Subscribers / Registry Contacts</span>
                 </div>
                 <div className="flex justify-between border-b pb-1.5">
                   <span className="text-slate-500 font-semibold">Recipients Queue Size</span>
@@ -1865,7 +1849,7 @@ export default function LandingPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500 font-semibold">Wallet Credits Deducted</span>
-                  <span className="font-bold text-amber-700">1,240 Credits (Pre-Paid)</span>
+                  <span className="font-bold text-amber-700">2.0 Credits per Subscriber</span>
                 </div>
               </div>
 
@@ -1880,7 +1864,7 @@ export default function LandingPage() {
               {dispatchStatus === 'completed' && (
                 <div className="py-4 text-center space-y-1 text-emerald-600">
                   <CheckCircle size={24} className="mx-auto" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest">Queue Dispatched Successfully!</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest">Queue Dispatched Successfully</p>
                   <p className="text-[8px] text-slate-400">Credits deducted from ledger balance.</p>
                 </div>
               )}
@@ -1906,7 +1890,7 @@ export default function LandingPage() {
                     onClick={handleSecurityVerification}
                     className={`px-4 py-2 rounded text-[10px] font-bold uppercase tracking-widest transition-all ${
                       securityClickCount === 0 ? 'bg-[#5C4033] text-white hover:bg-[#C4A896]' :
-                      securityClickCount === 1 ? 'bg-red-600 text-white animate-bounce' :
+                      securityClickCount === 1 ? 'bg-red-600 text-white' :
                       'bg-emerald-600 text-white'
                     }`}
                   >

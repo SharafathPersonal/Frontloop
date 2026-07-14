@@ -644,9 +644,9 @@
 - **Nature:** Updated the system instructions for the AI copywriter in `src/app/api/ai/spintax/route.ts` to excise references to email modules and explicitly align with the WhatsApp/QR credit economy (2 credits for Flash Offers, 1 credit for AI Polisher/Spintax, 1 credit for WhatsApp).
 - **Files:** `src/app/api/ai/spintax/route.ts`
 
-### [14/07/2026] - Premium Landing Page Structural and Visual Overhaul
-- 🌟 **What Changed:** Overhauled the customer-facing storefront landing page with a warm luxury chocolate and cream brand theme. Built a dynamic split-screen checkout simulation alongside an interactive three-column capability matrix showing off the automated camera barcode scanner, live flash offers console, and responsive customer list filtering.
-- 💡 **User/Business Benefit:** Attracts and converts walk-in store owners by demonstrating a frictionless, paperless checkout experience that captures customer loyalty leads instantly without app downloads.
+### [14/07/2026] - Premium Landing Page Copywriting and Visual Overhaul
+- 🌟 **What Changed:** Overhauled the storefront landing page copy and layout to focus on dynamic QR and push notifications, purged all emojis, aligned the ledger to display exact credit usage rows, and verified responsive rendering.
+- 💡 **User/Business Benefit:** Boosts acquisition and retail trust by presenting a clean, professional, and zero-friction digital receipt engine for store owners.
 
 ---
 
