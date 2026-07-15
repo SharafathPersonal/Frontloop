@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, use, useCallback, useRef } from 'react';
-import { Search, Tag, Sparkles, Loader2, ChevronDown, Share2 } from 'lucide-react';
+import { Search, Tag, Sparkles, Loader2, ChevronDown, Share2, Eye, Clock } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 interface OfferItem {
@@ -15,6 +15,7 @@ interface OfferItem {
   image_url?: string | null;
   created_at?: string;
   push_shared_count?: number;
+  views_count?: number;
 }
 
 interface ShopBrand {
@@ -51,12 +52,14 @@ function OfferCardComponent({
   offer,
   index,
   themeColor,
-  discountPct
+  discountPct,
+  shopName
 }: {
   offer: OfferItem;
   index: number;
   themeColor: string;
   discountPct: (orig: number, disc: number) => number;
+  shopName: string;
 }) {
   const [shares, setShares] = useState(offer.push_shared_count || 0);
   const computedPct = discountPct(Number(offer.original_price), Number(offer.discount_price));
@@ -67,7 +70,7 @@ function OfferCardComponent({
       const date = new Date(dateStr);
       const month = date.toLocaleDateString('en-US', { month: 'short' });
       const day = date.getDate();
-      return `Added on ${month} ${day}`;
+      return `Added ${month} ${day}`;
     } catch {
       return '';
     }
@@ -75,113 +78,135 @@ function OfferCardComponent({
 
   return (
     <div
-      className="rounded-2xl border p-4 shadow-sm hover:shadow-md transition-all flex gap-4"
+      className="w-full flex flex-col rounded-[1rem] border bg-white shadow-sm hover:shadow-md transition-all overflow-hidden relative"
       style={{
         animationDelay: `${index * 60}ms`,
         animation: 'fadeUp 0.4s ease forwards',
         opacity: 0,
         borderColor: `${themeColor}20`,
-        background: 'linear-gradient(135deg, #FCFBF9, #F5F1EA)'
       }}
     >
-      {/* Left side: product image or placeholder */}
-      <div className="w-20 h-20 bg-white rounded-xl border border-black/5 overflow-hidden flex items-center justify-center shrink-0 shadow-sm relative">
-        {offer.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={offer.image_url}
-            alt={offer.product_name}
-            className="object-contain w-full h-full p-1"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-xl font-serif font-bold text-amber-800 bg-amber-50">
-            {offer.product_name.charAt(0).toUpperCase()}
+      <div className="p-[1rem] flex flex-col gap-[0.75rem] w-full box-border">
+        {/* Top Meta: Shop Name & Views */}
+        <div className="flex flex-wrap justify-between items-center gap-[0.5rem] w-full">
+          <span className="font-serif text-[0.875rem] font-bold text-slate-800 truncate max-w-[65%]">
+            {shopName}
+          </span>
+          <div className="flex items-center gap-[0.3rem] bg-slate-50 px-[0.5rem] py-[0.125rem] rounded-full border border-slate-100 shrink-0">
+            <Eye size={12} className="text-slate-500" />
+            <span className="text-[0.65rem] font-bold text-slate-600 uppercase tracking-wider">
+              {offer.views_count || 0} Views
+            </span>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Right side: details */}
-      <div className="flex-1 flex flex-col justify-between min-w-0">
-        <div>
-          <div className="flex justify-between items-start gap-1">
-            <h3 className="font-serif text-[11px] font-bold text-slate-800 tracking-wider uppercase truncate">
-              {offer.product_name}
-            </h3>
-            {offer.show_percentage_badge !== false && (
-              <span className="text-[11px] font-serif font-bold" style={{ color: themeColor }}>
-                {computedPct}% OFF
-              </span>
+        {/* Main Content Grid/Flex */}
+        <div className="flex flex-row gap-[1rem] items-center w-full">
+          {/* Product Image */}
+          <div className="w-[30%] max-w-[6.5rem] aspect-square rounded-[0.75rem] border border-black/5 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden bg-slate-50">
+            {offer.image_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={offer.image_url}
+                alt={offer.product_name}
+                className="object-cover w-full h-full"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-[2rem] font-serif font-bold text-amber-800/40 bg-amber-50/50">
+                {offer.product_name.charAt(0).toUpperCase()}
+              </div>
             )}
           </div>
 
-          {offer.offer_description && (
-            <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed break-words whitespace-normal">
-              {offer.offer_description}
-            </p>
-          )}
-
-          <div className="flex items-baseline gap-2 mt-1.5">
-            <span className="text-sm font-bold text-slate-900 font-serif">₹{Number(offer.discount_price).toFixed(0)}</span>
-            {offer.show_discount_price !== false && (
-              <span className="text-[10px] text-slate-400 line-through">₹{Number(offer.original_price).toFixed(0)}</span>
+          {/* Product Details */}
+          <div className="flex flex-col flex-1 min-w-0">
+            <h3 className="font-serif text-[1rem] sm:text-[1.125rem] font-bold text-slate-900 leading-snug break-words">
+              {offer.product_name}
+            </h3>
+            
+            {offer.show_percentage_badge !== false && (
+              <span 
+                className="inline-block mt-[0.35rem] text-[0.75rem] font-bold px-[0.5rem] py-[0.15rem] rounded-md" 
+                style={{ backgroundColor: `${themeColor}15`, color: themeColor, width: 'fit-content' }}
+              >
+                Flat {computedPct}% OFF
+              </span>
+            )}
+            
+            <div className="flex flex-wrap items-baseline gap-x-[0.5rem] gap-y-[0.25rem] mt-[0.5rem]">
+              <span className="text-[1.25rem] font-bold text-slate-900 font-serif">
+                ₹{Number(offer.discount_price).toFixed(0)}
+              </span>
+              {offer.show_discount_price !== false && (
+                <span className="text-[0.75rem] text-slate-400 line-through">
+                  ₹{Number(offer.original_price).toFixed(0)}
+                </span>
+              )}
+            </div>
+            
+            {offer.offer_description && (
+              <p className="text-[0.75rem] text-slate-500 mt-[0.35rem] leading-relaxed line-clamp-2">
+                {offer.offer_description}
+              </p>
             )}
           </div>
         </div>
 
-        {/* Bottom row: creation date metadata, button, label */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mt-3 pt-2 border-t border-black/[0.03]">
-          {/* Creation Date Metadata */}
-          <div className="flex flex-col shrink-0">
-            <span className="text-[9px] sm:text-[10px] text-slate-500 font-serif">
-              {formatCreatedAt(offer.created_at)}
+        {/* Footer Actions */}
+        <div className="mt-[0.5rem] pt-[0.75rem] border-t border-slate-100 flex flex-row items-center justify-between gap-[0.75rem] w-full">
+          <button
+            onClick={async (e) => {
+              e.stopPropagation();
+              if (navigator.share) {
+                try {
+                  await navigator.share({
+                    title: offer.product_name,
+                    text: offer.offer_description || `Check out this amazing offer for ${offer.product_name}!`,
+                    url: window.location.href,
+                  });
+                  setShares(prev => prev + 1);
+                  await supabase.rpc('increment_flash_offer_shares', { p_offer_id: offer.id });
+                } catch (err) {
+                  console.error('Error sharing:', err);
+                }
+              } else {
+                try {
+                  await navigator.clipboard.writeText(window.location.href);
+                  alert('Offer link copied to clipboard!');
+                  setShares(prev => prev + 1);
+                  await supabase.rpc('increment_flash_offer_shares', { p_offer_id: offer.id });
+                } catch (err) {
+                  console.error('Failed to copy link:', err);
+                }
+              }
+            }}
+            className="flex-1 flex items-center justify-center gap-[0.35rem] py-[0.6rem] rounded-[0.5rem] border bg-white hover:bg-slate-50 transition-colors"
+            style={{ borderColor: themeColor, color: themeColor }}
+          >
+            <Share2 size={14} />
+            <span className="text-[0.75rem] font-bold uppercase tracking-wider">
+              Share {shares > 0 && `(${shares})`}
             </span>
-          </div>
-
-          {/* Button */}
-          <div className="flex flex-col items-start sm:items-end shrink-0">
-            <div className="flex gap-2 items-center">
-              <button
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  if (navigator.share) {
-                    try {
-                      await navigator.share({
-                        title: offer.product_name,
-                        text: offer.offer_description || `Check out this amazing offer for ${offer.product_name}!`,
-                        url: window.location.href,
-                      });
-                      setShares(prev => prev + 1);
-                      await supabase.rpc('increment_flash_offer_shares', { p_offer_id: offer.id });
-                    } catch (err) {
-                      console.error('Error sharing:', err);
-                    }
-                  } else {
-                    try {
-                      await navigator.clipboard.writeText(window.location.href);
-                      alert('Offer link copied to clipboard!');
-                      setShares(prev => prev + 1);
-                      await supabase.rpc('increment_flash_offer_shares', { p_offer_id: offer.id });
-                    } catch (err) {
-                      console.error('Failed to copy link:', err);
-                    }
-                  }
-                }}
-                className="px-2.5 py-1 rounded text-[8px] font-bold uppercase tracking-wider border flex items-center gap-1 hover:bg-[#FAF6F0] transition-colors"
-                style={{ borderColor: themeColor, color: themeColor }}
-              >
-                <Share2 size={10} /> Share {shares > 0 && `(${shares})`}
-              </button>
-              <button
-                className="px-3.5 py-1 rounded text-[8px] font-bold uppercase tracking-wider text-white shadow-sm hover:scale-[1.02] transition-transform"
-                style={{ backgroundColor: themeColor }}
-              >
-                CLAIM IN-STORE
-              </button>
-            </div>
-            <span className="text-[5.5px] sm:text-[6px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-              Available In-Store Only
+          </button>
+          
+          <button
+            className="flex-1 flex flex-col items-center justify-center py-[0.5rem] rounded-[0.5rem] text-white shadow-sm hover:scale-[1.02] transition-transform"
+            style={{ backgroundColor: themeColor }}
+          >
+            <span className="text-[0.75rem] font-bold uppercase tracking-wider">
+              Claim In-Store
             </span>
-          </div>
+            <span className="text-[0.55rem] font-medium opacity-80 uppercase tracking-widest mt-[0.1rem]">
+              In-Store Only
+            </span>
+          </button>
+        </div>
+        
+        {/* Subtle date tag */}
+        <div className="flex justify-center w-full mt-[0.25rem]">
+           <span className="flex items-center gap-[0.25rem] text-[0.65rem] text-slate-400">
+             <Clock size={10} /> {formatCreatedAt(offer.created_at)}
+           </span>
         </div>
       </div>
     </div>
@@ -692,13 +717,14 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
         ) : (
           <div className="space-y-4">
             {offers.map((offer, i) => (
-              <OfferCardComponent
-                key={offer.id}
-                offer={offer}
-                index={i}
-                themeColor={themeColor}
-                discountPct={discountPct}
-              />
+                <OfferCardComponent
+                  key={offer.id}
+                  offer={offer}
+                  index={i}
+                  themeColor={themeColor}
+                  discountPct={discountPct}
+                  shopName={shop?.shop_name || 'Partner Store'}
+                />
             ))}
           </div>
         )}

@@ -135,3 +135,8 @@ Format Template to Append:
 - **Verification Rule:** No feature pull request or development phase can be marked complete unless the model confirms that both the codebase and the LLM context files are perfectly synchronized.
 
 ---
+
+### RULE 14: CUSTOMER-FACING UI MOBILE FREEDOM
+- **The Requirement:** The customer-facing product discovery and offer broadcast view layer must be built with strict mobile-first viewport constraints. No text, image, cards, or interactive elements may clip, overflow, or lose structural integrity on smaller smartphone dimensions.
+
+---

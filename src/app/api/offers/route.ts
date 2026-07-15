@@ -138,7 +138,7 @@ export async function GET(req: Request) {
     // Fetch active, non-deleted offers with filters, sorting, and pagination bounds
     let query = supabase
       .from('shop_flash_offers')
-      .select('id, product_name, offer_description, original_price, discount_price, show_percentage_badge, show_discount_price, image_url, created_at, push_shared_count, start_at, end_at, status')
+      .select('id, product_name, offer_description, original_price, discount_price, show_percentage_badge, show_discount_price, image_url, created_at, push_shared_count, views_count, start_at, end_at, status')
       .eq('shop_id', shop.id)
       .eq('is_active', true)
       .eq('is_deleted', false)

@@ -35,6 +35,9 @@ No customer app downloads. No sign-up forms. No login walls. One scan of a brand
 - **Platform Exclusivity:**
     This platform is exclusively built around in-store dynamic engagement, direct mobile notifications, and WhatsApp business communication. All legacy email marketing and third-party newsletter functionalities have been permanently removed to maintain focus and simplicity.
 
+*True Attendly Broadcast: One scan. One dashboard. Unlimited customer reach.*
+
 ---
 
-*True Attendly Broadcast: One scan. One dashboard. Unlimited customer reach.*
+## Design and Interface Principles
+- **Mobile-First Storefront Experience:** The customer-facing product discovery layer and offer showcases are designed with strict mobile-first constraints. No text, image, cards, or interactive elements clip, overflow, or lose structural integrity on smaller smartphone dimensions. Customers enjoy fluid, dynamic digital cards across all device profiles.

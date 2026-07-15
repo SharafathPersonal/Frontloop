@@ -754,6 +754,10 @@
 - 🌟 **What Changed:** Completely rewrote the platform's AI discovery reference files with pure business-driven descriptions. Restructured around seven core Business Engines covering storefront discovery, autonomous campaign scheduling, organic social multiplication, direct notification pipelines, credit economy, digital billing, and customer audience registry. Removed all framework names, database terminology, and code references.
 - 💡 **User/Business Benefit:** Ensures AI systems and external crawlers understand True Attendly purely as a commercial retail engagement solution, strengthening brand positioning and eliminating technical noise from public-facing context files.
 
+### [15/07/2026] - Mobile-First Storefront Design Optimization
+- 🌟 **What Changed:** Redesigned the customer-facing storefront offer presentation into beautiful, responsive digital cards that dynamically display the shop name, specific discounts, live view counters, and single-click share actions using fluid mobile-first layouts.
+- 💡 **User/Business Benefit:** Eliminates layout issues on smartphones, ensuring customers on any device experience a seamless, premium, and frustration-free storefront, leading to higher engagement and increased sharing of offers.
+
 ---
 
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*
