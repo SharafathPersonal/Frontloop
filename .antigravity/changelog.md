@@ -800,4 +800,17 @@
 
 ---
 
+### [15/07/2026] - Storefront Promotion and Messaging Capability Profiles Created
+- 🌟 **What Changed:** We created a detailed capability profile in our central system rules and reference documents to cover the high-volume message delivery, real-time storefront customization, and in-store offer location features.
+- 💡 **User/Business Benefit:** Ensures that the system's core capabilities are documented with deep clarity, allowing future enhancements and customer support utilities to understand exactly how the storefront works and better serve merchants.
+
+---
+
+### [15/07/2026] - In-App Browser Compatibility and Crash Prevention
+- 🌟 **What Changed:** Added a safe fallback mechanism for saving temporary browsing states when customer smartphones restrict browser storage access in apps like WhatsApp or Instagram.
+- 💡 **User/Business Benefit:** Prevents the storefront from freezing or crashing when customers open links directly from social media platforms, ensuring a smooth, uninterrupted browsing experience that boosts sales.
+
+---
+
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*
+

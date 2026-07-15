@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, use, useCallback, useRef } from 'react';
 import { Search, Tag, Sparkles, Loader2, ChevronDown, Share2, Eye, Clock, X } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { safeSessionStorage } from '@/utils/safeStorage';
 
 interface OfferItem {
   id: string;
@@ -72,10 +73,10 @@ function OfferCardComponent({
   useEffect(() => {
     if (!shopId || viewLoggedRef.current) return;
     const sessionKey = `view_logged_offer_${offer.id}`;
-    if (sessionStorage.getItem(sessionKey) === 'true') return;
+    if (safeSessionStorage.getItem(sessionKey) === 'true') return;
     
     viewLoggedRef.current = true;
-    sessionStorage.setItem(sessionKey, 'true');
+    safeSessionStorage.setItem(sessionKey, 'true');
     
     fetch('/api/offers/view', {
       method: 'POST',
@@ -293,7 +294,7 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
   // Trigger push registration instantly on mount if shop is loaded
   useEffect(() => {
     if (shop && typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'default' && sessionStorage.getItem('dismissed_push_banner') !== 'true') {
+      if (Notification.permission === 'default' && safeSessionStorage.getItem('dismissed_push_banner') !== 'true') {
         handleSubscribe();
       }
     }
@@ -376,7 +377,7 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
   };
 
   const handleDismissBanner = () => {
-    sessionStorage.setItem('dismissed_push_banner', 'true');
+    safeSessionStorage.setItem('dismissed_push_banner', 'true');
     setShowPushBanner(false);
   };
 
