@@ -349,7 +349,7 @@ export default function DashboardPage() {
             <div className="w-px h-8 bg-[#F5F1EA]/10" />
             <div className="text-center">
               <p className="serif-headline text-2xl text-[#F5F1EA]">
-                {flashOffers.reduce((acc, o) => acc + (Number(o.views_count) || 0), 0).toLocaleString()}
+                {(flashOffers.length > 0 ? Math.max(...flashOffers.map(o => Number(o.views_count) || 0)) : 0).toLocaleString()}
               </p>
               <p className="text-[9px] tracking-[0.15em] text-[#F5F1EA]/50 uppercase mt-0.5">Views</p>
             </div>

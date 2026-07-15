@@ -136,7 +136,7 @@ export default function FlashOffersPage() {
   const concludedOffers = nonDeleted.filter(o => o.is_active && o.status === 'expired');
   const disabledOffers = nonDeleted.filter(o => !o.is_active);
 
-  const totalViews = offers.reduce((s, o) => s + (o.views_count || 0), 0);
+  const totalViews = offers.length > 0 ? Math.max(...offers.map(o => o.views_count || 0)) : 0;
   const totalPushSent = offers.reduce((s, o) => s + (o.push_sent_count || 0), 0);
   const totalPushOpened = offers.reduce((s, o) => s + (o.push_opened_count || 0), 0);
 
