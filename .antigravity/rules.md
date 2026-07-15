@@ -145,3 +145,17 @@ Format Template to Append:
 - **The Requirement:** Every flash offer lifecycle must bind a location context description at creation. The consumer view layer must present this via an on-demand modal interaction triggered by a 'View Details' action, ensuring buyers can instantly navigate to the product's physical location within the retail store.
 
 ---
+
+### RULE 16: COMPREHENSIVE ARCHITECTURAL ELABORATION MANDATE
+- **The Requirement:** All future systemic outputs, documentation, and architectural profiles describing this software ecosystem must permanently abandon brief summaries, superficial bullet points, and high-level abstractions. 
+- **Enforcement:** The AI must explicitly utilize highly detailed, technically profound, and fully elaborated narrative architectures when outlining capabilities, engine behaviors, and platform structures to provide enterprise-grade, high-fidelity business and technical overviews.
+
+---
+
+### RULE 17: ORGANIC WHATSAPP STATUS RETENTION LOOP
+- **The Funnel:** Transactional Digital Bill Dispatch -> Automatic Save Contact Prompt -> Free, Organic WhatsApp Status Marketing channel.
+- **The Requirement:** The Digital Bill Engine section on the landing page must showcase a dedicated visual section for the "WhatsApp Status Retention Loop". This section must render a modern, highly responsive Mobile Emulator Wrapper styled with Tailwind CSS, containing a production-ready responsive image slot that renders the WhatsApp Status Emulator screen.
+- **Visual Asset Specification:** The emulator image slot must specify a clean representation of a WhatsApp Status screen showing a circular merchant profile badge outlined in a green status active ring (`#25D366`), a product catalog preview card, a visual helper pointing to a "Save Contact to view today's deals" badge, and live view count increments.
+- **Mobile Styling Boundaries:** The emulator component must be fully responsive, scaling gracefully down to 360px without layout breaking, clipping, or horizontal overflow, strictly conforming to the mobile layout boundaries in Rule 14.
+
+---

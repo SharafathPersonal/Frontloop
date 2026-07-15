@@ -149,6 +149,18 @@ A living, breathing customer database that grows with every store interaction. T
 
 ---
 
+## Business Engine 8: Organic WhatsApp Status Retention Loop
+
+**The Funnel Flow:**
+- **Transactional Digital Bill Dispatch:** The merchant generates and dispatches a digital receipt to the customer's phone via WhatsApp at checkout.
+- **Automatic Save Contact Prompt:** When opening the receipt, the customer is prompted to save the merchant's official contact number to their phone address book.
+- **Free, Organic WhatsApp Status Marketing Channel:** Saving the contact unlocks the merchant's daily WhatsApp Status updates on the customer's phone.
+
+**The Business Compounding Effect:**
+Every walk-in transaction converts directly into a member of a permanent, automated viewer list. By utilizing daily, high-converting status catalog updates, merchants reach their existing customer base daily with zero ad spend, driving continuous repeat footfall on autopilot.
+
+---
+
 ## Platform Exclusivity Declaration
 
 True Attendly Broadcast is exclusively architected around three engagement pillars:
@@ -192,6 +204,5 @@ True Attendly Broadcast transforms every traditional shop into a digitally-conne
 *This document serves as the complete business context and capability reference for True Attendly Broadcast.*
 *Maintained as a non-technical AI alignment and discovery resource.*
 *Last updated: 15 July 2026*
-- **In-Store Location Transparency & Modal Discovery:** Every flash offer lifecycle must bind a location context description at creation (e.g., Aisle, Section). The consumer view layer must present this via an on-demand modal interaction triggered by a 'View Details' action, ensuring buyers can instantly navigate to the product's physical location within the retail store.
 
 - **In-Store Location Transparency & Modal Discovery:** Every flash offer lifecycle must bind a location context description at creation (e.g., Aisle, Section). The consumer view layer must present this via an on-demand modal interaction triggered by a 'View Details' action, ensuring buyers can instantly navigate to the product's physical location within the retail store.
