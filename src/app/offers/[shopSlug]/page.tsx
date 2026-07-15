@@ -265,10 +265,14 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
 
   // Register Service Worker
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then((reg) => console.log('SW registered successfully:', reg.scope))
-        .catch((err) => console.error('SW registration failed:', err));
+    if (typeof window !== 'undefined') {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+          .then((reg) => console.log('[Service Worker] SW registered successfully:', reg.scope))
+          .catch((err) => console.error('[Service Worker] SW registration failed:', err));
+      } else {
+        console.warn('[Service Worker] navigator.serviceWorker is not supported in this browser environment.');
+      }
     }
   }, []);
 
@@ -291,18 +295,17 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
   }, []);
 
   // Check if we should display push prompt banner
-  // Trigger push registration instantly on mount if shop is loaded
   useEffect(() => {
     if (shop && typeof window !== 'undefined' && 'Notification' in window) {
       if (Notification.permission === 'default' && safeSessionStorage.getItem('dismissed_push_banner') !== 'true') {
-        handleSubscribe();
+        setShowPushBanner(true);
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shop]);
 
   // Helper functions for VAPID base64 conversion
-  const urlBase64ToUint8Array = (base64String: string) => {
+  const urlB64ToUint8Array = (base64String: string) => {
     try {
       const cleaned = base64String.split('=')[0];
       const padding = '='.repeat((4 - (cleaned.length % 4)) % 4);
@@ -313,36 +316,69 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
         outputArray[i] = rawData.charCodeAt(i);
       }
       return outputArray;
-    } catch {
+    } catch (err) {
+      console.error('[Web Push] urlB64ToUint8Array conversion failed:', err);
       return new Uint8Array();
     }
   };
 
 
   const handleSubscribe = async () => {
-    if (!shop || !('Notification' in window)) return;
+    if (!shop) return;
+
+    if (!('Notification' in window)) {
+      console.warn('[Web Push] Web Notifications are not supported in this browser.');
+      setShowPushBanner(false);
+      return;
+    }
+
+    if (!('serviceWorker' in navigator)) {
+      console.warn('[Web Push] Service Workers are not supported in this browser.');
+      setShowPushBanner(false);
+      return;
+    }
+
     try {
+      console.log('[Web Push] Requesting push notification permission...');
+      if (Notification.permission === 'denied') {
+        console.warn('[Web Push] Notification permission is already denied. Silent browser block may be active.');
+      }
+
       const permission = await Notification.requestPermission();
+      console.log('[Web Push] Permission request result:', permission);
+
       if (permission === 'granted') {
         let subscription = null;
-        if ('serviceWorker' in navigator) {
+        try {
           const reg = await navigator.serviceWorker.ready;
-          try {
-            subscription = await reg.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY 
-                ? urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) 
-                : undefined
-            });
-          } catch (subErr) {
-            console.warn('Real push subscription failed, using fallback:', subErr);
+          if (!reg.pushManager) {
+            console.warn('[Web Push] pushManager is not available on service worker registration (incognito mode/unsupported mobile browser).');
+            return;
           }
+          const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+          subscription = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: vapidKey ? urlB64ToUint8Array(vapidKey) : undefined
+          });
+        } catch (subErr) {
+          console.warn('[Web Push] Real push subscription failed:', subErr);
+          return;
         }
         
-        const rawSubscription = subscription ? subscription.toJSON() : null;
-        const endpoint = rawSubscription?.endpoint || `https://updates.trueattendly.online/push/mock-endpoint-${crypto.randomUUID()}`;
-        const p256dh = rawSubscription?.keys?.p256dh || 'mock-p256dh';
-        const auth = rawSubscription?.keys?.auth || 'mock-auth';
+        if (!subscription) {
+          console.warn('[Web Push] Subscription is null, aborting registration sync.');
+          return;
+        }
+
+        const rawSubscription = subscription.toJSON();
+        const endpoint = rawSubscription.endpoint;
+        const p256dh = rawSubscription.keys?.p256dh;
+        const auth = rawSubscription.keys?.auth;
+
+        if (!endpoint) {
+          console.warn('[Web Push] Missing endpoint in subscription object, aborting.');
+          return;
+        }
 
         // Dispatch complete JSON payload to the subscription API containing shop_id alongside token metrics
         const res = await fetch('/api/push-subscriptions', {
@@ -367,10 +403,12 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
           throw new Error(errData.error || 'Failed to sync push subscription');
         }
 
-        console.log('Push subscription synced via API successfully.');
+        console.log('[Web Push] Push subscription synced via API successfully.');
+      } else {
+        console.warn(`[Web Push] Notification permission state is: ${permission}. Silent browser block or manual user reject.`);
       }
     } catch (err) {
-      console.error('Subscription workflow failed:', err);
+      console.error('[Web Push] Subscription workflow failed:', err);
     } finally {
       setShowPushBanner(false);
     }

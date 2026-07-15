@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing shop ID' }, { status: 400 });
     }
 
-    // Upsert subscription using unique endpoint conflict resolution
+    // Upsert subscription using unique composite key (shop_id, endpoint) conflict resolution
     const { data, error } = await supabaseAdmin
       .from('push_subscriptions')
       .upsert({
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
         auth,
         created_at: new Date().toISOString()
       }, {
-        onConflict: 'endpoint'
+        onConflict: 'shop_id,endpoint'
       })
       .select();
 

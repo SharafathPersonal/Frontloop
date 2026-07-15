@@ -268,10 +268,11 @@ ALTER TABLE public.shop_flash_offers ADD COLUMN IF NOT EXISTS push_opened_count 
 CREATE TABLE IF NOT EXISTS public.push_subscriptions (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     shop_id UUID REFERENCES public.shops(id) ON DELETE CASCADE NOT NULL,
-    endpoint TEXT UNIQUE NOT NULL,
+    endpoint TEXT NOT NULL,
     p256dh TEXT,
     auth TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    CONSTRAINT push_subscriptions_shop_endpoint_key UNIQUE (shop_id, endpoint)
 );
 
 -- Index for high-performance lookup of subscribers per shop
@@ -1303,7 +1304,7 @@ NOTIFY pgrst, 'reload schema';
 -- Version: 1.0.1 | TRUE ATTENDLY BROADCAST
 -- ==============================================================================
 
--- Ensure the push_subscriptions table has a UNIQUE constraint on the endpoint column
+-- Ensure the push_subscriptions table has a UNIQUE constraint on the shop_id and endpoint columns
 DO $$
 BEGIN
     -- Drop the constraint if it exists to recreate it cleanly
@@ -1313,11 +1314,17 @@ BEGIN
         ALTER TABLE public.push_subscriptions DROP CONSTRAINT push_subscriptions_endpoint_key;
     END IF;
     
-    -- Add the UNIQUE constraint on the endpoint column
-    ALTER TABLE public.push_subscriptions ADD CONSTRAINT push_subscriptions_endpoint_key UNIQUE (endpoint);
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'push_subscriptions_shop_endpoint_key'
+    ) THEN
+        ALTER TABLE public.push_subscriptions DROP CONSTRAINT push_subscriptions_shop_endpoint_key;
+    END IF;
+    
+    -- Add the UNIQUE constraint on (shop_id, endpoint)
+    ALTER TABLE public.push_subscriptions ADD CONSTRAINT push_subscriptions_shop_endpoint_key UNIQUE (shop_id, endpoint);
     
     -- Log the success
-    RAISE NOTICE 'Successfully applied unique constraint on push_subscriptions(endpoint)';
+    RAISE NOTICE 'Successfully applied unique constraint on push_subscriptions(shop_id, endpoint)';
 END
 $$;
 
@@ -1338,10 +1345,11 @@ NOTIFY pgrst, 'reload schema';
 CREATE TABLE IF NOT EXISTS public.push_subscriptions (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     shop_id UUID REFERENCES public.shops(id) ON DELETE CASCADE NOT NULL,
-    endpoint TEXT UNIQUE NOT NULL,
+    endpoint TEXT NOT NULL,
     p256dh TEXT,
     auth TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    CONSTRAINT push_subscriptions_shop_endpoint_key UNIQUE (shop_id, endpoint)
 );
 
 -- Index for high-performance lookup of subscribers per shop

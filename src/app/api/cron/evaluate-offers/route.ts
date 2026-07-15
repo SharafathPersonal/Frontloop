@@ -97,14 +97,17 @@ export async function GET(req: Request) {
                       sentCount++;
                     }
                   } catch (err: any) {
-                    sentCount++;
-                    const shouldPurge = err.statusCode === 410 || 
-                                        err.statusCode === 404 || 
-                                        err.code === 'ENOTFOUND' || 
-                                        err.code === 'EAI_AGAIN' ||
-                                        err.statusCode === undefined;
-                    if (shouldPurge) {
+                    console.error('[Web Push Dispatch] Delivery failed for subscription ID:', sub.id, err);
+                    const isGone = err.statusCode === 410;
+                    const isNotFound = err.statusCode === 404;
+                    const isInvalid = err.statusCode === 400;
+                    
+                    if (isGone || isNotFound || isInvalid) {
+                      console.log(`[Web Push Dispatch] Subscription ID ${sub.id} is obsolete/expired (status ${err.statusCode}). Marking for database deletion.`);
                       failedIds.push(sub.id);
+                    } else {
+                      console.warn(`[Web Push Dispatch] Transient error for subscription ID ${sub.id}:`, err.message || err);
+                      sentCount++;
                     }
                   }
                 });
@@ -112,10 +115,16 @@ export async function GET(req: Request) {
                 await Promise.all(sendPromises);
 
                 if (failedIds.length > 0) {
-                  await supabaseAdmin
+                  console.log(`[Web Push Dispatch] Purging ${failedIds.length} obsolete subscriptions from the database...`);
+                  const { error: purgeError } = await supabaseAdmin
                     .from('push_subscriptions')
                     .delete()
                     .in('id', failedIds);
+                  if (purgeError) {
+                    console.error('[Web Push Dispatch] Failed to delete obsolete subscriptions:', purgeError);
+                  } else {
+                    console.log('[Web Push Dispatch] Obsolete subscriptions purged successfully.');
+                  }
                 }
 
                 await supabaseAdmin

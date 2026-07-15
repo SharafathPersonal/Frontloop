@@ -849,7 +849,7 @@ export default function ManageOffersPage() {
       {/* Create / Edit Modal */}
       {isCreateOpen && (
         <div className="fixed inset-0 bg-[#3E3B36]/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-lg border border-[#E8E3DA] shadow-xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-lg md:max-w-xl mx-auto border border-[#E8E3DA] shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-2xl">
               <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">{editOffer ? 'Edit Offer' : 'Create New Offer'}</h2>
               <button onClick={() => { setIsCreateOpen(false); resetForm(); setEditOffer(null); }} className="text-[#8B8378] hover:text-[#3E3B36] transition-colors"><X size={18} /></button>
@@ -960,7 +960,7 @@ export default function ManageOffersPage() {
               </div>
 
               {/* Dynamic Inputs based on mode */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Original Price (₹)</label>
                   <input
@@ -1015,26 +1015,50 @@ export default function ManageOffersPage() {
               </div>
 
               {/* Scheduling Engine Inputs */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5 flex items-center gap-1"><Calendar size={12} className="text-[#5C4033]" /> Start Date & Time</label>
-                  <input
-                    type="datetime-local"
-                    value={formStartAt}
-                    onChange={e => setFormStartAt(e.target.value)}
-                    className="input-editorial focus:border-[#5C4033] focus:ring-[#5C4033]/20"
-                    placeholder="Now"
-                  />
+                  <div className="relative flex items-center">
+                    <input
+                      type="datetime-local"
+                      value={formStartAt}
+                      onChange={e => setFormStartAt(e.target.value)}
+                      className="input-editorial pr-10 focus:border-[#5C4033] focus:ring-[#5C4033]/20 w-full"
+                      placeholder="Now"
+                    />
+                    {formStartAt && (
+                      <button
+                        type="button"
+                        onClick={() => setFormStartAt('')}
+                        className="absolute right-10 top-1/2 -translate-y-1/2 text-[#8B8378] hover:text-[#3E3B36] p-1 rounded-full hover:bg-gray-100 transition-colors z-10"
+                        title="Clear start date"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
                   <span className="text-[9px] text-[#8B8378] mt-1 block">Defaults to now if empty</span>
                 </div>
                 <div>
                   <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5 flex items-center gap-1"><Clock size={12} className="text-[#8B8378]" /> End Date & Time</label>
-                  <input
-                    type="datetime-local"
-                    value={formEndAt}
-                    onChange={e => setFormEndAt(e.target.value)}
-                    className="input-editorial focus:border-[#5C4033] focus:ring-[#5C4033]/20"
-                  />
+                  <div className="relative flex items-center">
+                    <input
+                      type="datetime-local"
+                      value={formEndAt}
+                      onChange={e => setFormEndAt(e.target.value)}
+                      className="input-editorial pr-10 focus:border-[#5C4033] focus:ring-[#5C4033]/20 w-full"
+                    />
+                    {formEndAt && (
+                      <button
+                        type="button"
+                        onClick={() => setFormEndAt('')}
+                        className="absolute right-10 top-1/2 -translate-y-1/2 text-[#8B8378] hover:text-[#3E3B36] p-1 rounded-full hover:bg-gray-100 transition-colors z-10"
+                        title="Clear end date"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
                   <span className="text-[9px] text-[#8B8378] mt-1 block">Optional (never expires)</span>
                 </div>
               </div>

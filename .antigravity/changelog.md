@@ -812,5 +812,16 @@
 
 ---
 
-*CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*
+### [15/07/2026] - Flash Offer Creator Mobile Optimization & Scheduling Enhancements
+- 🌟 **What Changed:** Redesigned the offer creation screen to display beautifully on compact smartphone displays and introduced a direct date reset button to easily clear or adjust active promotion deadlines.
+- 💡 **User/Business Benefit:** Empowers store owners to manage flash discount campaigns directly on their mobile phones with precise control over scheduling dates and no screen layout breakages.
 
+---
+
+### [15/07/2026] - Web Push Notification Infrastructure Security Hardening
+- 🌟 **What Changed:** We upgraded the message delivery system to properly route notification clicks to the intended deals page and allowed customers to subscribe to multiple different shops simultaneously. We also modified the subscription prompt to only appear when explicitly requested by a user, preventing browser blocks, and eliminated artificial/fake subscriber records from analytics dashboards.
+- 💡 **User/Business Benefit:** Merchants now get completely accurate subscriber counts and delivery metrics without phantom data, while customers enjoy reliable, instant redirection to active in-store promotions when they tap a notification.
+
+---
+
+*CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*
