@@ -140,3 +140,8 @@ Format Template to Append:
 - **The Requirement:** The customer-facing product discovery and offer broadcast view layer must be built with strict mobile-first viewport constraints. No text, image, cards, or interactive elements may clip, overflow, or lose structural integrity on smaller smartphone dimensions.
 
 ---
+
+### RULE 15: IN-STORE LOCATION TRANSPARENCY & MODAL DISCOVERY
+- **The Requirement:** Every flash offer lifecycle must bind a location context description at creation. The consumer view layer must present this via an on-demand modal interaction triggered by a 'View Details' action, ensuring buyers can instantly navigate to the product's physical location within the retail store.
+
+---

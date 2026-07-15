@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, use, useCallback, useRef } from 'react';
-import { Search, Tag, Sparkles, Loader2, ChevronDown, Share2, Eye, Clock } from 'lucide-react';
+import { Search, Tag, Sparkles, Loader2, ChevronDown, Share2, Eye, Clock, X } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 interface OfferItem {
@@ -60,6 +60,7 @@ function OfferCardComponent({
   themeColor: string;
   discountPct: (orig: number, disc: number) => number;
   shopName: string;
+  onViewDetails: (offer: OfferItem) => void;
 }) {
   const [shares, setShares] = useState(offer.push_shared_count || 0);
   const computedPct = discountPct(Number(offer.original_price), Number(offer.discount_price));
@@ -153,53 +154,63 @@ function OfferCardComponent({
         </div>
 
         {/* Footer Actions */}
-        <div className="mt-[0.5rem] pt-[0.75rem] border-t border-slate-100 flex flex-row items-center justify-between gap-[0.75rem] w-full">
+        <div className="mt-[0.5rem] pt-[0.75rem] border-t border-slate-100 flex flex-col gap-[0.5rem] w-full">
           <button
-            onClick={async (e) => {
-              e.stopPropagation();
-              if (navigator.share) {
-                try {
-                  await navigator.share({
-                    title: offer.product_name,
-                    text: offer.offer_description || `Check out this amazing offer for ${offer.product_name}!`,
-                    url: window.location.href,
-                  });
-                  setShares(prev => prev + 1);
-                  await supabase.rpc('increment_flash_offer_shares', { p_offer_id: offer.id });
-                } catch (err) {
-                  console.error('Error sharing:', err);
-                }
-              } else {
-                try {
-                  await navigator.clipboard.writeText(window.location.href);
-                  alert('Offer link copied to clipboard!');
-                  setShares(prev => prev + 1);
-                  await supabase.rpc('increment_flash_offer_shares', { p_offer_id: offer.id });
-                } catch (err) {
-                  console.error('Failed to copy link:', err);
-                }
-              }
-            }}
-            className="flex-1 flex items-center justify-center gap-[0.35rem] py-[0.6rem] rounded-[0.5rem] border bg-white hover:bg-slate-50 transition-colors"
-            style={{ borderColor: themeColor, color: themeColor }}
+            onClick={() => onViewDetails(offer)}
+            className="w-full flex items-center justify-center py-[0.7rem] rounded-[0.5rem] text-white shadow-sm hover:scale-[1.02] transition-transform bg-slate-900"
           >
-            <Share2 size={14} />
-            <span className="text-[0.75rem] font-bold uppercase tracking-wider">
-              Share {shares > 0 && `(${shares})`}
+            <span className="text-[0.75rem] font-bold uppercase tracking-wider flex items-center gap-2">
+              View Details & Location
             </span>
           </button>
-          
-          <button
-            className="flex-1 flex flex-col items-center justify-center py-[0.5rem] rounded-[0.5rem] text-white shadow-sm hover:scale-[1.02] transition-transform"
-            style={{ backgroundColor: themeColor }}
-          >
-            <span className="text-[0.75rem] font-bold uppercase tracking-wider">
-              Claim In-Store
-            </span>
-            <span className="text-[0.55rem] font-medium opacity-80 uppercase tracking-widest mt-[0.1rem]">
-              In-Store Only
-            </span>
-          </button>
+          <div className="flex flex-row gap-[0.5rem] w-full">
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (navigator.share) {
+                  try {
+                    await navigator.share({
+                      title: offer.product_name,
+                      text: offer.offer_description || `Check out this amazing offer for ${offer.product_name}!`,
+                      url: window.location.href,
+                    });
+                    setShares(prev => prev + 1);
+                    await supabase.rpc('increment_flash_offer_shares', { p_offer_id: offer.id });
+                  } catch (err) {
+                    console.error('Error sharing:', err);
+                  }
+                } else {
+                  try {
+                    await navigator.clipboard.writeText(window.location.href);
+                    alert('Offer link copied to clipboard!');
+                    setShares(prev => prev + 1);
+                    await supabase.rpc('increment_flash_offer_shares', { p_offer_id: offer.id });
+                  } catch (err) {
+                    console.error('Failed to copy link:', err);
+                  }
+                }
+              }}
+              className="flex-1 flex items-center justify-center gap-[0.35rem] py-[0.6rem] rounded-[0.5rem] border bg-white hover:bg-slate-50 transition-colors"
+              style={{ borderColor: themeColor, color: themeColor }}
+            >
+              <Share2 size={14} />
+              <span className="text-[0.75rem] font-bold uppercase tracking-wider">
+                Share {shares > 0 && `(${shares})`}
+              </span>
+            </button>
+            
+            <button
+              className="flex-1 flex flex-col items-center justify-center py-[0.5rem] rounded-[0.5rem] text-white shadow-sm hover:scale-[1.02] transition-transform"
+              style={{ backgroundColor: themeColor }}
+            >
+              <span className="text-[0.75rem] font-bold uppercase tracking-wider">
+                Claim
+              </span>
+              <span className="text-[0.55rem] font-medium opacity-80 uppercase tracking-widest mt-[0.1rem]">
+                In-Store
+              </span>
+            </button>
+          </div>
         </div>
         
         {/* Subtle date tag */}
@@ -228,6 +239,7 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
 
   const loaderRef = useRef<HTMLDivElement>(null);
   const viewLoggedRef = useRef(false);
+  const [selectedOffer, setSelectedOffer] = useState<OfferItem | null>(null);
 
   const [showPushBanner, setShowPushBanner] = useState(false);
 
@@ -712,6 +724,7 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
                   themeColor={themeColor}
                   discountPct={discountPct}
                   shopName={shop?.shop_name || 'Partner Store'}
+                  onViewDetails={setSelectedOffer}
                 />
             ))}
           </div>
@@ -789,10 +802,63 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
         </div>
       )}
 
+      {selectedOffer && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4 animate-fade-in" onClick={() => setSelectedOffer(null)}>
+          <div 
+            className="w-full max-w-md bg-white rounded-t-[1.5rem] sm:rounded-[1.5rem] shadow-2xl overflow-hidden flex flex-col"
+            onClick={e => e.stopPropagation()}
+            style={{ animation: 'fadeUp 0.3s ease-out' }}
+          >
+            <div className="relative w-full aspect-video bg-slate-100 flex items-center justify-center">
+              {selectedOffer.image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={selectedOffer.image_url} alt={selectedOffer.product_name} className="w-full h-full object-cover" />
+              ) : (
+                <span className="font-serif text-4xl text-slate-300">{selectedOffer.product_name.charAt(0).toUpperCase()}</span>
+              )}
+              <button 
+                onClick={() => setSelectedOffer(null)}
+                className="absolute top-3 right-3 w-8 h-8 bg-black/50 hover:bg-black/70 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-6 flex flex-col gap-4">
+              <div>
+                <h2 className="font-serif text-xl font-bold text-slate-900">{selectedOffer.product_name}</h2>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-xl font-bold text-slate-900 font-serif">₹{Number(selectedOffer.discount_price).toFixed(0)}</span>
+                  {selectedOffer.show_discount_price !== false && Number(selectedOffer.original_price) > Number(selectedOffer.discount_price) && (
+                    <span className="text-sm text-slate-400 line-through">₹{Number(selectedOffer.original_price).toFixed(0)}</span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <h4 className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-widest mb-1">Offer Details & Store Location</h4>
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{selectedOffer.offer_description}</p>
+              </div>
+
+              <button
+                onClick={() => setSelectedOffer(null)}
+                className="w-full py-3 rounded-xl text-white font-bold uppercase tracking-wider text-sm mt-2 transition-transform hover:scale-[1.02]"
+                style={{ backgroundColor: themeColor }}
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(12px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
       `}</style>
     </div>

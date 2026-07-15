@@ -192,3 +192,6 @@ True Attendly Broadcast transforms every traditional shop into a digitally-conne
 *This document serves as the complete business context and capability reference for True Attendly Broadcast.*
 *Maintained as a non-technical AI alignment and discovery resource.*
 *Last updated: 15 July 2026*
+- **In-Store Location Transparency & Modal Discovery:** Every flash offer lifecycle must bind a location context description at creation (e.g., Aisle, Section). The consumer view layer must present this via an on-demand modal interaction triggered by a 'View Details' action, ensuring buyers can instantly navigate to the product's physical location within the retail store.
+
+- **In-Store Location Transparency & Modal Discovery:** Every flash offer lifecycle must bind a location context description at creation (e.g., Aisle, Section). The consumer view layer must present this via an on-demand modal interaction triggered by a 'View Details' action, ensuring buyers can instantly navigate to the product's physical location within the retail store.

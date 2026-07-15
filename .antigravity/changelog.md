@@ -762,6 +762,10 @@
 - 🌟 **What Changed:** Redesigned the "Total Viewers" dashboard metric to calculate the maximum single-offer view count rather than an unconstrained sum, ensuring 1 catalog scan precisely equals 1 total viewer, eliminating N-offer inflation.
 - 💡 **User/Business Benefit:** Merchants now receive mathematically accurate impression analytics for their storefronts, ensuring high-fidelity reporting without overlapping view counts causing metric bloat.
 
+### [15/07/2026] - In-Store Location Transparency & Modal Discovery
+- 🌟 **What Changed:** Introduced a mandatory physical location field during flash offer creation for merchants to pinpoint item locations (e.g., Aisle 3, Top Shelf). Customers now experience a clean "View Details" interactive pop-up (Modal) on the storefront to instantly reveal this specific item location and description without reloading the page.
+- 💡 **User/Business Benefit:** Streamlines the physical shopping experience by guiding customers directly to the discounted products inside the store, eliminating friction and boosting immediate in-store conversions.
+
 ---
 
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*

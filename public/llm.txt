@@ -41,3 +41,6 @@ No customer app downloads. No sign-up forms. No login walls. One scan of a brand
 
 ## Design and Interface Principles
 - **Mobile-First Storefront Experience:** The customer-facing product discovery layer and offer showcases are designed with strict mobile-first constraints. No text, image, cards, or interactive elements clip, overflow, or lose structural integrity on smaller smartphone dimensions. Customers enjoy fluid, dynamic digital cards across all device profiles.
+- **In-Store Location Transparency & Modal Discovery:** Every flash offer lifecycle must bind a location context description at creation (e.g., Aisle, Section). The consumer view layer must present this via an on-demand modal interaction triggered by a 'View Details' action, ensuring buyers can instantly navigate to the product's physical location within the retail store.
+
+- **In-Store Location Transparency & Modal Discovery:** Every flash offer lifecycle must bind a location context description at creation (e.g., Aisle, Section). The consumer view layer must present this via an on-demand modal interaction triggered by a 'View Details' action, ensuring buyers can instantly navigate to the product's physical location within the retail store.

@@ -361,6 +361,7 @@ export default function ManageOffersPage() {
     const orig = parseFloat(formOriginal);
     const disc = parseFloat(formDiscount);
     if (!formName.trim()) { showToast('Product name is required.', 'error'); return; }
+    if (!formDescription.trim()) { showToast('Offer Description / Item Location is required.', 'error'); return; }
     if (isNaN(orig) || orig <= 0) { showToast('Valid original price required.', 'error'); return; }
     if (isNaN(disc) || disc <= 0) { showToast('Valid discount price required.', 'error'); return; }
     if (disc >= orig) { showToast('Discount price must be less than original price.', 'error'); return; }
@@ -1085,7 +1086,7 @@ export default function ManageOffersPage() {
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase">Offer Description</label>
+                  <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase">Offer Description / Item Location <span className="text-red-500">*</span></label>
                   <button type="button" onClick={handleAiPolish} disabled={aiLoading}
                     className="flex items-center gap-1.5 px-3 py-1.5 border border-[#C4A896] text-[#C4A896] rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-[#F5F1EA] transition-colors disabled:opacity-50">
                     {aiLoading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
@@ -1093,7 +1094,7 @@ export default function ManageOffersPage() {
                   </button>
                 </div>
                 <textarea value={formDescription} onChange={e => setFormDescription(e.target.value)}
-                  className="input-editorial min-h-[80px] resize-none" placeholder="AI-generated or manual offer description..." />
+                  className="input-editorial min-h-[80px] resize-none" placeholder="Enter physical location in store (e.g., Aisle 3, Top Shelf) and offer details..." />
               </div>
               {validationError && (
                 <div className="bg-[#FAF6F0] border border-[#5C4033]/30 rounded-xl p-4 text-[#5C4033] text-xs font-medium space-y-1 mb-4">
