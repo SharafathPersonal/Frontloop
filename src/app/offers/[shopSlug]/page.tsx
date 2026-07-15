@@ -53,7 +53,9 @@ function OfferCardComponent({
   index,
   themeColor,
   discountPct,
-  shopName
+  shopName,
+  shopId,
+  onViewDetails
 }: {
   offer: OfferItem;
   index: number;

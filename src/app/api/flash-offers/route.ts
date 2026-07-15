@@ -17,7 +17,7 @@ async function sendPushNotificationsForOffers(offers: any[], shop: any) {
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      serviceRoleKey,
+      serviceRoleKey!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
