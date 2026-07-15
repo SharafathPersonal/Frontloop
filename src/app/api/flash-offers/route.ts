@@ -1,9 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import webpush from 'web-push';
 
-async function sendPushNotificationsForOffers(offers: any[], shop: any, supabase: any) {
+async function sendPushNotificationsForOffers(offers: any[], shop: any) {
   try {
     const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
@@ -13,6 +14,13 @@ async function sendPushNotificationsForOffers(offers: any[], shop: any, supabase
       return;
     }
 
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
     webpush.setVapidDetails(
       'mailto:support@trueattendly.online',
       vapidPublicKey,
@@ -20,7 +28,7 @@ async function sendPushNotificationsForOffers(offers: any[], shop: any, supabase
     );
 
     // Get all subscriptions for the shop
-    const { data: subscriptions } = await supabase
+    const { data: subscriptions } = await supabaseAdmin
       .from('push_subscriptions')
       .select('*')
       .eq('shop_id', shop.id);
@@ -74,14 +82,14 @@ async function sendPushNotificationsForOffers(offers: any[], shop: any, supabase
       await Promise.all(sendPromises);
 
       if (failedIds.length > 0) {
-        await supabase
+        await supabaseAdmin
           .from('push_subscriptions')
           .delete()
           .in('id', failedIds);
       }
 
       // Record successfully sent count in DB
-      await supabase
+      await supabaseAdmin
         .from('shop_flash_offers')
         .update({
           push_sent: true,
@@ -200,10 +208,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: deductError.message || 'Insufficient credits to create offer' }, { status: 402 });
     }
 
-    // Insert offer
+    // Upsert offer
     const { data: offer, error: insertError } = await supabase
       .from('shop_flash_offers')
-      .insert({
+      .upsert({
         shop_id: user.id,
         product_name,
         original_price: orig,
@@ -212,11 +220,12 @@ export async function POST(req: Request) {
         show_percentage_badge: show_percentage_badge !== false,
         show_discount_price: show_discount_price !== false,
         image_url: image_url || null,
+        broadcast_web_push: broadcast_web_push === true,
         start_at: start.toISOString(),
         end_at: end ? end.toISOString() : null,
         status,
         push_sent: false
-      })
+      }, { onConflict: 'shop_id,product_name,start_at' })
       .select()
       .single();
 
@@ -232,7 +241,7 @@ export async function POST(req: Request) {
         .eq('id', user.id)
         .single();
       if (shop) {
-        await sendPushNotificationsForOffers([offer], shop, supabase);
+        await sendPushNotificationsForOffers([offer], shop);
       }
     }
 
@@ -376,6 +385,7 @@ export async function PUT(req: Request) {
         show_percentage_badge: show_percentage_badge !== false,
         show_discount_price: show_discount_price !== false,
         image_url: image_url || null,
+        broadcast_web_push: broadcast_web_push === true,
         start_at: start.toISOString(),
         end_at: end ? end.toISOString() : null,
         status,
@@ -397,7 +407,7 @@ export async function PUT(req: Request) {
         .eq('id', user.id)
         .single();
       if (shop) {
-        await sendPushNotificationsForOffers([offer], shop, supabase);
+        await sendPushNotificationsForOffers([offer], shop);
       }
     }
 

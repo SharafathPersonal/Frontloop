@@ -770,6 +770,10 @@
 - 🌟 **What Changed:** Architected a dedicated background cron engine (`/api/cron/evaluate-offers`) that autonomously executes time-sensitive flash offers strictly on schedule, completely decoupling launch logic from customer web traffic. Additionally refactored the Web Push broadcast engine to utilize atomic batch-deletion for purging dead subscriptions instead of concurrent singular operations.
 - 💡 **User/Business Benefit:** Guarantees merchants that their scheduled offers and push notifications will trigger at the exact minute they specify, while ensuring the platform infrastructure remains flawlessly stable during massive audience broadcasts.
 
+### [15/07/2026] - Infrastructure Stabilization & Anomaly Resolution
+- 🌟 **What Changed:** Executed a system-wide forensic patch resolving critical tracking distortion and notification gaps. Refactored the internal database logic to strictly target and increment single, specific offer engagements, added structural guarantees (composite constraints) to prevent identical duplicate offers, and upgraded backend delivery protocols to safely bypass access limits when dispatching broadcasts.
+- 💡 **User/Business Benefit:** Eliminates reporting discrepancies and duplicate records, ensuring merchants receive 100% accurate engagement analytics, while guaranteeing their mass web push notifications deliver flawlessly.
+
 ---
 
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*

@@ -60,10 +60,27 @@ function OfferCardComponent({
   themeColor: string;
   discountPct: (orig: number, disc: number) => number;
   shopName: string;
+  shopId: string;
   onViewDetails: (offer: OfferItem) => void;
 }) {
   const [shares, setShares] = useState(offer.push_shared_count || 0);
   const computedPct = discountPct(Number(offer.original_price), Number(offer.discount_price));
+  const viewLoggedRef = useRef(false);
+
+  useEffect(() => {
+    if (!shopId || viewLoggedRef.current) return;
+    const sessionKey = `view_logged_offer_${offer.id}`;
+    if (sessionStorage.getItem(sessionKey) === 'true') return;
+    
+    viewLoggedRef.current = true;
+    sessionStorage.setItem(sessionKey, 'true');
+    
+    fetch('/api/offers/view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shop_id: shopId, offer_id: offer.id })
+    }).catch(() => {});
+  }, [offer.id, shopId]);
 
   const formatCreatedAt = (dateStr?: string) => {
     if (!dateStr) return '';
@@ -269,34 +286,6 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
       }
     }
   }, []);
-
-  // Record view count exactly once per unique visitor session
-  useEffect(() => {
-    if (!shop?.id || viewLoggedRef.current) return;
-    
-    // Check localized browser session tracking parameters (sessionStorage)
-    const sessionKey = `view_logged_${shop.id}`;
-    if (sessionStorage.getItem(sessionKey) === 'true') {
-      return;
-    }
-    
-    viewLoggedRef.current = true;
-    sessionStorage.setItem(sessionKey, 'true');
-    
-    const controller = new AbortController();
-    fetch('/api/offers/view', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ shop_id: shop.id }),
-      signal: controller.signal
-    })
-    .then(res => res.json())
-    .catch(() => {});
-
-    return () => {
-      controller.abort();
-    };
-  }, [shop?.id]);
 
   // Check if we should display push prompt banner
   // Trigger push registration instantly on mount if shop is loaded
@@ -724,6 +713,7 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
                   themeColor={themeColor}
                   discountPct={discountPct}
                   shopName={shop?.shop_name || 'Partner Store'}
+                  shopId={shop?.id || ''}
                   onViewDetails={setSelectedOffer}
                 />
             ))}

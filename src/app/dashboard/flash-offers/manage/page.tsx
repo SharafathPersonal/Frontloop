@@ -385,7 +385,7 @@ export default function ManageOffersPage() {
         show_discount_price: formShowDiscountPrice,
         image_url: formImageUrl.trim() || null,
         broadcast_web_push: formBroadcastWebPush,
-        start_at: formStartAt ? new Date(formStartAt).toISOString() : new Date().toISOString(),
+        start_at: formStartAt ? new Date(formStartAt).toISOString() : '',
         end_at: formEndAt ? new Date(formEndAt).toISOString() : null,
         status: formStartAt ? 'draft' : 'active'
       };

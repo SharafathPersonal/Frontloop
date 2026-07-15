@@ -3,9 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: Request) {
   try {
-    const { shop_id } = await req.json();
-    if (!shop_id) {
-      return NextResponse.json({ error: 'Missing shop ID' }, { status: 400 });
+    const { shop_id, offer_id } = await req.json();
+    if (!shop_id || !offer_id) {
+      return NextResponse.json({ error: 'Missing shop ID or offer ID' }, { status: 400 });
     }
 
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -25,7 +25,8 @@ export async function POST(req: Request) {
     );
 
     const { error } = await supabaseAdmin.rpc('increment_flash_offer_views', {
-      p_shop_id: shop_id
+      p_shop_id: shop_id,
+      p_offer_id: offer_id
     });
 
     if (error) {
