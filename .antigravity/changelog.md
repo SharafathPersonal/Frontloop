@@ -824,4 +824,16 @@
 
 ---
 
+### [15/07/2026] - Create Offer Modal Mobile Responsiveness Refactor
+- 🌟 **What Changed:** Refactored the Create/Edit Offer modal component on the management dashboard (`src/app/dashboard/flash-offers/manage/page.tsx`) and `src/app/globals.css`. Increased font-size to 16px (1rem) on mobile viewports to prevent iOS Safari auto-zooming on focus, improved touch target sizes for the close button and date picker clear buttons, increased input padding to prevent overlapping with native controls, and added safe area bottom padding (`pb-[calc(1.5rem+env(safe-area-inset-bottom))]`) to ensure home indicator compatibility on iOS.
+- 💡 **User/Business Benefit:** Merchants can easily and comfortably create and manage flash offers on compact mobile screens and iOS Safari without layout breaking, accidental taps, or annoying auto-zoom behaviors.
+
+---
+
+### [15/07/2026] - Project Founder, App URL, and Expanded Capabilities Added to LLM Context
+- 🌟 **What Changed:** Updated `public/llm.txt` and `public/llms-full.txt` to add founder, contact support, and app URL details: Sharafath (from Kerala), application URL (`https://broadcast.trueattendly.online`), contact phone (`+91 6282560928`), and contact email (`sharafathabi.personal@gmail.com`). Added the "Intelligent Customer Audience Registry" engine summary, the "Social Referral Telemetry & Viral Share Engine" (Capability 7 / Business Engine 10), and the "In-App Browser Lifecycle Compatibility Layer" (Capability 8 / Business Engine 11) to both files.
+- 💡 **User/Business Benefit:** Provides a complete, fully synchronized, business-level overview of all 11 core business engines and capabilities for external LLM models and crawlers, ensuring accuracy regarding the platform's social virality and mobile WebView compatibility.
+
+---
+
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*

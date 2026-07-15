@@ -852,9 +852,9 @@ export default function ManageOffersPage() {
           <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-lg md:max-w-xl mx-auto border border-[#E8E3DA] shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-5 border-b border-[#E8E3DA] flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-2xl">
               <h2 className="lexend-subheading text-sm font-medium text-[#3E3B36]">{editOffer ? 'Edit Offer' : 'Create New Offer'}</h2>
-              <button onClick={() => { setIsCreateOpen(false); resetForm(); setEditOffer(null); }} className="text-[#8B8378] hover:text-[#3E3B36] transition-colors"><X size={18} /></button>
+              <button onClick={() => { setIsCreateOpen(false); resetForm(); setEditOffer(null); }} className="text-[#8B8378] hover:text-[#3E3B36] transition-colors p-2 -mr-2 min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Close modal"><X size={18} /></button>
             </div>
-            <div className="p-6 space-y-5">
+            <div className="p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6 space-y-5">
               <div>
                 <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5">Product Name</label>
                 <input type="text" value={formName} onChange={e => setFormName(e.target.value)} className="input-editorial" placeholder="e.g. Organic Tomatoes" />
@@ -1023,14 +1023,14 @@ export default function ManageOffersPage() {
                       type="datetime-local"
                       value={formStartAt}
                       onChange={e => setFormStartAt(e.target.value)}
-                      className="input-editorial pr-10 focus:border-[#5C4033] focus:ring-[#5C4033]/20 w-full"
+                      className="input-editorial pr-14 focus:border-[#5C4033] focus:ring-[#5C4033]/20 w-full"
                       placeholder="Now"
                     />
                     {formStartAt && (
                       <button
                         type="button"
                         onClick={() => setFormStartAt('')}
-                        className="absolute right-10 top-1/2 -translate-y-1/2 text-[#8B8378] hover:text-[#3E3B36] p-1 rounded-full hover:bg-gray-100 transition-colors z-10"
+                        className="absolute right-10 top-1/2 -translate-y-1/2 text-[#8B8378] hover:text-[#3E3B36] p-1.5 rounded-full hover:bg-gray-100 transition-colors z-10 min-h-[32px] min-w-[32px] flex items-center justify-center"
                         title="Clear start date"
                       >
                         <X size={12} />
@@ -1046,13 +1046,13 @@ export default function ManageOffersPage() {
                       type="datetime-local"
                       value={formEndAt}
                       onChange={e => setFormEndAt(e.target.value)}
-                      className="input-editorial pr-10 focus:border-[#5C4033] focus:ring-[#5C4033]/20 w-full"
+                      className="input-editorial pr-14 focus:border-[#5C4033] focus:ring-[#5C4033]/20 w-full"
                     />
                     {formEndAt && (
                       <button
                         type="button"
                         onClick={() => setFormEndAt('')}
-                        className="absolute right-10 top-1/2 -translate-y-1/2 text-[#8B8378] hover:text-[#3E3B36] p-1 rounded-full hover:bg-gray-100 transition-colors z-10"
+                        className="absolute right-10 top-1/2 -translate-y-1/2 text-[#8B8378] hover:text-[#3E3B36] p-1.5 rounded-full hover:bg-gray-100 transition-colors z-10 min-h-[32px] min-w-[32px] flex items-center justify-center"
                         title="Clear end date"
                       >
                         <X size={12} />

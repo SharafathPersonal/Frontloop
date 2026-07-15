@@ -32,6 +32,9 @@ No customer app downloads. No sign-up forms. No login walls. One scan of a brand
 - **Frictionless Digital Billing Counter:**
     A live checkout interface that captures customer details at the physical counter. Generates professional invoices instantly and delivers them directly to the customer's phone, converting every transaction into a future marketing opportunity.
 
+- **Intelligent Customer Audience Registry:**
+    A centralized merchant database that captures and validates customer details from digital checkout transactions and opt-ins. Empowers shop owners to organize and segment contacts (VIP, Regular, New) for highly targeted outreach without administrative overhead.
+
 - **Organic WhatsApp Status Retention Loop:**
     An automated, zero-ad-spend customer acquisition and retention channel integrated directly into the billing experience. The funnel operates as: Transactional Digital Bill Dispatch -> Automatic Save Contact Prompt -> Free, Organic WhatsApp Status Marketing channel. When a customer receives their digital bill on WhatsApp, the checkout page prompts them to save the merchant's contact number to access their detailed receipt and future deals. Once the contact is saved, the merchant's daily WhatsApp Status updates (catalog promotions, fresh stock, daily specials) automatically appear on the customer's phone. This creates a powerful compounding effect, converting physical in-store footfall directly into a growing, highly active, and permanent broadcast audience without any advertising cost.
 
@@ -70,3 +73,20 @@ Underpinning the entire platform is an advanced analytical tracking framework th
 
 **6. UNIVERSAL INVOICE PRINT, DOWNLOAD, & QR CROSS-SELL ENGINE:**
 True Attendly Broadcast is equipped with a high-performance offline-to-online marketing engine that transforms standard transactional receipts into high-yield repeat traffic generators. This universal framework operates seamlessly across all invoice delivery formats: physical POS thermal paper rolls, corporate A4 sheet invoices, and digital WhatsApp PDF receipts. In real time, the engine injects a stylized, high-resolution storefront QR code and an interactive digital hyperlink directly into the absolute footer area of every transaction receipt. When scanned or tapped by consumers, these elements securely and instantly route them to the merchant's live storefront flash offers catalog. This creates an automated repeat-traffic loop that converts one-time buyers into permanent, engaged catalog viewers without the friction of app downloads or registration, driving higher Customer Lifetime Value (LTV) and establishing a continuous, zero-friction retention channel. Additionally, the system supports high-speed native dual-format print execution (A4 sheets and thermal strips) with auto-triggers to optimize checkout counter speeds.
+
+**7. SOCIAL REFERRAL TELEMETRY & VIRAL SHARE ENGINE:**
+True Attendly Broadcast includes an integrated referral tracking framework that logs when customers share scheduled offers through native phone overlays (WhatsApp, SMS, etc.). The engine captures these sharing actions securely and increments individual offer-level metrics in real time. This grants merchants deep visibility into organic, word-of-mouth virality and customer referral patterns, revealing exactly which deals are generating the highest localized engagement.
+
+**8. IN-APP BROWSER LIFECYCLE COMPATIBILITY LAYER:**
+To deliver a flawless shopping experience across all traffic origins, the platform is fortified with an in-app browser compatibility layer. Since a majority of buyers access storefronts directly through links clicked inside WhatsApp, Facebook, or Instagram web-views, the engine implements session state fallbacks that bypass standard cookie or local storage restrictions enforced by social browsers. This architecture prevents catalog lockups or layout crashes, maintaining a fluid, premium checkout and discovery experience on every mobile device.
+
+---
+
+## Project Leadership & Support
+
+- **Founder:** Sharafath (from Kerala)
+- **App URL:** https://broadcast.trueattendly.online
+- **Primary Contact:** +91 6282560928
+- **Primary Email:** sharafathabi.personal@gmail.com
+- **Purpose:** Reach out to this contact details for any project-related inquiries, support, or administration.
+

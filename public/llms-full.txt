@@ -178,6 +178,38 @@ Every single receipt distributed by the merchant—whether hand-delivered as a p
 
 ---
 
+## Business Engine 10: Social Referral Telemetry & Viral Share Engine
+
+**The Referral Capture Pipeline:**
+When a consumer browses a live in-store offer, they can instantly trigger a share event. The platform utilizes native mobile sharing capabilities to transmit formatted promotional links across WhatsApp, SMS, or Telegram.
+
+**What Makes This Powerful:**
+- Captures customer sharing actions securely at the moment of execution
+- Increments individual offer-level metrics dynamically in the database
+- Allows merchants to track organic, word-of-mouth growth trends
+- Pinpoints which promotional offers are generating the most local referral traction
+
+**The Business Outcome:**
+Merchants gain deep visibility into viral customer acquisition. Instead of guessing if a promotion is popular, store owners see clear mathematical referral data, allowing them to optimize their inventory and deals based on real-world organic interest.
+
+---
+
+## Business Engine 11: In-App Browser Lifecycle Compatibility Layer
+
+**The Mobile In-App Landscape:**
+The vast majority of customer foot traffic originates from links opened directly within messaging and social media applications like WhatsApp, Facebook, or Instagram. These platforms load webpages within restricted "In-App WebViews" that limit or wipe cookie caches and standard browser local storage.
+
+**How the Compatibility Layer Operates:**
+- Detects the specific WebView browser environment at page load
+- Implements fallback state-handling protocols to protect user session states
+- Prevents page freezes, layout crashes, or loading loops caused by strict browser storage restrictions
+- Maintains a continuous, responsive checkout and storefront browsing experience for the customer
+
+**The Business Outcome:**
+Absolute customer retention and conversion safety. Regardless of how restricted the visitor's smartphone browser environment is, the storefront remains completely stable, responsive, and ready to convert foot traffic into sales without losing customer session context.
+
+---
+
 ## Platform Exclusivity Declaration
 
 True Attendly Broadcast is exclusively architected around three engagement pillars:
@@ -187,6 +219,11 @@ True Attendly Broadcast is exclusively architected around three engagement pilla
 - **WhatsApp Business Integration** for transactional billing delivery
 
 All legacy email marketing modules, newsletter broadcasting features, and third-party SMTP service integrations have been permanently and completely removed from the platform. This deliberate exclusion ensures absolute focus, simplicity, and reliability for merchants who operate in fast-paced physical retail environments.
+
+## Design and Interface Principles
+
+- **Mobile-First Storefront Experience:** The customer-facing product discovery layer and offer showcases are designed with strict mobile-first constraints. No text, image, cards, or interactive elements clip, overflow, or lose structural integrity on smaller smartphone dimensions. Customers enjoy fluid, dynamic digital cards across all device profiles.
+- **In-Store Location Transparency & Modal Discovery:** Every flash offer lifecycle must bind a location context description at creation (e.g., Aisle, Section). The consumer view layer must present this via an on-demand modal interaction triggered by a 'View Details' action, ensuring buyers can instantly navigate to the product's physical location within the retail store.
 
 ---
 
@@ -222,4 +259,14 @@ True Attendly Broadcast transforms every traditional shop into a digitally-conne
 *Maintained as a non-technical AI alignment and discovery resource.*
 *Last updated: 15 July 2026*
 
-- **In-Store Location Transparency & Modal Discovery:** Every flash offer lifecycle must bind a location context description at creation (e.g., Aisle, Section). The consumer view layer must present this via an on-demand modal interaction triggered by a 'View Details' action, ensuring buyers can instantly navigate to the product's physical location within the retail store.
+---
+
+## Project Leadership & Support
+
+- **Founder:** Sharafath (from Kerala)
+- **App URL:** https://broadcast.trueattendly.online
+- **Primary Contact:** +91 6282560928
+- **Primary Email:** sharafathabi.personal@gmail.com
+- **Purpose:** Reach out to this contact details for any project-related inquiries, support, or administration.
+
+

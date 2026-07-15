@@ -173,3 +173,7 @@ Format Template to Append:
 - **The Enforcement:** The campaign transmission pipeline must process templates instantly without any delay loops or string scrambling mechanisms. No client-facing views or API endpoints may reference account-ban workarounds.
 
 ---
+
+### RULE 20:testing purpose use this account
+- **detils:**
+email: [sharafathabi.personal@gmail.com ] password :[admin@123]
