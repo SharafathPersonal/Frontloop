@@ -135,8 +135,12 @@ export function DynamicInvoiceViewer({ invoiceNumber }: DynamicInvoiceViewerProp
   const primaryColor = shop.invoice_theme_color || '#5C4033';
   const pdfUrl = `/api/invoices/pdf/${invoiceNumber}`;
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrintA4 = () => {
+    window.open(`/api/invoice/print?invoiceNumber=${invoiceNumber}&format=a4`, '_blank');
+  };
+
+  const handlePrintThermal = () => {
+    window.open(`/api/invoice/print?invoiceNumber=${invoiceNumber}&format=thermal`, '_blank');
   };
 
   return (
@@ -163,11 +167,18 @@ export function DynamicInvoiceViewer({ invoiceNumber }: DynamicInvoiceViewerProp
       {/* Action Header Bar */}
       <div id="print-modal-actions" className="flex items-center justify-end gap-3 px-6 py-4 bg-white border-b border-[#E8E3DA] shrink-0">
         <button
-          onClick={handlePrint}
+          onClick={handlePrintA4}
           className="flex items-center gap-2 px-4 py-2 bg-[#F5F1EA] text-[#3E3B36] rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#E8E3DA] transition-colors border border-[#E8E3DA]"
         >
           <Printer size={14} />
-          Print Invoice
+          Print A4
+        </button>
+        <button
+          onClick={handlePrintThermal}
+          className="flex items-center gap-2 px-4 py-2 bg-[#F5F1EA] text-[#3E3B36] rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#E8E3DA] transition-colors border border-[#E8E3DA]"
+        >
+          <Printer size={14} />
+          Print Thermal POS
         </button>
         <a
           href={`${pdfUrl}?download=true`}
@@ -306,12 +317,35 @@ export function DynamicInvoiceViewer({ invoiceNumber }: DynamicInvoiceViewerProp
           </div>
 
           {/* Centered Absolute Baseline Footer */}
-          <div className="pt-8 mt-auto">
+          <div className="pt-8 mt-auto flex flex-col items-center">
             <div className="w-full h-[1px] opacity-20 my-4" style={{ backgroundColor: primaryColor }} />
             
             <p className="text-lg md:text-xl font-serif font-semibold italic text-center tracking-wide my-4" style={{ color: `${primaryColor}cc` }}>
               {invoice.invoice_footer_note || 'Thank you for visiting!'}
             </p>
+
+            {/* Dynamic Storefront QR & Link Block */}
+            <div className="my-6 flex flex-col items-center gap-3">
+              <div className="p-3 bg-white border border-[#E8E3DA] rounded-2xl shadow-sm inline-block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://broadcast.trueattendly.online/offers/${shop.id}`)}&color=${primaryColor.replace('#', '')}&bgcolor=ffffff`}
+                  alt="Storefront Offers QR Code"
+                  width={120}
+                  height={120}
+                  className="object-contain"
+                />
+              </div>
+              <a
+                href={`/offers/${shop.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold transition-colors hover:underline"
+                style={{ color: primaryColor }}
+              >
+                Scan or Tap to View Live Store Flash Offers!
+              </a>
+            </div>
 
             <div className="pt-6 text-center">
               <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">

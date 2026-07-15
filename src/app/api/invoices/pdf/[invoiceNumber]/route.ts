@@ -253,24 +253,59 @@ export async function GET(
     // Decorative line above footer
     doc.setDrawColor(primaryColorRGB.r, primaryColorRGB.g, primaryColorRGB.b);
     doc.setLineWidth(0.3);
-    doc.line(15, 270, 195, 270);
+    doc.line(15, 235, 195, 235);
 
     // Dynamic, stylized invoice footer note
     const footerNote = invoice.invoice_footer_note || 'Thank you for visiting!';
     doc.setFont('Times', 'BoldItalic');
-    doc.setFontSize(14);
+    doc.setFontSize(13);
     doc.setTextColor(primaryColorRGB.r, primaryColorRGB.g, primaryColorRGB.b);
     const splitNote = doc.splitTextToSize(footerNote, 160);
-    const noteY = 266 - (splitNote.length * 5);
+    const noteY = 231 - (splitNote.length * 4.5);
     splitNote.forEach((line: string, index: number) => {
-      doc.text(line, 105, noteY + (index * 5), { align: 'center' });
+      doc.text(line, 105, noteY + (index * 4.5), { align: 'center' });
     });
+
+    // Fetch and embed storefront QR code
+    const storefrontUrl = `https://broadcast.trueattendly.online/offers/${shop.id}`;
+    const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(storefrontUrl)}&color=1a1a1a&bgcolor=ffffff`;
+    let qrBase64 = '';
+    try {
+      const qrResponse = await fetch(qrCodeApiUrl);
+      if (qrResponse.ok) {
+        const qrArrayBuffer = await qrResponse.arrayBuffer();
+        qrBase64 = Buffer.from(qrArrayBuffer).toString('base64');
+      }
+    } catch (qrErr) {
+      console.error('[PDF Generator] Error fetching QR code image:', qrErr);
+    }
+
+    // Render QR Code in PDF if fetched successfully
+    if (qrBase64) {
+      try {
+        doc.addImage(`data:image/png;base64,${qrBase64}`, 'PNG', 91, 238, 28, 28);
+        doc.link(91, 238, 28, 28, { url: storefrontUrl });
+      } catch (qrAddErr) {
+        console.error('[PDF Generator] Failed to add QR image to PDF:', qrAddErr);
+      }
+    }
+
+    // Interactive Text Hyperlink
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(0, 102, 204); // Nice professional blue
+    const linkText = "Scan or Tap to Discover Live Shop Offers!";
+    doc.text(linkText, 105, 272, { align: 'center' });
+    
+    // Compute width of link text to create clickable link area
+    const linkWidth = doc.getTextWidth(linkText);
+    doc.link(105 - (linkWidth / 2), 268, linkWidth, 6, { url: storefrontUrl });
 
     // Absolute footer text - statically anchored
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(140, 140, 140);
-    doc.text('Powered by True Attendly', 105, 275, { align: 'center' });
+    doc.text('Powered by True Attendly', 105, 280, { align: 'center' });
 
     // Output raw PDF bytes
     const pdfBuffer = doc.output('arraybuffer');

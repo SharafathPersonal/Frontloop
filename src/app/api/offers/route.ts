@@ -29,12 +29,19 @@ export async function GET(req: Request) {
     const start = (page - 1) * limit;
     const end = start + limit - 1;
 
-    // Find shop by slug
-    const { data: shop, error: shopErr } = await supabase
+    // Find shop by slug or UUID ID
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+    let queryBuilder = supabase
       .from('shops')
-      .select('id, shop_name, logo_url, invoice_theme_color, slug')
-      .eq('slug', slug)
-      .maybeSingle();
+      .select('id, shop_name, logo_url, invoice_theme_color, slug');
+    
+    if (isUuid) {
+      queryBuilder = queryBuilder.eq('id', slug);
+    } else {
+      queryBuilder = queryBuilder.eq('slug', slug);
+    }
+
+    const { data: shop, error: shopErr } = await queryBuilder.maybeSingle();
 
     if (shopErr || !shop) {
       return NextResponse.json({ error: 'Shop not found' }, { status: 404 });

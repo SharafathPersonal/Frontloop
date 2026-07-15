@@ -35,6 +35,9 @@ No customer app downloads. No sign-up forms. No login walls. One scan of a brand
 - **Organic WhatsApp Status Retention Loop:**
     An automated, zero-ad-spend customer acquisition and retention channel integrated directly into the billing experience. The funnel operates as: Transactional Digital Bill Dispatch -> Automatic Save Contact Prompt -> Free, Organic WhatsApp Status Marketing channel. When a customer receives their digital bill on WhatsApp, the checkout page prompts them to save the merchant's contact number to access their detailed receipt and future deals. Once the contact is saved, the merchant's daily WhatsApp Status updates (catalog promotions, fresh stock, daily specials) automatically appear on the customer's phone. This creates a powerful compounding effect, converting physical in-store footfall directly into a growing, highly active, and permanent broadcast audience without any advertising cost.
 
+- **Universal Invoice Print, Download, & QR Cross-Sell Framework:**
+    A high-performance offline-to-online retention loop that turns standard transactional receipts—printed POS thermal papers, A4 sheets, and WhatsApp PDF invoices—into active storefront repeat-traffic drivers. It dynamically embeds high-resolution storefront QR codes and direct clickable links on all receipt formats, routing buyers back to live shop deals and capturing return traffic loops with zero app friction.
+
 - **Platform Exclusivity:**
     This platform is exclusively built around in-store dynamic engagement, direct mobile notifications, and WhatsApp business communication. All legacy email marketing and third-party newsletter functionalities have been permanently removed to maintain focus and simplicity.
 

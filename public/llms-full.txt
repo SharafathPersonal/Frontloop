@@ -161,6 +161,23 @@ Every walk-in transaction converts directly into a member of a permanent, automa
 
 ---
 
+## Business Engine 9: Universal Invoice Print, Download, & QR Cross-Sell Engine
+
+**The Offline-to-Online Loop:**
+When a customer makes a purchase, the system generates receipts across three standard layout formats: native 80mm POS Thermal roll strips, corporate A4 sheet invoices, and digital WhatsApp PDF documents. The engine automatically injects a high-resolution storefront QR code and a direct active hyperlink in the absolute footer area of each layout format. When consumers scan the printed POS paper or tap the links inside standard corporate pages and WhatsApp PDFs, the system securely resolves the shop identity and routes the user's browser directly to the merchant's mobile storefront catalog page.
+
+**What Makes This Powerful:**
+- Converts standard, static transactional print streams into highly active marketing acquisition funnels
+- Generates high-performance window-trigger layouts for physical POS printing or PDF downloads instantly
+- Eliminates app install barriers, directing buyers immediately to real-time storefront offers
+- Ensures location context is natively bound to storefront details to direct consumers to physical shelves
+- Drives high customer repeat rates and automated return list generation at zero additional cost
+
+**The Business Outcome:**
+Every single receipt distributed by the merchant—whether hand-delivered as a printed slip or sent digitally—becomes an active repeat traffic driver. By connecting physical purchases directly back to the live digital catalog, merchants create an automated, zero-friction customer retention loop that increases purchase frequency and customer loyalty.
+
+---
+
 ## Platform Exclusivity Declaration
 
 True Attendly Broadcast is exclusively architected around three engagement pillars:

@@ -788,4 +788,10 @@
 
 ---
 
+### [15/07/2026] - Universal Invoice Print, Download, & QR Cross-Sell Engine
+- 🌟 **What Changed:** Integrated storefront QR codes and direct links into the bottom of all invoice receipt formats—printed checkout paper, standard A4 invoices, and digital WhatsApp PDFs. Built separate quick-print options inside the invoice viewer allowing merchants to instantly print standard A4 sheets or custom POS thermal paper receipts.
+- 💡 **User/Business Benefit:** Automatically turns every receipt given to a customer into a repeat-sales driver, bringing shoppers back to the digital storefront catalog instantly with a simple scan or tap.
+
+---
+
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*

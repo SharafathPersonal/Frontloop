@@ -159,3 +159,11 @@ Format Template to Append:
 - **Mobile Styling Boundaries:** The emulator component must be fully responsive, scaling gracefully down to 360px without layout breaking, clipping, or horizontal overflow, strictly conforming to the mobile layout boundaries in Rule 14.
 
 ---
+
+### RULE 18: UNIVERSAL INVOICE PRINT, DOWNLOAD, & QR CROSS-SELL FRAMEWORK
+- **The Engine:** Dynamic footer injection across printed POS thermal rolls, corporate A4 sheets, and digital WhatsApp PDF receipts.
+- **The Requirement:** Every transaction invoice generated on the platform must automatically inject a high-resolution storefront QR code and an active digital hyperlink in the absolute footer area.
+- **The Target Routing:** Scanning the QR code or clicking the link must resolve the merchant's identity (supporting both slug and unique UUID lookups) and seamlessly route the customer's browser to the mobile-first storefront deals feed.
+- **Dual-Format Printing:** The invoice viewer client and backend print routes must support native dual-format printing (A4 corporate layouts and 80mm/76mm POS thermal rolls) complete with automated print-triggering execution scripts.
+
+---
