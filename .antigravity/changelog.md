@@ -766,6 +766,10 @@
 - 🌟 **What Changed:** Introduced a mandatory physical location field during flash offer creation for merchants to pinpoint item locations (e.g., Aisle 3, Top Shelf). Customers now experience a clean "View Details" interactive pop-up (Modal) on the storefront to instantly reveal this specific item location and description without reloading the page.
 - 💡 **User/Business Benefit:** Streamlines the physical shopping experience by guiding customers directly to the discounted products inside the store, eliminating friction and boosting immediate in-store conversions.
 
+### [15/07/2026] - Backend Infrastructure Refactor (Cron Engine & Push Scaling)
+- 🌟 **What Changed:** Architected a dedicated background cron engine (`/api/cron/evaluate-offers`) that autonomously executes time-sensitive flash offers strictly on schedule, completely decoupling launch logic from customer web traffic. Additionally refactored the Web Push broadcast engine to utilize atomic batch-deletion for purging dead subscriptions instead of concurrent singular operations.
+- 💡 **User/Business Benefit:** Guarantees merchants that their scheduled offers and push notifications will trigger at the exact minute they specify, while ensuring the platform infrastructure remains flawlessly stable during massive audience broadcasts.
+
 ---
 
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*

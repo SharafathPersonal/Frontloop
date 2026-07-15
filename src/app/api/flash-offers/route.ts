@@ -42,6 +42,7 @@ async function sendPushNotificationsForOffers(offers: any[], shop: any, supabase
       });
 
       let sentCount = 0;
+      const failedIds: string[] = [];
       const sendPromises = subscriptions.map(async (sub: any) => {
         try {
           const isMock = sub.endpoint?.includes('mock-endpoint') || sub.endpoint?.includes('trueattendly.online');
@@ -65,16 +66,19 @@ async function sendPushNotificationsForOffers(offers: any[], shop: any, supabase
                               err.code === 'EAI_AGAIN' ||
                               err.statusCode === undefined;
           if (shouldPurge) {
-            // Purge expired subscription
-            await supabase
-              .from('push_subscriptions')
-              .delete()
-              .eq('id', sub.id);
+            failedIds.push(sub.id);
           }
         }
       });
 
       await Promise.all(sendPromises);
+
+      if (failedIds.length > 0) {
+        await supabase
+          .from('push_subscriptions')
+          .delete()
+          .in('id', failedIds);
+      }
 
       // Record successfully sent count in DB
       await supabase
