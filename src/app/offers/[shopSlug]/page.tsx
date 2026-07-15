@@ -124,7 +124,7 @@ function OfferCardComponent({
               {offer.product_name}
             </h3>
             
-            {offer.show_percentage_badge !== false && (
+            {offer.show_percentage_badge !== false && computedPct > 0 && (
               <span 
                 className="inline-block mt-[0.35rem] text-[0.75rem] font-bold px-[0.5rem] py-[0.15rem] rounded-md" 
                 style={{ backgroundColor: `${themeColor}15`, color: themeColor, width: 'fit-content' }}
@@ -137,7 +137,7 @@ function OfferCardComponent({
               <span className="text-[1.25rem] font-bold text-slate-900 font-serif">
                 ₹{Number(offer.discount_price).toFixed(0)}
               </span>
-              {offer.show_discount_price !== false && (
+              {offer.show_discount_price !== false && Number(offer.original_price) > Number(offer.discount_price) && (
                 <span className="text-[0.75rem] text-slate-400 line-through">
                   ₹{Number(offer.original_price).toFixed(0)}
                 </span>
@@ -464,7 +464,11 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
     };
   }, [hasMore, loading, loadingMore, fetchOffers]);
 
-  const discountPct = (orig: number, disc: number) => Math.round(((orig - disc) / orig) * 100);
+  const discountPct = (orig: number, disc: number) => {
+    if (orig <= 0 || disc < 0) return 0;
+    const pct = Math.round(((orig - disc) / orig) * 100);
+    return Math.max(0, Math.min(100, pct));
+  };
   const themeColor = shop?.invoice_theme_color || '#5C4033';
   const contrastColor = useMemo(() => getContrastColor(themeColor), [themeColor]);
 
@@ -528,49 +532,33 @@ export default function PublicOffersPage({ params }: { params: Promise<{ shopSlu
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="rounded-2xl border p-4 shadow-sm flex gap-4"
+              className="w-full flex flex-col rounded-[1rem] border bg-white shadow-sm"
               style={{
                 borderColor: `${themeColor}20`,
-                background: 'linear-gradient(135deg, #FCFBF9, #F5F1EA)'
               }}
             >
-              {/* Left side: cover image placeholder */}
-              <div className="w-20 h-20 bg-neutral-200 shimmer rounded-xl border border-black/5 shrink-0 shadow-sm" />
+              <div className="p-[1rem] flex flex-col gap-[0.75rem] w-full box-border">
+                {/* Top Meta: Shop Name & Views */}
+                <div className="flex justify-between items-center w-full">
+                  <div className="h-4 w-32 bg-neutral-200 shimmer rounded" />
+                  <div className="h-4 w-16 bg-neutral-200 shimmer rounded-full" />
+                </div>
 
-              {/* Right side: details skeleton */}
-              <div className="flex-1 flex flex-col justify-between min-w-0">
-                <div>
-                  <div className="flex justify-between items-start gap-2">
-                    {/* title skeleton */}
-                    <div className="h-3 w-28 bg-neutral-200 shimmer rounded" />
-                    {/* badge skeleton */}
-                    <div className="h-3 w-12 bg-neutral-200 shimmer rounded" />
-                  </div>
-                  {/* description skeleton */}
-                  <div className="space-y-1.5 mt-2">
-                    <div className="h-2.5 w-full bg-neutral-200/80 shimmer rounded" />
-                    <div className="h-2.5 w-5/6 bg-neutral-200/80 shimmer rounded" />
-                  </div>
-                  {/* price skeleton */}
-                  <div className="flex items-center gap-2 mt-3">
-                    <div className="h-4 w-12 bg-neutral-200 shimmer rounded" />
-                    <div className="h-3 w-8 bg-neutral-200/60 shimmer rounded" />
+                {/* Main Content Grid/Flex */}
+                <div className="flex flex-row gap-[1rem] items-center w-full mt-2">
+                  <div className="w-[30%] max-w-[6.5rem] aspect-square rounded-[0.75rem] bg-neutral-200 shimmer shrink-0 shadow-sm" />
+                  <div className="flex flex-col flex-1 min-w-0 space-y-2">
+                    <div className="h-5 w-full bg-neutral-200 shimmer rounded" />
+                    <div className="h-5 w-2/3 bg-neutral-200 shimmer rounded" />
+                    <div className="h-4 w-16 bg-neutral-200 shimmer rounded mt-2" />
+                    <div className="h-6 w-24 bg-neutral-200 shimmer rounded mt-2" />
                   </div>
                 </div>
 
-                {/* Bottom row: creation date metadata, button, label */}
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mt-3 pt-2 border-t border-black/[0.03]">
-                  {/* Date skeleton */}
-                  <div className="h-3 w-20 bg-neutral-200/60 shimmer rounded shrink-0" />
-
-                  {/* Buttons skeleton */}
-                  <div className="flex flex-col items-start sm:items-end shrink-0">
-                    <div className="flex gap-2 items-center">
-                      <div className="h-6 w-16 bg-neutral-200 shimmer rounded" />
-                      <div className="h-6 w-24 bg-neutral-200 shimmer rounded" />
-                    </div>
-                    <div className="h-1.5 w-20 bg-neutral-200/50 shimmer rounded mt-1.5" />
-                  </div>
+                {/* Footer Actions */}
+                <div className="mt-[0.5rem] pt-[0.75rem] border-t border-slate-100 flex flex-row items-center justify-between gap-[0.75rem] w-full">
+                  <div className="flex-1 h-9 bg-neutral-200 shimmer rounded-[0.5rem]" />
+                  <div className="flex-1 h-9 bg-neutral-200 shimmer rounded-[0.5rem]" />
                 </div>
               </div>
             </div>
