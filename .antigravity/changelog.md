@@ -758,6 +758,10 @@
 - 🌟 **What Changed:** Redesigned the customer-facing storefront offer presentation into beautiful, responsive digital cards that dynamically display the shop name, specific discounts, live view counters, and single-click share actions using fluid mobile-first layouts.
 - 💡 **User/Business Benefit:** Eliminates layout issues on smartphones, ensuring customers on any device experience a seamless, premium, and frustration-free storefront, leading to higher engagement and increased sharing of offers.
 
+### [15/07/2026] - Dashboard Analytics Deduplication Hotfix
+- 🌟 **What Changed:** Redesigned the "Total Viewers" dashboard metric to calculate the maximum single-offer view count rather than an unconstrained sum, ensuring 1 catalog scan precisely equals 1 total viewer, eliminating N-offer inflation.
+- 💡 **User/Business Benefit:** Merchants now receive mathematically accurate impression analytics for their storefronts, ensuring high-fidelity reporting without overlapping view counts causing metric bloat.
+
 ---
 
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*
