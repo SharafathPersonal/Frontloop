@@ -10,7 +10,7 @@ import {
   Image as ImageIcon, AlertTriangle, X, Search, Loader2, Plus,
   Trash2, Download, Eye, Check, RefreshCw, HelpCircle,
   Settings, ChevronRight, Copy, Database, FileText, Lock, Sparkles,
-  CreditCard, TrendingUp, Sliders, Users, Megaphone, Target, Zap, ShoppingBag,
+  CreditCard, TrendingUp, Users, Megaphone, Target, Zap, ShoppingBag,
   Share2, Layers, Radio, QrCode
 } from 'lucide-react';
 
@@ -268,9 +268,6 @@ export default function LandingPage() {
   // ──────────────────────────────────────────────────────────────────
   // 8. TECHNICAL ARCHITECTURE STATE
   // ──────────────────────────────────────────────────────────────────
-  const [spintaxInput, setSpintaxInput] = useState('{Hello|Hi|Hey} customer. {Thanks|Thank you} for visiting us today.');
-  const [spintaxVariations, setSpintaxVariations] = useState<string[]>([]);
-  const [simulatedDelay, setSimulatedDelay] = useState(7);
   const [csvStatus, setCsvStatus] = useState<'idle' | 'uploading' | 'parsed'>('idle');
   const [parsedContacts, setParsedContacts] = useState<any[]>([]);
 
@@ -311,34 +308,6 @@ export default function LandingPage() {
       );
     }, 1200);
   };
-
-  const generateSpintaxVariations = () => {
-    const regex = /\{([^}]+)\}/g;
-    const variants: string[] = [];
-
-    for (let i = 0; i < 3; i++) {
-      let output = spintaxInput;
-      let match;
-
-      while ((match = regex.exec(spintaxInput)) !== null) {
-        const choices = match[1].split('|');
-        const selected = choices[Math.floor(Math.random() * choices.length)];
-        output = output.replace(match[0], selected);
-      }
-
-      if (output === spintaxInput) {
-        output = `${output} [Variant ${i + 1}]`;
-      }
-      variants.push(output);
-    }
-
-    setSpintaxVariations(variants);
-    setSimulatedDelay(Math.floor(Math.random() * 8) + 5);
-  };
-
-  useEffect(() => {
-    generateSpintaxVariations();
-  }, [spintaxInput]);
 
   // ──────────────────────────────────────────────────────────────────
   // LENIS & GSAP INTEGRATION
@@ -1631,52 +1600,14 @@ export default function LandingPage() {
               Engineering Matrix
             </span>
             <h2 className="serif-headline text-3xl sm:text-4xl text-[#5C4033] mt-4 mb-4">
-              Advanced Anti-Ban &amp; Serverless Architecture
+              Advanced Ingestion &amp; Serverless AI Architecture
             </h2>
             <p className="text-sm text-slate-500 leading-relaxed max-w-xl mx-auto">
-              Explore the system modules built to protect numbers, clean raw inputs, and secure fast response times under zero Cumulative Layout Shift limits.
+              Explore the system modules built to parse records, clean raw inputs, and secure fast response times under zero Cumulative Layout Shift limits.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto gsap-reveal">
-            
-            {/* Widget A: Anti-Ban Spintax Engine */}
-            <div className="bg-white border border-[#E5DCD3] rounded-2xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-[#5C4033]">
-                  <Sliders size={18} className="text-[#C4A896]" />
-                  <h3 className="font-bold text-xs uppercase tracking-wider">Anti-Ban Spintax Engine</h3>
-                </div>
-                
-                <p className="text-xs text-[#7A6A5E] leading-relaxed">
-                  Automatic parsing of message string variations (<code>{`"{Hello|Hi|Hey}"`}</code>) reinforced by randomized human-like dispatch delays (5 to 12-second intervals).
-                </p>
-
-                <div className="space-y-2 border-t pt-4 border-slate-100">
-                  <label className="text-[9px] text-slate-400 font-bold block uppercase">Spintax template input</label>
-                  <input
-                    type="text"
-                    value={spintaxInput}
-                    onChange={(e) => setSpintaxInput(e.target.value)}
-                    className="w-full p-2 bg-[#FAF6F0] border border-[#E5DCD3] rounded text-[10px] font-mono focus:outline-none focus:border-[#5C4033]"
-                  />
-                  
-                  <div className="space-y-1">
-                    <span className="text-[8px] text-slate-400 font-bold block uppercase tracking-widest">Generated Variations</span>
-                    {spintaxVariations.map((v, i) => (
-                      <div key={i} className="p-1.5 bg-[#FAF6F0] border border-[#E5DCD3]/50 rounded text-[9.5px] font-mono text-slate-700 truncate">
-                        {v}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 mt-6 flex items-center justify-between text-[9px] text-slate-400 font-bold uppercase tracking-widest shrink-0">
-                <span>Random Spintax Delay</span>
-                <span className="text-[#5C4033] bg-[#FAF6F0] px-2 py-0.5 rounded border border-[#E5DCD3]">{simulatedDelay} Seconds</span>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto gsap-reveal">
 
             {/* Widget B: Unified CSV Manifest Parser */}
             <div className="bg-white border border-[#E5DCD3] rounded-2xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow">

@@ -205,12 +205,7 @@ export async function POST(req: Request) {
       messageText = messageText.replace(/\{\{shop_name\}\}/gi, shopName);
       messageText = messageText.replace(/\{shop_name\}/gi, shopName);
 
-      // Resolve Spintax variations: {A|B|C} → random choice (skipping {name})
-      messageText = messageText.replace(/\{([^{}]+)\}/g, (match: string, contents: string) => {
-        if (contents.toLowerCase() === 'name') return match;
-        const choices = contents.split('|');
-        return choices[Math.floor(Math.random() * choices.length)];
-      });
+
 
       try {
         if (dispatchMode === 'QR_EXPRESS') {
@@ -417,8 +412,6 @@ export async function POST(req: Request) {
       .eq('id', campaignId);
 
     // Asynchronously trigger worker thread
-    const antiBanDelaySeconds = Math.max(30, Math.min(60, shop.anti_ban_delay ?? 45));
-
     waitUntil(
       (async () => {
         let successCount = 0;
@@ -451,12 +444,7 @@ export async function POST(req: Request) {
             messageText = messageText.replace(/\{\{shop_name\}\}/gi, shopName);
             messageText = messageText.replace(/\{shop_name\}/gi, shopName);
 
-            // Resolve Spintax variations: {A|B|C} → random choice (skipping {name})
-            messageText = messageText.replace(/\{([^{}]+)\}/g, (match: string, contents: string) => {
-              if (contents.toLowerCase() === 'name') return match;
-              const choices = contents.split('|');
-              return choices[Math.floor(Math.random() * choices.length)];
-            });
+
 
             try {
               if (dispatchMode === 'QR_EXPRESS') {
@@ -619,14 +607,6 @@ export async function POST(req: Request) {
               });
             }
 
-            // Anti-ban delay for QR Express or minor throttle for Meta API to prevent rate limits
-            const baseMs = antiBanDelaySeconds * 1_000;
-            const jitterMs = Math.floor(Math.random() * 10_000) - 5_000;
-            const throttleMs = dispatchMode === 'QR_EXPRESS'
-              ? Math.max(30_000, Math.min(60_000, baseMs + jitterMs))
-              : 1_000; // Fast for Meta API, but avoid rate issues
-
-            await delay(throttleMs);
           }
 
         } catch (loopError: any) {

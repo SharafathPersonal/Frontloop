@@ -794,4 +794,10 @@
 
 ---
 
+### [15/07/2026] - Permanent Retirement of Anti-Ban Spintax Engine & Randomized Delays
+- 🌟 **What Changed:** Permanently retired the legacy, non-operational compliance workarounds including the Anti-Ban Spintax Engine and artificial transmission delay loops. Overwrote the spintax API route to return 410 Gone, refactored the campaign creator UI to utilize the new "AI Copy Polisher" utility targeting the `/api/ai/polish` endpoint, and removed delay throttling logic from campaign dispatch and retry pipelines to deliver instantaneous message transmission via the Meta Official Cloud API.
+- 💡 **User/Business Benefit:** Unlocks the maximum delivery velocity of Meta's enterprise API infrastructure, ensuring rapid, uncapped broadcast delivery while aligning the platform with direct brand verification compliance models.
+
+---
+
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*

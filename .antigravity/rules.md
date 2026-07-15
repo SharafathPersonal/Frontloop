@@ -167,3 +167,9 @@ Format Template to Append:
 - **Dual-Format Printing:** The invoice viewer client and backend print routes must support native dual-format printing (A4 corporate layouts and 80mm/76mm POS thermal rolls) complete with automated print-triggering execution scripts.
 
 ---
+
+### RULE 19: DEPRECATION OF ANTI-BAN SPINTAX ENGINE & RANDOMIZED DELAYS
+- **The Protocol:** True Attendly runs 100% on the Meta Official Cloud API. Because the Meta Official Cloud API enforces native spam protection, rate limiting, and brand validation on its own server infrastructure, compliance workarounds such as "{Hello|Hi|Hey}" Spintax string variations and randomized human-like delays (e.g., 5-to-12-second throttling) are completely obsolete, non-operational, and deprecated.
+- **The Enforcement:** The campaign transmission pipeline must process templates instantly without any delay loops or string scrambling mechanisms. No client-facing views or API endpoints may reference account-ban workarounds.
+
+---

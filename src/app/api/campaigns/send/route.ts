@@ -50,13 +50,6 @@ const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> =>
     ),
   ]);
 
-/** Resolve Spintax variations: {A|B|C} → random choice */
-const resolveSpintax = (text: string): string =>
-  text.replace(/\{([^{}]+)\}/g, (_match, contents: string) => {
-    const choices = contents.split('|');
-    return choices[Math.floor(Math.random() * choices.length)];
-  });
-
 const buildMessage = (
   body: string,
   customerName: string,
@@ -85,7 +78,7 @@ const buildMessage = (
       text = text.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), val);
     });
   }
-  return resolveSpintax(text);
+  return text;
 };
 
 /**
@@ -228,7 +221,6 @@ export async function POST(req: Request) {
       meta_phone_number_id,
       meta_template_name,
       whatsapp_mode,
-      anti_ban_delay,
       qr_express_status,
     } = shop as Shop;
 
@@ -488,7 +480,6 @@ export async function POST(req: Request) {
     const templateParamsSnapshot = payload.templateParams ?? {};
     const messageBodySnapshot = payload.campaign.message_body;
     const templateNameSnapshot = payload.campaign.template_name ?? meta_template_name ?? '';
-    const antiBanDelaySeconds = Math.max(30, Math.min(60, anti_ban_delay ?? 45));
     const creditCostSnapshot = whatsappCreditCost;
 
     // ── 12. Background dispatch ──────────────────────────────────────────
@@ -628,9 +619,6 @@ export async function POST(req: Request) {
                   quantity: 1,
                 });
               }
-              // Replace the hardcoded loop timer with this safe throttling handler
-              const jitter = Math.floor(Math.random() * 5000); // 0 to 5 seconds human jitter
-              await delay((antiBanDelaySeconds * 1000) + jitter);
             }
           } catch (loopError: any) {
             console.error('[Meta API] Unexpected loop-level error:', loopError);

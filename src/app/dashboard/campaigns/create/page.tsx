@@ -54,16 +54,16 @@ function BroadcastPageInner() {
   const [isPolishing, setIsPolishing] = useState(false);
   const [selectedTone, setSelectedTone] = useState('Premium');
 
-  const handleAIAntiBan = async () => {
+  const handleAIPolish = async () => {
     if (!form.message_body.trim()) {
-      setErrorMsg('Please write a message to generate variations.');
+      setErrorMsg('Please write a message to polish.');
       return;
     }
     
     setIsPolishing(true);
     setErrorMsg(null);
     try {
-      const res = await fetch('/api/ai/spintax', {
+      const res = await fetch('/api/ai/polish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -76,12 +76,12 @@ function BroadcastPageInner() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to generate variations');
+        throw new Error(data.error || 'Failed to polish message');
       }
 
-      setForm(prev => ({ ...prev, message_body: data.spintax_message }));
+      setForm(prev => ({ ...prev, message_body: data.polished_message }));
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'AI Generation failed.');
+      setErrorMsg(err instanceof Error ? err.message : 'AI Polishing failed.');
     } finally {
       setIsPolishing(false);
     }
@@ -431,12 +431,12 @@ function BroadcastPageInner() {
             <div className="flex items-center gap-3 mt-3">
               <button
                 type="button"
-                onClick={handleAIAntiBan}
+                onClick={handleAIPolish}
                 disabled={isPolishing || isSubmitting || !form.message_body.trim()}
                 className="flex items-center gap-2 border border-[#C4A896] rounded px-3 py-1.5 tracking-[0.2em] text-xs text-[#C4A896] hover:bg-[#3E3B36] hover:border-[#3E3B36] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Wand2 size={12} className={isPolishing ? 'animate-spin' : ''} />
-                {isPolishing ? 'AI THINKING...' : 'AI ANTI-BAN CONTENT GENERATOR'}
+                {isPolishing ? 'AI THINKING...' : 'AI MESSAGE POLISHER'}
               </button>
               <select
                 value={selectedTone}
