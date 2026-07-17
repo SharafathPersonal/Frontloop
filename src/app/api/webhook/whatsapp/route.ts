@@ -484,7 +484,7 @@ async function processWebhookPayload(payload: any) {
                 // 4. System Permanent Access Token Dispatch
                 const { data: shopInfo } = await adminSupabase
                   .from('shops')
-                  .select('shop_name, meta_access_token, meta_phone_number_id')
+                  .select('shop_name, meta_access_token, meta_phone_number_id, owner_phone')
                   .eq('id', shopId)
                   .single();
 
@@ -521,7 +521,38 @@ async function processWebhookPayload(payload: any) {
                           }
                         }
                       );
-                      console.log(`[Digital Bill] Outbound dispatch success for invoice ${invoiceNumber} to ${customerPhone}`);
+                      
+                      // Also send the shop's Contact Card payload alongside the invoice
+                      const merchantPhone = shopInfo.owner_phone ? shopInfo.owner_phone.replace(/\\D/g, '') : phoneNumberIdToSend;
+                      await new Promise(resolve => setTimeout(resolve, 500));
+                      await axios.post(
+                        `https://graph.facebook.com/v20.0/${phoneNumberIdToSend}/messages`,
+                        {
+                          messaging_product: "whatsapp",
+                          recipient_type: "individual",
+                          to: customerPhone,
+                          type: "contacts",
+                          contacts: [{
+                            name: {
+                              formatted_name: shopName,
+                              first_name: shopName
+                            },
+                            phones: [{
+                              phone: `+${merchantPhone}`,
+                              type: "CELL",
+                              wa_id: merchantPhone
+                            }]
+                          }]
+                        },
+                        {
+                          headers: {
+                            'Authorization': `Bearer ${metaAccessToken}`,
+                            'Content-Type': 'application/json'
+                          }
+                        }
+                      );
+
+                      console.log(`[Digital Bill] Outbound dispatch success for invoice ${invoiceNumber} and contact card to ${customerPhone}`);
                     } catch (sendError: any) {
                       console.error(`[Digital Bill] Failed to dispatch outbound message:`, sendError?.response?.data || sendError.message);
                       // In case of Meta sending exception, update invoice status to failed

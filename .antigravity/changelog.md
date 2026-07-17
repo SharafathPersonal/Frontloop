@@ -836,4 +836,10 @@
 
 ---
 
+### [17/07/2026] - WhatsApp Billing Action Optimization
+- 🌟 **What Changed:** Updated the marketing page emulator CTA button text to a high-converting "Get My Bill" label, and ensured that when this button is triggered via WhatsApp, the backend background routine automatically bundles the store's contact card payload alongside the digital invoice PDF link.
+- 💡 **User/Business Benefit:** Boosts conversion by giving customers a clear and compelling action, while guaranteeing that the shop owner's contact details are permanently and securely saved inside the customer's phone during the billing receipt transfer.
+
+---
+
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*

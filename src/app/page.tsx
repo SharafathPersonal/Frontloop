@@ -1270,8 +1270,8 @@ export default function LandingPage() {
                 <div className="flex gap-4">
                   <div className="w-8 h-8 rounded-full bg-[#5C4033] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">2</div>
                   <div>
-                    <h4 className="font-bold text-[#5C4033] text-sm">Automatic Save Contact Prompt</h4>
-                    <p className="text-xs text-[#7A6A5E] mt-0.5">Prompt receipt readers to save the merchant contact to view full bills and today&apos;s deals.</p>
+                    <h4 className="font-bold text-[#5C4033] text-sm">Automatic Get My Bill Prompt</h4>
+                    <p className="text-xs text-[#7A6A5E] mt-0.5">Prompt receipt readers to trigger the Get My Bill action to view full bills and today&apos;s deals.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
@@ -1336,7 +1336,7 @@ export default function LandingPage() {
                         </div>
 
                         <div className="bg-[#25D366]/20 border border-[#25D366]/35 rounded py-1.5 text-center">
-                          <p className="text-[7.5px] font-bold text-[#25D366]">Save Contact to view today&apos;s deals</p>
+                          <p className="text-[7.5px] font-bold text-[#25D366]">Get My Bill to view today&apos;s deals</p>
                         </div>
                       </div>
                     </div>
