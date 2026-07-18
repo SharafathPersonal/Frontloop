@@ -4,15 +4,15 @@ import webpush from 'web-push';
 
 export async function GET(req: Request) {
   try {
-    // Validate cron secret if deployed to Vercel (optional but recommended)
+    // Strictly validate cron secret
     const authHeader = req.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!serviceRoleKey) {
-      return NextResponse.json({ error: 'Missing API key' }, { status: 500 });
+      return NextResponse.json({ error: 'Missing SUPABASE_SERVICE_ROLE_KEY' }, { status: 500 });
     }
 
     const supabaseAdmin = createClient(
@@ -129,7 +129,10 @@ export async function GET(req: Request) {
 
                 await supabaseAdmin
                   .from('shop_flash_offers')
-                  .update({ push_sent: true, push_sent_count: sentCount })
+                  .update({
+                    push_sent: true,
+                    push_sent_count: (offer.push_sent_count || 0) + sentCount
+                  })
                   .eq('id', offer.id);
               }
             }

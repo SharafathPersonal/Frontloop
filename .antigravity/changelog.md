@@ -842,4 +842,28 @@
 
 ---
 
+### [18/07/2026] - Flash Offer Creation & Update Transactional Credit Rollback
+- 🌟 **What Changed:** Refactored the flash offer POST and PUT API route handlers in `/src/app/api/flash-offers/route.ts` to wrap database queries in robust try-catch blocks and implement explicit credit refund calls using the `add_credits` Supabase RPC in case of insertion or update database failures (such as database constraints or unique violations).
+- 💡 **User/Business Benefit:** Prevents merchants from permanently losing wallet credits on failed flash offer creation or push notification broadcast updates, ensuring complete transactional safety and financial integrity.
+
+---
+
+### [18/07/2026] - Duplicate Cron Deletion & Authenticated Cron Hardening
+- 🌟 **What Changed:** Completely deleted the unauthenticated cron endpoint at `/src/app/api/flash-offers/cron/route.ts` to close the security vulnerability. Updated the single authenticated cron route `/src/app/api/cron/evaluate-offers/route.ts` to strictly validate the `CRON_SECRET` authorization header and require `SUPABASE_SERVICE_ROLE_KEY` directly (without falling back to public credentials). Fixed the push notification metric updates to mathematically accumulate `push_sent_count` correctly.
+- 💡 **User/Business Benefit:** Secures background scheduling automation from unauthorized external execution while maintaining precise and reliable campaign notification stats for merchants.
+
+---
+
+### [18/07/2026] - Supabase Service Role Key Fallback Excision
+- 🌟 **What Changed:** Removed the insecure fallback to `NEXT_PUBLIC_SUPABASE_ANON_KEY` when `SUPABASE_SERVICE_ROLE_KEY` is missing in the environment across multiple routes (`view/route.ts`, `click/route.ts`, `flash-offers/route.ts`, `push-subscriptions/route.ts`). Added immediate check conditions to return an HTTP 500 error or throw an exception when the required server-side service key is missing.
+- 💡 **User/Business Benefit:** Prevents silent failures caused by Row Level Security (RLS) policies when running server-side operations with insufficient privileges.
+
+---
+
+### [18/07/2026] - Flash Offer Mutations Security Hardening
+- 🌟 **What Changed:** Refactored flash offer state mutations (`toggleActive` and `softDelete`) and metrics incrementing (`increment_flash_offer_shares`) to run securely on the backend instead of using direct client-side Supabase writes. Implemented a custom `PATCH` and `DELETE` handler inside `/api/flash-offers/route.ts` with tenant ownership verification, and added a secure `/api/offers/share` POST API route.
+- 💡 **User/Business Benefit:** Eliminates client-side bypass vulnerabilities, enforcing proper merchant authorization/ownership checks and secure database updates.
+
+---
+
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*

@@ -349,22 +349,38 @@ export default function FlashOffersPage() {
     }
 
     setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, is_active: newState, status: newStatus } : o));
-    const { error } = await supabase.from('shop_flash_offers')
-      .update({ is_active: newState, status: newStatus }).eq('id', offer.id);
-    if (error) {
-      setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, is_active: !newState } : o));
-      showToast('Failed to toggle status.', 'error');
-    } else {
+    try {
+      const res = await fetch('/api/flash-offers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: offer.id, is_active: newState, status: newStatus })
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Failed to toggle status.');
+      }
       showToast(newState ? 'Offer activated.' : 'Offer disabled.', 'success');
+    } catch (err: any) {
+      setOffers(prev => prev.map(o => o.id === offer.id ? { ...o, is_active: !newState } : o));
+      showToast(err.message || 'Failed to toggle status.', 'error');
     }
   };
 
   const softDelete = async (id: string) => {
     setOffers(prev => prev.filter(o => o.id !== id));
-    const { error } = await supabase.from('shop_flash_offers')
-      .update({ is_deleted: true }).eq('id', id);
-    if (error) { showToast('Failed to delete.', 'error'); loadData(); }
-    else { showToast('Offer removed.', 'success'); }
+    try {
+      const res = await fetch(`/api/flash-offers?id=${id}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Failed to delete.');
+      }
+      showToast('Offer removed.', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to delete.', 'error');
+      loadData();
+    }
     setDeleteConfirm(null);
   };
 

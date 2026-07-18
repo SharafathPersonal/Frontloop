@@ -14,10 +14,13 @@ async function sendPushNotificationsForOffers(offers: any[], shop: any) {
       return;
     }
 
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey) {
+      throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
+    }
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      serviceRoleKey!,
+      serviceRoleKey,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
@@ -115,13 +118,6 @@ async function sendPushNotificationsForOffers(offers: any[], shop: any) {
 }
 
 export async function POST(req: Request) {
-  // Validate VAPID keys at the absolute top
-  const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-  if (!vapidPublicKey || !vapidPrivateKey) {
-    return NextResponse.json({ error: 'Web Push VAPID keys are not configured on the server.' }, { status: 500 });
-  }
-
   try {
     const cookieStore = await cookies();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -162,6 +158,14 @@ export async function POST(req: Request) {
       start_at,
       end_at
     } = body;
+
+    if (broadcast_web_push) {
+      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+      if (!vapidPublicKey || !vapidPrivateKey) {
+        return NextResponse.json({ error: 'Web Push VAPID keys are not configured on the server.' }, { status: 500 });
+      }
+    }
 
     if (!product_name) {
       return NextResponse.json({ error: 'Product name is required' }, { status: 400 });
@@ -227,29 +231,45 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: deductError.message || 'Insufficient credits to create offer' }, { status: 402 });
     }
 
-    // Upsert offer
-    const { data: offer, error: insertError } = await supabase
-      .from('shop_flash_offers')
-      .upsert({
-        shop_id: user.id,
-        product_name,
-        original_price: orig,
-        discount_price: disc,
-        offer_description: offer_description || null,
-        show_percentage_badge: show_percentage_badge !== false,
-        show_discount_price: show_discount_price !== false,
-        image_url: image_url || null,
-        broadcast_web_push: broadcast_web_push === true,
-        start_at: start.toISOString(),
-        end_at: end ? end.toISOString() : null,
-        status,
-        push_sent: false
-      }, { onConflict: 'shop_id,product_name,start_at' })
-      .select()
-      .single();
+    let offer = null;
+    try {
+      // Upsert offer
+      const { data: upsertData, error: insertError } = await supabase
+        .from('shop_flash_offers')
+        .upsert({
+          shop_id: user.id,
+          product_name,
+          original_price: orig,
+          discount_price: disc,
+          offer_description: offer_description || null,
+          show_percentage_badge: show_percentage_badge !== false,
+          show_discount_price: show_discount_price !== false,
+          image_url: image_url || null,
+          broadcast_web_push: broadcast_web_push === true,
+          start_at: start.toISOString(),
+          end_at: end ? end.toISOString() : null,
+          status,
+          push_sent: false
+        }, { onConflict: 'shop_id,product_name,start_at' })
+        .select()
+        .single();
 
-    if (insertError) {
-      return NextResponse.json({ error: insertError.message || 'Failed to save offer' }, { status: 500 });
+      if (insertError) {
+        // Refund credits on insert/upsert error
+        await supabase.rpc('add_credits', {
+          p_shop_id: user.id,
+          p_amount: creditsRequired
+        });
+        return NextResponse.json({ error: insertError.message || 'Failed to save offer' }, { status: 500 });
+      }
+      offer = upsertData;
+    } catch (err: any) {
+      // Refund credits on exception
+      await supabase.rpc('add_credits', {
+        p_shop_id: user.id,
+        p_amount: creditsRequired
+      });
+      return NextResponse.json({ error: err.message || 'Failed to save offer' }, { status: 500 });
     }
 
     // If active and push broadcast is enabled, send push now
@@ -271,13 +291,6 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
-  // Validate VAPID keys at the absolute top
-  const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-  if (!vapidPublicKey || !vapidPrivateKey) {
-    return NextResponse.json({ error: 'Web Push VAPID keys are not configured on the server.' }, { status: 500 });
-  }
-
   try {
     const cookieStore = await cookies();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -319,6 +332,14 @@ export async function PUT(req: Request) {
       start_at,
       end_at
     } = body;
+
+    if (broadcast_web_push) {
+      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+      if (!vapidPublicKey || !vapidPrivateKey) {
+        return NextResponse.json({ error: 'Web Push VAPID keys are not configured on the server.' }, { status: 500 });
+      }
+    }
 
     if (!id) {
       return NextResponse.json({ error: 'Offer ID is required for update' }, { status: 400 });
@@ -389,6 +410,7 @@ export async function PUT(req: Request) {
     }
 
     // If web push broadcast is requested, it costs 2 credits
+    let creditsDeducted = 0;
     if (broadcast_web_push) {
       const { error: deductError } = await supabase.rpc('deduct_credits', {
         p_shop_id: user.id,
@@ -398,31 +420,50 @@ export async function PUT(req: Request) {
       if (deductError) {
         return NextResponse.json({ error: deductError.message || 'Insufficient credits for web push broadcast' }, { status: 402 });
       }
+      creditsDeducted = 2;
     }
 
-    // Update offer
-    const { data: offer, error: updateError } = await supabase
-      .from('shop_flash_offers')
-      .update({
-        product_name,
-        original_price: orig,
-        discount_price: disc,
-        offer_description: offer_description || null,
-        show_percentage_badge: show_percentage_badge !== false,
-        show_discount_price: show_discount_price !== false,
-        image_url: image_url || null,
-        broadcast_web_push: broadcast_web_push === true,
-        start_at: start.toISOString(),
-        end_at: end ? end.toISOString() : null,
-        status,
-        push_sent: broadcast_web_push ? false : existingOffer.push_sent
-      })
-      .eq('id', id)
-      .select()
-      .single();
+    let offer = null;
+    try {
+      // Update offer
+      const { data: updateData, error: updateError } = await supabase
+        .from('shop_flash_offers')
+        .update({
+          product_name,
+          original_price: orig,
+          discount_price: disc,
+          offer_description: offer_description || null,
+          show_percentage_badge: show_percentage_badge !== false,
+          show_discount_price: show_discount_price !== false,
+          image_url: image_url || null,
+          broadcast_web_push: broadcast_web_push === true,
+          start_at: start.toISOString(),
+          end_at: end ? end.toISOString() : null,
+          status,
+          push_sent: broadcast_web_push ? false : existingOffer.push_sent
+        })
+        .eq('id', id)
+        .select()
+        .single();
 
-    if (updateError) {
-      return NextResponse.json({ error: updateError.message || 'Failed to update offer' }, { status: 500 });
+      if (updateError) {
+        if (creditsDeducted > 0) {
+          await supabase.rpc('add_credits', {
+            p_shop_id: user.id,
+            p_amount: creditsDeducted
+          });
+        }
+        return NextResponse.json({ error: updateError.message || 'Failed to update offer' }, { status: 500 });
+      }
+      offer = updateData;
+    } catch (err: any) {
+      if (creditsDeducted > 0) {
+        await supabase.rpc('add_credits', {
+          p_shop_id: user.id,
+          p_amount: creditsDeducted
+        });
+      }
+      return NextResponse.json({ error: err.message || 'Failed to update offer' }, { status: 500 });
     }
 
     // If active and push broadcast is enabled, send push now
@@ -443,4 +484,131 @@ export async function PUT(req: Request) {
   }
 }
 
-export const PATCH = PUT;
+export async function PATCH(req: Request) {
+  try {
+    const cookieStore = await cookies();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createServerClient<any>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll(); },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              /* noop */
+            }
+          },
+        },
+      }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id, is_active, status } = await req.json();
+    if (!id) {
+      return NextResponse.json({ error: 'Offer ID is required' }, { status: 400 });
+    }
+
+    // Verify ownership
+    const { data: existingOffer, error: fetchError } = await supabase
+      .from('shop_flash_offers')
+      .select('id')
+      .eq('id', id)
+      .eq('shop_id', user.id)
+      .single();
+
+    if (fetchError || !existingOffer) {
+      return NextResponse.json({ error: 'Offer not found or unauthorized' }, { status: 404 });
+    }
+
+    // Update specific status/is_active fields securely
+    const { data: offer, error: updateError } = await supabase
+      .from('shop_flash_offers')
+      .update({
+        is_active: is_active === true,
+        status: status || 'active'
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message || 'Failed to update status' }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true, data: offer });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const cookieStore = await cookies();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createServerClient<any>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll(); },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              /* noop */
+            }
+          },
+        },
+      }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ error: 'Offer ID is required' }, { status: 400 });
+    }
+
+    // Verify ownership
+    const { data: existingOffer, error: fetchError } = await supabase
+      .from('shop_flash_offers')
+      .select('id')
+      .eq('id', id)
+      .eq('shop_id', user.id)
+      .single();
+
+    if (fetchError || !existingOffer) {
+      return NextResponse.json({ error: 'Offer not found or unauthorized' }, { status: 404 });
+    }
+
+    // Soft delete the offer securely
+    const { error: deleteError } = await supabase
+      .from('shop_flash_offers')
+      .update({ is_deleted: true })
+      .eq('id', id);
+
+    if (deleteError) {
+      return NextResponse.json({ error: deleteError.message || 'Failed to delete offer' }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
+

@@ -8,9 +8,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing offer ID' }, { status: 400 });
     }
 
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!serviceRoleKey) {
-      return NextResponse.json({ error: 'Missing API key' }, { status: 500 });
+      return NextResponse.json({ error: 'Missing SUPABASE_SERVICE_ROLE_KEY environment variable' }, { status: 500 });
     }
 
     const supabaseAdmin = createClient(

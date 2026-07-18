@@ -195,7 +195,11 @@ function OfferCardComponent({
                       url: window.location.href,
                     });
                     setShares(prev => prev + 1);
-                    await supabase.rpc('increment_flash_offer_shares', { p_offer_id: offer.id });
+                    await fetch('/api/offers/share', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ offer_id: offer.id })
+                    });
                   } catch (err) {
                     console.error('Error sharing:', err);
                   }
@@ -204,7 +208,11 @@ function OfferCardComponent({
                     await navigator.clipboard.writeText(window.location.href);
                     alert('Offer link copied to clipboard!');
                     setShares(prev => prev + 1);
-                    await supabase.rpc('increment_flash_offer_shares', { p_offer_id: offer.id });
+                    await fetch('/api/offers/share', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ offer_id: offer.id })
+                    });
                   } catch (err) {
                     console.error('Failed to copy link:', err);
                   }
