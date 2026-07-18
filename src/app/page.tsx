@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { DeadStockLandingSection } from '@/components/dead-stock-landing';
 
+
 export default function LandingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
@@ -455,6 +456,7 @@ export default function LandingPage() {
         }
       `}</style>
 
+
       {/* ══════════════════════════════════════════════════════════
           SECTION 1 — FLOATING HEADER
       ══════════════════════════════════════════════════════════ */}
@@ -515,12 +517,13 @@ export default function LandingPage() {
         </div>
       </header>
 
+
       {/* ══════════════════════════════════════════════════════════
           SECTION 2 — HERO SECTION & ZERO-FRICTION MARKETING HOOKS
       ══════════════════════════════════════════════════════════ */}
       <section
         ref={heroRef}
-        className="w-full relative pt-40 pb-24 lg:pt-48 lg:pb-36 bg-[#5C4033] text-[#FAF6F0] font-outfit"
+        className="w-full relative pt-20 pb-24 lg:pt-24 lg:pb-36 bg-[#5C4033] text-[#FAF6F0] font-outfit"
       >
         {/* Fine Radial Grid Mesh Overlay */}
         <div 

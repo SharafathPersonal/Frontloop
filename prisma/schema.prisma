@@ -65,5 +65,6 @@ model DeadStockProduct {
   @@index([discount_percentage(sort: Desc)])
   @@index([created_at(sort: Desc)])
   @@index([is_cleared, created_at(sort: Desc)])
+  @@index([is_cleared, shop_id, category, clearance_price])
   @@map("dead_stock_products")
 }

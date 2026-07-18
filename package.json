@@ -17,6 +17,7 @@
     "@vercel/functions": "^3.7.5",
     "axios": "^1.18.1",
     "date-fns": "^4.4.0",
+    "framer-motion": "^12.42.2",
     "gsap": "^3.15.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",

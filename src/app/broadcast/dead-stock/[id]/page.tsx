@@ -3,13 +3,13 @@ import { getProductDetails, getShopProducts } from '../actions';
 import { ProductClientView } from './product-client';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function ProductDetailsPage({ params }: PageProps) {
-  const { id } = params;
+  const { id } = await params;
 
   const product = await getProductDetails(id);
 

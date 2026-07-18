@@ -4,7 +4,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/contexts/ToastContext';
-import { Upload, X, Loader2, Package, ChevronLeft, AlertTriangle, IndianRupee, Tag, FileText, ChevronDown } from 'lucide-react';
+import { Upload, X, Loader2, Package, AlertTriangle, IndianRupee, Tag, FileText, ChevronDown } from 'lucide-react';
+import BackButton from '@/components/ui/BackButton';
 
 const CATEGORIES = ['Clothing', 'Electronics', 'Grocery', 'Furniture', 'Footwear', 'Sports', 'Toys', 'Books', 'Home Decor', 'Stationery', 'Other'];
 
@@ -112,13 +113,15 @@ export default function NewDeadStockPage() {
       <div className="max-w-2xl mx-auto py-8 px-4 sm:px-6 space-y-6">
 
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-2 rounded-xl border border-[#E8E3DA] hover:bg-[#F5F1EA] bg-white transition-colors">
-            <ChevronLeft size={16} className="text-[#8B8378]" />
-          </button>
-          <div>
-            <h1 className="text-xl font-bold text-[#3E3B36]">Publish Clearance Listing</h1>
-            <p className="text-xs text-[#8B8378] mt-0.5">Your item will go live on the public marketplace instantly.</p>
+        <div className="flex flex-col mb-2">
+          <div className="w-fit">
+             <BackButton href="/dashboard/dead-stock" label="Back" />
+          </div>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-xl font-bold text-[#3E3B36]">Publish Clearance Listing</h1>
+              <p className="text-xs text-[#8B8378] mt-0.5">Your item will go live on the public marketplace instantly.</p>
+            </div>
           </div>
         </div>
 

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Globe, Zap, TrendingUp } from 'lucide-react';
 
 export function DeadStockLandingSection() {
   return (
@@ -102,12 +103,12 @@ export function DeadStockLandingSection() {
 
             <div className="space-y-4">
               {[
-                { icon: '🌐', title: '0% Meta API Dependency', desc: 'Completely independent. No WhatsApp Business API approvals. No platform restrictions.' },
-                { icon: '⚡', title: 'Organic Local Traffic Trapping', desc: 'Buyers in your city find your clearance items organically — no sponsored posts, no ROI gambling.' },
-                { icon: '📈', title: 'Immediate Capital Liquidation', desc: 'List a product in under 2 minutes. It goes live instantly. Free up cash flow today.' }
+                { icon: <Globe size={20} className="text-[#C4A896]" />, title: '0% Meta API Dependency', desc: 'Completely independent. No WhatsApp Business API approvals. No platform restrictions.' },
+                { icon: <Zap size={20} className="text-[#C4A896]" />, title: 'Organic Local Traffic Trapping', desc: 'Buyers in your city find your clearance items organically — no sponsored posts, no ROI gambling.' },
+                { icon: <TrendingUp size={20} className="text-[#C4A896]" />, title: 'Immediate Capital Liquidation', desc: 'List a product in under 2 minutes. It goes live instantly. Free up cash flow today.' }
               ].map(({ icon, title, desc }) => (
                 <div key={title} className="flex gap-4 p-4 rounded-xl border border-[#E5DCD3] bg-[#FAF6F0] hover:bg-white transition-all hover:shadow-md">
-                  <div className="w-10 h-10 rounded-lg bg-white border border-[#E5DCD3] flex items-center justify-center shrink-0 shadow-sm text-lg">
+                  <div className="w-10 h-10 rounded-lg bg-white border border-[#E5DCD3] flex items-center justify-center shrink-0 shadow-sm">
                     {icon}
                   </div>
                   <div>

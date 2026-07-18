@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { MapPin, MessageCircle, AlertTriangle, ArrowRight, Store, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
+import BackButton from '@/components/ui/BackButton';
 
 export function ProductClientView({ product, similarProducts }: { product: any, similarProducts: any[] }) {
   const [activeImage, setActiveImage] = useState(product.images?.[0] || '');
@@ -26,6 +27,9 @@ export function ProductClientView({ product, similarProducts }: { product: any, 
     <div className="min-h-screen bg-[#FAF6F0] font-outfit pb-24 pt-24">
       <div className="max-w-7xl mx-auto px-6">
         
+        {/* Global Back Navigation */}
+        <BackButton href="/broadcast/dead-stock" label="Back to Marketplace" />
+
         {/* Breadcrumb */}
         <div className="text-xs font-semibold text-slate-500 mb-6 flex items-center gap-2">
           <Link href="/broadcast/dead-stock" className="hover:text-[#5C4033]">Dead Stock</Link>
