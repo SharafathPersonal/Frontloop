@@ -69,7 +69,17 @@ export async function GET(request: NextRequest) {
 
     // City filter
     if (city) {
-      query = query.ilike('merchant.city', `%${city}%`);
+      const { data: shopsInCity } = await supabase
+        .from('shops')
+        .select('id')
+        .ilike('city', `%${city}%`);
+      const shopIds = (shopsInCity || []).map(s => s.id);
+      if (shopIds.length > 0) {
+        query = query.in('shop_id', shopIds);
+      } else {
+        // No shops match this city, return no products
+        query = query.in('shop_id', ['00000000-0000-0000-0000-000000000000']);
+      }
     }
 
     // Price range filter
@@ -178,7 +188,7 @@ export async function PATCH(request: NextRequest) {
     // Verify ownership
     const { data: existing, error: findError } = await supabase
       .from('dead_stock_products')
-      .select('id, shop_id')
+      .select('id, shop_id, original_price, clearance_price')
       .eq('id', id)
       .eq('shop_id', shop_id)
       .single();

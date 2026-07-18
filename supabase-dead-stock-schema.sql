@@ -101,6 +101,14 @@ ALTER TABLE public.dead_stock_products
   ADD CONSTRAINT chk_clearance_below_original
     CHECK (clearance_price < original_price);
 
+-- Ensure foreign key points to public.shops(id) instead of auth.users(id)
+ALTER TABLE public.dead_stock_products
+  DROP CONSTRAINT IF EXISTS dead_stock_products_shop_id_fkey;
+ALTER TABLE public.dead_stock_products
+  ADD CONSTRAINT dead_stock_products_shop_id_fkey
+    FOREIGN KEY (shop_id) REFERENCES public.shops(id)
+    ON DELETE CASCADE;
+
 
 -- ============================================================
 -- STEP 4: Performance Indexes
@@ -314,28 +322,28 @@ COMMENT ON COLUMN public.dead_stock_products.is_cleared IS
 -- ─────────────────────────────────────────────────────────────
 
 -- BACKFILL: Mark all existing active shops as marketplace-ready
--- UPDATE public.shops
---   SET marketplace_active = true
---   WHERE COALESCE(is_blocked, false) = false;
+UPDATE public.shops
+  SET marketplace_active = true
+  WHERE COALESCE(is_blocked, false) = false;
 
 
 -- TRIGGER FUNCTION: Auto-activate marketplace on new shop registration
--- CREATE OR REPLACE FUNCTION public.activate_marketplace_on_shop_create()
--- RETURNS TRIGGER AS $$
--- BEGIN
---   -- Newly registered shops are marketplace-active by default
---   -- unless they are blocked or explicitly opt out.
---   IF NEW.marketplace_active IS NULL THEN
---     NEW.marketplace_active := true;
---   END IF;
---   RETURN NEW;
--- END;
--- $$ LANGUAGE plpgsql SECURITY DEFINER;
---
--- DROP TRIGGER IF EXISTS trg_marketplace_activate ON public.shops;
--- CREATE TRIGGER trg_marketplace_activate
---   BEFORE INSERT ON public.shops
---   FOR EACH ROW EXECUTE FUNCTION public.activate_marketplace_on_shop_create();
+CREATE OR REPLACE FUNCTION public.activate_marketplace_on_shop_create()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Newly registered shops are marketplace-active by default
+  -- unless they are blocked or explicitly opt out.
+  IF NEW.marketplace_active IS NULL THEN
+    NEW.marketplace_active := true;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_marketplace_activate ON public.shops;
+CREATE TRIGGER trg_marketplace_activate
+  BEFORE INSERT ON public.shops
+  FOR EACH ROW EXECUTE FUNCTION public.activate_marketplace_on_shop_create();
 
 -- ─────────────────────────────────────────────────────────────
 -- After uncommenting and running, every shop in public.shops

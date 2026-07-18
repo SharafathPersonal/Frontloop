@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { use } from 'react';
-import { MapPin, Phone, MessageCircle, ChevronLeft, AlertTriangle, Package, ArrowRight, ZoomIn, ExternalLink, Tag, Store } from 'lucide-react';
+import { MapPin, Phone, MessageCircle, ChevronLeft, ChevronRight, AlertTriangle, Package, ArrowRight, ZoomIn, ExternalLink, Tag, Store } from 'lucide-react';
 
 interface ShopJoin {
   id: string;
@@ -77,6 +77,16 @@ export default function DeadStockDetailPage({ params }: { params: Promise<{ id: 
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     setZoomStyle({ backgroundPosition: `${x}% ${y}%` });
+  };
+
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  const scrollCarousel = (direction: 'left' | 'right') => {
+    if (!carouselRef.current) return;
+    const container = carouselRef.current;
+    const cardWidth = 220; // approximate width of item + gap
+    const scrollAmount = direction === 'left' ? -cardWidth * 2 : cardWidth * 2;
+    container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
   };
 
   if (isLoading) {
@@ -182,8 +192,11 @@ export default function DeadStockDetailPage({ params }: { params: Promise<{ id: 
 
               {/* Badges overlay */}
               <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 text-white text-[9px] font-black tracking-[0.15em] uppercase shadow-lg">
-                  <AlertTriangle size={9} className="text-amber-400" />Dead Stock
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-600 text-white text-[10px] font-black tracking-[0.15em] uppercase shadow-lg border border-red-500">
+                  <AlertTriangle size={11} className="text-white fill-white shrink-0" /> DEAD STOCK
+                </span>
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-[10px] font-black tracking-[0.15em] uppercase shadow-lg border border-amber-400">
+                  CLEARANCE SALE
                 </span>
               </div>
               <div className="absolute bottom-3 right-3">
@@ -212,9 +225,9 @@ export default function DeadStockDetailPage({ params }: { params: Promise<{ id: 
           <div className="space-y-6">
 
             {/* Disclaimer Banner */}
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl">
-              <AlertTriangle size={15} className="text-amber-600 shrink-0" />
-              <span className="text-xs font-bold text-amber-800 tracking-wide uppercase">Dead Stock / Factory Outlet Clearance — Final Sale, No Returns</span>
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-red-50 border border-red-200 rounded-xl">
+              <AlertTriangle size={15} className="text-red-600 shrink-0" />
+              <span className="text-xs font-bold text-red-800 tracking-wide uppercase">EXPLICIT DEAD STOCK clearance sale — Final Sale, No Returns, No Exchanges</span>
             </div>
 
             {/* Category + Title */}
@@ -321,35 +334,81 @@ export default function DeadStockDetailPage({ params }: { params: Promise<{ id: 
 
         {/* Related Products Section */}
         {related.length > 0 && (
-          <div className="mt-16">
+          <div className="mt-16 relative">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">More Clearance Deals</h2>
-                <p className="text-sm text-slate-500 mt-1">From the same shop or similar category</p>
+                <h2 className="text-xl font-bold text-slate-900">Other Hot Clearance Deals in this Shop</h2>
+                <p className="text-sm text-slate-500 mt-1">Exclusive factory outlet liquidation offers</p>
               </div>
-              <Link href="/broadcast/dead-stock" className="flex items-center gap-1 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors">
-                View all <ArrowRight size={13} />
-              </Link>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => scrollCarousel('left')}
+                  className="p-2 rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-sm transition-colors"
+                  aria-label="Scroll left"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  onClick={() => scrollCarousel('right')}
+                  className="p-2 rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-sm transition-colors"
+                  aria-label="Scroll right"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+
+            {/* Carousel Container */}
+            <div
+              ref={carouselRef}
+              className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-none scroll-smooth"
+            >
               {related.map(rel => (
-                <Link key={rel.id} href={`/broadcast/dead-stock/${rel.id}`} className="group">
-                  <div className="bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-md transition-all hover:-translate-y-0.5 duration-200">
-                    <div className="relative h-28 bg-slate-50">
+                <Link
+                  key={rel.id}
+                  href={`/broadcast/dead-stock/${rel.id}`}
+                  className="group snap-start shrink-0 w-[200px]"
+                >
+                  <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300 flex flex-col h-full">
+                    <div className="relative h-32 bg-slate-50 overflow-hidden">
                       {rel.images?.[0] ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={rel.images[0]} alt={rel.product_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <img
+                          src={rel.images[0]}
+                          alt={rel.product_name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center"><Package size={20} className="text-slate-300" /></div>
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package size={24} className="text-slate-300" />
+                        </div>
                       )}
+                      
+                      <div className="absolute top-1.5 left-1.5">
+                        <span className="px-1.5 py-0.5 bg-red-600 text-white text-[8px] font-black tracking-wider rounded uppercase">
+                          DEAD STOCK
+                        </span>
+                      </div>
+
                       {rel.discount_percentage > 0 && (
-                        <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 bg-rose-500 text-white text-[9px] font-black rounded-lg">{rel.discount_percentage}%</span>
+                        <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 bg-rose-500 text-white text-[9px] font-black rounded-lg shadow-sm">
+                          {rel.discount_percentage}%
+                        </span>
                       )}
                     </div>
-                    <div className="p-2.5">
-                      <p className="text-xs font-semibold text-slate-800 line-clamp-2 leading-snug mb-1">{rel.product_name}</p>
-                      <p className="text-sm font-black text-slate-900">₹{rel.clearance_price.toLocaleString('en-IN')}</p>
-                      <p className="text-[10px] text-slate-400 truncate mt-0.5">{rel.shop?.shop_name}</p>
+                    <div className="p-3.5 flex flex-col flex-grow">
+                      <p className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug mb-2 group-hover:text-amber-700 transition-colors flex-grow">
+                        {rel.product_name}
+                      </p>
+                      <div className="flex items-baseline gap-1.5 mt-auto">
+                        <span className="text-sm font-black text-slate-900">
+                          ₹{rel.clearance_price.toLocaleString('en-IN')}
+                        </span>
+                        <span className="text-[10px] text-slate-400 line-through">
+                          ₹{rel.original_price.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <p className="text-[9px] text-slate-400 truncate mt-1">{rel.shop?.shop_name}</p>
                     </div>
                   </div>
                 </Link>

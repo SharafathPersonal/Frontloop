@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Search, MapPin, X, SlidersHorizontal, Loader2,
   Package, ChevronDown, ArrowUpDown, IndianRupee,
+  Store, ExternalLink, MessageSquare, AlertTriangle
 } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 // ─── Theme tokens (aligned to platform globals.css) ──────────────
 // bg: #FAF6F0 · border: #E5DCD3 · brown: #5C4033 · accent: #C4A896
@@ -65,7 +68,7 @@ function ProductCard({ product }: { product: DeadStockProduct }) {
 
           {/* Dead Stock badge — top left */}
           <div className="absolute top-2.5 left-2.5">
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#3E3B36]/95 text-[#FAF6F0] text-[8px] font-black tracking-[0.18em] uppercase shadow-lg backdrop-blur-sm">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#3E3B36]/95 text-[#FAF6F0] text-[9px] font-black tracking-[0.18em] uppercase shadow-lg backdrop-blur-sm border border-[#E5DCD3]/20">
               ⚠ DEAD STOCK
             </span>
           </div>
@@ -148,9 +151,17 @@ function SkeletonCard() {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────
-export default function DeadStockMarketplacePage() {
+// ─── Main Content Component (wrapped in Suspense) ─────────────────
+function DeadStockMarketplaceContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const shopIdParam = searchParams.get('shopId');
+
   const [products, setProducts]       = useState<DeadStockProduct[]>([]);
+  const [shops, setShops]             = useState<{ id: string; shop_name: string; city: string | null }[]>([]);
+  const [selectedShopId, setSelectedShopId] = useState<string>('');
+  const [selectedShopDetails, setSelectedShopDetails] = useState<ShopJoin | null>(null);
+  
   const [isLoading, setIsLoading]     = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore]         = useState(true);
@@ -158,14 +169,86 @@ export default function DeadStockMarketplacePage() {
   const observerRef                   = useRef<HTMLDivElement>(null);
   const isFetchingRef                 = useRef(false);
 
-  const [search,   setSearch]   = useState('');
-  const [category, setCategory] = useState('All');
-  const [sortBy,   setSortBy]   = useState('newest');
-  const [city,     setCity]     = useState('');
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
+  const [search, setSearch]           = useState('');
+  const [category, setCategory]       = useState('All');
+  const [sortBy, setSortBy]           = useState('newest');
+  const [city, setCity]               = useState('');
+  const [minPrice, setMinPrice]       = useState('');
+  const [maxPrice, setMaxPrice]       = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const PAGE_SIZE = 12;
+
+  const [shopOpen, setShopOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+  const shopRef = useRef<HTMLDivElement>(null);
+  const sortRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (shopRef.current && !shopRef.current.contains(event.target as Node)) {
+        setShopOpen(false);
+      }
+      if (sortRef.current && !sortRef.current.contains(event.target as Node)) {
+        setSortOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Sync shopId from URL query parameter
+  useEffect(() => {
+    if (shopIdParam) {
+      setSelectedShopId(shopIdParam);
+    } else {
+      setSelectedShopId('');
+    }
+  }, [shopIdParam]);
+
+  // Fetch shop metadata list for dropdown
+  useEffect(() => {
+    async function loadShops() {
+      try {
+        const { data, error } = await supabase
+          .from('shops')
+          .select('id, shop_name, city')
+          .eq('marketplace_active', true)
+          .eq('is_blocked', false)
+          .order('shop_name');
+        if (error) throw error;
+        if (data) setShops(data);
+      } catch (err) {
+        console.error('Failed to load registered shops:', err);
+      }
+    }
+    loadShops();
+  }, []);
+
+  // Fetch selected shop detailed profile for premium banner
+  useEffect(() => {
+    async function loadShopDetails() {
+      if (selectedShopId) {
+        try {
+          const { data, error } = await supabase
+            .from('shops')
+            .select('id, shop_name, location_address, city, district, state, contact_number, owner_phone, logo_url, google_maps_url')
+            .eq('id', selectedShopId)
+            .single();
+          if (error) throw error;
+          if (data) {
+            setSelectedShopDetails(data as ShopJoin);
+          }
+        } catch (err) {
+          console.error('Failed to load shop details:', err);
+        }
+      } else {
+        setSelectedShopDetails(null);
+      }
+    }
+    loadShopDetails();
+  }, [selectedShopId]);
 
   const fetchProducts = useCallback(async (pageIndex: number, reset = false) => {
     if (isFetchingRef.current && !reset) return;
@@ -179,6 +262,7 @@ export default function DeadStockMarketplacePage() {
         ...(city ? { city } : {}),
         ...(minPrice ? { minPrice } : {}),
         ...(maxPrice ? { maxPrice } : {}),
+        ...(selectedShopId ? { shopId: selectedShopId } : {}),
       });
       const res  = await fetch(`/api/dead-stock?${p}`);
       const data = await res.json();
@@ -193,12 +277,12 @@ export default function DeadStockMarketplacePage() {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
-  }, [search, category, sortBy, city, minPrice, maxPrice]);
+  }, [search, category, sortBy, city, minPrice, maxPrice, selectedShopId]);
 
   // Re-fetch on filter change
   useEffect(() => { setHasMore(true); fetchProducts(0, true); },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search, category, sortBy, city, minPrice, maxPrice]);
+    [search, category, sortBy, city, minPrice, maxPrice, selectedShopId]);
 
   // Infinite scroll
   useEffect(() => {
@@ -211,14 +295,29 @@ export default function DeadStockMarketplacePage() {
     return () => { if (el) observer.unobserve(el); };
   }, [hasMore, page, fetchProducts]);
 
+  const handleShopChange = (id: string) => {
+    setSelectedShopId(id);
+    const params = new URLSearchParams(window.location.search);
+    if (id) {
+      params.set('shopId', id);
+    } else {
+      params.delete('shopId');
+    }
+    router.push(`/broadcast/dead-stock?${params.toString()}`);
+  };
+
   const clearAll = () => {
     setSearch(''); setCategory('All'); setSortBy('newest');
-    setCity(''); setMinPrice(''); setMaxPrice('');
+    setCity(''); setMinPrice(''); setMaxPrice(''); handleShopChange('');
   };
-  const hasActive = search || category !== 'All' || city || minPrice || maxPrice || sortBy !== 'newest';
+
+  const hasActive = search || category !== 'All' || city || minPrice || maxPrice || sortBy !== 'newest' || selectedShopId;
   const activeCount = [
-    search, category !== 'All' ? category : '', city, minPrice, maxPrice,
+    search, category !== 'All' ? category : '', city, minPrice, maxPrice, selectedShopId
   ].filter(Boolean).length;
+
+  const waPhone = selectedShopDetails ? (selectedShopDetails.contact_number ?? selectedShopDetails.owner_phone ?? '').replace(/\D/g, '') : '';
+  const waUrl = waPhone ? `https://wa.me/${waPhone}?text=${encodeURIComponent(`Hello, I'm interested in viewing the clearance deals listed at your outlet.`)}` : '';
 
   return (
     <div className="min-h-screen bg-[#FAF6F0] font-inter">
@@ -255,15 +354,82 @@ export default function DeadStockMarketplacePage() {
         </div>
       </div>
 
+      {/* ── PREMIUM SINGLE SHOP HERO BANNER (If shopId query parameter is present) ── */}
+      {selectedShopDetails && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+          <div className="relative overflow-hidden bg-white border border-[#E5DCD3] rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+            {/* Decorative background glow */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#C4A896]/5 rounded-full -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+
+            <div className="flex gap-4 sm:gap-5 items-start sm:items-center">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border border-[#E5DCD3] bg-[#FAF6F0] flex items-center justify-center shrink-0 overflow-hidden">
+                {selectedShopDetails.logo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={selectedShopDetails.logo_url} alt={selectedShopDetails.shop_name} className="w-full h-full object-cover" />
+                ) : (
+                  <Store size={32} className="text-[#C4A896]" />
+                )}
+              </div>
+              <div className="space-y-1">
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#5C4033] text-white text-[9px] font-bold tracking-wider uppercase">
+                  Verified Clearance Partner
+                </span>
+                <h2 className="serif-headline text-xl sm:text-2xl text-[#3E3B36]">{selectedShopDetails.shop_name}</h2>
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-[#8B8378]">
+                  {selectedShopDetails.location_address && (
+                    <span className="truncate max-w-[250px]">{selectedShopDetails.location_address}</span>
+                  )}
+                  {selectedShopDetails.city && (
+                    <span className="flex items-center gap-1">
+                      <MapPin size={12} className="text-[#C4A896]" />
+                      {selectedShopDetails.city}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3 w-full md:w-auto mt-4 md:mt-0">
+              {selectedShopDetails.google_maps_url && (
+                <a
+                  href={selectedShopDetails.google_maps_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-[#E5DCD3] bg-white text-xs font-semibold text-[#3E3B36] hover:bg-[#FAF6F0] transition-colors flex-1 md:flex-none"
+                >
+                  <ExternalLink size={13} /> Maps Location
+                </a>
+              )}
+              {waUrl && (
+                <a
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#25D366] text-white text-xs font-bold hover:bg-[#20BD5C] transition-colors flex-1 md:flex-none"
+                >
+                  <MessageSquare size={13} /> WhatsApp Shop
+                </a>
+              )}
+              <button
+                onClick={() => handleShopChange('')}
+                className="flex items-center justify-center gap-1 px-4 py-2.5 rounded-xl border border-rose-200 bg-rose-50 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors flex-1 md:flex-none"
+              >
+                <X size={13} /> Close Shop View
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── STICKY FILTER BAR ────────────────────────────────── */}
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-xl border-b border-[#E5DCD3] shadow-[0_1px_12px_rgba(92,64,51,0.06)]">
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-xl border-b border-[#E5DCD3] shadow-[0_1px_12px_rgba(92,64,51,0.06)] mt-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
           {/* Row 1: Search + Controls */}
-          <div className="flex items-center gap-2 py-3">
+          <div className="flex flex-wrap items-center gap-3 py-3">
 
             {/* Search */}
-            <div className="relative flex-1 max-w-sm">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#C4A896]" size={14} />
               <input
                 type="text"
@@ -279,6 +445,57 @@ export default function DeadStockMarketplacePage() {
               )}
             </div>
 
+            {/* Shop-Wise Dropdown Selector */}
+            <div className="relative" ref={shopRef}>
+              <button
+                onClick={() => setShopOpen(!shopOpen)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E5DCD3] bg-[#FAF6F0] text-xs text-[#5C4033] font-semibold hover:border-[#C4A896] transition-all min-w-[140px] justify-between"
+              >
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Store size={13} className="text-[#C4A896] shrink-0" />
+                  <span className="truncate">
+                    {selectedShopId
+                      ? shops.find(s => s.id === selectedShopId)?.shop_name || 'Selected Shop'
+                      : 'All Shops'}
+                  </span>
+                </div>
+                <ChevronDown size={11} className={`text-[#C4A896] transition-transform duration-200 ${shopOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {shopOpen && (
+                <div className="absolute left-0 mt-1.5 w-60 bg-white border border-[#E5DCD3] rounded-xl shadow-xl z-50 overflow-hidden py-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <button
+                    onClick={() => {
+                      handleShopChange('');
+                      setShopOpen(false);
+                    }}
+                    className={`w-full px-3.5 py-2 text-left text-xs font-semibold hover:bg-[#FAF6F0] hover:text-[#5C4033] transition-colors flex items-center justify-between ${
+                      !selectedShopId ? 'bg-[#FAF6F0] text-[#5C4033]' : 'text-[#8B8378]'
+                    }`}
+                  >
+                    All Shops
+                  </button>
+                  <div className="max-h-60 overflow-y-auto divide-y divide-[#FAF6F0]">
+                    {shops.map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => {
+                          handleShopChange(s.id);
+                          setShopOpen(false);
+                        }}
+                        className={`w-full px-3.5 py-2.5 text-left text-xs font-semibold hover:bg-[#FAF6F0] hover:text-[#5C4033] transition-colors flex flex-col ${
+                          selectedShopId === s.id ? 'bg-[#FAF6F0] text-[#5C4033]' : 'text-[#8B8378]'
+                        }`}
+                      >
+                        <span className="font-bold truncate">{s.shop_name}</span>
+                        {s.city && <span className="text-[10px] text-[#C4A896] font-normal">{s.city}</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Filter toggle */}
             <button
               onClick={() => setShowFilters(f => !f)}
@@ -289,7 +506,7 @@ export default function DeadStockMarketplacePage() {
               }`}
             >
               <SlidersHorizontal size={13} />
-              <span className="hidden sm:inline">Filters</span>
+              <span className="hidden sm:inline">Advanced Filters</span>
               {activeCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#C4A896] text-white text-[8px] font-black flex items-center justify-center">
                   {activeCount}
@@ -298,33 +515,55 @@ export default function DeadStockMarketplacePage() {
             </button>
 
             {/* Sort */}
-            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E5DCD3] bg-white text-xs text-[#5C4033] font-semibold">
-              <ArrowUpDown size={12} className="text-[#C4A896] shrink-0" />
-              <select
-                value={sortBy}
-                onChange={e => setSortBy(e.target.value)}
-                className="bg-transparent focus:outline-none cursor-pointer text-[#5C4033] text-xs font-semibold appearance-none pr-1 max-w-[130px]"
+            <div className="relative" ref={sortRef}>
+              <button
+                onClick={() => setSortOpen(!sortOpen)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E5DCD3] bg-white text-xs text-[#5C4033] font-semibold hover:border-[#C4A896] transition-all min-w-[130px] justify-between"
               >
-                {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <ChevronDown size={11} className="text-[#C4A896] shrink-0" />
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <ArrowUpDown size={12} className="text-[#C4A896] shrink-0" />
+                  <span className="truncate">
+                    {SORT_OPTIONS.find(o => o.value === sortBy)?.label || 'Sort'}
+                  </span>
+                </div>
+                <ChevronDown size={11} className={`text-[#C4A896] transition-transform duration-200 ${sortOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {sortOpen && (
+                <div className="absolute right-0 mt-1.5 w-44 bg-white border border-[#E5DCD3] rounded-xl shadow-xl z-50 overflow-hidden py-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                  {SORT_OPTIONS.map(o => (
+                    <button
+                      key={o.value}
+                      onClick={() => {
+                        setSortBy(o.value);
+                        setSortOpen(false);
+                      }}
+                      className={`w-full px-3.5 py-2.5 text-left text-xs font-semibold hover:bg-[#FAF6F0] hover:text-[#5C4033] transition-colors ${
+                        sortBy === o.value ? 'bg-[#FAF6F0] text-[#5C4033] font-bold' : 'text-[#8B8378]'
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Clear all */}
             {hasActive && (
               <button
                 onClick={clearAll}
-                className="flex items-center gap-1 px-3 py-2 rounded-xl border border-[#E5DCD3] bg-white text-[#8B8378] text-xs font-semibold hover:border-[#C4A896] hover:text-[#5C4033] transition-colors"
+                className="flex items-center gap-1 px-3 py-2 rounded-xl border border-[#E5DCD3] bg-white text-[#8B8378] text-xs font-semibold hover:border-[#C4A896] hover:text-[#5C4033] transition-colors ml-auto sm:ml-0"
               >
                 <X size={12} />
-                <span className="hidden sm:inline">Clear</span>
+                <span>Clear All</span>
               </button>
             )}
           </div>
 
           {/* Row 2: Expanded filters */}
           {showFilters && (
-            <div className="pb-4 space-y-3 border-t border-[#E5DCD3] pt-3">
+            <div className="pb-4 space-y-3 border-t border-[#E5DCD3] pt-3 animate-in fade-in duration-200">
 
               {/* Category pills */}
               <div className="flex flex-wrap gap-1.5">
@@ -350,10 +589,10 @@ export default function DeadStockMarketplacePage() {
                   <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#C4A896]" size={12} />
                   <input
                     type="text"
-                    placeholder="City / District"
+                    placeholder="City / District Proximity"
                     value={city}
                     onChange={e => setCity(e.target.value)}
-                    className="pl-7 pr-3 py-1.5 rounded-xl border border-[#E5DCD3] text-xs text-[#3E3B36] w-36 bg-[#FAF6F0] focus:outline-none focus:border-[#C4A896] placeholder:text-[#8B8378]/60 transition-colors"
+                    className="pl-7 pr-3 py-1.5 rounded-xl border border-[#E5DCD3] text-xs text-[#3E3B36] w-48 bg-[#FAF6F0] focus:outline-none focus:border-[#C4A896] placeholder:text-[#8B8378]/60 transition-colors"
                   />
                 </div>
 
@@ -362,18 +601,18 @@ export default function DeadStockMarketplacePage() {
                   <IndianRupee size={12} className="text-[#C4A896] shrink-0" />
                   <input
                     type="number"
-                    placeholder="Min"
+                    placeholder="Min Price"
                     value={minPrice}
                     onChange={e => setMinPrice(e.target.value)}
-                    className="w-20 px-2.5 py-1.5 rounded-xl border border-[#E5DCD3] text-xs bg-[#FAF6F0] focus:outline-none focus:border-[#C4A896] placeholder:text-[#8B8378]/60"
+                    className="w-24 px-2.5 py-1.5 rounded-xl border border-[#E5DCD3] text-xs bg-[#FAF6F0] focus:outline-none focus:border-[#C4A896] placeholder:text-[#8B8378]/60"
                   />
                   <span className="text-[#8B8378] text-xs">–</span>
                   <input
                     type="number"
-                    placeholder="Max"
+                    placeholder="Max Price"
                     value={maxPrice}
                     onChange={e => setMaxPrice(e.target.value)}
-                    className="w-20 px-2.5 py-1.5 rounded-xl border border-[#E5DCD3] text-xs bg-[#FAF6F0] focus:outline-none focus:border-[#C4A896] placeholder:text-[#8B8378]/60"
+                    className="w-24 px-2.5 py-1.5 rounded-xl border border-[#E5DCD3] text-xs bg-[#FAF6F0] focus:outline-none focus:border-[#C4A896] placeholder:text-[#8B8378]/60"
                   />
                 </div>
               </div>
@@ -402,8 +641,14 @@ export default function DeadStockMarketplacePage() {
             )}
             {city && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#E5DCD3] text-[11px] text-[#5C4033] font-semibold">
-                <MapPin size={9} />{city}
+                <MapPin size={9} /> {city}
                 <button onClick={() => setCity('')}><X size={10} /></button>
+              </span>
+            )}
+            {selectedShopId && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#E5DCD3] text-[11px] text-[#5C4033] font-semibold">
+                <Store size={9} /> {selectedShopDetails?.shop_name || 'Selected Shop'}
+                <button onClick={() => handleShopChange('')}><X size={10} /></button>
               </span>
             )}
             {(minPrice || maxPrice) && (
@@ -433,20 +678,20 @@ export default function DeadStockMarketplacePage() {
 
         /* Empty state */
         ) : products.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-28 text-center">
-            <div className="w-20 h-20 rounded-2xl bg-white border border-[#E5DCD3] flex items-center justify-center mb-5 shadow-sm">
+          <div className="flex flex-col items-center justify-center py-28 text-center bg-white rounded-3xl border border-[#E5DCD3] px-4 shadow-sm">
+            <div className="w-20 h-20 rounded-2xl bg-[#FAF6F0] border border-[#E5DCD3] flex items-center justify-center mb-5">
               <Package size={32} className="text-[#C4A896]" />
             </div>
-            <h3 className="serif-headline text-2xl text-[#5C4033] mb-2">No listings found</h3>
+            <h3 className="serif-headline text-2xl text-[#5C4033] mb-2">No clearance deals found</h3>
             <p className="text-sm text-[#8B8378] max-w-xs leading-relaxed">
-              Try adjusting your filters, or check back soon — merchants list new clearance items daily.
+              No dead stock products match your search/filters right now. Try expanding your search or selecting another shop.
             </p>
             {hasActive && (
               <button
                 onClick={clearAll}
                 className="mt-6 px-6 py-3 rounded-xl bg-[#5C4033] text-[#FAF6F0] text-sm font-semibold hover:bg-[#C4A896] transition-colors"
               >
-                Clear All Filters
+                Reset All Filters
               </button>
             )}
           </div>
@@ -475,5 +720,20 @@ export default function DeadStockMarketplacePage() {
 
       </main>
     </div>
+  );
+}
+
+export default function DeadStockMarketplacePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 size={32} className="animate-spin text-[#C4A896] mx-auto mb-4" />
+          <p className="text-xs text-[#8B8378] tracking-[0.2em] uppercase font-semibold">Loading Marketplace...</p>
+        </div>
+      </div>
+    }>
+      <DeadStockMarketplaceContent />
+    </Suspense>
   );
 }

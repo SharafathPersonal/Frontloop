@@ -53,6 +53,7 @@ export async function GET(
       .from('dead_stock_products')
       .select(`
         id,
+        shop_id,
         product_name,
         original_price,
         clearance_price,
@@ -67,7 +68,14 @@ export async function GET(
       .or(`shop_id.eq.${data.shop_id},category.eq.${data.category}`)
       .limit(6);
 
-    return NextResponse.json({ product: data, related: related || [] });
+    // Sort related products so that items from the same shop come first
+    const sortedRelated = (related || []).sort((a: any, b: any) => {
+      if (a.shop_id === data.shop_id && b.shop_id !== data.shop_id) return -1;
+      if (a.shop_id !== data.shop_id && b.shop_id === data.shop_id) return 1;
+      return 0;
+    });
+
+    return NextResponse.json({ product: data, related: sortedRelated });
   } catch (err) {
     console.error('[dead-stock/[id] GET] Unexpected error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/contexts/ToastContext';
-import { Upload, X, Loader2, Package, ChevronLeft, AlertTriangle, IndianRupee, Tag, FileText } from 'lucide-react';
+import { Upload, X, Loader2, Package, ChevronLeft, AlertTriangle, IndianRupee, Tag, FileText, ChevronDown } from 'lucide-react';
 
 const CATEGORIES = ['Clothing', 'Electronics', 'Grocery', 'Furniture', 'Footwear', 'Sports', 'Toys', 'Books', 'Home Decor', 'Stationery', 'Other'];
 
@@ -28,6 +28,21 @@ export default function NewDeadStockPage() {
     description: '',
     condition_notes: '',
   });
+
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const categoryRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (categoryRef.current && !categoryRef.current.contains(event.target as Node)) {
+        setCategoryOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const discountPct = form.original_price && form.clearance_price
     ? Math.max(0, Math.round(((parseFloat(form.original_price) - parseFloat(form.clearance_price)) / parseFloat(form.original_price)) * 100))
