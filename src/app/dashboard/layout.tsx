@@ -25,6 +25,7 @@ import {
   QrCode,
   AlertTriangle,
   Zap,
+  Package,
 } from 'lucide-react';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 import { ToastProvider } from '@/contexts/ToastContext';
@@ -43,6 +44,7 @@ const navLinks: NavLink[] = [
   { label: 'Message Templates', href: '/dashboard/templates', icon: <MessageSquareText size={14} strokeWidth={1.5} /> },
   { label: 'Digital Bill Engine', href: '/dashboard/digital-bill', icon: <QrCode size={14} strokeWidth={1.5} /> },
   { label: 'Flash Offers', href: '/dashboard/flash-offers', icon: <Zap size={14} strokeWidth={1.5} /> },
+  { label: 'Dead Stock Hub', href: '/dashboard/dead-stock', icon: <Package size={14} strokeWidth={1.5} /> },
   { label: 'Transactions', href: '/dashboard/transactions', icon: <Receipt size={14} strokeWidth={1.5} /> },
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings size={14} strokeWidth={1.5} /> },
   { label: 'Support', href: '/dashboard/support', icon: <HelpCircle size={14} strokeWidth={1.5} /> },

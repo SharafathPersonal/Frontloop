@@ -339,3 +339,63 @@ export type FlashOfferInsert = Omit<FlashOffer, 'id' | 'created_at' | 'updated_a
 };
 
 export type FlashOfferUpdate = Partial<Omit<FlashOffer, 'id' | 'shop_id' | 'created_at'>>;
+
+// ------------------------------------------------------------------
+// 8. DEAD STOCK MARKETPLACE TYPES
+// ------------------------------------------------------------------
+
+/**
+ * The subset of public.shops columns joined into dead stock queries.
+ * dead_stock_products.shop_id → public.shops(id)
+ * All merchant identity data for the marketplace comes from here.
+ * No separate merchants table exists — this is a direct FK join.
+ */
+export interface DeadStockShopJoin {
+  id: string;                         // shops.id == dead_stock_products.shop_id
+  shop_name: string;                  // Display name on product cards
+  location_address: string | null;    // Full physical address
+  city: string | null;                // For geo-filter & location display
+  district: string | null;
+  state: string | null;
+  contact_number: string | null;      // Primary WhatsApp CTA number
+  owner_phone: string;                // Fallback phone (always present)
+  logo_url: string | null;            // Merchant avatar in UI
+  google_maps_url: string | null;     // "View Location" link
+}
+
+/** Convenience getter: returns the best available WhatsApp number */
+export function getShopWhatsApp(shop: DeadStockShopJoin): string {
+  return (shop.contact_number ?? shop.owner_phone ?? '').replace(/\D/g, '');
+}
+
+/** Full dead stock product row as returned by GET /api/dead-stock */
+export interface DeadStockProduct {
+  id: string;
+  shop_id: string;                    // FK → public.shops(id)
+  product_name: string;
+  original_price: number;
+  clearance_price: number;
+  discount_percentage: number;        // Pre-computed: ((orig - clear) / orig) * 100
+  category: string;
+  description: string | null;
+  condition_notes: string | null;
+  images: string[];                   // Supabase Storage public URLs
+  is_cleared: boolean;                // TRUE = sold, excluded from public marketplace
+  created_at: string;
+  updated_at: string;
+  shop: DeadStockShopJoin;            // Joined from public.shops via shop_id FK
+}
+
+export type DeadStockProductInsert = Omit<
+  DeadStockProduct,
+  'id' | 'created_at' | 'updated_at' | 'shop'
+> & {
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type DeadStockProductUpdate = Partial<
+  Omit<DeadStockProduct, 'id' | 'shop_id' | 'created_at' | 'shop'>
+>;
+

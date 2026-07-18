@@ -82,6 +82,21 @@ To deliver a flawless shopping experience across all traffic origins, the platfo
 
 ---
 
+**9. HYPER-LOCAL DEAD STOCK & FACTORY CLEARANCE MARKETPLACE (Engine B — 0% Meta Dependency):**
+True Attendly's second core engine is a completely Meta-independent, hyper-local dead stock marketplace. Traditional merchants accumulate unsold inventory that blocks working capital and generates zero return. This engine converts that dead stock into direct, organic WhatsApp buyer leads — with zero ad spend and zero Meta API dependency.
+
+Merchants list clearance products from the `/dashboard/dead-stock` management hub in under 2 minutes: up to 4 drag-and-drop product images (uploaded to Supabase Storage), product name, original price, clearance price (discount % auto-computed), category, description, and condition notes. The listing goes live instantly on the public marketplace at `/broadcast/dead-stock`.
+
+Every product card on the public marketplace shows an explicit "DEAD STOCK" badge and "CLEARANCE SALE" badge — 100% transparent to buyers, no deceptive pricing. Buyers discover listings via real-time search, 12 category filters, city/district proximity input, price range filters, and sort options (Newest, Price Ascending/Descending, Deepest Discount). The grid uses infinite scroll via IntersectionObserver, loading 12 products per page.
+
+The product detail page (`/broadcast/dead-stock/[id]`) features a Flipkart-style CSS image zoom on hover (250% background-size, dynamic backgroundPosition on mousemove), thumbnail strip for multiple images, full price breakdown with savings amount, merchant address and Google Maps link, and a pulsing WhatsApp CTA button pre-filled with: "Hi [Shop Name], I am interested in buying the Dead Stock item: [Product Name] listed on trueattendenly.online." The buyer contacts the merchant directly on WhatsApp — no platform fees, no commission, no intermediary.
+
+When a product is sold, the merchant toggles "Mark as Cleared" from the dashboard. The API atomically sets `is_cleared = true`, instantly removing the listing from all public discovery endpoints. This is the core business logic gate: the public marketplace always filters `WHERE is_cleared = false`.
+
+The technical architecture uses a direct foreign key join: `dead_stock_products.shop_id → public.shops(id)`. No separate merchants table exists. All merchant identity data (shop_name, contact_number, owner_phone, location_address, city, district, state, logo_url, google_maps_url) is sourced from the existing shops table via a single JOIN query. Row Level Security ensures the public anon role can only read uncleared listings, while merchants have full CRUD access only to their own rows.
+
+---
+
 ## Project Leadership & Support
 
 - **Founder:** Sharafath (from Kerala)

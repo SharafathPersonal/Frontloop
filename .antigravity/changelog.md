@@ -866,4 +866,73 @@
 
 ---
 
+### [18/07/2026] - Digital Transaction Ledger Mobile Optimization & Customer Contact Verification
+- 🌟 **What Changed:** Redesigned the top header control bar, metric totals strip, and analytics charts layout in the Digital Transaction Ledger view (`src/app/dashboard/digital-bill/manage/page.tsx`) to be fully responsive and compact on mobile screens. Streamlined header spacing, made metrics cards horizontally scrollable on mobile, optimized charts heights, and cleaned up bottom controls to maximize vertical screen space.
+- 💡 **User/Business Benefit:** Store owners can comfortably review billing analytics, search invoices, and export the transaction ledger on smartphone screens without visual clutter, layout overflows, or screen-space bottlenecks. Verified that customer phone numbers are securely saved in both the invoices list and the customer marketing directory (`customers_master`) upon WhatsApp bill retrieval.
+
+---
+
+---
+
+## 2026-07-18 — Phase 38: Hyper-Local Dead Stock Marketplace (Dual-Engine Architecture)
+
+### [ARCHITECTURE] Dual-Engine Platform Definition
+- **Module:** Platform Architecture / Core Context
+- **Nature:** Formally defined True Attendly as a "Dual-Engine Software": Engine A (High-Converting WhatsApp Invoice Flow, pending Meta Approval) and Engine B (0% Meta-reliant Hyper-Local Dead Stock Marketplace at `/broadcast/dead-stock`). Engine B is designed to onboard SMBs instantly by solving their biggest pain point — turning dead stock into immediate cash flow and organic WhatsApp leads.
+- **Files:** `PRODUCT_FLOW.md`, `.antigravity/changelog.md`
+
+---
+
+### [SCHEMA] Dead Stock Marketplace — PostgreSQL Schema
+- **Module:** Database / Architecture
+- **Nature:** Created `supabase-dead-stock-schema.sql` defining two core tables: `public.merchants` (extended merchant profile with `shop_name`, `address`, `city`, `district`, `state`, `whatsapp_number`, `google_maps_url`, `shop_logo_url`, `is_active`) and `public.dead_stock_products` (`product_name`, `original_price`, `clearance_price`, `discount_percentage`, `category`, `description`, `condition_notes`, `images text[]`, `is_cleared boolean`). Applied strict RLS: public can only read `is_cleared = false` products; merchants have full CRUD on their own rows. Includes performance indexes on `category`, `is_cleared`, `clearance_price`, `discount_percentage`, and `created_at`. Auto-sync trigger `sync_merchant_from_shop` optionally populates `merchants` from `shops` on upsert.
+- **Files:** `supabase-dead-stock-schema.sql`
+
+---
+
+### [API] Dead Stock REST API Routes
+- **Module:** Backend API
+- **Nature:** Created two API route handlers: (1) `GET/POST/PATCH/DELETE /api/dead-stock/route.ts` — handles public product listing with full filter/search/sort/pagination pipeline, merchant product creation, ownership-validated partial updates (including the critical `is_cleared` boolean mutation), and authorized deletion. (2) `GET /api/dead-stock/[id]/route.ts` — fetches a single product with joined merchant data and 6-item related products array (same shop or same category). Both routes use `SUPABASE_SERVICE_ROLE_KEY` via `createAdminClient` to bypass RLS for join queries while maintaining write-side ownership validation.
+- **Files:** `src/app/api/dead-stock/route.ts`, `src/app/api/dead-stock/[id]/route.ts`
+
+---
+
+### [TASK 1] Public Marketplace Directory — `/broadcast/dead-stock`
+- **Module:** Public Marketplace / Discovery
+- **Nature:** Built a complete e-commerce-grade product discovery page. Features: (a) Sticky top filter bar with real-time text search (debounced via `useCallback`), category pills (12 categories), city proximity input, price range min/max inputs, and sort options (Newest, Price ASC/DESC, Deepest Discount). (b) Infinite scroll via `IntersectionObserver` loading 12 products per batch. (c) `DeadStockCard` component showing: primary image with hover zoom scale, explicit `DEAD STOCK` badge (dark pill + amber warning icon), `CLEARANCE SALE` badge, discount percentage pill, strikethrough original price, clearance price, shop name, and location snippet. Skeleton loading states for initial and progressive loads. Zero-state empty screen with filter reset CTA.
+- **Files:** `src/app/broadcast/dead-stock/page.tsx`
+
+---
+
+### [TASK 2] Product Details Page — `/broadcast/dead-stock/[id]`
+- **Module:** Public Marketplace / Product Detail
+- **Nature:** Built a high-conversion product showcase page with: (a) Flipkart-style CSS image zoom on hover — `backgroundImage` + dynamic `backgroundPosition` on `mousemove` with 250% scale. Thumbnail strip for up to 4 images. (b) `DEAD STOCK / FACTORY OUTLET CLEARANCE` amber disclaimer banner. Price breakdown block showing clearance price, original strikethrough, and total savings. (c) Merchant CTA section: shop name, full address, city/district/state, Google Maps link, and a pulsing `animate-ping` WhatsApp CTA button pre-filling the message: `"Hi [Shop Name], I am interested in buying the Dead Stock item: [Product Name] listed on trueattendenly.online."` via `wa.me/` URL intent. (d) Related products carousel (6 items, same shop or same category) at the bottom. Fully mobile-responsive.
+- **Files:** `src/app/broadcast/dead-stock/[id]/page.tsx`
+
+---
+
+### [TASK 4] Merchant Dead Stock Dashboard — `/dashboard/dead-stock` & `/dashboard/dead-stock/new`
+- **Module:** Merchant Dashboard / Dead Stock Management
+- **Nature:**
+  - **Upload Form (`/dashboard/dead-stock/new`):** Multi-image drag-and-drop upload (up to 4 images) with `URL.createObjectURL` previews, image reorder/remove, uploads to Supabase Storage `product-images` bucket. Form fields: Product Name, Original Price, Clearance Price (live discount percentage preview), Category dropdown (12 options), Product Description (textarea), Condition Notes (textarea). `DEAD STOCK / FACTORY CLEARANCE` disclaimer before submit. `Publish to Marketplace` button publishes instantly via `POST /api/dead-stock`.
+  - **Inventory Dashboard (`/dashboard/dead-stock`):** Grid showing all merchant listings including cleared items. Search, Sort, and Status filter (All/Active/Cleared) controls. Per-item cards showing thumbnail, name, category, pricing, discount %, and status badge. Three action buttons per item: `Eye` (view on marketplace), `ToggleLeft/Right` (Mark as Cleared / Mark as Active — triggers `PATCH /api/dead-stock` with `is_cleared` boolean), `Trash2` (delete with confirm). Stat summary cards: Total Listings, Active, Cleared.
+  - **Core Business Logic:** `is_cleared = true` mutations are applied via the PATCH endpoint. The public directory `GET /api/dead-stock` always filters `is_cleared = false` by default, instantly removing sold items from the marketplace.
+- **Files:** `src/app/dashboard/dead-stock/page.tsx`, `src/app/dashboard/dead-stock/new/page.tsx`
+
+---
+
+### [TASK 3] Landing Page Section — Dead Stock Engine Showcase
+- **Module:** Public Landing Page / Marketing
+- **Nature:** Created `src/components/DeadStockMarketplaceSection.tsx` — a premium dual-column desktop landing section. Column 1: CSS-only product card mockup with animated shimmer skeleton, `DEAD STOCK` / `CLEARANCE` badges, strikethrough pricing, shop identity block, and a pulsing `animate-ping` WhatsApp CTA button. Column 2: High-impact copywriting covering the 4 core value propositions: 0% Meta API Dependency, Zero Ad-Spend Local Reach, Instant Dead-Capital Liquidation, and Frictionless Local User Trapping. Compliance disclaimer badge. Dual CTA row: Browse Marketplace + List Your Dead Stock.
+- **Files:** `src/components/DeadStockMarketplaceSection.tsx`
+
+---
+
+### [NAV] Dashboard Sidebar — Dead Stock Hub Link Added
+- **Module:** Navigation
+- **Nature:** Added `Dead Stock Hub` nav link (`/dashboard/dead-stock`) with `Package` icon from `lucide-react` to the merchant dashboard sidebar, positioned after Flash Offers.
+- **Files:** `src/app/dashboard/layout.tsx`
+
+---
+
 *CHANGELOG maintained per RULE 1 of the True Attendly Broadcast engineering specification.*

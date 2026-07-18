@@ -370,31 +370,36 @@ export default function ManageDigitalLedgerPage() {
     <div className="fixed inset-0 z-50 bg-[#F5F1EA] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
       
       {/* Top Control Bar */}
-      <div className="bg-white border-b border-[#E8E3DA] px-6 py-4 flex flex-col md:flex-row gap-4 items-center justify-between shrink-0 shadow-sm z-10">
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <button 
-            onClick={() => router.push('/dashboard/digital-bill')} 
-            className="p-2 hover:bg-[#F5F1EA] rounded-lg transition-colors text-[#8B8378]"
-          >
-            <X size={20} />
-          </button>
-          <div>
-            <h1 className="text-xl serif-headline text-[#3E3B36]">Digital Transaction Ledger</h1>
-            <p className="text-[10px] text-[#8B8378] tracking-[0.1em] uppercase">{totalAudience} Total Bills</p>
+      <div className="bg-white border-b border-[#E8E3DA] px-4 py-3 md:px-6 md:py-4 flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center justify-between shrink-0 shadow-sm z-10">
+        <div className="flex items-center justify-between w-full md:w-auto gap-2">
+          <div className="flex items-center gap-2 md:gap-4">
+            <button 
+              onClick={() => router.push('/dashboard/digital-bill')} 
+              className="p-1.5 md:p-2 hover:bg-[#F5F1EA] rounded-lg transition-colors text-[#8B8378]"
+            >
+              <X size={20} />
+            </button>
+            <div>
+              <h1 className="text-base md:text-xl font-bold serif-headline text-[#3E3B36] whitespace-nowrap">
+                <span className="inline md:hidden">Transaction Ledger</span>
+                <span className="hidden md:inline">Digital Transaction Ledger</span>
+              </h1>
+              <p className="text-[9px] md:text-[10px] text-[#8B8378] tracking-[0.1em] uppercase">{totalAudience} Total Bills</p>
+            </div>
           </div>
           
-          <div className="ml-4 flex items-center gap-2 relative" ref={exportMenuRef}>
+          <div className="flex items-center gap-2 relative" ref={exportMenuRef}>
             <button
               onClick={() => setShowExportDropdown(!showExportDropdown)}
-              className="btn-primary rounded-lg !py-2 !px-4 flex items-center gap-2 group text-xs uppercase tracking-wider font-bold"
+              className="btn-primary rounded-lg !py-1.5 !px-3 md:!py-2 md:!px-4 flex items-center gap-1.5 group text-[10px] md:text-xs uppercase tracking-wider font-bold"
             >
-              <FileDown size={14} className="text-[#C4A896]" />
-              Export Ledger
-              <ChevronDown size={14} className="opacity-60 transition-transform group-hover:translate-y-0.5" />
+              <FileDown size={12} className="text-[#C4A896]" />
+              Export
+              <ChevronDown size={12} className="opacity-60 transition-transform group-hover:translate-y-0.5" />
             </button>
             
             {showExportDropdown && (
-              <div className="absolute top-full left-0 mt-1.5 w-44 bg-white border border-[#E8E3DA] rounded-xl shadow-xl z-30 py-1.5 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="absolute top-full right-0 mt-1.5 w-44 bg-white border border-[#E8E3DA] rounded-xl shadow-xl z-30 py-1.5 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
                 <button
                   onClick={handleExportCSV}
                   className="w-full text-left px-4 py-2 text-xs font-semibold text-[#3E3B36] hover:bg-[#F5F1EA] transition-colors"
@@ -418,71 +423,79 @@ export default function ManageDigitalLedgerPage() {
                 hasMoreRef.current = true;
                 fetchInvoicesBatch(0, true);
               }}
-              className="p-2 hover:bg-[#F5F1EA] rounded-lg transition-colors border border-[#E8E3DA] bg-white group"
+              className="p-1.5 md:p-2 hover:bg-[#F5F1EA] rounded-lg transition-colors border border-[#E8E3DA] bg-white group shrink-0"
               title="Refresh Ledger"
             >
-              <RefreshCw size={16} className={`text-[#8B8378] group-hover:text-[#3E3B36] ${isFetchingBatch ? 'animate-spin' : ''}`} />
+              <RefreshCw size={14} className={`text-[#8B8378] group-hover:text-[#3E3B36] ${isFetchingBatch ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
         
         {/* Search, Sorting, Filtering */}
-        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap md:flex-nowrap">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
           
-          <div className="relative w-full md:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B8378]" size={16} />
+          <div className="relative w-full sm:w-48 md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B8378]" size={14} />
             <input 
               type="text" 
               placeholder="Search invoice, name, phone..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 rounded-lg border border-[#E8E3DA] bg-white text-sm text-[#3E3B36] focus:outline-none focus:border-[#C4A896] transition-all placeholder:text-[#8B8378]"
+              className="w-full pl-8 pr-4 py-1.5 rounded-lg border border-[#E8E3DA] bg-white text-xs md:text-sm text-[#3E3B36] focus:outline-none focus:border-[#C4A896] transition-all placeholder:text-[#8B8378]"
             />
           </div>
           
-          <div className="flex items-center gap-2 border border-[#E8E3DA] rounded-lg p-1 bg-white">
-            <Filter size={14} className="text-[#8B8378] ml-2" />
-            <select 
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-transparent text-xs font-medium text-[#3E3B36] py-1.5 pr-2 focus:outline-none cursor-pointer"
-            >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="delivered">Delivered</option>
-              <option value="failed">Failed</option>
-            </select>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+            <div className="flex items-center gap-1 border border-[#E8E3DA] rounded-lg px-2 py-1.5 bg-white justify-between sm:justify-start">
+              <div className="flex items-center gap-1 text-[#8B8378]">
+                <Filter size={12} />
+                <span className="text-[10px] uppercase font-bold tracking-wider hidden xs:inline">Status</span>
+              </div>
+              <select 
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="bg-transparent text-[11px] font-semibold text-[#3E3B36] focus:outline-none cursor-pointer text-right sm:text-left ml-1"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="delivered">Delivered</option>
+                <option value="failed">Failed</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1 border border-[#E8E3DA] rounded-lg px-2 py-1.5 bg-white justify-between sm:justify-start">
+              <div className="flex items-center gap-1 text-[#8B8378]">
+                <ArrowUpDown size={12} />
+                <span className="text-[10px] uppercase font-bold tracking-wider hidden xs:inline">Sort</span>
+              </div>
+              <select 
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+                className="bg-transparent text-[11px] font-semibold text-[#3E3B36] focus:outline-none cursor-pointer text-right sm:text-left ml-1"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="highest_amount">Highest Value</option>
+                <option value="lowest_amount">Lowest Value</option>
+                <option value="invoice_az">Invoice # (A-Z)</option>
+              </select>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 border border-[#E8E3DA] rounded-lg p-1 bg-white">
-            <ArrowUpDown size={14} className="text-[#8B8378] ml-2" />
-            <select 
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-              className="bg-transparent text-xs font-medium text-[#3E3B36] py-1.5 pr-2 focus:outline-none cursor-pointer"
-            >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="highest_amount">Highest Value</option>
-              <option value="lowest_amount">Lowest Value</option>
-              <option value="invoice_az">Invoice # (A-Z)</option>
-            </select>
-          </div>
-
-          <div className="flex border border-[#E8E3DA] rounded-lg p-0.5 bg-white shrink-0">
+          <div className="hidden sm:flex border border-[#E8E3DA] rounded-lg p-0.5 bg-white shrink-0 self-end sm:self-auto">
             <button
               onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-[#F5F1EA] text-[#3E3B36]' : 'text-[#8B8378] hover:text-[#3E3B36]'}`}
+              className={`p-1 rounded-md transition-colors ${viewMode === 'list' ? 'bg-[#F5F1EA] text-[#3E3B36]' : 'text-[#8B8378] hover:text-[#3E3B36]'}`}
               title="List View"
             >
-              <List size={16} />
+              <List size={14} />
             </button>
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-[#F5F1EA] text-[#3E3B36]' : 'text-[#8B8378] hover:text-[#3E3B36]'}`}
+              className={`p-1 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-[#F5F1EA] text-[#3E3B36]' : 'text-[#8B8378] hover:text-[#3E3B36]'}`}
               title="Grid View"
             >
-              <Grid size={16} />
+              <Grid size={14} />
             </button>
           </div>
 
@@ -490,27 +503,27 @@ export default function ManageDigitalLedgerPage() {
       </div>
 
       {/* Top Totals & Analytics Strip */}
-      <div className="bg-white border-b border-[#E8E3DA] px-6 py-3 flex flex-wrap items-center justify-between gap-6 shrink-0 z-10">
-        <div className="flex items-center gap-6 flex-wrap">
-          <div className="text-xs">
-            <span className="text-[#8B8378] uppercase tracking-wider block text-[9px] font-bold">Total Invoices</span>
-            <span className="text-sm font-bold text-[#3E3B36]">{totalAudience}</span>
+      <div className="bg-white border-b border-[#E8E3DA] px-4 py-2.5 md:px-6 md:py-3 flex flex-row items-center justify-between gap-4 shrink-0 z-10">
+        <div className="flex items-center gap-4 overflow-x-auto no-scrollbar scroll-smooth w-full md:w-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="text-xs shrink-0 bg-[#F9F7F4] md:bg-transparent border border-[#E8E3DA] md:border-0 rounded-xl px-3 py-1.5 md:p-0">
+            <span className="text-[#8B8378] uppercase tracking-wider block text-[8px] md:text-[9px] font-bold">Total Invoices</span>
+            <span className="text-xs md:text-sm font-bold text-[#3E3B36]">{totalAudience}</span>
           </div>
-          <div className="text-xs">
-            <span className="text-[#8B8378] uppercase tracking-wider block text-[9px] font-bold">Total Revenue</span>
-            <span className="text-sm font-bold text-emerald-600">₹{analyticsData.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <div className="text-xs shrink-0 bg-[#F9F7F4] md:bg-transparent border border-[#E8E3DA] md:border-0 rounded-xl px-3 py-1.5 md:p-0">
+            <span className="text-[#8B8378] uppercase tracking-wider block text-[8px] md:text-[9px] font-bold">Total Revenue</span>
+            <span className="text-xs md:text-sm font-bold text-emerald-600">₹{analyticsData.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
-          <div className="text-xs">
-            <span className="text-[#8B8378] uppercase tracking-wider block text-[9px] font-bold">Delivery Rate</span>
-            <span className="text-sm font-bold text-blue-600">{analyticsData.deliveryRate}%</span>
+          <div className="text-xs shrink-0 bg-[#F9F7F4] md:bg-transparent border border-[#E8E3DA] md:border-0 rounded-xl px-3 py-1.5 md:p-0">
+            <span className="text-[#8B8378] uppercase tracking-wider block text-[8px] md:text-[9px] font-bold">Delivery Rate</span>
+            <span className="text-xs md:text-sm font-bold text-blue-600">{analyticsData.deliveryRate}%</span>
           </div>
-          <div className="text-xs">
-            <span className="text-[#8B8378] uppercase tracking-wider block text-[9px] font-bold">Delivered / Pending / Failed</span>
-            <span className="text-sm font-bold text-[#3E3B36]">
+          <div className="text-xs shrink-0 bg-[#F9F7F4] md:bg-transparent border border-[#E8E3DA] md:border-0 rounded-xl px-3 py-1.5 md:p-0">
+            <span className="text-[#8B8378] uppercase tracking-wider block text-[8px] md:text-[9px] font-bold">Delivered/Pending/Failed</span>
+            <span className="text-xs md:text-sm font-bold text-[#3E3B36] whitespace-nowrap">
               <span className="text-emerald-600">{analyticsData.deliveredCount}</span>
-              <span className="text-[#8B8378]"> / </span>
+              <span className="text-[#8B8378]">/</span>
               <span className="text-amber-500">{analyticsData.pendingCount}</span>
-              <span className="text-[#8B8378]"> / </span>
+              <span className="text-[#8B8378]">/</span>
               <span className="text-rose-500">{analyticsData.failedCount}</span>
             </span>
           </div>
@@ -518,26 +531,27 @@ export default function ManageDigitalLedgerPage() {
 
         <button
           onClick={() => setShowAnalytics(!showAnalytics)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-xs uppercase tracking-wider font-bold transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] uppercase tracking-wider font-bold transition-all shrink-0 ${
             showAnalytics 
               ? 'bg-[#3E3B36] text-[#F5F1EA] border-[#3E3B36]' 
               : 'bg-white hover:bg-[#F5F1EA] text-[#3E3B36] border-[#E8E3DA]'
           }`}
         >
-          <BarChart3 size={14} className={showAnalytics ? 'text-[#C4A896]' : 'text-[#8B8378]'} />
-          {showAnalytics ? 'Hide Analytics' : 'View Analytics'}
+          <BarChart3 size={12} className={showAnalytics ? 'text-[#C4A896]' : 'text-[#8B8378]'} />
+          <span className="hidden xs:inline">{showAnalytics ? 'Hide' : 'Analytics'}</span>
+          <span className="inline xs:hidden">{showAnalytics ? 'Hide' : 'Chart'}</span>
         </button>
       </div>
 
       {showAnalytics && (
-        <div className="bg-white border-b border-[#E8E3DA] px-6 py-6 shrink-0 z-10 animate-in slide-in-from-top duration-300">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="bg-white border-b border-[#E8E3DA] px-4 py-4 md:px-6 md:py-6 shrink-0 z-10 animate-in slide-in-from-top duration-300 overflow-y-auto max-h-[50vh] md:max-h-none">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
             {/* Chart 1: Revenue Trend */}
-            <div className="lg:col-span-2 bg-[#F9F7F4] border border-[#E8E3DA] rounded-2xl p-5">
-              <h3 className="text-xs font-bold tracking-widest uppercase text-[#8B8378] mb-4 flex items-center gap-2">
+            <div className="lg:col-span-2 bg-[#F9F7F4] border border-[#E8E3DA] rounded-2xl p-4 md:p-5">
+              <h3 className="text-[10px] md:text-xs font-bold tracking-widest uppercase text-[#8B8378] mb-3 md:mb-4 flex items-center gap-2">
                 <TrendingUp size={14} className="text-[#C4A896]" /> Daily Sales &amp; Revenue Trend
               </h3>
-              <div className="h-[200px] w-full">
+              <div className="h-[150px] md:h-[200px] w-full">
                 {analyticsData.dailyTrends.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={analyticsData.dailyTrends} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
@@ -561,12 +575,12 @@ export default function ManageDigitalLedgerPage() {
             </div>
 
             {/* Chart 2: Invoice Distribution */}
-            <div className="bg-[#F9F7F4] border border-[#E8E3DA] rounded-2xl p-5 flex flex-col justify-between">
+            <div className="bg-[#F9F7F4] border border-[#E8E3DA] rounded-2xl p-4 md:p-5 flex flex-col justify-between">
               <div>
-                <h3 className="text-xs font-bold tracking-widest uppercase text-[#8B8378] mb-4 flex items-center gap-2">
+                <h3 className="text-[10px] md:text-xs font-bold tracking-widest uppercase text-[#8B8378] mb-3 md:mb-4 flex items-center gap-2">
                   <BarChart3 size={14} className="text-[#C4A896]" /> Invoice Volume Trend
                 </h3>
-                <div className="h-[140px] w-full">
+                <div className="h-[120px] md:h-[140px] w-full">
                   {analyticsData.dailyTrends.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={analyticsData.dailyTrends} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
@@ -582,7 +596,7 @@ export default function ManageDigitalLedgerPage() {
                   )}
                 </div>
               </div>
-              <div className="pt-4 border-t border-[#E8E3DA] flex items-center justify-between text-[11px] text-[#8B8378]">
+              <div className="pt-3 mt-3 border-t border-[#E8E3DA] flex items-center justify-between text-[10px] md:text-[11px] text-[#8B8378]">
                 <span>Delivered: <strong className="text-emerald-600">{analyticsData.deliveredCount}</strong></span>
                 <span>Pending: <strong className="text-amber-500">{analyticsData.pendingCount}</strong></span>
                 <span>Failed: <strong className="text-rose-500">{analyticsData.failedCount}</strong></span>
@@ -593,7 +607,7 @@ export default function ManageDigitalLedgerPage() {
       )}
 
       {/* Main Ledger Content Area */}
-      <div className="flex-1 overflow-y-auto p-6 md:p-4 sm:p-6 md:p-8">
+      <div className="flex-1 overflow-y-auto p-3 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           
           {viewMode === 'list' ? (
@@ -687,14 +701,14 @@ export default function ManageDigitalLedgerPage() {
                 </table>
 
                 {/* Mobile Stacked Card View */}
-                <div className="block lg:hidden space-y-4 p-4">
+                <div className="block lg:hidden space-y-3 p-1">
                   {allInvoices.length === 0 && !isFetchingBatch ? (
                     <div className="py-12 text-center bg-white border border-[#E8E3DA] rounded-xl text-sm text-[#8B8378]">
                       No digital transactions found matching your criteria.
                     </div>
                   ) : (
                     allInvoices.map((inv) => (
-                      <div key={inv.id} className="bg-white border border-[#E8E3DA] rounded-xl p-5 shadow-sm space-y-3">
+                      <div key={inv.id} className="bg-white border border-[#E8E3DA] rounded-2xl p-4 shadow-sm space-y-3">
                         <div className="flex items-start justify-between gap-4">
                           <div>
                             <p className="text-[9px] tracking-[0.2em] text-[#8B8378] uppercase">Invoice ID</p>
@@ -747,7 +761,7 @@ export default function ManageDigitalLedgerPage() {
                           {inv.pdf_url ? (
                             <button
                               onClick={() => setPreviewInvoiceNumber(inv.invoice_number)}
-                              className="min-h-[44px] px-4 flex items-center justify-center gap-1.5 rounded-lg border border-[#E8E3DA] hover:bg-[#F5F1EA] text-xs font-semibold text-[#3E3B36] transition-colors"
+                              className="min-h-[40px] px-4 flex items-center justify-center gap-1.5 rounded-lg border border-[#E8E3DA] hover:bg-[#F5F1EA] text-xs font-semibold text-[#3E3B36] transition-colors"
                               title="View Invoice PDF"
                             >
                               <Eye size={14} className="text-[#C4A896]" />
@@ -762,11 +776,11 @@ export default function ManageDigitalLedgerPage() {
                   )}
                 </div>
               </div>
-              <div className="bg-[#F9F7F4] border-t border-[#E8E3DA] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="bg-[#F9F7F4] border-t border-[#E8E3DA] px-4 py-3 md:px-6 md:py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-xs text-[#8B8378] font-medium">
                   Showing {allInvoices.length} of {totalAudience} transactions
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-3">
                   <span className="text-xs text-[#3E3B36] font-bold uppercase tracking-wider">Export Ledger:</span>
                   <button
                     onClick={handleExportCSV}

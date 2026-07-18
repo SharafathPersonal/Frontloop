@@ -255,9 +255,63 @@ True Attendly Broadcast transforms every traditional shop into a digitally-conne
 
 ---
 
+## Business Engine 12: Hyper-Local Dead Stock & Factory Clearance Marketplace
+
+**Platform Identity:** Engine B — 0% Meta API Dependency. A standalone, Meta-independent marketplace for local SMBs to liquidate dead stock, factory seconds, and clearance inventory directly to buyers in their city or district.
+
+**The Merchant Pain Point:**
+Traditional retail merchants accumulate large volumes of dead stock — unsold inventory that blocks shelf space, ties up working capital, and generates zero return. Standard liquidation options require deep discounts to distributors or produce zero inbound buyer leads. Social media ads require Meta API approval and recurring ad spend. This engine eliminates all three failure modes.
+
+**The Marketplace Flow:**
+1. Merchant lists a dead-stock product from the `/dashboard/dead-stock` management hub. Uploads up to 4 images (drag-and-drop, Supabase Storage). Sets original price, clearance price (auto-computes discount %), category, and condition notes. Publishes in under 2 minutes.
+2. The listing goes live instantly on the public marketplace at `/broadcast/dead-stock`, indexed by category, city/district, price range, and discount depth.
+3. A buyer in the same city discovers the listing via the marketplace search grid. Every product card shows an explicit "DEAD STOCK" badge and "CLEARANCE SALE" badge — 100% transparent, no deceptive pricing.
+4. The buyer taps "Contact Shop on WhatsApp" — a pre-filled `wa.me/` intent message fires with: "Hi [Shop Name], I am interested in buying the Dead Stock item: [Product Name] listed on trueattendenly.online."
+5. The merchant receives a direct WhatsApp lead. No platform fees, no commission, no intermediary.
+6. When the item is sold, the merchant toggles "Mark as Cleared" from the dashboard. The API atomically sets `is_cleared = true`, instantly removing the listing from the public marketplace.
+
+**Technical Architecture:**
+- **Database:** `dead_stock_products` table FK-references `public.shops(id)` directly via `shop_id`. No separate merchants table. All merchant identity (shop_name, contact_number, owner_phone, location_address, city, district, state, logo_url, google_maps_url) is sourced from the existing `shops` table via a single JOIN.
+- **Data Integrity Gate:** `is_cleared BOOLEAN NOT NULL DEFAULT false` — the core business logic gate. The public API always filters `WHERE is_cleared = false`. A single PATCH request atomically flips this flag and removes the item from all public discovery endpoints.
+- **RLS:** Public anon role can only SELECT rows where `is_cleared = false`. Merchants can full-CRUD only their own rows (`auth.uid() = shop_id`). Service role used for joined queries on the backend.
+- **Indexes:** Composite index on `(is_cleared, created_at DESC)` for the primary public query. Additional indexes on `category`, `clearance_price`, `discount_percentage`.
+- **API Routes:** `GET/POST/PATCH/DELETE /api/dead-stock` for directory and mutations. `GET /api/dead-stock/[id]` for detail + related products.
+
+**Product Detail Page (`/broadcast/dead-stock/[id]`):**
+- Flipkart-style CSS image zoom on hover (250% background-size, dynamic backgroundPosition on mousemove).
+- Thumbnail strip for up to 4 product images.
+- Amber disclaimer banner: "DEAD STOCK / FACTORY OUTLET CLEARANCE — Final Sale, No Returns."
+- Full price breakdown: clearance price, original strikethrough, and total savings amount.
+- Merchant CTA section: shop name, full address, city/district/state, Google Maps link, pulsing animate-ping WhatsApp CTA button.
+- Related products grid: 6 items from same shop or same category.
+
+**Marketplace Directory (`/broadcast/dead-stock`):**
+- Sticky filter bar: real-time text search, 12 category pills, city proximity input, price range min/max, sort options (Newest, Price ASC/DESC, Deepest Discount %).
+- Infinite scroll via IntersectionObserver, 12 products per page.
+- Skeleton loading states for initial and progressive loads.
+- Product cards: image with hover scale, DEAD STOCK badge, CLEARANCE SALE badge, discount %, strikethrough pricing, shop name and location.
+
+**Merchant Dashboard (`/dashboard/dead-stock`):**
+- Inventory grid showing all listings including cleared items.
+- Per-item actions: View on Marketplace (Eye icon), Toggle Cleared/Active (PATCH to API), Delete (with confirm).
+- Stat summary: Total Listings, Active, Cleared.
+- Multi-image upload form at `/dashboard/dead-stock/new` with drag-and-drop, live discount preview, and instant publish.
+
+**What Makes This Powerful:**
+- Absolute zero Meta API dependency — works independently of WhatsApp Business API status.
+- Zero advertising spend — discovery is organic via the marketplace search grid.
+- Atomic state management — one toggle instantly gates an item from the entire public marketplace.
+- Direct WhatsApp lead conversion — no contact forms, no accounts, no friction for the buyer.
+- 100% transparency to buyers — every listing is badged "Dead Stock / Factory Clearance."
+
+**The Business Outcome:**
+SMBs with dead inventory convert blocked capital into immediate cash-flow leads without ad spend, Meta approvals, or middlemen. The platform becomes a zero-cost, always-on liquidation channel that operates independently of all external API dependencies.
+
+---
+
 *This document serves as the complete business context and capability reference for True Attendly Broadcast.*
 *Maintained as a non-technical AI alignment and discovery resource.*
-*Last updated: 15 July 2026*
+*Last updated: 18 July 2026*
 
 ---
 

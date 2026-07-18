@@ -1712,6 +1712,167 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════
+          SECTION 5.5 — ENGINE B: HYPER-LOCAL DEAD STOCK MARKETPLACE
+          0% Meta Dependency · Instant Dead-Capital Liquidation
+      ══════════════════════════════════════════════════════════ */}
+      <section className="w-full py-24 px-6 bg-white border-t border-b border-[#E5DCD3] font-outfit">
+        <div className="max-w-7xl mx-auto">
+
+          {/* Section header */}
+          <div className="max-w-3xl mx-auto text-center mb-16">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#E5DCD3] bg-[#FAF6F0] text-[10px] font-bold tracking-[0.25em] uppercase text-[#C4A896] mb-5">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              Engine B — 0% Meta Dependency
+            </span>
+            <h2 className="serif-headline text-3xl sm:text-4xl text-[#5C4033] mt-4 mb-4">
+              Turn Dead Capital Into Instant WhatsApp Leads
+            </h2>
+            <p className="text-sm text-slate-500 leading-relaxed max-w-xl mx-auto">
+              The Hyper-Local Dead Stock Marketplace. No ad spend. No Meta API approval. Zero middlemen.
+              Your unsold inventory becomes organic inbound leads — today.
+            </p>
+          </div>
+
+          {/* Dual-column layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+
+            {/* === Column 1: Product Card Mockup === */}
+            <div className="relative flex justify-center">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-50/60 via-transparent to-slate-50/40 rounded-3xl blur-2xl" />
+              <div className="relative w-full max-w-sm">
+                {/* Discount badge */}
+                <div className="absolute -top-4 -right-4 z-10 px-3 py-1.5 bg-rose-500 text-white text-xs font-black rounded-xl shadow-lg rotate-3">
+                  73% OFF
+                </div>
+
+                <div className="bg-white rounded-2xl border border-[#E5DCD3] shadow-xl overflow-hidden">
+                  {/* Image skeleton */}
+                  <div className="relative h-52 bg-gradient-to-br from-slate-100 to-slate-50 overflow-hidden">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-8">
+                      <div className="w-full h-2 bg-slate-200 rounded-full" />
+                      <div className="w-4/5 h-2 bg-slate-200 rounded-full" />
+                      <div className="w-3/5 h-2 bg-slate-200 rounded-full" />
+                    </div>
+                    {/* Dead Stock Badge */}
+                    <div className="absolute top-3 left-3">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1E1B18] text-white text-[9px] font-black tracking-[0.2em] uppercase shadow-lg">
+                        ⚠ DEAD STOCK
+                      </span>
+                    </div>
+                    <div className="absolute top-3 right-3">
+                      <span className="px-2.5 py-1 rounded-xl bg-amber-500 text-white text-[9px] font-black tracking-wide uppercase shadow">
+                        CLEARANCE
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Product info */}
+                  <div className="p-5 space-y-4">
+                    <div>
+                      <span className="text-[9px] tracking-[0.2em] uppercase text-slate-400 font-semibold">Electronics · Bangalore</span>
+                      <h3 className="text-base font-bold text-[#3E3B36] mt-1 leading-snug">
+                        Samsung 55&quot; QLED TV — Open Box Dead Stock
+                      </h3>
+                    </div>
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-2xl font-black text-[#5C4033]">₹27,499</span>
+                      <span className="text-sm text-slate-400 line-through">₹1,02,000</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider border border-amber-200 bg-amber-50 text-amber-700 rounded-lg">Factory Clearance</span>
+                      <span className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider border border-slate-200 bg-slate-50 text-slate-600 rounded-lg">Final Sale</span>
+                    </div>
+                    <div className="h-px bg-[#E5DCD3]" />
+                    {/* Merchant identity */}
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-[#5C4033] flex items-center justify-center shrink-0">
+                        <span className="text-[#FAF6F0] text-[9px] font-black">SR</span>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-[#5C4033]">SR Electronics Hub</p>
+                        <p className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          Koramangala, Bangalore
+                        </p>
+                      </div>
+                    </div>
+                    {/* WhatsApp CTA */}
+                    <div className="relative">
+                      <div className="absolute inset-0 rounded-xl bg-[#25D366]/20 animate-ping" />
+                      <div className="relative flex items-center justify-center gap-2.5 w-full py-3.5 rounded-xl bg-[#25D366] text-white font-bold text-sm tracking-wide shadow-md">
+                        Contact Shop on WhatsApp
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* === Column 2: Copy + Value Props === */}
+            <div className="space-y-8">
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-[10px] tracking-[0.25em] text-[#C4A896] uppercase font-bold">The Second Engine</span>
+                  <span className="w-8 h-px bg-[#E5DCD3]" />
+                  <span className="text-[10px] tracking-[0.25em] text-[#C4A896] uppercase font-bold">Always On</span>
+                </div>
+                <h3 className="serif-headline text-2xl sm:text-3xl text-[#5C4033] leading-tight">
+                  Your Dead Stock Is Not a Loss.{' '}
+                  <span className="relative inline-block">
+                    It&apos;s a Lead Magnet.
+                    <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-amber-400 rounded-full" />
+                  </span>
+                </h3>
+                <p className="text-sm text-[#7A6A5E] mt-4 leading-relaxed">
+                  Every unsold unit on your shelf blocks cash flow and ties up working capital. The True Attendly Dead Stock Marketplace converts that dead inventory into direct, organic WhatsApp buyer contacts — with zero ad spend and zero dependency on Meta&apos;s approval process.
+                </p>
+              </div>
+
+              {/* Value props */}
+              <div className="space-y-4">
+                {[
+                  { icon: '🌐', title: '0% Meta API Dependency', desc: 'Completely independent. No WhatsApp Business API approvals. No platform restrictions. It works even if your Meta account is suspended.' },
+                  { icon: '⚡', title: 'Zero Ad-Spend Local Reach', desc: 'Hyper-local product discovery. Buyers in your city find your clearance items organically — no sponsored posts, no ROI gambling.' },
+                  { icon: '📈', title: 'Instant Dead-Capital Liquidation', desc: 'List a product in under 2 minutes. It goes live instantly. When sold, one toggle marks it cleared — removed from the marketplace immediately.' },
+                  { icon: '💬', title: 'Frictionless WhatsApp Conversion', desc: 'Every product card has a pre-filled WhatsApp intent button. Buyers contact you directly — no forms, no accounts, pure direct conversion.' },
+                ].map(({ icon, title, desc }) => (
+                  <div key={title} className="flex gap-4 p-4 rounded-xl border border-[#E5DCD3] bg-[#FAF6F0] hover:bg-white transition-colors">
+                    <div className="w-8 h-8 rounded-lg bg-white border border-[#E5DCD3] flex items-center justify-center shrink-0 shadow-sm text-base">
+                      {icon}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-[#5C4033]">{title}</p>
+                      <p className="text-xs text-[#7A6A5E] mt-1 leading-relaxed">{desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Transparency note */}
+              <div className="flex items-start gap-3 px-4 py-3.5 bg-emerald-50 border border-emerald-100 rounded-xl">
+                <span className="text-emerald-600 text-base shrink-0 mt-0.5">✓</span>
+                <p className="text-xs text-emerald-800">
+                  <strong>100% Transparent to Buyers.</strong> Every listing is explicitly badged as{' '}
+                  &quot;Dead Stock / Factory Clearance&quot; — no deceptive pricing. Full merchant identity, physical address, and location map disclosed on every product page.
+                </p>
+              </div>
+
+              {/* CTAs */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link href="/broadcast/dead-stock" className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-[#5C4033] text-[#FAF6F0] font-bold text-xs tracking-wider uppercase hover:bg-[#C4A896] transition-all hover:-translate-y-0.5 shadow-md hover:shadow-lg">
+                  Browse Marketplace
+                </Link>
+                <Link href="/dashboard/dead-stock/new" className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 border border-[#5C4033] text-[#5C4033] font-bold text-xs tracking-wider uppercase hover:bg-[#FAF6F0] transition-all hover:-translate-y-0.5">
+                  List Your Dead Stock
+                </Link>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
           SECTION 6 — PERSUASION REVERSAL (RETAIL REALITY CHECK)
       ══════════════════════════════════════════════════════════ */}
       <section id="comparison" className="w-full py-24 px-6 bg-white scroll-reveal-section font-outfit">
