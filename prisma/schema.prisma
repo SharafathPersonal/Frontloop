@@ -2,7 +2,7 @@
 // PRISMA SCHEMA FOR DEAD STOCK MARKETPLACE
 // ============================================================
 // Developer Note:
-// Uncomment and run the SQL database trigger at the bottom of the Supabase migration to enforce an auto-sync mechanism that ensures a seamless row-per-shop join mapping on public pages.
+// Uncomment and run the SQL database trigger at the bottom of the Supabase migration to enforce an auto-sync mechanism that ensures a seamless row-per-shop join mapping on public pages, utilizing the pre-shaped marketplace_merchant_profiles view.
 // ============================================================
 
 datasource db {
