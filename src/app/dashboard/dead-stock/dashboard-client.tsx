@@ -1,311 +1,543 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Store, Search, Filter, Share2, Download, CheckCircle, XCircle, MoreVertical, ShieldAlert } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
-import { getMerchantShops, getDashboardInventory, toggleProductClearedStatus } from './actions';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  Search,
+  Filter,
+  Trash2,
+  CheckCircle,
+  Pencil,
+  ShieldAlert,
+  Package,
+  ArrowUpDown,
+  Loader2,
+  X,
+} from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
+import {
+  getDashboardInventory,
+  toggleProductClearedStatus,
+  deleteProduct,
+  bulkToggleProductClearedStatus,
+} from './actions';
+import Link from 'next/link';
+import BackButton from '@/components/ui/BackButton';
+import CustomConfirm from '@/components/ui/CustomConfirm';
+import { useToast } from '@/contexts/ToastContext';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+type StatusFilter = 'all' | 'live' | 'cleared';
+type SortOrder = 'desc' | 'asc';
+
+const LIMIT = 30;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function DashboardClient() {
-  const [shops, setShops] = useState<any[]>([]);
-  const [selectedShopId, setSelectedShopId] = useState<string>('');
-  const [inventory, setInventory] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  const qrRef = useRef<HTMLDivElement>(null);
+  const { showToast } = useToast();
 
+  // ── Auth ────────────────────────────────────────────────────────────────────
+  const [shopId, setShopId] = useState<string | null>(null);
+
+  // ── Inventory + pagination ──────────────────────────────────────────────────
+  const [inventory, setInventory] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const isFirstPageRef = useRef(true);
+
+  // ── Filters ─────────────────────────────────────────────────────────────────
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  // ── Bulk Selection ──────────────────────────────────────────────────────────
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+
+  // ── Confirm Modal ───────────────────────────────────────────────────────────
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: '',
+    onConfirm: () => {},
+  });
+
+  // ── Infinite scroll sentinel ─────────────────────────────────────────────────
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Resolve authenticated shop ID once
+  // ─────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    async function loadShops() {
-      const fetchedShops = await getMerchantShops();
-      setShops(fetchedShops);
-      if (fetchedShops.length > 0) {
-        setSelectedShopId(fetchedShops[0].id);
-      }
-    }
-    loadShops();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setShopId(user.id);
+    });
   }, []);
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 300 ms debounce on search input
+  // ─────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    async function loadInventory() {
-      if (!selectedShopId) return;
-      setLoading(true);
-      const data = await getDashboardInventory(selectedShopId);
-      setInventory(data);
-      setLoading(false);
-    }
-    loadInventory();
-  }, [selectedShopId]);
+    const handler = setTimeout(() => setDebouncedSearch(searchInput), 300);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
 
-  const handleToggleCleared = async (productId: string, currentStatus: boolean) => {
-    const newStatus = !currentStatus;
-    // Optimistic UI update
-    setInventory(prev => prev.map(p => p.id === productId ? { ...p, is_cleared: newStatus } : p));
-    const result = await toggleProductClearedStatus(productId, newStatus);
-    if (!result.success) {
-      // Revert on failure
-      setInventory(prev => prev.map(p => p.id === productId ? { ...p, is_cleared: currentStatus } : p));
-      alert('Failed to update status');
-    }
-  };
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Reset to page 1 when filters change — mark as first page
+  // ─────────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    isFirstPageRef.current = true;
+    setPage(1);
+    setSelectedIds([]);
+  }, [debouncedSearch, statusFilter, sortOrder]);
 
-  const downloadQR = () => {
-    if (!qrRef.current) return;
-    const svg = qrRef.current.querySelector('svg');
-    if (!svg) return;
-    
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    
-    img.onload = () => {
-      canvas.width = img.width + 40;
-      canvas.height = img.height + 80;
-      if (ctx) {
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 20, 20);
-        ctx.fillStyle = '#5C4033';
-        ctx.font = 'bold 16px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('Scan for Dead Stock Deals', canvas.width / 2, canvas.height - 20);
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Server-side fetch — only runs when shopId is resolved
+  // ─────────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!shopId) return;
+
+    let cancelled = false;
+    const isFirstPage = isFirstPageRef.current;
+
+    async function fetchInventory() {
+      if (isFirstPage) setLoading(true);
+      else setLoadingMore(true);
+
+      const result = await getDashboardInventory(shopId!, {
+        searchQuery: debouncedSearch,
+        statusFilter,
+        sortOrder,
+        page,
+        limit: LIMIT,
+      });
+
+      if (!cancelled) {
+        if (isFirstPage) {
+          setInventory(result.products);
+          isFirstPageRef.current = false;
+        } else {
+          setInventory((prev) => [...prev, ...result.products]);
+        }
+        setHasMore(result.hasMore);
+        setTotalCount(result.totalCount);
+        setLoading(false);
+        setLoadingMore(false);
       }
-      
-      const pngFile = canvas.toDataURL('image/png');
-      const downloadLink = document.createElement('a');
-      downloadLink.download = `Shop-${selectedShopId}-DeadStock-QR.png`;
-      downloadLink.href = `${pngFile}`;
-      downloadLink.click();
-    };
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    }
+
+    fetchInventory();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shopId, page, debouncedSearch, statusFilter, sortOrder]);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Infinite scroll observer
+  // ─────────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasMore && !loadingMore && !loading) {
+          setPage((p) => p + 1);
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading]);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Mutations — optimistic UI with rollback
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  const confirmToggleCleared = (productId: string, currentStatus: boolean) => {
+    const newStatus = !currentStatus;
+    const actionName = newStatus ? 'CLEARED' : 'LIVE';
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Update Item Status',
+      message: `Are you sure you want to mark this item as ${actionName}?`,
+      confirmText: `MARK AS ${actionName}`,
+      onConfirm: async () => {
+        setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+        // Optimistic update
+        setInventory((prev) =>
+          prev.map((p) => (p.id === productId ? { ...p, is_cleared: newStatus } : p))
+        );
+        const result = await toggleProductClearedStatus(productId, newStatus);
+        if (!result.success) {
+          setInventory((prev) =>
+            prev.map((p) => (p.id === productId ? { ...p, is_cleared: currentStatus } : p))
+          );
+          showToast('Failed to update status', 'error');
+        } else {
+          showToast(`Item marked as ${actionName.toLowerCase()}!`, 'success');
+        }
+      },
+    });
   };
 
-  const filteredInventory = inventory.filter(item => 
-    item.product_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    item.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const confirmDelete = (productId: string) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Item',
+      message:
+        'Are you sure you want to completely delete this dead stock item? This action is irreversible.',
+      confirmText: 'DELETE',
+      onConfirm: async () => {
+        setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+        const prevInventory = [...inventory];
+        setInventory((prev) => prev.filter((p) => p.id !== productId));
+        setTotalCount((c) => c - 1);
+        const result = await deleteProduct(productId);
+        if (!result.success) {
+          setInventory(prevInventory);
+          setTotalCount((c) => c + 1);
+          showToast('Failed to delete product', 'error');
+        } else {
+          setSelectedIds((prev) => prev.filter((id) => id !== productId));
+          showToast('Product deleted successfully', 'success');
+        }
+      },
+    });
+  };
 
-  const activeShop = shops.find(s => s.id === selectedShopId);
-  const publicUrl = `https://trueattendenly.online/broadcast/dead-stock?shopId=${selectedShopId}`;
+  const confirmBulkToggle = (markAsCleared: boolean) => {
+    if (selectedIds.length === 0) return;
+    const actionName = markAsCleared ? 'CLEARED' : 'LIVE';
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Bulk Update Status',
+      message: `Are you sure you want to mark ${selectedIds.length} items as ${actionName}?`,
+      confirmText: `MARK AS ${actionName}`,
+      onConfirm: async () => {
+        setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+        setBulkProcessing(true);
+        const prevInventory = [...inventory];
+        setInventory((prev) =>
+          prev.map((p) =>
+            selectedIds.includes(p.id) ? { ...p, is_cleared: markAsCleared } : p
+          )
+        );
+        const result = await bulkToggleProductClearedStatus(selectedIds, markAsCleared);
+        if (result.success) {
+          setSelectedIds([]);
+          showToast(`Successfully updated ${selectedIds.length} items!`, 'success');
+        } else {
+          setInventory(prevInventory);
+          showToast('Failed to perform bulk update.', 'error');
+        }
+        setBulkProcessing(false);
+      },
+    });
+  };
 
+  // ── Selection helpers ────────────────────────────────────────────────────────
+  const allSelected =
+    inventory.length > 0 && selectedIds.length === inventory.length;
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedIds(e.target.checked ? inventory.map((i) => i.id) : []);
+  };
+
+  const handleSelectRow = (id: string, checked: boolean) => {
+    setSelectedIds((prev) =>
+      checked ? [...prev, id] : prev.filter((itemId) => itemId !== id)
+    );
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#F8F9FA] font-outfit p-6 lg:p-10">
-      
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header & Multi-Shop Selector */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 rounded-2xl shadow-sm border border-[#E5DCD3]">
-          <div>
-            <h1 className="text-2xl font-bold text-[#2D1E17]">Dead Stock Liquidation</h1>
-            <p className="text-sm text-slate-500 mt-1">Manage your clearance inventory and WhatsApp broadcasts.</p>
+    <div className="w-full font-outfit max-w-7xl mx-auto space-y-6">
+      <CustomConfirm
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmText={confirmConfig.confirmText}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig((prev) => ({ ...prev, isOpen: false }))}
+      />
+
+      {/* ── Page Header ──────────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-3">
+          <div className="[&>button]:mb-0">
+            <BackButton href="/dashboard" label="Back to Dashboard" />
           </div>
-          
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <div className="relative w-full sm:w-64">
-              <Store className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <select 
-                value={selectedShopId}
-                onChange={(e) => setSelectedShopId(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 bg-[#FAF6F0] border border-[#E5DCD3] rounded-xl text-sm font-semibold text-[#5C4033] appearance-none focus:outline-none focus:border-[#C4A896] cursor-pointer"
+          <div>
+            <h1 className="serif-headline text-2xl md:text-3xl text-[#3E3B36]">
+              Manage Dead Stock
+            </h1>
+            <p className="text-[10px] tracking-[0.15em] text-[#8B8378] uppercase mt-1">
+              {loading ? 'Loading…' : `${totalCount} item${totalCount !== 1 ? 's' : ''} total`}
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/dashboard/dead-stock/manage/new"
+          className="bg-[#3E3B36] text-[#F5F1EA] px-6 py-3 rounded-xl text-xs font-bold tracking-widest uppercase hover:bg-[#2A2825] transition-colors shadow-sm"
+        >
+          + Add New Item
+        </Link>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-[#E8E3DA] overflow-hidden flex flex-col h-[calc(100vh-220px)] min-h-[600px]">
+        {/* ── Toolbar ──────────────────────────────────────────────────────── */}
+        <div className="p-4 border-b border-[#E8E3DA] flex flex-col sm:flex-row justify-between gap-4 bg-[#FAF9F6] shrink-0">
+          {/* Search — 300ms debounced, server-side */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B8378]" size={16} />
+            <input
+              id="dashboard-inventory-search"
+              type="text"
+              placeholder="Search by product name or category…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full pl-9 pr-9 py-2.5 bg-white border border-[#E8E3DA] rounded-lg text-sm focus:outline-none focus:border-[#C4A896] text-[#3E3B36]"
+            />
+            {searchInput && (
+              <button
+                onClick={() => setSearchInput('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B8378] hover:text-[#3E3B36] transition-colors"
+                aria-label="Clear search"
               >
-                {shops.map(shop => (
-                  <option key={shop.id} value={shop.id}>{shop.shop_name}</option>
-                ))}
-              </select>
-            </div>
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          <div className="flex gap-2 shrink-0">
+            {/* Status Filter — server-side */}
+            <select
+              id="dashboard-status-filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              className="px-4 py-2.5 bg-white border border-[#E8E3DA] rounded-lg text-xs font-bold text-[#8B8378] uppercase tracking-wider focus:outline-none cursor-pointer"
+            >
+              <option value="all">All Status</option>
+              <option value="live">Live Only</option>
+              <option value="cleared">Cleared Only</option>
+            </select>
+
+            {/* Sort — server-side */}
+            <button
+              id="dashboard-sort-toggle"
+              onClick={() => setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))}
+              className="px-4 py-2.5 bg-white border border-[#E8E3DA] rounded-lg text-xs font-bold text-[#8B8378] uppercase tracking-wider flex items-center gap-2 hover:bg-[#F5F1EA] transition-colors"
+            >
+              <ArrowUpDown size={14} /> Sort {sortOrder === 'desc' ? 'Newest' : 'Oldest'}
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Main Inventory Table Area */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-2xl shadow-sm border border-[#E5DCD3] overflow-hidden flex flex-col h-[700px]">
-              {/* Table Toolbar */}
-              <div className="p-4 border-b border-[#E5DCD3] flex flex-col sm:flex-row justify-between gap-4 bg-[#FCFBF9]">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                  <input 
-                    type="text" 
-                    placeholder="Search inventory..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-white border border-[#E5DCD3] rounded-lg text-sm focus:outline-none focus:border-[#5C4033]"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button className="px-4 py-2 bg-white border border-[#E5DCD3] rounded-lg text-sm font-semibold text-slate-600 flex items-center gap-2 hover:bg-slate-50">
-                    <Filter size={16} /> Filter
-                  </button>
-                  <button className="px-4 py-2 bg-[#5C4033] text-white rounded-lg text-sm font-bold tracking-wide shadow-md hover:bg-[#4A332A] transition-colors">
-                    + Add New Item
-                  </button>
-                </div>
-              </div>
-
-              {/* Table Content */}
-              <div className="flex-1 overflow-auto">
-                <table className="w-full text-left text-sm whitespace-nowrap">
-                  <thead className="bg-[#FAF6F0] text-slate-500 font-semibold text-xs uppercase tracking-wider sticky top-0 z-10 shadow-sm">
-                    <tr>
-                      <th className="px-6 py-4">Product</th>
-                      <th className="px-6 py-4">Pricing</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4 text-center">Mark Cleared</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#E5DCD3]">
-                    {loading ? (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-slate-400">Loading inventory...</td>
-                      </tr>
-                    ) : filteredInventory.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-slate-400">No products found in this shop.</td>
-                      </tr>
-                    ) : (
-                      filteredInventory.map((item) => {
-                        const statusMessage = encodeURIComponent(`🚨 *CLEARANCE ALERT* 🚨\n\n*${item.product_name}*\nOriginal: ~₹${parseFloat(item.original_price)}~\n*Clearance: ₹${parseFloat(item.clearance_price)}* (${item.discount_percentage}% OFF!)\n\n📍 Available at ${activeShop?.shop_name}\nGrab it before it's gone! 👇\n${publicUrl}`);
-                        const waStatusIntent = `https://wa.me/?text=${statusMessage}`;
-
-                        return (
-                          <tr key={item.id} className={`hover:bg-slate-50 transition-colors ${item.is_cleared ? 'opacity-50 grayscale' : ''}`}>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
-                                  {item.images?.[0] ? <img src={item.images[0]} className="w-full h-full object-cover" /> : <Store size={20} className="m-auto h-full text-slate-300" />}
-                                </div>
-                                <div>
-                                  <p className="font-bold text-[#2D1E17] max-w-[150px] truncate" title={item.product_name}>{item.product_name}</p>
-                                  <p className="text-[10px] font-semibold tracking-wider uppercase text-slate-400">{item.category}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex flex-col">
-                                <span className="font-bold text-emerald-600">₹{parseFloat(item.clearance_price).toLocaleString()}</span>
-                                <span className="text-xs text-slate-400 line-through">₹{parseFloat(item.original_price).toLocaleString()}</span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              {item.is_cleared ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold uppercase">
-                                  <CheckCircle size={12} /> Cleared
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold uppercase">
-                                  <ShieldAlert size={12} /> Active Live
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input 
-                                  type="checkbox" 
-                                  className="sr-only peer" 
-                                  checked={item.is_cleared}
-                                  onChange={() => handleToggleCleared(item.id, item.is_cleared)}
-                                />
-                                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                              </label>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                {!item.is_cleared && (
-                                  <a 
-                                    href={waStatusIntent}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="p-2 text-[#25D366] hover:bg-[#25D366]/10 rounded-lg transition-colors border border-transparent hover:border-[#25D366]/20"
-                                    title="Share to WhatsApp Status"
-                                  >
-                                    <Share2 size={16} />
-                                  </a>
-                                )}
-                                <button className="p-2 text-slate-400 hover:text-[#5C4033] hover:bg-slate-100 rounded-lg transition-colors">
-                                  <MoreVertical size={16} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
+        {/* ── Bulk Actions Bar ─────────────────────────────────────────────── */}
+        {selectedIds.length > 0 && (
+          <div className="bg-emerald-50/50 border-b border-emerald-100 px-4 py-3 flex items-center justify-between shrink-0">
+            <span className="text-xs font-bold text-emerald-800">
+              {selectedIds.length} item{selectedIds.length !== 1 ? 's' : ''} selected
+            </span>
+            <div className="flex gap-3">
+              <button
+                onClick={() => confirmBulkToggle(true)}
+                disabled={bulkProcessing}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 shadow-sm disabled:opacity-50 transition-colors"
+              >
+                {bulkProcessing ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                Mark as Cleared
+              </button>
+              <button
+                onClick={() => confirmBulkToggle(false)}
+                disabled={bulkProcessing}
+                className="px-4 py-2 bg-emerald-600 border border-emerald-700 rounded-lg text-xs font-bold text-white hover:bg-emerald-700 flex items-center gap-2 shadow-sm disabled:opacity-50 transition-colors"
+              >
+                {bulkProcessing ? <Loader2 size={14} className="animate-spin" /> : <ShieldAlert size={14} />}
+                Mark as Live
+              </button>
             </div>
           </div>
+        )}
 
-          {/* Sidebar Modules */}
-          <div className="space-y-6">
-            
-            {/* In-Store QR Code Module */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#E5DCD3] flex flex-col items-center text-center relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 to-rose-400" />
-              
-              <h3 className="font-bold text-[#2D1E17] mb-2 mt-2">In-Store QR Code</h3>
-              <p className="text-xs text-slate-500 mb-6 leading-relaxed">
-                Print and paste this inside your shop. Walk-in customers can scan to view your real-time dead stock deals directly.
-              </p>
-
-              <div className="p-4 bg-white border-2 border-dashed border-[#E5DCD3] rounded-2xl mb-6 relative group" ref={qrRef}>
-                {selectedShopId ? (
-                  <QRCodeSVG 
-                    value={publicUrl}
-                    size={160}
-                    bgColor={"#ffffff"}
-                    fgColor={"#5C4033"}
-                    level={"H"}
-                    includeMargin={false}
+        {/* ── Table with infinite scroll ────────────────────────────────────── */}
+        <div className="flex-1 overflow-auto bg-white">
+          <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
+            <thead className="bg-[#F5F1EA] text-[#8B8378] font-bold text-[10px] uppercase tracking-[0.2em] sticky top-0 z-10 shadow-sm">
+              <tr>
+                <th className="px-6 py-4 w-12">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 rounded border-[#E8E3DA] text-[#3E3B36] focus:ring-[#C4A896] cursor-pointer"
                   />
-                ) : (
-                  <div className="w-[160px] h-[160px] bg-slate-100 flex items-center justify-center text-slate-300">
-                    <Store size={48} />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                   <button onClick={downloadQR} className="px-4 py-2 bg-[#5C4033] text-white text-xs font-bold rounded-lg shadow-lg flex items-center gap-2">
-                     <Download size={14} /> Save PNG
-                   </button>
-                </div>
+                </th>
+                <th className="px-6 py-4">Product Details</th>
+                <th className="px-6 py-4">Pricing</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#E8E3DA]">
+              {/* Loading state (initial) */}
+              {loading && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-24 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-8 h-8 border-2 border-[#E8E3DA] border-t-[#C4A896] rounded-full animate-spin" />
+                      <p className="text-xs font-bold text-[#8B8378] tracking-widest uppercase">
+                        Loading Inventory…
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+
+              {/* Empty state */}
+              {!loading && inventory.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-24 text-center">
+                    <Package size={48} className="mx-auto text-[#E8E3DA] mb-4" />
+                    <p className="text-sm font-semibold text-[#3E3B36]">No items found.</p>
+                    <p className="text-xs text-[#8B8378] mt-1">
+                      Adjust your search or add a new item.
+                    </p>
+                  </td>
+                </tr>
+              )}
+
+              {/* Rows */}
+              {!loading &&
+                inventory.map((item) => (
+                  <tr
+                    key={item.id}
+                    className={`hover:bg-[#F5F1EA]/50 transition-colors group ${
+                      item.is_cleared ? 'opacity-60 bg-gray-50' : ''
+                    } ${selectedIds.includes(item.id) ? 'bg-emerald-50/30' : ''}`}
+                  >
+                    <td className="px-6 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(item.id)}
+                        onChange={(e) => handleSelectRow(item.id, e.target.checked)}
+                        className="w-4 h-4 rounded border-[#E8E3DA] text-[#3E3B36] focus:ring-[#C4A896] cursor-pointer"
+                      />
+                    </td>
+                    <td className="px-6 py-4 w-[40%]">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-lg border border-[#E8E3DA] bg-white overflow-hidden shrink-0 flex items-center justify-center">
+                          {item.images?.[0] ? (
+                            <img
+                              src={item.images[0]}
+                              alt={item.product_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Package size={20} className="text-[#E8E3DA]" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-[#3E3B36] truncate">{item.product_name}</p>
+                          <p className="text-[10px] font-bold tracking-widest uppercase text-[#8B8378] mt-1">
+                            {item.category}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 w-[20%]">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-emerald-600 text-base">
+                          ₹{parseFloat(item.clearance_price).toLocaleString()}
+                        </span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-[#8B8378] line-through">
+                            ₹{parseFloat(item.original_price).toLocaleString()}
+                          </span>
+                          <span className="text-[9px] font-bold bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded border border-rose-100">
+                            {item.discount_percentage}% OFF
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 w-[20%]">
+                      {item.is_cleared ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 text-gray-500 text-[10px] font-bold uppercase tracking-wider">
+                          <CheckCircle size={12} /> Cleared
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-wider border border-emerald-200">
+                          <ShieldAlert size={12} /> Live Active
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right w-[15%]">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => confirmToggleCleared(item.id, item.is_cleared)}
+                          title={item.is_cleared ? 'Mark as Live' : 'Mark as Cleared'}
+                          className={`p-2.5 rounded-lg border transition-colors flex items-center justify-center min-w-[40px] ${
+                            item.is_cleared
+                              ? 'bg-gray-100 border-gray-200 text-gray-500 hover:bg-gray-200'
+                              : 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100'
+                          }`}
+                        >
+                          <CheckCircle size={16} />
+                        </button>
+
+                        <Link
+                          href={`/dashboard/dead-stock/manage/${item.id}`}
+                          title="View & Edit Details"
+                          className="p-2.5 bg-white border border-[#E8E3DA] text-[#8B8378] hover:text-[#C4A896] hover:bg-[#F5F1EA] rounded-lg transition-colors flex items-center justify-center min-w-[40px]"
+                        >
+                          <Pencil size={16} />
+                        </Link>
+
+                        <button
+                          onClick={() => confirmDelete(item.id)}
+                          title="Delete Item"
+                          className="p-2.5 bg-white border border-[#E8E3DA] text-[#8B8378] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center min-w-[40px]"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+
+          {/* Infinite scroll sentinel — sits inside the scrollable container */}
+          <div ref={sentinelRef} className="flex justify-center py-6">
+            {loadingMore && (
+              <div className="flex items-center gap-2 text-[#8B8378] text-xs font-semibold">
+                <Loader2 className="animate-spin" size={16} />
+                Loading more…
               </div>
-
-              <div className="w-full flex flex-col gap-3">
-                <button 
-                  onClick={downloadQR}
-                  className="w-full py-3 bg-[#FAF6F0] hover:bg-[#E5DCD3] text-[#5C4033] font-bold text-xs tracking-wider uppercase rounded-xl transition-colors flex items-center justify-center gap-2"
-                >
-                  <Download size={16} /> Download QR Print PDF
-                </button>
-                <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-left">
-                  <p className="text-[10px] text-blue-800 font-semibold flex items-start gap-1.5">
-                    <ShieldAlert size={12} className="shrink-0 mt-0.5" />
-                    Scanning this auto-filters the public marketplace to show ONLY your inventory. Keep customers focused on your deals.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Stats / Info */}
-            <div className="bg-[#5C4033] text-white p-6 rounded-2xl shadow-sm border border-[#4A332A] relative overflow-hidden">
-               <div className="absolute -bottom-6 -right-6 text-white/5">
-                 <Store size={120} />
-               </div>
-               <h3 className="font-bold text-sm tracking-widest uppercase mb-4 text-[#C4A896]">Active Pipeline</h3>
-               <div className="space-y-4 relative z-10">
-                 <div>
-                   <p className="text-3xl font-black">{inventory.filter(i => !i.is_cleared).length}</p>
-                   <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-1">Live Products</p>
-                 </div>
-                 <div className="h-px bg-white/10" />
-                 <div>
-                   <p className="text-xl font-bold">₹{inventory.filter(i => !i.is_cleared).reduce((sum, i) => sum + parseFloat(i.clearance_price), 0).toLocaleString()}</p>
-                   <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-1">Total Liquidation Value</p>
-                 </div>
-               </div>
-            </div>
-
+            )}
+            {!hasMore && !loading && inventory.length > 0 && (
+              <p className="text-[10px] text-[#8B8378] tracking-widest uppercase">
+                — All {totalCount} item{totalCount !== 1 ? 's' : ''} loaded —
+              </p>
+            )}
           </div>
         </div>
       </div>
