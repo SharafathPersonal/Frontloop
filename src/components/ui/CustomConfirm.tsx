@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, AlertTriangle, AlertCircle, Info } from 'lucide-react';
+import { X, AlertTriangle, Info } from 'lucide-react';
 
 interface CustomConfirmProps {
   isOpen: boolean;
@@ -31,7 +31,6 @@ export default function CustomConfirm({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      setInputValue(''); // Reset input value on open
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -87,7 +86,7 @@ export default function CustomConfirm({
         {requireInput && (
           <div className="mt-6">
             <p className="text-[10px] tracking-[0.1em] uppercase text-[#3E3B36] font-semibold mb-2">
-              Type "{requireInput}" to confirm
+              Type &quot;{requireInput}&quot; to confirm
             </p>
             <input
               type="text"

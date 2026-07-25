@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { MapPin, MessageCircle, AlertTriangle, ArrowRight, Store, ShieldCheck } from 'lucide-react';
+import Image from 'next/image';
+import { MapPin, MessageCircle, AlertTriangle, ArrowRight, Store, ShieldCheck, Navigation, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import BackButton from '@/components/ui/BackButton';
 
@@ -9,6 +10,7 @@ export function ProductClientView({ product, similarProducts }: { product: any, 
   const [activeImage, setActiveImage] = useState(product.images?.[0] || '');
   const [lensPosition, setLensPosition] = useState({ x: 0, y: 0 });
   const [showLens, setShowLens] = useState(false);
+  const [mainImgLoading, setMainImgLoading] = useState(true);
 
   const images = product.images && product.images.length > 0 ? product.images : ['/placeholder.png'];
   
@@ -22,6 +24,17 @@ export function ProductClientView({ product, similarProducts }: { product: any, 
   const shopPhone = product.shop?.contact_number?.replace(/\D/g, '') || '';
   const messageTemplate = encodeURIComponent(`Hi ${product.shop?.shop_name}, I saw your clearance deal for "${product.product_name}" (₹${product.clearance_price}) on True Attendly Dead Stock Marketplace. Is it still available?`);
   const whatsappUrl = `https://wa.me/${shopPhone}?text=${messageTemplate}`;
+
+  // Google Maps URL with location search fallback
+  const mapsUrl = product.shop?.google_maps_url || 
+    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      [product.shop?.shop_name, product.shop?.location_address, product.shop?.city, product.shop?.district, product.shop?.state]
+        .filter(Boolean)
+        .join(', ')
+    )}`;
+
+  // Location display string
+  const locationString = [product.shop?.city, product.shop?.district].filter(Boolean).join(', ');
 
   return (
     <div className="min-h-screen bg-[#FAF6F0] font-outfit pb-24 pt-24">
@@ -44,7 +57,7 @@ export function ProductClientView({ product, similarProducts }: { product: any, 
           <AlertTriangle size={24} className="shrink-0 animate-pulse" />
           <div>
             <h4 className="font-black text-sm tracking-widest uppercase">Factory Clearance / Dead Stock</h4>
-            <p className="text-xs text-amber-500/80 mt-0.5">This item is heavily discounted to liquidate inventory. Final sale. Contact the merchant directly to secure this deal before it's gone.</p>
+            <p className="text-xs text-amber-500/80 mt-0.5">This item is heavily discounted to liquidate inventory. Final sale. Contact the merchant directly to secure this deal before it&apos;s gone.</p>
           </div>
         </div>
 
@@ -59,11 +72,17 @@ export function ProductClientView({ product, similarProducts }: { product: any, 
                 {images.map((img: string, idx: number) => (
                   <button 
                     key={idx}
-                    onClick={() => setActiveImage(img)}
+                    onClick={() => { setActiveImage(img); setMainImgLoading(true); }}
                     className={`relative w-20 h-20 sm:w-full sm:h-24 rounded-lg overflow-hidden border-2 transition-all ${activeImage === img ? 'border-[#5C4033] shadow-md' : 'border-transparent hover:border-[#E5DCD3]'}`}
                   >
                     {img !== '/placeholder.png' ? (
-                       <img src={img} alt={`Thumbnail ${idx}`} className="w-full h-full object-cover" />
+                       <Image 
+                         src={img} 
+                         alt={`Thumbnail ${idx + 1}`} 
+                         fill 
+                         sizes="(max-width: 640px) 80px, 96px"
+                         className="object-cover" 
+                       />
                     ) : (
                        <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300"><Store size={24} /></div>
                     )}
@@ -85,15 +104,31 @@ export function ProductClientView({ product, similarProducts }: { product: any, 
                   onMouseLeave={() => setShowLens(false)}
                 >
                    {activeImage !== '/placeholder.png' ? (
-                       <img src={activeImage} alt={product.product_name} className="w-full h-full object-contain" />
+                     <>
+                       {/* Blurred Skeleton Placeholder */}
+                       {mainImgLoading && (
+                         <div className="absolute inset-0 bg-slate-200 animate-pulse flex items-center justify-center">
+                           <Store size={48} className="text-slate-300 animate-bounce" />
+                         </div>
+                       )}
+                       <Image 
+                         src={activeImage} 
+                         alt={product.product_name} 
+                         fill 
+                         priority
+                         sizes="(max-width: 1024px) 100vw, 50vw"
+                         onLoad={() => setMainImgLoading(false)}
+                         className={`object-contain transition-opacity duration-300 ${mainImgLoading ? 'opacity-0' : 'opacity-100'}`} 
+                       />
+                     </>
                    ) : (
                        <div className="w-full h-full flex items-center justify-center text-slate-300"><Store size={64} /></div>
                    )}
                   
-                  {/* Zoom Lens Overlay (Flipkart style) */}
+                  {/* Zoom Lens Overlay */}
                   {showLens && activeImage !== '/placeholder.png' && (
                     <div 
-                      className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                      className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20"
                       style={{
                         backgroundImage: `url(${activeImage})`,
                         backgroundPosition: `${lensPosition.x}% ${lensPosition.y}%`,
@@ -125,22 +160,37 @@ export function ProductClientView({ product, similarProducts }: { product: any, 
 
             <div className="h-px bg-[#E5DCD3] mb-6" />
 
-            {/* Merchant Identity block */}
-            <div className="bg-[#FAF6F0] rounded-xl p-5 border border-[#E5DCD3] mb-8">
+            {/* Merchant Identity & Store Directions CTA Block */}
+            <div className="bg-[#FAF6F0] rounded-2xl p-5 border border-[#E5DCD3] mb-8 shadow-sm">
               <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-base font-bold text-[#5C4033] mb-1">{product.shop?.shop_name}</h3>
-                  <div className="flex items-center gap-1.5 text-sm text-slate-600 mb-2">
-                    <MapPin size={16} className="text-emerald-600" />
-                    <span>{product.shop?.city}</span>
+                <div className="flex-1">
+                  {/* Location Badge */}
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#5C4033]/10 border border-[#5C4033]/20 rounded-full mb-3">
+                    <MapPin size={12} className="text-[#5C4033]" />
+                    <span className="text-[11px] font-bold tracking-wider text-[#5C4033] uppercase">
+                      {locationString || 'Local Merchant'}
+                    </span>
                   </div>
-                  {product.shop?.google_maps_url && (
-                    <a href={product.shop.google_maps_url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1">
-                      View on Google Maps <ArrowRight size={12} />
-                    </a>
+
+                  <h3 className="text-lg font-bold text-[#5C4033] mb-1">{product.shop?.shop_name}</h3>
+                  {product.shop?.location_address && (
+                    <p className="text-xs text-slate-600 mb-3">{product.shop.location_address}</p>
                   )}
+
+                  {/* PROMINENT "GET DIRECTIONS TO STORE" CTA */}
+                  <a 
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl bg-[#5C4033] hover:bg-[#3E3B36] text-[#FAF6F0] text-xs font-bold tracking-wider uppercase transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                  >
+                    <Navigation size={15} className="text-amber-400" />
+                    Get Directions to Store
+                    <ExternalLink size={13} className="opacity-70 ml-1" />
+                  </a>
                 </div>
-                <div className="w-12 h-12 rounded-full bg-white border border-[#E5DCD3] shadow-sm flex items-center justify-center">
+                
+                <div className="w-12 h-12 rounded-full bg-white border border-[#E5DCD3] shadow-sm flex items-center justify-center shrink-0 ml-4">
                    <Store size={20} className="text-[#C4A896]" />
                 </div>
               </div>
@@ -194,7 +244,13 @@ export function ProductClientView({ product, similarProducts }: { product: any, 
                   </div>
                   <div className="relative aspect-[4/3] bg-slate-100 overflow-hidden">
                     {sp.images && sp.images.length > 0 ? (
-                      <img src={sp.images[0]} alt={sp.product_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <Image 
+                        src={sp.images[0]} 
+                        alt={sp.product_name} 
+                        fill
+                        sizes="280px"
+                        className="object-cover group-hover:scale-105 transition-transform duration-500" 
+                      />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center text-slate-300"><Store size={32} /></div>
                     )}

@@ -26,7 +26,7 @@ export default function TermsAndConditions() {
         <section className="space-y-4">
           <h2 className="text-2xl font-medium tracking-tight text-[#2C2A26]">Clause 3: Suspensions</h2>
           <p className="text-[#5C574F] leading-relaxed">
-            System admins retain active authority to trigger 'is_blocked' flags on spam compliance breaches.
+            System admins retain active authority to trigger &apos;is_blocked&apos; flags on spam compliance breaches.
           </p>
         </section>
       </div>

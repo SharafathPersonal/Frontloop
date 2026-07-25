@@ -5,10 +5,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { load } from '@cashfreepayments/cashfree-js';
 import type { Shop, Wallet, WhatsAppConnectionMode } from '@/types/broadcast';
-import { CheckCircle, AlertTriangle, CreditCard, User, Building, ChevronDown, ExternalLink, Zap, Lock, Smartphone, Globe, QrCode, RefreshCw, Wifi, Loader2 } from 'lucide-react';
+import { CheckCircle, AlertTriangle, CreditCard, User, Building, ChevronDown, ExternalLink, Zap, Lock, Smartphone, Globe, QrCode, RefreshCw, Wifi, Loader2, MapPin } from 'lucide-react';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Spinner } from '@/components/ui/Spinner';
+import LocationAutocomplete, { LocationData } from '@/components/ui/LocationAutocomplete';
 
 function FacebookIcon({ size = 16 }: { size?: number }) {
   return (
@@ -28,6 +29,9 @@ function SettingsContent() {
   const [shopForm, setShopForm] = useState({
     shop_name: '', owner_phone: '', contact_number: '', location_address: '', 
     city: '', district: '', state: '', country: '', industry_type: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
+    google_maps_url: '',
     meta_access_token: '', meta_phone_number_id: '', meta_business_account_id: '', meta_template_name: '',
     whatsapp_mode: 'NONE' as WhatsAppConnectionMode,
     gst_number: '',
@@ -35,6 +39,7 @@ function SettingsContent() {
     invoice_theme_color: '#5C4033',
     invoice_footer_note: ''
   });
+
   const [logoUploading, setLogoUploading] = useState(false);
   const logoRef = useRef<HTMLInputElement>(null);
 
@@ -69,8 +74,9 @@ function SettingsContent() {
       } else {
         setShopForm(prev => ({ ...prev, logo_url: data.publicUrl }));
       }
-    } catch (err: any) {
-      alert('Error uploading logo: ' + err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      alert('Error uploading logo: ' + message);
     } finally {
       setLogoUploading(false);
     }
@@ -87,6 +93,9 @@ function SettingsContent() {
         district: shop.district || '',
         state: shop.state || '',
         country: shop.country || '',
+        latitude: (shop as any).latitude ? Number((shop as any).latitude) : null,
+        longitude: (shop as any).longitude ? Number((shop as any).longitude) : null,
+        google_maps_url: (shop as any).google_maps_url || '',
         industry_type: shop.industry_type || '',
         meta_access_token: shop.meta_access_token || '',
         meta_phone_number_id: shop.meta_phone_number_id || '',
@@ -101,8 +110,20 @@ function SettingsContent() {
     }
   };
 
+  interface CreditPack {
+    amount: number;
+    amount_inr: number;
+    label: string;
+    desc: string;
+    price: string;
+  }
 
-  const [creditPacks, setCreditPacks] = useState<any[]>([]);
+  interface PricingTier {
+    credit_count: number;
+    amount_inr: number;
+  }
+
+  const [creditPacks, setCreditPacks] = useState<CreditPack[]>([]);
   const [selectedPack, setSelectedPack] = useState<number>(100);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [brandStory, setBrandStory] = useState<string>('');
@@ -121,8 +142,7 @@ function SettingsContent() {
   const [isMetaDisconnectConfirmOpen, setIsMetaDisconnectConfirmOpen] = useState(false);
   const [globalError, setGlobalError] = useState<{title: string, message: string} | null>(null);
 
-
-const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
+  const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
   const [passwordStatus, setPasswordStatus] = useState<SaveStatus>('idle');
   const [passwordMsg, setPasswordMsg] = useState('');
 
@@ -131,8 +151,8 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
     const orderId = searchParams.get('order_id');
 
     if (metaStatus === 'success') {
-      setIsMetaConnected(true);
       window.history.replaceState({}, '', '/dashboard/settings');
+      queueMicrotask(() => setIsMetaConnected(true));
     }
 
     if (orderId && !isVerifying.current) {
@@ -187,14 +207,14 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
         setIsMetaConnected(true);
       }
       if (pricingData && pricingData.length > 0) {
-        setCreditPacks(pricingData.map((t: any) => ({
+        setCreditPacks(pricingData.map((t: PricingTier) => ({
           amount: t.credit_count,
           amount_inr: t.amount_inr,
           label: `${t.credit_count} Credits`,
           desc: 'Top-up Package',
           price: `₹${t.amount_inr}`,
         })));
-        if (!selectedPack || !pricingData.find((t:any) => t.credit_count === selectedPack)) {
+        if (!selectedPack || !pricingData.find((t: PricingTier) => t.credit_count === selectedPack)) {
           setSelectedPack(pricingData[0].credit_count);
         }
       }
@@ -210,6 +230,9 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
           district: shopData.district || '',
           state: shopData.state || '',
           country: shopData.country || '',
+          latitude: shopData.latitude ? Number(shopData.latitude) : null,
+          longitude: shopData.longitude ? Number(shopData.longitude) : null,
+          google_maps_url: shopData.google_maps_url || '',
           industry_type: shopData.industry_type || '',
           meta_access_token: shopData.meta_access_token || '',
           meta_phone_number_id: shopData.meta_phone_number_id || '',
@@ -266,6 +289,9 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
       district: shopForm.district,
       state: shopForm.state,
       country: shopForm.country,
+      latitude: shopForm.latitude,
+      longitude: shopForm.longitude,
+      google_maps_url: shopForm.google_maps_url,
       industry_type: shopForm.industry_type,
       meta_access_token: shopForm.meta_access_token,
       meta_phone_number_id: shopForm.meta_phone_number_id,
@@ -336,12 +362,13 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 3000);
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving manual credentials:', err);
       setSaveStatus('error');
+      const msg = err instanceof Error ? err.message : 'An error occurred while updating credentials.';
       setGlobalError({
         title: 'Save Failed',
-        message: err.message || 'An error occurred while updating credentials.'
+        message: msg
       });
     }
   };
@@ -445,8 +472,9 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
       if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
         throw new Error('Popup intercepted by browser. Please allow popups for this site to authorize Meta integration.');
       }
-    } catch (err: any) {
-      setGlobalError({ title: 'Meta Connection Error', message: err.message || 'Failed to initialize Meta connection. Please check your popup blockers.' });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to initialize Meta connection. Please check your popup blockers.';
+      setGlobalError({ title: 'Meta Connection Error', message: msg });
     }
   };
 
@@ -776,15 +804,30 @@ const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassw
             </div>
           </div>
 
-          {/* Physical Store Location */}
+          {/* Physical Store Location (Google Places Autocomplete) */}
           <div>
-            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">Physical Store Location</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-              <input type="text" value={shopForm.city} onChange={(e) => setShopForm({ ...shopForm, city: e.target.value })} className="input-editorial" placeholder="City / Locality" />
-              <input type="text" value={shopForm.district} onChange={(e) => setShopForm({ ...shopForm, district: e.target.value })} className="input-editorial" placeholder="District" />
-              <input type="text" value={shopForm.state} onChange={(e) => setShopForm({ ...shopForm, state: e.target.value })} className="input-editorial" placeholder="State" />
-              <input type="text" value={shopForm.country} onChange={(e) => setShopForm({ ...shopForm, country: e.target.value })} className="input-editorial" placeholder="Country" />
-            </div>
+            <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2 flex items-center gap-1.5">
+              <MapPin size={13} className="text-[#C4A896]" /> Physical Store Location (Google Places Autocomplete)
+            </label>
+            <LocationAutocomplete
+              initialAddress={shopForm.location_address || shopForm.city || ''}
+              initialCity={shopForm.city}
+              onLocationSelect={(loc) => {
+                setShopForm((prev) => ({
+                  ...prev,
+                  location_address: loc.location_address,
+                  city: loc.city,
+                  district: loc.district,
+                  state: loc.state,
+                  latitude: loc.latitude,
+                  longitude: loc.longitude,
+                  google_maps_url: loc.google_maps_url,
+                }));
+              }}
+            />
+            <p className="text-[10px] text-[#8B8378] mt-1.5">
+              Search your store address or use GPS detect. City, district, state, and map coordinates are set automatically.
+            </p>
           </div>
 
           {/* Logo Upload Section */}

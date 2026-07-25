@@ -68,6 +68,23 @@ export async function GET(
       .or(`shop_id.eq.${data.shop_id},category.eq.${data.category}`)
       .limit(6);
 
+function formatSupabaseProduct(p: any) {
+  if (!p) return null;
+  return {
+    ...p,
+    original_price: Number(p.original_price),
+    clearance_price: Number(p.clearance_price),
+    discount_percentage: Number(p.discount_percentage || 0),
+    ...(p.shop ? {
+      shop: {
+        ...p.shop,
+        latitude: p.shop.latitude != null ? Number(p.shop.latitude) : null,
+        longitude: p.shop.longitude != null ? Number(p.shop.longitude) : null,
+      }
+    } : {})
+  };
+}
+
     // Sort related products so that items from the same shop come first
     const sortedRelated = (related || []).sort((a: any, b: any) => {
       if (a.shop_id === data.shop_id && b.shop_id !== data.shop_id) return -1;
@@ -75,7 +92,10 @@ export async function GET(
       return 0;
     });
 
-    return NextResponse.json({ product: data, related: sortedRelated });
+    return NextResponse.json({
+      product: formatSupabaseProduct(data),
+      related: sortedRelated.map(formatSupabaseProduct),
+    });
   } catch (err) {
     console.error('[dead-stock/[id] GET] Unexpected error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -8,6 +8,23 @@ function createAdminClient() {
   return createClient(supabaseUrl, supabaseServiceKey);
 }
 
+function formatSupabaseProduct(p: any) {
+  if (!p) return null;
+  return {
+    ...p,
+    original_price: Number(p.original_price),
+    clearance_price: Number(p.clearance_price),
+    discount_percentage: Number(p.discount_percentage || 0),
+    ...(p.shop ? {
+      shop: {
+        ...p.shop,
+        latitude: p.shop.latitude != null ? Number(p.shop.latitude) : null,
+        longitude: p.shop.longitude != null ? Number(p.shop.longitude) : null,
+      }
+    } : {})
+  };
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get('search') || '';
@@ -38,6 +55,8 @@ export async function GET(request: NextRequest) {
           city,
           district,
           state,
+          latitude,
+          longitude,
           contact_number,
           owner_phone,
           logo_url,
@@ -115,7 +134,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ products: data || [] });
+    return NextResponse.json({ products: (data || []).map(formatSupabaseProduct) });
   } catch (err) {
     console.error('[dead-stock GET] Unexpected error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -136,10 +155,31 @@ export async function POST(request: NextRequest) {
       description,
       condition_notes,
       images,
+      location_address,
+      city,
+      district,
+      state,
+      latitude,
+      longitude,
+      google_maps_url,
     } = body;
 
     if (!shop_id || !product_name || !original_price || !clearance_price || !category) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Optional: Update merchant shop profile location details
+    if (shop_id && (city || location_address || latitude)) {
+      const shopLocationPayload: Record<string, any> = {};
+      if (city) shopLocationPayload.city = city;
+      if (district) shopLocationPayload.district = district;
+      if (state) shopLocationPayload.state = state;
+      if (location_address) shopLocationPayload.location_address = location_address;
+      if (latitude) shopLocationPayload.latitude = latitude;
+      if (longitude) shopLocationPayload.longitude = longitude;
+      if (google_maps_url) shopLocationPayload.google_maps_url = google_maps_url;
+
+      await supabase.from('shops').update(shopLocationPayload).eq('id', shop_id);
     }
 
     const discountPercentage = Math.round(
@@ -168,7 +208,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ product: data }, { status: 201 });
+    return NextResponse.json({ product: formatSupabaseProduct(data) }, { status: 201 });
   } catch (err) {
     console.error('[dead-stock POST] Unexpected error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -224,7 +264,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ product: data });
+    return NextResponse.json({ product: formatSupabaseProduct(data) });
   } catch (err) {
     console.error('[dead-stock PATCH] Unexpected error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

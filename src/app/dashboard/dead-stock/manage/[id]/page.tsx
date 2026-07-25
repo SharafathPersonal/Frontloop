@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { getProductDetails } from '../../../../broadcast/dead-stock/actions';
 import { updateProduct, deleteProduct, toggleProductClearedStatus, createProduct } from '../../actions';
 import { supabase } from '@/lib/supabaseClient';
-import { ArrowLeft, CheckCircle, ShieldAlert, Trash2, Save, Loader2, ImagePlus, X, UploadCloud } from 'lucide-react';
+import { ArrowLeft, CheckCircle, ShieldAlert, Trash2, Save, Loader2, ImagePlus, X, UploadCloud, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import BackButton from '@/components/ui/BackButton';
 import CustomConfirm from '@/components/ui/CustomConfirm';
@@ -45,6 +45,78 @@ export default function DeadStockDetailPage() {
   const [formDesc, setFormDesc] = useState('');
   const [formImages, setFormImages] = useState<string[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [generatingAiStory, setGeneratingAiStory] = useState(false);
+
+  const inferCategoryFromProduct = (name: string): string => {
+    const lower = name.toLowerCase();
+    if (lower.includes('shoe') || lower.includes('boot') || lower.includes('sneaker') || lower.includes('sandal') || lower.includes('footwear') || lower.includes('heel') || lower.includes('slipper') || lower.includes('chappal')) return 'Footwear';
+    if (lower.includes('shirt') || lower.includes('pant') || lower.includes('dress') || lower.includes('jeans') || lower.includes('t-shirt') || lower.includes('cloth') || lower.includes('jacket') || lower.includes('saree') || lower.includes('kurti')) return 'Clothing';
+    if (lower.includes('phone') || lower.includes('laptop') || lower.includes('mobile') || lower.includes('headphone') || lower.includes('charger') || lower.includes('tv') || lower.includes('camera') || lower.includes('electronic') || lower.includes('watch')) return 'Electronics';
+    if (lower.includes('chair') || lower.includes('table') || lower.includes('desk') || lower.includes('sofa') || lower.includes('bed') || lower.includes('furniture') || lower.includes('cabinet')) return 'Furniture';
+    if (lower.includes('ball') || lower.includes('bat') || lower.includes('racket') || lower.includes('gym') || lower.includes('sport') || lower.includes('fitness')) return 'Sports';
+    if (lower.includes('toy') || lower.includes('game') || lower.includes('doll') || lower.includes('puzzle')) return 'Toys';
+    if (lower.includes('book') || lower.includes('novel') || lower.includes('notebook')) return 'Books';
+    if (lower.includes('pen') || lower.includes('paper') || lower.includes('office') || lower.includes('stationery')) return 'Stationery';
+    if (lower.includes('food') || lower.includes('rice') || lower.includes('snack') || lower.includes('grocery') || lower.includes('oil') || lower.includes('tea')) return 'Grocery';
+    if (lower.includes('lamp') || lower.includes('decor') || lower.includes('curtain') || lower.includes('mirror')) return 'Home Decor';
+    return 'General';
+  };
+
+  const handleAutoCategory = () => {
+    if (!formName.trim()) {
+      showToast('Please enter a Product Name first.', 'error');
+      return;
+    }
+    const cat = inferCategoryFromProduct(formName);
+    setFormCategory(cat);
+    showToast(`AI Category set to: ${cat}`, 'success');
+  };
+
+  const handleGenerateAiStory = async () => {
+    let activeCategory = formCategory.trim();
+    if (!activeCategory && formName.trim()) {
+      activeCategory = inferCategoryFromProduct(formName);
+      setFormCategory(activeCategory);
+    }
+
+    const missing: string[] = [];
+    if (!formName.trim()) missing.push('Product Name');
+    if (!activeCategory) missing.push('Category');
+    if (!formOriginal.trim() || parseFloat(formOriginal) <= 0) missing.push('Original Price');
+    if (!formClearance.trim() || parseFloat(formClearance) <= 0) missing.push('Clearance Price');
+
+    if (missing.length > 0) {
+      showToast(`Please complete the required fields first: ${missing.join(', ')}.`, 'error');
+      return;
+    }
+
+    setGeneratingAiStory(true);
+    try {
+      const res = await fetch('/api/ai/status-generator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'description',
+          product_name: formName,
+          category: formCategory,
+          original_price: formOriginal,
+          clearance_price: formClearance,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && (data.condition_notes || data.description)) {
+        const generated = data.condition_notes || data.description;
+        setFormDesc(generated);
+        showToast('AI Condition Story generated & displayed!', 'success');
+      } else {
+        throw new Error(data.error || 'Failed to generate AI story');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'AI story generation failed.', 'error');
+    } finally {
+      setGeneratingAiStory(false);
+    }
+  };
   
   useEffect(() => {
     async function load() {
@@ -293,12 +365,23 @@ export default function DeadStockDetailPage() {
               />
             </div>
             <div>
-              <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5 font-bold">Category <span className="text-red-500">*</span></label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase font-bold">Category <span className="text-red-500">*</span></label>
+                <button
+                  type="button"
+                  onClick={handleAutoCategory}
+                  className="text-[10px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md flex items-center gap-1 transition-all cursor-pointer"
+                  title="Auto-detect category from Product Name"
+                >
+                  <Sparkles size={11} className="text-amber-600" />
+                  Auto AI Category
+                </button>
+              </div>
               <input 
                 type="text" 
                 value={formCategory} 
                 onChange={e => setFormCategory(e.target.value)} 
-                placeholder="e.g., Furniture, Electronics"
+                placeholder="e.g., Footwear, Clothing, Electronics"
                 className="w-full px-4 py-3 bg-[#FAF9F6] border border-[#E8E3DA] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#C4A896]/30 focus:border-[#C4A896] text-[#3E3B36] transition-all" 
               />
             </div>
@@ -396,15 +479,42 @@ export default function DeadStockDetailPage() {
 
         {/* Detailed Description */}
         <div>
-          <h2 className="text-sm font-bold text-[#3E3B36] uppercase tracking-wider border-b border-[#E8E3DA]/60 pb-2 mb-4">Detailed Description</h2>
+          <div className="flex items-center justify-between border-b border-[#E8E3DA]/60 pb-2 mb-4">
+            <h2 className="text-sm font-bold text-[#3E3B36] uppercase tracking-wider">Detailed Description</h2>
+            <button
+              type="button"
+              onClick={handleGenerateAiStory}
+              disabled={generatingAiStory}
+              className="px-3.5 py-1.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+              title="Generate AI story for Condition Notes using Product Name, Category & Prices"
+            >
+              {generatingAiStory ? (
+                <Loader2 size={13} className="animate-spin text-amber-200" />
+              ) : (
+                <Sparkles size={13} className="text-amber-200 fill-amber-200" />
+              )}
+              <span>{generatingAiStory ? 'Generating AI Story…' : ' Generate Story with AI'}</span>
+            </button>
+          </div>
+
           <label className="block text-[10px] tracking-[0.2em] text-[#8B8378] uppercase mb-1.5 font-bold">Condition Notes / Story</label>
           <textarea 
             value={formDesc} 
             onChange={e => setFormDesc(e.target.value)} 
-            rows={5}
+            rows={4}
             placeholder="Explain why this item is on clearance. E.g., 'Minor box damage, but product is brand new and untouched. Perfect for...'"
             className="w-full px-4 py-3 bg-[#FAF9F6] border border-[#E8E3DA] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#C4A896]/30 focus:border-[#C4A896] text-[#3E3B36] resize-y transition-all" 
           />
+
+          {formDesc && (
+            <div className="mt-3 p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+              <Sparkles size={14} className="text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold text-[10px] uppercase tracking-wider text-amber-800 block mb-0.5">Condition Story Active</span>
+                <p className="leading-relaxed text-[#3E3B36] font-medium">{formDesc}</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Submit Actions */}

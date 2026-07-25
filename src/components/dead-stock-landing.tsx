@@ -44,7 +44,7 @@ export function DeadStockLandingSection() {
 
                 <div className="p-6 space-y-4">
                   <div>
-                    <span className="text-[9px] tracking-[0.2em] uppercase text-slate-400 font-semibold">Men's Fashion · Downtown</span>
+                    <span className="text-[9px] tracking-[0.2em] uppercase text-slate-400 font-semibold">Men&apos;s Fashion · Downtown</span>
                     <h3 className="text-lg font-bold text-[#3E3B36] mt-1 leading-snug group-hover:text-[#5C4033] transition-colors">
                       Premium Leather Jacket - XL
                     </h3>
@@ -92,12 +92,12 @@ export function DeadStockLandingSection() {
               <h3 className="serif-headline text-2xl sm:text-3xl lg:text-4xl text-[#5C4033] leading-tight">
                 Your Dead Stock Is Not a Loss.<br/>
                 <span className="relative inline-block mt-2">
-                  It's a Lead Magnet.
+                  It&apos;s a Lead Magnet.
                   <span className="absolute -bottom-1 left-0 right-0 h-1 bg-amber-400 rounded-full" />
                 </span>
               </h3>
               <p className="text-sm text-[#7A6A5E] mt-5 leading-relaxed">
-                Every unsold unit on your shelf blocks cash flow and ties up working capital. The True Attendly Dead Stock Marketplace converts that dead inventory into direct, organic WhatsApp buyer contacts — with zero ad spend and zero dependency on Meta's approval process.
+                Every unsold unit on your shelf blocks cash flow and ties up working capital. The True Attendly Dead Stock Marketplace converts that dead inventory into direct, organic WhatsApp buyer contacts — with zero ad spend and zero dependency on Meta&apos;s approval process.
               </p>
             </div>
 

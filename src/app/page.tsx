@@ -1,30 +1,31 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { APP_VERSION } from '@/lib/config';
-import {
-  XCircle, CheckCircle, ArrowRight, Mail,
-  Smartphone, ShieldCheck, Wand2, Upload,
-  Image as ImageIcon, AlertTriangle, X, Search, Loader2, Plus,
-  Trash2, Download, Eye, Check, RefreshCw, HelpCircle,
-  Settings, ChevronRight, Copy, Database, FileText, Lock, Sparkles,
-  CreditCard, TrendingUp, Users, Megaphone, Target, Zap, ShoppingBag,
-  Share2, Layers, Radio, QrCode
-} from 'lucide-react';
 import { DeadStockLandingSection } from '@/components/dead-stock-landing';
+import { LandingHeader } from '@/components/landing/LandingHeader';
+import { HeroSection } from '@/components/landing/HeroSection';
+import { TrinityMatrixSection } from '@/components/landing/TrinityMatrixSection';
+import { WhatsAppStatusSection } from '@/components/landing/WhatsAppStatusSection';
+import { UniversalInvoiceSection } from '@/components/landing/UniversalInvoiceSection';
+import { LedgerSection } from '@/components/landing/LedgerSection';
+import { TechnicalMatrixSection } from '@/components/landing/TechnicalMatrixSection';
+import { RealityCheckSection } from '@/components/landing/RealityCheckSection';
+import { LandingFooter } from '@/components/landing/LandingFooter';
+import { BillPreviewModal } from '@/components/landing/BillPreviewModal';
+import { SecurityFirewallModal } from '@/components/landing/SecurityFirewallModal';
 
+import {
+  BrandPresetColor, CartItem, AudienceMember,
+  LedgerUsage, CashfreeLog, ParsedContact
+} from '@/components/landing/types';
 
 export default function LandingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // ──────────────────────────────────────────────────────────────────
   // 1. BRAND ACCENT PRESET STATE
-  // ──────────────────────────────────────────────────────────────────
-  const BRAND_PRESET_COLORS = [
+  const BRAND_PRESET_COLORS: BrandPresetColor[] = [
     { name: 'Luxury Chocolate', hex: '#5C4033', bg: 'bg-[#5C4033]' },
     { name: 'Warm Amber', hex: '#B45309', bg: 'bg-[#B45309]' },
     { name: 'Emerald Forest', hex: '#047857', bg: 'bg-[#047857]' },
@@ -33,18 +34,15 @@ export default function LandingPage() {
   ];
 
   const [brandColor, setBrandColor] = useState('#5C4033');
-  const [selectedPresetColor, setSelectedPresetColor] = useState('#5C4033');
 
-  // ──────────────────────────────────────────────────────────────────
   // 2. HERO CART & INBOX STATE (POS Terminal)
-  // ──────────────────────────────────────────────────────────────────
-  const [cart, setCart] = useState([
+  const [cart, setCart] = useState<CartItem[]>([
     { id: 1, name: 'Pure Cotton Summer Shirt', price: 1299, qty: 1 },
     { id: 2, name: 'Organic Linen Trousers', price: 1899, qty: 1 }
   ]);
   const [newItemName, setNewItemName] = useState('');
   const [newItemPrice, setNewItemPrice] = useState('');
-  const [invoiceFooterNote, setInvoiceFooterNote] = useState('Thank you for visiting. Scan to claim wallet loyalty credits.');
+  const invoiceFooterNote = 'Thank you for visiting. Scan to claim wallet loyalty credits.';
   const [showBillModal, setShowBillModal] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -76,9 +74,7 @@ export default function LandingPage() {
     }, 1200);
   };
 
-  // ──────────────────────────────────────────────────────────────────
   // 3. FLASH OFFERS STATE (Card 1)
-  // ──────────────────────────────────────────────────────────────────
   const [offerActive, setOfferActive] = useState(true);
   const [webPushBroadcast, setWebPushBroadcast] = useState(false);
   const [originalPrice, setOriginalPrice] = useState(500);
@@ -102,19 +98,13 @@ export default function LandingPage() {
     }, 600);
   };
 
-  // ──────────────────────────────────────────────────────────────────
   // 4. DIGITAL BILLING BARCODE SCANNER STATE (Card 2)
-  // ──────────────────────────────────────────────────────────────────
   const [scannerActive, setScannerActive] = useState(true);
-  const [scannedItems, setScannedItems] = useState<any[]>([
-    { code: '978020137962', name: 'Cotton Summer Shirt', price: 1299, timestamp: '16:50:12' }
-  ]);
   const [scanHistoryLogs, setScanHistoryLogs] = useState<string[]>([
     '[16:50:12] SCAN SUCCESS: 978020137962 -> Cotton Summer Shirt added'
   ]);
   const [justScanned, setJustScanned] = useState(false);
 
-  // Scanner loop simulation
   useEffect(() => {
     if (!scannerActive) return;
 
@@ -130,27 +120,14 @@ export default function LandingPage() {
       const now = new Date();
       const timeStr = now.toTimeString().split(' ')[0];
 
-      // Add to scanner logs
       setScanHistoryLogs(prev => [
         `[${timeStr}] SCAN SUCCESS: ${randomItem.code} -> ${randomItem.name}`,
         ...prev.slice(0, 5)
       ]);
 
-      // Flash viewfinder green
       setJustScanned(true);
       setTimeout(() => setJustScanned(false), 800);
 
-      // Add item to local billing items
-      setScannedItems(prev => {
-        const existing = prev.find(item => item.code === randomItem.code);
-        if (existing) {
-          return prev.map(item => item.code === randomItem.code ? { ...item, qty: (item.qty || 1) + 1 } : item);
-        } else {
-          return [...prev, { ...randomItem, qty: 1, timestamp: timeStr }];
-        }
-      });
-
-      // Synchronously mirror this item to the POS cart list in the hero section
       setCart(prev => {
         const existing = prev.find(item => item.name === randomItem.name);
         if (existing) {
@@ -160,19 +137,16 @@ export default function LandingPage() {
           return [...prev, { id: maxId, name: randomItem.name, price: randomItem.price, qty: 1 }];
         }
       });
-
     }, 4500);
 
     return () => clearInterval(interval);
   }, [scannerActive]);
 
-  // ──────────────────────────────────────────────────────────────────
   // 5. AUDIENCE REGISTRY STATE (Card 3)
-  // ──────────────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTagFilter, setSelectedTagFilter] = useState('ALL');
   
-  const audienceList = [
+  const audienceList: AudienceMember[] = [
     { name: 'K. Sharafath', phone: '+91 62825 ••••8', tags: ['DIGITAL_BILL', 'VIP'], visits: 24, spend: 24500, credit: 1200 },
     { name: 'A. Rahul', phone: '+91 98765 ••••0', tags: ['DIGITAL_BILL'], visits: 8, spend: 7200, credit: 350 },
     { name: 'M. Priya', phone: '+91 88877 ••••0', tags: ['FLASH_OPT_IN'], visits: 12, spend: 11400, credit: 500 },
@@ -187,32 +161,23 @@ export default function LandingPage() {
     return matchesSearch && matchesTag;
   });
 
-  // ──────────────────────────────────────────────────────────────────
   // 6. DUAL-STATE TRANSACTION LEDGER STATE
-  // ──────────────────────────────────────────────────────────────────
   const [activeLedgerTab, setActiveLedgerTab] = useState<'purchases' | 'usages'>('usages');
-  const [ledgerUsages, setLedgerUsages] = useState<any[]>([]);
-  const [isLoadingMoreUsages, setIsLoadingMoreUsages] = useState(false);
-  const [hasMoreUsages, setHasMoreUsages] = useState(true);
-
-  // Exact credit usages requested
-  const generateInitialUsages = () => [
+  const [ledgerUsages, setLedgerUsages] = useState<LedgerUsage[]>([
     { id: 'u-1', type: 'Web Push Broadcast', desc: 'Weekend Flash Sale Launch', date: 'Just now', credits: '2.0 Credits', status: 'delivered' },
     { id: 'u-2', type: 'Digital Invoice Dispatch', desc: 'INV-1002', date: '12 mins ago', credits: '1.0 Credit', status: 'delivered' },
     { id: 'u-3', type: 'Web Push Broadcast', desc: 'Rain-Day Special Discount', date: '45 mins ago', credits: '2.0 Credits', status: 'delivered' },
     { id: 'u-4', type: 'Digital Invoice Dispatch', desc: 'INV-1001', date: '1 hour ago', credits: '1.0 Credit', status: 'delivered' }
-  ];
-
-  useEffect(() => {
-    setLedgerUsages(generateInitialUsages());
-  }, []);
+  ]);
+  const [isLoadingMoreUsages, setIsLoadingMoreUsages] = useState(false);
+  const [hasMoreUsages, setHasMoreUsages] = useState(true);
 
   const handleLoadMoreUsages = () => {
     if (isLoadingMoreUsages || !hasMoreUsages) return;
     setIsLoadingMoreUsages(true);
 
     setTimeout(() => {
-      const nextBatch = [
+      const nextBatch: LedgerUsage[] = [
         { id: 'u-5', type: 'Digital Invoice Dispatch', desc: 'INV-1000', date: '1 day ago', credits: '1.0 Credit', status: 'delivered' },
         { id: 'u-6', type: 'Web Push Broadcast', desc: 'Holiday Collection Announcement', date: '2 days ago', credits: '2.0 Credits', status: 'delivered' }
       ];
@@ -222,15 +187,13 @@ export default function LandingPage() {
     }, 1200);
   };
 
-  const cashfreeLogs = [
+  const cashfreeLogs: CashfreeLog[] = [
     { id: 'CF-TXN-90231', date: 'Jul 12, 2026', tokens: '10,000 Tokens', amount: '₹10,000.00', status: 'Success' },
     { id: 'CF-TXN-88421', date: 'Jun 28, 2026', tokens: '5,000 Tokens', amount: '₹5,000.00', status: 'Success' },
     { id: 'CF-TXN-85102', date: 'May 15, 2026', tokens: '10,000 Tokens', amount: '₹10,000.00', status: 'Success' }
   ];
 
-  // ──────────────────────────────────────────────────────────────────
   // 7. SECURITY FIREWALL MODAL STATE
-  // ──────────────────────────────────────────────────────────────────
   const [securityModalOpen, setSecurityModalOpen] = useState(false);
   const [securityClickCount, setSecurityClickCount] = useState(0);
   const [dispatchStatus, setDispatchStatus] = useState<'idle' | 'broadcasting' | 'completed'>('idle');
@@ -250,7 +213,7 @@ export default function LandingPage() {
 
       setTimeout(() => {
         setDispatchStatus('completed');
-        const newRecord = {
+        const newRecord: LedgerUsage = {
           id: `u-new-${Date.now()}`,
           type: 'Web Push Broadcast',
           desc: 'Weekend Flash Sale Launch',
@@ -267,11 +230,9 @@ export default function LandingPage() {
     }
   };
 
-  // ──────────────────────────────────────────────────────────────────
   // 8. TECHNICAL ARCHITECTURE STATE
-  // ──────────────────────────────────────────────────────────────────
   const [csvStatus, setCsvStatus] = useState<'idle' | 'uploading' | 'parsed'>('idle');
-  const [parsedContacts, setParsedContacts] = useState<any[]>([]);
+  const [parsedContacts, setParsedContacts] = useState<ParsedContact[]>([]);
 
   const handleSimulatedCsvUpload = () => {
     setCsvStatus('uploading');
@@ -286,18 +247,18 @@ export default function LandingPage() {
     }, 1500);
   };
 
-  // AI template polisher (emoji free)
+  // AI template polisher
   const [roughText, setRoughText] = useState('hey buyer we got new clothes in our shop 20 percent discount if you visit this sunday');
   const [polishedOutput, setPolishedOutput] = useState('');
   const [isPolishing, setIsPolishing] = useState(false);
 
   const handlePolishText = () => {
     if (!roughText.trim()) {
-      alert("Error: Input text cannot be empty. (Rule 8 Safeguard)");
+      alert("Error: Input text cannot be empty.");
       return;
     }
     if (roughText.length > 300) {
-      alert("Error: Input exceeds maximum 300 characters. Truncation boundary enforced to save wallet credits.");
+      alert("Error: Input exceeds maximum 300 characters.");
       return;
     }
 
@@ -311,9 +272,7 @@ export default function LandingPage() {
     }, 1200);
   };
 
-  // ──────────────────────────────────────────────────────────────────
   // LENIS & GSAP INTEGRATION
-  // ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     let lenis: import('lenis').default | null = null;
 
@@ -395,13 +354,12 @@ export default function LandingPage() {
   }, []);
 
   const selectPresetColor = (hex: string) => {
-    setSelectedPresetColor(hex);
     setBrandColor(hex);
   };
 
   return (
     <main className="w-full max-w-full min-h-screen overflow-x-hidden relative text-[#2D1E17] antialiased bg-[#FAF6F0]">
-      {/* ── Google Fonts Import & Theme Header Styles ─────────────────────── */}
+      {/* Global Landing Styles */}
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
         
@@ -435,14 +393,7 @@ export default function LandingPage() {
         .header-scrolled .signin-link:hover {
           color: #8C6853 !important;
         }
-        .header-scrolled .logo-light {
-          opacity: 0 !important;
-        }
-        .header-scrolled .logo-dark {
-          opacity: 1 !important;
-        }
 
-        /* Viewfinder barcode line scanning sweep animation */
         @keyframes laser-sweep {
           0%, 100% {
             top: 5%;
@@ -456,1655 +407,120 @@ export default function LandingPage() {
         }
       `}</style>
 
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 1 — FLOATING HEADER
-      ══════════════════════════════════════════════════════════ */}
-      <header
-        ref={headerRef}
-        className="fixed top-0 left-0 right-0 z-50 h-20 transition-all duration-300 font-outfit"
-        style={{ background: 'transparent' }}
-      >
-        <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
-            <div className="relative w-8 h-8 flex-shrink-0">
-              <Image
-                src={isScrolled ? "/images/logo-dark.png" : "/images/logo-light.png"}
-                alt="True Attendly Broadcast Logo"
-                fill
-                sizes="32px"
-                className="object-contain transition-all duration-300"
-                priority
-              />
-            </div>
-            <span className="brand-text serif-headline text-white text-lg font-bold transition-colors duration-300">
-              True Attendly
-            </span>
-          </Link>
-
-          {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#trinity-matrix" className="nav-link-light text-xs font-semibold tracking-widest text-white/80 hover:text-white uppercase transition-colors duration-200">
-              Features
-            </a>
-            <a href="#ledger" className="nav-link-light text-xs font-semibold tracking-widest text-white/80 hover:text-white uppercase transition-colors duration-200">
-              Ledger
-            </a>
-            <a href="#technical-matrix" className="nav-link-light text-xs font-semibold tracking-widest text-white/80 hover:text-white uppercase transition-colors duration-200">
-              System Tech
-            </a>
-            <a href="#comparison" className="nav-link-light text-xs font-semibold tracking-widest text-white/80 hover:text-white uppercase transition-colors duration-200">
-              Reality Check
-            </a>
-          </nav>
-
-          {/* CTAs */}
-          <div className="flex items-center gap-4">
-            <Link
-              href="/auth/login"
-              className="signin-link text-xs font-semibold tracking-widest text-white/80 hover:text-white uppercase transition-colors duration-200"
-            >
-              Sign In →
-            </Link>
-            <Link
-              href="/auth/register"
-              className="inline-flex bg-[#FAF6F0] hover:bg-[#E5DCD3] text-[#5C4033] font-bold text-xs tracking-wider uppercase px-4 py-2.5 rounded shadow transition-colors"
-            >
-              Create Free Workspace
-            </Link>
-          </div>
-        </div>
-      </header>
-
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 2 — HERO SECTION & ZERO-FRICTION MARKETING HOOKS
-      ══════════════════════════════════════════════════════════ */}
-      <section
-        ref={heroRef}
-        className="w-full relative pt-20 pb-24 lg:pt-24 lg:pb-36 bg-[#5C4033] text-[#FAF6F0] font-outfit"
-      >
-        {/* Fine Radial Grid Mesh Overlay */}
-        <div 
-          className="absolute inset-0 opacity-15 pointer-events-none"
-          style={{ 
-            backgroundImage: 'radial-gradient(#FAF6F0 1px, transparent 1px)', 
-            backgroundSize: '24px 24px' 
-          }}
-        />
-
-        {/* Ambient Warm Glows */}
-        <div
-          className="absolute inset-0 pointer-events-none overflow-hidden"
-          style={{
-            background: `
-              radial-gradient(circle 800px at 75% 25%, rgba(196, 168, 150, 0.18) 0%, transparent 80%),
-              radial-gradient(circle 600px at 20% 75%, rgba(45, 30, 23, 0.4) 0%, transparent 80%)
-            `,
-          }}
-        />
-
-        <div className="relative max-w-7xl mx-auto px-6 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            
-            {/* Left copy column */}
-            <div className="lg:col-span-5 space-y-8 text-left z-10">
-              
-              {/* Trust badge */}
-              <div className="hero-animate flex flex-wrap gap-2.5">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-widest uppercase text-[#C4A896] bg-[#2D1E17]/45 border border-[#C4A896]/30 px-3.5 py-1.5 rounded-full">
-                  <ShieldCheck size={12} className="text-[#C4A896]" />
-                  0% App Friction · 100% Privacy Compliant
-                </span>
-              </div>
-
-              {/* Main Headline visual hook */}
-              <h1 className="hero-animate serif-headline text-4xl sm:text-5xl lg:text-6xl font-normal leading-[1.1] tracking-tight">
-                An App-Less, Number-Less <br />
-                <span className="block font-italic text-[#C4A896] mt-1">Retail Growth Engine.</span>
-              </h1>
-
-              {/* Zero-friction Marketing Hook */}
-              <p className="hero-animate text-base text-[#FAF6F0]/80 leading-relaxed max-w-xl font-light">
-                Eliminate paper receipt waste and customer checkout friction entirely. Walk-in shoppers simply scan a dynamic counter QR code to instantly view digital bills, track store loyalty credits, and receive real-time discount broadcasts—without downloading bulky apps or sharing their private phone numbers.
-              </p>
-
-              {/* Action CTAs */}
-              <div className="hero-animate flex flex-wrap items-center gap-4 pt-2">
-                <Link
-                  href="/auth/register"
-                  className="bg-[#C4A896] hover:bg-[#FAF6F0] hover:text-[#5C4033] text-[#FAF6F0] font-bold text-xs tracking-widest uppercase px-6 py-4 rounded shadow-xl transition-all duration-300"
-                >
-                  Create Free Workspace
-                </Link>
-                <a
-                  href="#trinity-matrix"
-                  className="bg-transparent border border-[#FAF6F0]/30 hover:border-white hover:bg-white/5 text-[#FAF6F0] font-bold text-xs tracking-widest uppercase px-6 py-4 rounded transition-all duration-300 flex items-center gap-1.5"
-                >
-                  See Interactive Features ↓
-                </a>
-              </div>
-
-              {/* Version & Status */}
-              <div className="hero-animate flex items-center gap-4 text-xs text-[#FAF6F0]/60 pt-4 border-t border-[#FAF6F0]/10">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  System Version: {APP_VERSION}
-                </span>
-                <span>•</span>
-                <span>Active Merchants: 1,420+ Stores</span>
-              </div>
-            </div>
-
-            {/* Right side live interactive emulator playground */}
-            <div className="hidden lg:flex lg:col-span-7 hero-animate w-full flex-col md:flex-row gap-6 relative">
-              
-              {/* Visual Box 1: POS cash register terminal */}
-              <div className="flex-1 bg-white text-[#2D1E17] rounded-2xl shadow-2xl border border-[#E5DCD3] overflow-hidden flex flex-col h-[520px]">
-                
-                {/* POS Header */}
-                <div className="bg-[#5C4033] text-white px-4 py-3 flex items-center justify-between border-b border-[#E5DCD3]/10 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping"></span>
-                    <span className="text-[10px] font-bold tracking-widest uppercase">POS Cashier Terminal</span>
-                  </div>
-                  <span className="text-[9px] bg-[#2D1E17] text-[#C4A896] px-2 py-0.5 rounded font-mono">TERM-01</span>
-                </div>
-
-                {/* Simulated Viewfinder overlay */}
-                <div className="relative h-28 bg-[#2d221c] overflow-hidden flex items-center justify-center shrink-0 border-b border-[#E5DCD3]/60">
-                  <div className={`absolute inset-0 bg-emerald-500/10 transition-opacity duration-300 ${justScanned ? 'opacity-100' : 'opacity-0'}`} />
-                  
-                  {/* Viewfinder borders */}
-                  <div className="absolute w-36 h-16 border-2 border-dashed border-emerald-400/60 rounded-md flex items-center justify-center">
-                    <span className="text-[9px] text-emerald-400 font-mono tracking-widest uppercase animate-pulse">
-                      {scannerActive ? 'Scanner Auto-Sync' : 'Scanner Paused'}
-                    </span>
-                  </div>
-
-                  {/* Sweeping Laser Line */}
-                  {scannerActive && <div className="absolute left-0 right-0 h-[1.5px] bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,1)] laser-line" />}
-                  
-                  <span className="absolute bottom-2 text-[8px] text-[#C4A896] font-mono">
-                    Auto-scanning items every 4.5s
-                  </span>
-                </div>
-
-                {/* Items in Cart list */}
-                <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#FCFBF9]">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Active Cart</h3>
-                    <span className="text-xs font-bold text-[#5C4033] bg-[#FAF6F0] px-2 py-0.5 rounded border border-[#E5DCD3]">{cart.length} Items</span>
-                  </div>
-
-                  <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
-                    {cart.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between bg-white border border-[#E5DCD3] p-2 rounded-lg shadow-sm">
-                        <div className="min-w-0 flex-1 pr-2">
-                          <p className="text-xs font-semibold text-[#2D1E17] truncate">{item.name}</p>
-                          <p className="text-[10px] text-slate-500">Qty: {item.qty} × ₹{item.price}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs font-bold text-[#2D1E17]">₹{item.price * item.qty}</span>
-                          <button
-                            onClick={() => removeItem(item.id)}
-                            className="text-slate-400 hover:text-red-600 transition-colors"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    {cart.length === 0 && (
-                      <div className="text-center py-6 text-xs text-slate-400 italic">Cart is empty. Add a product below.</div>
-                    )}
-                  </div>
-
-                  {/* Add manual product inputs */}
-                  <form onSubmit={handleAddItem} className="pt-2 border-t border-[#E5DCD3]/65 flex gap-2 items-center">
-                    <input
-                      type="text"
-                      placeholder="Custom Item"
-                      value={newItemName}
-                      onChange={(e) => setNewItemName(e.target.value)}
-                      className="flex-1 px-2.5 py-1.5 bg-white border border-[#E5DCD3] rounded text-xs focus:outline-none focus:border-[#5C4033]"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Price"
-                      value={newItemPrice}
-                      onChange={(e) => setNewItemPrice(e.target.value)}
-                      className="w-16 px-2.5 py-1.5 bg-white border border-[#E5DCD3] rounded text-xs focus:outline-none focus:border-[#5C4033]"
-                    />
-                    <button
-                      type="submit"
-                      className="bg-[#5C4033] hover:bg-[#C4A896] text-[#FAF6F0] p-2 rounded transition-colors shrink-0"
-                    >
-                      <Plus size={12} />
-                    </button>
-                  </form>
-                </div>
-
-                {/* Subtotals & QR code representation */}
-                <div className="p-4 bg-[#FAF6F0] border-t border-[#E5DCD3] shrink-0 flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Pricing breakdown</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Subtotal: <span className="font-semibold text-slate-700">₹{subtotal}</span></p>
-                    <p className="text-[10px] text-slate-500">GST (18%): <span className="font-semibold text-slate-700">₹{gst}</span></p>
-                    <p className="text-xs font-bold text-[#5C4033] mt-0.5">Total Bill: ₹{total}</p>
-                  </div>
-                  
-                  {/* Dynamic checkout QR representation */}
-                  <div className="relative p-2 bg-white rounded-lg border border-[#E5DCD3] shadow-sm flex flex-col items-center shrink-0">
-                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#2D1E17]">
-                      <rect x="3" y="3" width="6" height="6" rx="1" />
-                      <rect x="15" y="3" width="6" height="6" rx="1" />
-                      <rect x="3" y="15" width="6" height="6" rx="1" />
-                      <path d="M16 16h2v2h-2zm4 0h1v1h-1zm-2 4h3v1h-3zm-2-2h1v1h-1zm2 1h1v1h-1z" />
-                      <circle cx={10 + (total % 4)} cy={10 + (total % 4)} r="1.5" fill={brandColor} stroke="none" />
-                      <rect x="9" y="3" width="3" height="3" fill="currentColor" stroke="none" />
-                      <rect x="3" y="10" width="3" height="3" fill="currentColor" stroke="none" />
-                    </svg>
-                    <span className="text-[7px] font-bold text-[#5C4033] uppercase tracking-wider mt-1">Scan for bill</span>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Visual Box 2: Customer Device Inbox Emulation */}
-              <div className="flex-1 bg-[#2D1E17] rounded-[2.5rem] p-3 shadow-2xl border-[6px] border-[#5C4033] h-[520px] flex flex-col relative overflow-hidden">
-                {/* Speaker notch */}
-                <div className="absolute top-1 left-1/2 -translate-x-1/2 w-20 h-4 bg-[#5C4033] rounded-b-xl z-20" />
-                
-                {/* Chat header */}
-                <div className="bg-[#5C4033] text-white pt-6 pb-2.5 px-4 flex items-center gap-2 shrink-0 z-10">
-                  <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center font-bold text-xs shrink-0 text-[#C4A896]">
-                    Shop
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold truncate">True Broadcast Store</p>
-                    <p className="text-[8px] text-[#C4A896] tracking-wide">Verified Counter Portal</p>
-                  </div>
-                </div>
-
-                {/* WhatsApp Chat feed */}
-                <div className="flex-1 bg-[#F3ECE5] p-3 flex flex-col gap-3 overflow-y-auto"
-                     style={{ backgroundImage: 'radial-gradient(#D6C5B7 1px, transparent 1px)', backgroundSize: '12px 12px' }}>
-                  
-                  {/* Customer Inbound Request */}
-                  <div className="self-end bg-[#E8DCD3] max-w-[85%] rounded-lg rounded-tr-none px-3 py-1.5 shadow-sm text-xs border border-[#E5DCD3] mt-2">
-                    <p className="text-[#2D1E17]">Get my Bill INV-1002</p>
-                    <span className="text-[8px] text-slate-500 float-right mt-1 ml-2">Just now</span>
-                  </div>
-
-                  {/* Outbound Receipt PDF & Preview */}
-                  <div className="self-start bg-white max-w-[90%] rounded-lg rounded-tl-none p-2.5 shadow-sm border-l-4 mt-1 transition-all duration-300 w-full"
-                       style={{ borderColor: brandColor }}>
-                    
-                    {/* PDF Doc Row */}
-                    <div className="flex items-center gap-3 mb-2 pb-2 border-b border-slate-100">
-                      <div className="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center shrink-0 border border-rose-100">
-                        <FileText size={18} className="text-rose-600" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[11px] font-bold text-slate-800 truncate">INV-1002-BILL.pdf</p>
-                        <p className="text-[9px] text-slate-500">142 KB • PDF Document</p>
-                      </div>
-                      <Download size={14} className="text-slate-400 hover:text-[#5C4033] cursor-pointer shrink-0" onClick={handleDownloadBill} />
-                    </div>
-
-                    {/* Receipt Accent Preview */}
-                    <div className="border rounded p-2 text-[10px] bg-[#FAF6F0]" style={{ borderColor: `${brandColor}30` }}>
-                      <div className="flex justify-between items-center border-b pb-1 mb-1 font-bold text-slate-700" style={{ borderBottomColor: `${brandColor}20` }}>
-                        <span className="font-serif font-bold text-[#5C4033]">True Store</span>
-                        <span>INV-1002</span>
-                      </div>
-                      <div className="space-y-0.5 text-slate-600">
-                        {cart.map(item => (
-                          <div key={item.id} className="flex justify-between">
-                            <span>{item.qty}x {item.name}</span>
-                            <span>₹{item.price * item.qty}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="border-t pt-1 mt-1 flex justify-between font-bold text-[#5C4033]" style={{ borderTopColor: `${brandColor}20` }}>
-                        <span>Total (inc. GST)</span>
-                        <span>₹{total}</span>
-                      </div>
-                    </div>
-
-                    {/* Footer note */}
-                    <div className="mt-2 text-center border-t pt-2 border-slate-100">
-                      <p className="text-[10px] font-medium italic font-serif" style={{ color: brandColor }}>
-                        &quot;{invoiceFooterNote}&quot;
-                      </p>
-                    </div>
-
-                    <div className="mt-1 text-right">
-                      <span className="text-[7px] text-slate-400 font-bold uppercase tracking-wider">Powered by True Attendly</span>
-                    </div>
-
-                    <span className="text-[8px] text-slate-500 float-right mt-1">Just now</span>
-                  </div>
-
-                  {/* Overrides inside customer feed */}
-                  <div className="flex gap-2 mt-1 self-start shrink-0 w-full max-w-[90%]">
-                    <button
-                      onClick={() => setShowBillModal(true)}
-                      className="flex-1 bg-white hover:bg-slate-50 text-[#5C4033] border border-[#E5DCD3] rounded px-2 py-1.5 text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm transition-colors"
-                    >
-                      <Eye size={10} /> View Bill
-                    </button>
-                    <button
-                      onClick={handleDownloadBill}
-                      className="flex-1 bg-white hover:bg-slate-50 text-[#5C4033] border border-[#E5DCD3] rounded px-2 py-1.5 text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm transition-colors"
-                    >
-                      {isDownloading ? <Loader2 size={10} className="animate-spin" /> : <Download size={10} />}
-                      Download
-                    </button>
-                  </div>
-                </div>
-
-                {/* Presets Accent Bar */}
-                <div className="p-3 bg-[#FAF6F0] border-t border-[#E5DCD3] shrink-0 text-slate-800 flex items-center justify-between gap-2">
-                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Shop Accent Presets</span>
-                  <div className="flex gap-1.5">
-                    {BRAND_PRESET_COLORS.map((c) => (
-                      <button
-                        key={c.hex}
-                        onClick={() => selectPresetColor(c.hex)}
-                        className={`w-4 h-4 rounded-full border ${c.bg} transition-transform ${brandColor === c.hex ? 'scale-125 border-[#2D1E17]' : 'border-transparent hover:scale-110'}`}
-                        title={c.name}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 3 — CORE TRINITY VISUAL MATRIX
-      ══════════════════════════════════════════════════════════ */}
-      <section id="trinity-matrix" className="w-full py-24 px-6 bg-[#FAF6F0] border-y border-[#E5DCD3] scroll-reveal-section font-outfit">
-        <div className="max-w-7xl mx-auto">
-          
-          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
-            <span className="text-xs tracking-[0.25em] uppercase text-[#C4A896] font-bold">
-              The Retail Growth Trinity
-            </span>
-            <h2 className="serif-headline text-3xl sm:text-4xl text-[#5C4033] mt-4 mb-6 leading-tight">
-              Three Interlocking Pillars. One Zero-Friction Flow.
-            </h2>
-            <p className="text-sm text-slate-500 leading-relaxed max-w-xl mx-auto">
-              Engage shoppers in real time directly from counter checkouts without forcing them to share credentials or download native mobile apps.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            
-            {/* COLUMN 1: Live In-Store Flash Offers */}
-            <article className="gsap-reveal bg-white border border-[#E5DCD3] rounded-2xl p-8 flex flex-col justify-between hover:shadow-xl hover:scale-[1.01] transition-all duration-300">
-              <div className="space-y-6">
-                
-                {/* Feature Header */}
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#FAF6F0] text-[#5C4033] rounded-xl flex items-center justify-center border border-[#E5DCD3] shadow-sm">
-                    <Radio size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-[#5C4033] text-sm tracking-wide">Live In-Store Flash Offers</h3>
-                    <p className="text-[9px] text-[#C4A896] font-bold uppercase tracking-widest mt-0.5">Instant Impulse Sales</p>
-                  </div>
-                </div>
-
-                <p className="text-xs text-[#7A6A5E] leading-relaxed">
-                  Broadcast time-limited discounts and specials directly to browser feeds. Convert foot traffic by showing offers instantly on scan.
-                </p>
-
-                {/* Sub-capabilities list */}
-                <ul className="space-y-3 text-xs text-[#5C4033]/85 border-t border-[#E5DCD3]/50 pt-4">
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span>Master Control Switch — Instantly push or pause live discounts on checkout boards with zero lag.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span>Supabase Media Uploads — Instantly sync high-quality product images to your customers&apos; digital viewing lists.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span>Dynamic Web Push Toggle — Trigger real-time browser notifications directly to customer devices on campaign dispatches (+2 Credits).</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Dynamic Interactive Merchant Offer Console widget */}
-              <div className="pt-6 mt-6 border-t border-[#E5DCD3] space-y-4">
-                <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  <span>Merchant Control Panel</span>
-                  <span className="text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded uppercase">Live State</span>
-                </div>
-
-                <div className="bg-[#FAF6F0] p-4 rounded-xl border border-[#E5DCD3] space-y-3">
-                  
-                  {/* Photo Uploader simulator */}
-                  <div 
-                    onClick={cycleOfferImage}
-                    className="border border-dashed border-[#E5DCD3] hover:border-[#5C4033] bg-white rounded-lg p-2 flex items-center justify-between cursor-pointer transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-[#E5DCD3] rounded flex items-center justify-center text-xs text-[#5C4033]">
-                        <ImageIcon size={12} />
-                      </div>
-                      <div className="text-left">
-                        <span className="text-[10px] font-bold text-[#5C4033] block truncate max-w-[120px]">{offerImages[offerImageIndex].name}</span>
-                        <span className="text-[8px] text-slate-400 block truncate max-w-[120px]">{offerImages[offerImageIndex].description}</span>
-                      </div>
-                    </div>
-                    {isOfferUploading ? (
-                      <Loader2 size={12} className="animate-spin text-slate-400" />
-                    ) : (
-                      <span className="text-[8px] font-bold uppercase text-[#C4A896] flex items-center gap-0.5">
-                        <Upload size={10} /> Cycle Image
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Calculator Row */}
-                  <div className="grid grid-cols-2 gap-2 text-left">
-                    <div>
-                      <label className="text-[8px] text-slate-400 font-bold block uppercase mb-0.5">Original Price</label>
-                      <input 
-                        type="number"
-                        value={originalPrice}
-                        onChange={(e) => setOriginalPrice(Math.max(1, parseInt(e.target.value) || 0))}
-                        className="w-full bg-white border border-[#E5DCD3] rounded px-1.5 py-1 text-[10px] focus:outline-none focus:border-[#5C4033]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[8px] text-slate-400 font-bold block uppercase mb-0.5">Discount Price</label>
-                      <input 
-                        type="number"
-                        value={discountPrice}
-                        onChange={(e) => setDiscountPrice(Math.min(originalPrice, Math.max(0, parseInt(e.target.value) || 0)))}
-                        className="w-full bg-white border border-[#E5DCD3] rounded px-1.5 py-1 text-[10px] focus:outline-none focus:border-[#5C4033]"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between border-t border-[#E5DCD3]/50 pt-2 text-[9px]">
-                    <span className="text-slate-500 font-bold">Computed Savings:</span>
-                    <span className="font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{computedDiscount}% OFF</span>
-                  </div>
-
-                  {/* Visibility & Web Push Toggles */}
-                  <div className="space-y-2 pt-2 border-t border-[#E5DCD3]/50 text-[10px]">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#5C4033] font-semibold">Visibility State:</span>
-                      <button 
-                        onClick={() => setOfferActive(!offerActive)}
-                        className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase transition-colors ${offerActive ? 'bg-[#5C4033] text-white' : 'bg-slate-200 text-slate-600'}`}
-                      >
-                        {offerActive ? 'Active Online' : 'Hidden'}
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#5C4033] font-semibold">Broadcast via Web Push:</span>
-                      <button 
-                        onClick={() => setWebPushBroadcast(!webPushBroadcast)}
-                        className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase transition-colors ${webPushBroadcast ? 'bg-[#C4A896] text-white animate-pulse' : 'bg-slate-200 text-slate-600'}`}
-                      >
-                        {webPushBroadcast ? 'ENABLED (2 Credits)' : 'DISABLED (0 Credits)'}
-                      </button>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-            </article>
-
-            {/* COLUMN 2: Frictionless Digital Billing */}
-            <article className="gsap-reveal bg-white border border-[#E5DCD3] rounded-2xl p-8 flex flex-col justify-between hover:shadow-xl hover:scale-[1.01] transition-all duration-300">
-              <div className="space-y-6">
-                
-                {/* Feature Header */}
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#FAF6F0] text-[#5C4033] rounded-xl flex items-center justify-center border border-[#E5DCD3] shadow-sm">
-                    <Layers size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-[#5C4033] text-sm tracking-wide">Frictionless Digital Billing</h3>
-                    <p className="text-[9px] text-[#C4A896] font-bold uppercase tracking-widest mt-0.5">High-Fidelity Scan Streams</p>
-                  </div>
-                </div>
-
-                <p className="text-xs text-[#7A6A5E] leading-relaxed">
-                  High-fidelity barcode scanning checkout framework. Leverage connected device cameras to log items and calculate taxes.
-                </p>
-
-                {/* Sub-capabilities list */}
-                <ul className="space-y-3 text-xs text-[#5C4033]/85 border-t border-[#E5DCD3]/50 pt-4">
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span>Live Barcode Capture — Instantly process physical UPC/EAN labels using any camera device.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span>Auto GST Computation — Instant calculation of itemized subtotals, custom rates, and totals.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span>No Dummy Simulations — Active local timer loops demonstrate real barcode detection sync with the cashier inventory panel.</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Viewfinder Checkout Scanner widget */}
-              <div className="pt-6 mt-6 border-t border-[#E5DCD3] space-y-4">
-                <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  <span>Camera Stream Viewfinder</span>
-                  <button 
-                    onClick={() => setScannerActive(!scannerActive)}
-                    className={`text-[8px] px-2 py-0.5 rounded font-bold uppercase ${scannerActive ? 'bg-emerald-600 text-white animate-pulse' : 'bg-red-600 text-white'}`}
-                  >
-                    {scannerActive ? 'Scan Active' : 'Scan Paused'}
-                  </button>
-                </div>
-
-                <div className="relative h-28 bg-[#1e1410] border border-[#E5DCD3] rounded-xl overflow-hidden flex flex-col justify-between p-2">
-                  <div className={`absolute inset-0 bg-emerald-500/10 transition-opacity duration-300 ${justScanned ? 'opacity-100' : 'opacity-0'}`} />
-                  
-                  {/* Corner viewfinder brackets */}
-                  <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-emerald-400" />
-                  <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-emerald-400" />
-                  <div className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-emerald-400" />
-                  <div className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-emerald-400" />
-
-                  {/* Sweeping Laser Line */}
-                  {scannerActive && <div className="absolute left-0 right-0 h-[1.5px] bg-[#34d399] shadow-[0_0_8px_rgba(52,211,153,1)] laser-line" />}
-
-                  {/* Top line with live status */}
-                  <div className="flex justify-between items-center text-[7px] text-emerald-400 font-mono z-10">
-                    <span>CAPTURE: 1080P // AUTO_FOCUS</span>
-                    <span className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
-                      SYNCED
-                    </span>
-                  </div>
-
-                  {/* Center Scanning Barcode Overlay */}
-                  <div className="flex flex-col items-center justify-center my-1 z-10">
-                    <div className="w-24 h-6 opacity-60 bg-white/10 flex items-center justify-center border border-white/20 rounded">
-                      <span className="text-[8px] font-mono text-white tracking-[0.2em] font-bold">||||| | ||| ||</span>
-                    </div>
-                  </div>
-
-                  {/* Real-time scan log list */}
-                  <div className="text-[7.5px] font-mono text-slate-300 bg-black/40 p-1.5 rounded text-left overflow-y-auto max-h-[35px] z-10 space-y-0.5">
-                    {scanHistoryLogs.map((log, i) => (
-                      <div key={i} className="truncate">{log}</div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Scanner totals display */}
-                <div className="flex items-center justify-between text-xs font-bold text-[#5C4033]">
-                  <span>Total Scanned Invoice:</span>
-                  <span className="bg-[#FAF6F0] px-2 py-0.5 rounded border border-[#E5DCD3]">₹{total}</span>
-                </div>
-
-              </div>
-            </article>
-
-            {/* COLUMN 3: Audience Registry */}
-            <article className="gsap-reveal bg-white border border-[#E5DCD3] rounded-2xl p-8 flex flex-col justify-between hover:shadow-xl hover:scale-[1.01] transition-all duration-300">
-              <div className="space-y-6">
-                
-                {/* Feature Header */}
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#FAF6F0] text-[#5C4033] rounded-xl flex items-center justify-center border border-[#E5DCD3] shadow-sm">
-                    <Users size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-[#5C4033] text-sm tracking-wide">Audience Registry</h3>
-                    <p className="text-[9px] text-[#C4A896] font-bold uppercase tracking-widest mt-0.5">Engagement Analytics</p>
-                  </div>
-                </div>
-
-                <p className="text-xs text-[#7A6A5E] leading-relaxed">
-                  Manage walk-in customers and segment tags like DIGITAL_BILL automatically. Track visits, lifecycle value, and launch broadcasts.
-                </p>
-
-                {/* Sub-capabilities list */}
-                <ul className="space-y-3 text-xs text-[#5C4033]/85 border-t border-[#E5DCD3]/50 pt-4">
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span>100% Opt-In Legality — Customers auto-whitelist their browser profiles when requesting dynamic receipts.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span>PostgreSQL Tag Segments — Filter registry loops using custom tag definitions like DIGITAL_BILL.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span>Real-time Delivery Counters — Track unique metrics including Total Sent, Opened, and Cumulative Store Subscribers.</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Dynamic Responsive Mobile Card Registry widget */}
-              <div className="pt-6 mt-6 border-t border-[#E5DCD3] space-y-4">
-                <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  <span>Customer Card Registry</span>
-                  <span className="text-[#C4A896]">{filteredAudience.length} Profiles</span>
-                </div>
-
-                {/* Interactive Search & Filter inside Card */}
-                <div className="space-y-2 bg-[#FAF6F0] p-3 rounded-xl border border-[#E5DCD3]">
-                  <div className="relative">
-                    <Search size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input 
-                      type="text" 
-                      placeholder="Search registry..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-5 pr-2 py-1 bg-white border border-[#E5DCD3] rounded text-[10px] focus:outline-none focus:border-[#5C4033]"
-                    />
-                  </div>
-
-                  <div className="flex gap-1.5 overflow-x-auto pr-1">
-                    {['ALL', 'DIGITAL_BILL', 'VIP', 'FLASH_OPT_IN'].map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setSelectedTagFilter(t)}
-                        className={`text-[7px] font-bold px-2 py-0.5 rounded border transition-colors shrink-0 uppercase tracking-wider ${selectedTagFilter === t ? 'bg-[#5C4033] border-[#5C4033] text-white' : 'bg-white border-[#E5DCD3] text-slate-600'}`}
-                      >
-                        {t === 'ALL' ? 'ALL TAGS' : t.replace('_', ' ')}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Customer mobile card grid representation */}
-                  <div className="space-y-1.5 max-h-[85px] overflow-y-auto pr-1">
-                    {filteredAudience.map((cust, idx) => (
-                      <div key={idx} className="bg-white border border-[#E5DCD3] p-1.5 rounded-lg flex items-center justify-between shadow-sm">
-                        <div className="text-left min-w-0">
-                          <span className="text-[9px] font-bold text-[#2D1E17] block truncate">{cust.name}</span>
-                          <span className="text-[8px] text-slate-400 block font-mono">{cust.phone}</span>
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <div className="flex gap-1">
-                            {cust.tags.map(t => (
-                              <span key={t} className="bg-[#FAF6F0] text-[#5C4033] border border-[#E5DCD3] text-[6px] px-1 rounded uppercase font-bold tracking-wide">
-                                {t.replace('_', ' ')}
-                              </span>
-                            ))}
-                          </div>
-                          <span className="text-[7.5px] text-slate-500 block font-bold">
-                            Visits: {cust.visits} · Spend: ₹{cust.spend}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                    {filteredAudience.length === 0 && (
-                      <div className="text-center py-4 text-[9px] text-slate-400 italic">No matches found.</div>
-                    )}
-                  </div>
-
-                  {/* Broadcast Dispatch Trigger Button */}
-                  <button 
-                    onClick={triggerSecurityModal}
-                    className="w-full bg-[#5C4033] hover:bg-[#C4A896] text-white py-1.5 px-3 rounded text-[9px] font-bold tracking-widest uppercase flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <Target size={10} /> Launch Campaign Broadcast
-                  </button>
-                </div>
-              </div>
-            </article>
-
-            {/* COLUMN 4: Organic Viral Share Engine */}
-            <article className="gsap-reveal bg-white border border-[#E5DCD3] rounded-2xl p-8 flex flex-col justify-between hover:shadow-xl hover:scale-[1.01] transition-all duration-300">
-              <div className="space-y-6">
-                
-                {/* Feature Header */}
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#FAF6F0] text-[#5C4033] rounded-xl flex items-center justify-center border border-[#E5DCD3] shadow-sm">
-                    <Share2 size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-[#5C4033] text-sm tracking-wide">Organic Share Engine</h3>
-                    <p className="text-[9px] text-[#C4A896] font-bold uppercase tracking-widest mt-0.5">Organic Store Growth</p>
-                  </div>
-                </div>
-
-                <p className="text-xs text-[#7A6A5E] leading-relaxed">
-                  Organic Viral Share Engine — Track instant discount dispatches, viewer click interactions, and monitor share counts as users organically scale your active store audience app-less.
-                </p>
-
-                {/* Sub-capabilities list */}
-                <ul className="space-y-3 text-xs text-[#5C4033]/85 border-t border-[#E5DCD3]/50 pt-4">
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span>Viral Mechanics — Enable customers to easily recommend live shop offers directly to family and friends.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span>Real-time Metrics — Track share counts and conversion loops from public customer catalog pages.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-[#C4A896] mt-0.5 shrink-0" />
-                    <span>No App Barriers — Zero sign-up friction or native downloads for recipient traffic to see discounts.</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Dynamic Interactive Share Engine Simulator Widget */}
-              <div className="pt-6 mt-6 border-t border-[#E5DCD3] space-y-4">
-                <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  <span>Viral Engine Monitor</span>
-                  <span className="text-[#C4A896] font-bold">Live State</span>
-                </div>
-
-                <div className="bg-[#FAF6F0] p-4 rounded-xl border border-[#E5DCD3] space-y-3">
-                  {/* Share tracker simulator */}
-                  <div className="flex items-center justify-between text-xs border-b border-[#E5DCD3]/50 pb-2">
-                    <span className="text-slate-500">Demo Share Count:</span>
-                    <span className="font-bold text-[#5C4033]">24 Shares</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs border-b border-[#E5DCD3]/50 pb-2">
-                    <span className="text-slate-500">Recipient Clicks:</span>
-                    <span className="font-bold text-[#5C4033]">182 Clicks</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Audience Growth:</span>
-                    <span className="font-bold text-emerald-600">+15 Subscribers</span>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 3.5 — ORGANIC WHATSAPP STATUS RETENTION LOOP
-      ══════════════════════════════════════════════════════════ */}
-      <section className="w-full py-24 px-6 bg-[#FAF6F0] border-t border-b border-[#E5DCD3] font-outfit">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            
-            {/* Left copy column */}
-            <div className="lg:col-span-7 space-y-6 text-left">
-              <div className="flex items-center gap-2">
-                <span className="text-xs tracking-[0.25em] uppercase text-[#C4A896] font-bold">
-                  Organic Retention Channel
-                </span>
-                <span className="text-[10px] font-bold text-[#25D366] bg-[#25D366]/10 border border-[#25D366]/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  Zero Ad Spend
-                </span>
-              </div>
-              
-              <h2 className="serif-headline text-3xl sm:text-4xl text-[#5C4033] font-normal leading-[1.15]">
-                WhatsApp Status Loop
-              </h2>
-              
-              <p className="text-sm text-[#7A6A5E] leading-relaxed max-w-xl">
-                Turn One-Time Bill Recipients into Continuous Status Viewers. No ads. Just organic, high-converting daily catalog updates directly on their phones once they save your number to read their receipt.
-              </p>
-
-              {/* Loop Steps details conforming to Rule 17 */}
-              <div className="space-y-4 pt-4 border-t border-[#E5DCD3]/60 max-w-lg">
-                <div className="flex gap-4">
-                  <div className="w-8 h-8 rounded-full bg-[#5C4033] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">1</div>
-                  <div>
-                    <h4 className="font-bold text-[#5C4033] text-sm">Transactional Digital Bill Dispatch</h4>
-                    <p className="text-xs text-[#7A6A5E] mt-0.5">Send receipts automatically to customer WhatsApp numbers at checkout.</p>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <div className="w-8 h-8 rounded-full bg-[#5C4033] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">2</div>
-                  <div>
-                    <h4 className="font-bold text-[#5C4033] text-sm">Automatic Get My Bill Prompt</h4>
-                    <p className="text-xs text-[#7A6A5E] mt-0.5">Prompt receipt readers to trigger the Get My Bill action to view full bills and today&apos;s deals.</p>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <div className="w-8 h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">3</div>
-                  <div>
-                    <h4 className="font-bold text-[#5C4033] text-sm">Free Organic Marketing Updates</h4>
-                    <p className="text-xs text-[#7A6A5E] mt-0.5">Daily promotions and catalog items appear automatically on their phone Status list.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right side Mobile Emulator Column */}
-            <div className="lg:col-span-5 flex justify-center items-center">
-              {/* Mobile Emulator Wrapper conforming to Rule 14 & 17 */}
-              <div className="relative w-full max-w-[280px] aspect-[9/16] rounded-[2rem] border-[8px] border-[#2D1E17] bg-black shadow-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02]">
-                {/* Speaker and Camera notch */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-4 bg-[#2D1E17] rounded-b-md z-20" />
-                
-                {/* Content viewport */}
-                <div className="relative w-full h-full bg-[#111] text-white flex flex-col justify-between p-3 select-none">
-                  {/* Top Bar */}
-                  <div className="flex items-center justify-between pt-2 pb-2.5 border-b border-white/10 shrink-0">
-                    <div className="flex items-center gap-2">
-                      <div className="relative w-6 h-6 rounded-full border border-[#25D366] p-0.5 shrink-0">
-                        <div className="w-full h-full rounded-full bg-[#5C4033] flex items-center justify-center text-[9px] font-bold text-[#FAF6F0]">
-                          S
-                        </div>
-                        <div className="absolute -inset-0.5 rounded-full border border-dashed border-[#25D366] animate-pulse" />
-                      </div>
-                      <div className="text-[9px] text-left">
-                        <p className="font-bold text-white leading-none">Your Shop</p>
-                        <p className="text-[6.5px] text-[#C4A896] leading-none mt-0.5">Today, 10:15 AM</p>
-                      </div>
-                    </div>
-                    <div className="text-[8px] font-mono text-[#FAF6F0]/60">1/3</div>
-                  </div>
-
-                  {/* Image slot */}
-                  <div className="relative flex-1 my-2.5 rounded-lg overflow-hidden bg-zinc-900 flex items-center justify-center">
-                    <img 
-                      src="/images/whatsapp-status-emulator.png" 
-                      alt="WhatsApp Status Marketing Loop Emulator" 
-                      className="w-full h-full object-cover" 
-                      onError={(e) => {
-                        // Fallback to stylized SVG pattern if image is not accessible
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                    
-                    {/* Interactive UI Mock Overlays */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/35 p-3 flex flex-col justify-between pointer-events-none">
-                      <span className="self-end bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-mono text-emerald-400 border border-emerald-500/20">
-                        👁 184 Views
-                      </span>
-
-                      <div className="space-y-1.5">
-                        <div className="bg-white/10 backdrop-blur-sm border border-white/15 p-2 rounded text-left">
-                          <span className="bg-[#25D366] text-black text-[6.5px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">Catalog Offer</span>
-                          <h4 className="text-[10px] font-bold text-white mt-1 leading-none">EcoGoods Special</h4>
-                          <p className="text-[8.5px] text-[#C4A896] mt-0.5 font-mono">₹1,250 (Save 20%)</p>
-                        </div>
-
-                        <div className="bg-[#25D366]/20 border border-[#25D366]/35 rounded py-1.5 text-center">
-                          <p className="text-[7.5px] font-bold text-[#25D366]">Get My Bill to view today&apos;s deals</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 3.6 — UNIVERSAL INVOICE PRINT, DOWNLOAD, & QR CROSS-SELL FRAMEWORK
-      ══════════════════════════════════════════════════════════ */}
-      <section className="w-full py-24 px-6 bg-white border-t border-b border-[#E5DCD3] font-outfit">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            
-            {/* Left side Image Column */}
-            <div className="lg:col-span-5 flex justify-center items-center order-2 lg:order-1">
-              <div className="relative w-full max-w-lg aspect-[4/3] rounded-2xl border border-[#E5DCD3] shadow-2xl overflow-hidden bg-slate-50 transition-all duration-300 hover:scale-[1.01]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/assets/images/universal-invoice-qr-links.png"
-                  alt="Universal Digital Invoice Print formats and Dynamic QR Cross-Sell Showcase"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    // Fallback to a placeholder visual pattern if image is missing
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-                {/* Fallback stylized background when image is loading/missing */}
-                <div className="absolute inset-0 bg-[#5C4033]/5 flex flex-col items-center justify-center p-8 text-center pointer-events-none">
-                  <div className="w-16 h-16 rounded-2xl bg-[#5C4033] text-white flex items-center justify-center shadow-lg mb-4">
-                    <QrCode size={32} />
-                  </div>
-                  <h4 className="font-bold text-[#5C4033] text-sm uppercase tracking-wider">Universal QR Engine</h4>
-                  <p className="text-xs text-[#7A6A5E] mt-2 max-w-xs">Printed Thermal Strip &middot; Corporate A4 Sheets &middot; Mobile WhatsApp PDF Receipts</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Right copy column */}
-            <div className="lg:col-span-7 space-y-6 text-left order-1 lg:order-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs tracking-[0.25em] uppercase text-[#C4A896] font-bold">
-                  Universal QR Engine
-                </span>
-                <span className="text-[10px] font-bold text-white bg-[#5C4033] border border-[#C4A896]/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  Cross-Sell Framework
-                </span>
-              </div>
-              
-              <h2 className="serif-headline text-3xl sm:text-4xl text-[#5C4033] font-normal leading-[1.15]">
-                Continuous Digital Retention
-              </h2>
-              
-              <p className="text-sm text-[#7A6A5E] leading-relaxed max-w-xl">
-                Universal QR Engine. Continuous Digital Retention. Turn every single receipt—whether it is a printed paper bill, a standard A4 invoice, or a digital WhatsApp PDF—into a powerful repeat-traffic driver. Seamlessly embed dynamic live-offer QR codes and active web links across all invoice print formats automatically, unlocking massive storefront traffic and automated customer return lists without intrusive ads.
-              </p>
-
-              {/* Dynamic Pillars conforming to Rule 14 & Rule 15 */}
-              <div className="space-y-4 pt-4 border-t border-[#E5DCD3]/60 max-w-lg">
-                <div className="flex gap-4">
-                  <div className="w-8 h-8 rounded-full bg-[#5C4033] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">A</div>
-                  <div>
-                    <h4 className="font-bold text-[#5C4033] text-sm">Unified Print Ecosystem</h4>
-                    <p className="text-xs text-[#7A6A5E] mt-0.5">Generate high-performance window-trigger print layouts optimized dynamically for standard corporate A4 sheets and native 80mm POS Thermal roll printers.</p>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <div className="w-8 h-8 rounded-full bg-[#5C4033] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">B</div>
-                  <div>
-                    <h4 className="font-bold text-[#5C4033] text-sm">Offline-to-Online Loop</h4>
-                    <p className="text-xs text-[#7A6A5E] mt-0.5">Embed cross-sell QR codes directly on invoices, allowing customers to scan physical thermal papers to instantly launch mobile-friendly digital storefront deals.</p>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <div className="w-8 h-8 rounded-full bg-[#C4A896] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">C</div>
-                  <div>
-                    <h4 className="font-bold text-[#5C4033] text-sm">In-Store Location Transparency</h4>
-                    <p className="text-xs text-[#7A6A5E] mt-0.5">Every storefront discount is bound to a physical location, helping buyers navigate seamlessly back to active shelves via on-demand details modals.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 4 — WALLET LEDGER TRANSPARENCY (Tab A & Tab B)
-      ══════════════════════════════════════════════════════════ */}
-      <section id="ledger" className="w-full py-24 px-6 bg-white scroll-reveal-section font-outfit">
-        <div className="max-w-7xl mx-auto">
-          
-          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
-            <span className="text-xs tracking-[0.25em] uppercase text-[#C4A896] font-bold">
-              Autonomous Account Ledgers
-            </span>
-            <h2 className="serif-headline text-3xl sm:text-4xl text-[#5C4033] mt-4 mb-4">
-              Pay-As-You-Send Wallet &amp; Ledger Transparency
-            </h2>
-            <p className="text-sm text-slate-500 leading-relaxed max-w-xl mx-auto">
-              No monthly subscriptions, hidden maintenance costs, or lock-in contracts. Verify credit top-ups via Cashfree and inspect exact row-by-row campaign debits from our cursor ledger.
-            </p>
-          </div>
-
-          <div className="max-w-4xl mx-auto gsap-reveal bg-white border border-[#E5DCD3] rounded-2xl shadow-xl overflow-hidden flex flex-col">
-            
-            {/* Header tab controller */}
-            <div className="bg-[#5C4033] p-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-[#E5DCD3]/10 shrink-0">
-              <div className="flex bg-[#2D1E17] rounded-lg p-1 w-full sm:w-auto">
-                <button
-                  onClick={() => setActiveLedgerTab('purchases')}
-                  className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-xs font-bold tracking-wider uppercase transition-all ${activeLedgerTab === 'purchases' ? 'bg-[#C4A896] text-white shadow-sm' : 'text-[#FAF6F0]/60 hover:text-white'}`}
-                >
-                  <CreditCard size={12} className="inline-block mr-1.5 -mt-0.5" />
-                  Tab A: Credit Purchases
-                </button>
-                <button
-                  onClick={() => setActiveLedgerTab('usages')}
-                  className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-xs font-bold tracking-wider uppercase transition-all ${activeLedgerTab === 'usages' ? 'bg-[#C4A896] text-white shadow-sm' : 'text-[#FAF6F0]/60 hover:text-white'}`}
-                >
-                  <TrendingUp size={12} className="inline-block mr-1.5 -mt-0.5" />
-                  Tab B: Credit Usages
-                </button>
-              </div>
-
-              {/* Wallet Summary metrics */}
-              <div className="flex gap-6 shrink-0 text-[#FAF6F0]">
-                <div className="text-right">
-                  <span className="text-[9px] text-[#C4A896] uppercase tracking-widest block font-bold">Total Purchases</span>
-                  <span className="text-sm font-black text-white">₹25,000.00</span>
-                </div>
-                <div className="border-l border-[#FAF6F0]/15 pl-6 text-right">
-                  <span className="text-[9px] text-[#C4A896] uppercase tracking-widest block font-bold">Remaining Balance</span>
-                  <span className="text-sm font-black text-white">25,000 Credits</span>
-                </div>
-              </div>
-            </div>
-
-            {/* TAB A Content: Cashfree Topup Logs */}
-            {activeLedgerTab === 'purchases' && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs min-w-[600px] border-collapse">
-                  <thead className="bg-[#FAF6F0] border-b border-[#E5DCD3] text-slate-500 uppercase tracking-wider text-[10px] font-bold">
-                    <tr>
-                      <th className="p-4 border-r border-[#E5DCD3]/50">Transaction ID</th>
-                      <th className="p-4 border-r border-[#E5DCD3]/50">Top-Up Date</th>
-                      <th className="p-4 border-r border-[#E5DCD3]/50">Tokens Credited</th>
-                      <th className="p-4 border-r border-[#E5DCD3]/50">Total Amount (INR)</th>
-                      <th className="p-4">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-700">
-                    {cashfreeLogs.map((log) => (
-                      <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="p-4 font-mono font-bold text-[#2D1E17] border-r border-slate-100">{log.id}</td>
-                        <td className="p-4 border-r border-slate-100">{log.date}</td>
-                        <td className="p-4 font-semibold text-slate-800 border-r border-slate-100">{log.tokens}</td>
-                        <td className="p-4 font-semibold text-slate-800 border-r border-slate-100">{log.amount}</td>
-                        <td className="p-4">
-                          <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-emerald-200">
-                            {log.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="p-4 bg-[#FAF6F0]/50 text-center border-t border-[#E5DCD3] text-[9px] text-[#C4A896] font-bold uppercase tracking-widest">
-                  Verified by Cashfree Secure Gateway Integration API Webhooks
-                </div>
-              </div>
-            )}
-
-            {/* TAB B Content: Dynamic usage logs with cursor-based infinite scroll */}
-            {activeLedgerTab === 'usages' && (
-              <div>
-                <div className="overflow-x-auto max-h-[360px] overflow-y-auto pr-1">
-                  <table className="w-full text-left text-xs min-w-[600px] border-collapse">
-                    <thead className="bg-[#FAF6F0] border-b border-[#E5DCD3] text-slate-500 uppercase tracking-wider text-[10px] font-bold sticky top-0 z-10">
-                      <tr>
-                        <th className="p-4 bg-[#FAF6F0] border-r border-[#E5DCD3]/50">Operational Usage Type</th>
-                        <th className="p-4 bg-[#FAF6F0] border-r border-[#E5DCD3]/50">Reference ID / Campaign</th>
-                        <th className="p-4 bg-[#FAF6F0] border-r border-[#E5DCD3]/50">Date</th>
-                        <th className="p-4 bg-[#FAF6F0] text-right border-r border-[#E5DCD3]/50">Credits Deducted</th>
-                        <th className="p-4 bg-[#FAF6F0] text-center">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-[#5C4E46]">
-                      {ledgerUsages.map((usage) => (
-                        <tr key={usage.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="p-4 font-bold flex items-center gap-2 border-r border-slate-100">
-                            <span className={`w-1.5 h-1.5 rounded-full ${usage.type === 'Web Push Broadcast' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                            {usage.type}
-                          </td>
-                          <td className="p-4 font-mono font-semibold text-[#2D1E17] border-r border-slate-100">{usage.desc}</td>
-                          <td className="p-4 text-slate-500 border-r border-slate-100">{usage.date}</td>
-                          <td className="p-4 text-right font-bold text-slate-800 border-r border-slate-100">{usage.credits}</td>
-                          <td className="p-4 text-center">
-                            <span className="bg-slate-100 text-slate-600 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-slate-200">
-                              {usage.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Cursor infinite pagination load actions */}
-                <div className="p-4 bg-[#FAF6F0] border-t border-[#E5DCD3] flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                    Showing {ledgerUsages.length} ledger logs
-                  </span>
-
-                  {hasMoreUsages ? (
-                    <button
-                      onClick={handleLoadMoreUsages}
-                      disabled={isLoadingMoreUsages}
-                      className="bg-white hover:bg-slate-50 text-[#5C4033] border border-[#E5DCD3] px-4 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm transition-colors"
-                    >
-                      {isLoadingMoreUsages ? (
-                        <>
-                          <Loader2 size={10} className="animate-spin" />
-                          Loading cursor page...
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw size={10} />
-                          Load More Usages
-                        </>
-                      )}
-                    </button>
-                  ) : (
-                    <span className="text-[10px] text-[#C4A896] font-bold uppercase tracking-widest">
-                      Cursor reached end of ledger (20+ Rows Sync)
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 5 — TECHNICAL ARCHITECTURE & STABILITY MATRIX
-      ══════════════════════════════════════════════════════════ */}
-      <section id="technical-matrix" className="w-full py-24 px-6 bg-[#FAF6F0] border-t border-[#E5DCD3] scroll-reveal-section font-outfit">
-        <div className="max-w-7xl mx-auto">
-          
-          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
-            <span className="text-xs tracking-[0.25em] uppercase text-[#C4A896] font-bold">
-              Engineering Matrix
-            </span>
-            <h2 className="serif-headline text-3xl sm:text-4xl text-[#5C4033] mt-4 mb-4">
-              Advanced Ingestion &amp; Serverless AI Architecture
-            </h2>
-            <p className="text-sm text-slate-500 leading-relaxed max-w-xl mx-auto">
-              Explore the system modules built to parse records, clean raw inputs, and secure fast response times under zero Cumulative Layout Shift limits.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto gsap-reveal">
-
-            {/* Widget B: Unified CSV Manifest Parser */}
-            <div className="bg-white border border-[#E5DCD3] rounded-2xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-[#5C4033]">
-                  <Database size={18} className="text-[#C4A896]" />
-                  <h3 className="font-bold text-xs uppercase tracking-wider">CSV/Excel Registry Parser</h3>
-                </div>
-
-                <p className="text-xs text-[#7A6A5E] leading-relaxed">
-                  Serverless-safe Excel/CSV ingest algorithms masking raw phone formats via 10-digit regex filters to protect privacy and filter anomalies.
-                </p>
-
-                {/* CSV simulator */}
-                <div className="border-t pt-4 border-slate-100 space-y-3">
-                  {csvStatus === 'idle' && (
-                    <div
-                      onClick={handleSimulatedCsvUpload}
-                      className="border-2 border-dashed border-[#E5DCD3] hover:border-[#5C4033] rounded-xl p-6 text-center cursor-pointer transition-colors bg-[#FAF6F0]"
-                    >
-                      <Upload size={20} className="mx-auto text-slate-400 mb-2" />
-                      <span className="text-[9px] text-[#5C4033] block font-bold uppercase tracking-wider">Drop excel/csv here</span>
-                      <span className="text-[8px] text-slate-400 block mt-0.5">Click to simulate auto-parse and clean</span>
-                    </div>
-                  )}
-
-                  {csvStatus === 'uploading' && (
-                    <div className="border border-[#E5DCD3] rounded-xl p-6 text-center bg-[#FAF6F0] flex flex-col items-center justify-center">
-                      <Loader2 size={20} className="text-[#C4A896] animate-spin mb-2" />
-                      <span className="text-[9px] text-[#5C4033] font-bold uppercase tracking-wider">Parsing raw phone formats...</span>
-                    </div>
-                  )}
-
-                  {csvStatus === 'parsed' && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-[9px] font-bold">
-                        <span className="text-emerald-700">Parsed 4 contacts</span>
-                        <button onClick={() => setCsvStatus('idle')} className="text-slate-400 hover:text-slate-600"><X size={10} /></button>
-                      </div>
-                      
-                      <div className="max-h-[110px] overflow-y-auto space-y-1 pr-1">
-                        {parsedContacts.map((contact, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-1.5 bg-[#FAF6F0] border border-[#E5DCD3] rounded text-[9px] font-mono text-slate-700">
-                            <span className="truncate max-w-[80px] font-bold">{contact.name}</span>
-                            <span>{contact.maskedPhone}</span>
-                            <span className="bg-emerald-50 text-emerald-800 border border-emerald-100 px-1 rounded text-[7px] font-bold uppercase">{contact.status}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <span className="text-[8.5px] font-bold text-slate-400 uppercase tracking-widest pt-6 border-t border-slate-100 mt-6 block shrink-0">10-Digit Masking Regex Filters</span>
-            </div>
-
-            {/* Widget C: 1-Credit AI Polisher (Rule 8 compliant) */}
-            <div className="bg-white border border-[#E5DCD3] rounded-2xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-[#5C4033]">
-                  <Wand2 size={18} className="text-[#C4A896]" />
-                  <h3 className="font-bold text-xs uppercase tracking-wider">1-Credit AI Polisher</h3>
-                </div>
-
-                <p className="text-xs text-[#7A6A5E] leading-relaxed">
-                  Refine raw merchant inputs into high-converting copies with strict boundary filters preventing prompt injection and token waste (Rule 8 Compliant).
-                </p>
-
-                <div className="space-y-2 border-t pt-4 border-slate-100 text-left">
-                  <textarea
-                    rows={2}
-                    value={roughText}
-                    onChange={(e) => setRoughText(e.target.value)}
-                    className="w-full p-2 bg-[#FAF6F0] border border-[#E5DCD3] rounded text-[10px] font-mono leading-relaxed focus:outline-none focus:border-[#5C4033] resize-none"
-                    placeholder="Enter rough copy note..."
-                  />
-                  <button
-                    onClick={handlePolishText}
-                    disabled={isPolishing}
-                    className="w-full bg-[#5C4033] hover:bg-[#C4A896] text-white py-1.5 px-3 rounded text-[9px] font-bold tracking-widest uppercase flex items-center justify-center gap-1 shadow-sm transition-colors"
-                  >
-                    {isPolishing ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                    Polish With AI
-                  </button>
-                  
-                  {polishedOutput && (
-                    <div className="p-2 bg-[#FAF6F0] border border-[#E5DCD3] rounded text-[10px] text-slate-700 leading-relaxed font-medium">
-                      <span className="block font-bold text-[8px] text-[#5C4033] uppercase tracking-widest mb-0.5">Polished (Approved Format)</span>
-                      {polishedOutput}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <span className="text-[8.5px] font-bold text-slate-400 uppercase tracking-widest pt-6 border-t border-slate-100 mt-6 block shrink-0">Maximum 300 Characters Safe Edge</span>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 5.5 — ENGINE B: HYPER-LOCAL DEAD STOCK MARKETPLACE
-          0% Meta Dependency · Instant Dead-Capital Liquidation
-      ══════════════════════════════════════════════════════════ */}
+      {/* Floating Header */}
+      <LandingHeader headerRef={headerRef} isScrolled={isScrolled} />
+
+      {/* Hero Section */}
+      <HeroSection
+        heroRef={heroRef}
+        cart={cart}
+        newItemName={newItemName}
+        setNewItemName={setNewItemName}
+        newItemPrice={newItemPrice}
+        setNewItemPrice={setNewItemPrice}
+        handleAddItem={handleAddItem}
+        removeItem={removeItem}
+        subtotal={subtotal}
+        gst={gst}
+        total={total}
+        scannerActive={scannerActive}
+        justScanned={justScanned}
+        brandColor={brandColor}
+        invoiceFooterNote={invoiceFooterNote}
+        handleDownloadBill={handleDownloadBill}
+        isDownloading={isDownloading}
+        setShowBillModal={setShowBillModal}
+        brandPresetColors={BRAND_PRESET_COLORS}
+        selectPresetColor={selectPresetColor}
+      />
+
+      {/* Trinity Visual Matrix */}
+      <TrinityMatrixSection
+        offerImages={offerImages}
+        offerImageIndex={offerImageIndex}
+        cycleOfferImage={cycleOfferImage}
+        isOfferUploading={isOfferUploading}
+        originalPrice={originalPrice}
+        setOriginalPrice={setOriginalPrice}
+        discountPrice={discountPrice}
+        setDiscountPrice={setDiscountPrice}
+        computedDiscount={computedDiscount}
+        offerActive={offerActive}
+        setOfferActive={setOfferActive}
+        webPushBroadcast={webPushBroadcast}
+        setWebPushBroadcast={setWebPushBroadcast}
+        scannerActive={scannerActive}
+        setScannerActive={setScannerActive}
+        justScanned={justScanned}
+        scanHistoryLogs={scanHistoryLogs}
+        total={total}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        selectedTagFilter={selectedTagFilter}
+        setSelectedTagFilter={setSelectedTagFilter}
+        filteredAudience={filteredAudience}
+        triggerSecurityModal={triggerSecurityModal}
+      />
+
+      {/* WhatsApp Status Loop */}
+      <WhatsAppStatusSection />
+
+      {/* Universal Invoice Cross-Sell */}
+      <UniversalInvoiceSection />
+
+      {/* Account Ledgers */}
+      <LedgerSection
+        activeLedgerTab={activeLedgerTab}
+        setActiveLedgerTab={setActiveLedgerTab}
+        cashfreeLogs={cashfreeLogs}
+        ledgerUsages={ledgerUsages}
+        hasMoreUsages={hasMoreUsages}
+        isLoadingMoreUsages={isLoadingMoreUsages}
+        handleLoadMoreUsages={handleLoadMoreUsages}
+      />
+
+      {/* Technical Ingestion Matrix */}
+      <TechnicalMatrixSection
+        csvStatus={csvStatus}
+        setCsvStatus={setCsvStatus}
+        parsedContacts={parsedContacts}
+        handleSimulatedCsvUpload={handleSimulatedCsvUpload}
+        roughText={roughText}
+        setRoughText={setRoughText}
+        polishedOutput={polishedOutput}
+        isPolishing={isPolishing}
+        handlePolishText={handlePolishText}
+      />
+
+      {/* Dead Stock Marketplace Landing Section */}
       <DeadStockLandingSection />
 
+      {/* Reality Check Comparison */}
+      <RealityCheckSection />
 
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 6 — PERSUASION REVERSAL (RETAIL REALITY CHECK)
-      ══════════════════════════════════════════════════════════ */}
-      <section id="comparison" className="w-full py-24 px-6 bg-white scroll-reveal-section font-outfit">
-        <div className="max-w-7xl mx-auto">
-          
-          <div className="max-w-3xl mx-auto text-center mb-16 gsap-reveal">
-            <span className="text-xs tracking-[0.25em] uppercase text-[#C4A896] font-bold">
-              The Reality Check
-            </span>
-            <h2 className="serif-headline text-3xl sm:text-4xl text-[#5C4033] mt-4 mb-4">
-              Why Legacy Checkout is Hurting Your Retail Sales
-            </h2>
-            <p className="text-sm text-slate-500 leading-relaxed max-w-xl mx-auto">
-              We compared traditional, paper-based billing layouts against the True Attendly digital broadcast pipeline.
-            </p>
-          </div>
+      {/* Footer */}
+      <LandingFooter />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch max-w-5xl mx-auto gsap-reveal">
-            
-            {/* Legacy checkout */}
-            <div className="bg-[#FAF6F0] border border-red-200 rounded-2xl p-8 flex flex-col justify-between hover:shadow-lg transition-all">
-              <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center border border-red-100 shrink-0">
-                    <XCircle size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-800 text-sm">The Daily Retail Struggle</h3>
-                    <p className="text-[9px] text-red-500 font-semibold uppercase tracking-widest mt-0.5">High Costs and Friction</p>
-                  </div>
-                </div>
+      {/* Modals */}
+      <BillPreviewModal
+        showBillModal={showBillModal}
+        setShowBillModal={setShowBillModal}
+        brandColor={brandColor}
+        cart={cart}
+        subtotal={subtotal}
+        gst={gst}
+        total={total}
+        invoiceFooterNote={invoiceFooterNote}
+        handleDownloadBill={handleDownloadBill}
+      />
 
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Merchants waste fortunes on expensive thermal paper rolls and remain chained to rigid, legacy PC-based billing systems that slow down checkout queues, while customers refuse to share phone numbers due to privacy friction.
-                </p>
-
-                <ul className="space-y-3 text-xs text-slate-500 border-t border-slate-200/60 pt-4 text-left">
-                  <li className="flex items-center gap-2">
-                    <X size={12} className="text-red-400 shrink-0" />
-                    <span>Costly thermal rolls and PC printer maintenance traps.</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <X size={12} className="text-red-400 shrink-0" />
-                    <span>Customers refuse to spell phone numbers in public queues.</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <X size={12} className="text-red-400 shrink-0" />
-                    <span>Zero mechanism to contact buyers or drive repeat sales.</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <X size={12} className="text-red-400 shrink-0" />
-                    <span>Constant monthly subscription traps for rigid bulk tools.</span>
-                  </li>
-                </ul>
-              </div>
-              <span className="text-[8.5px] font-bold text-slate-400 uppercase tracking-widest pt-6 block border-t border-slate-100 mt-6 text-left">Inefficient Checkout System</span>
-            </div>
-
-            {/* True Attendly */}
-            <div className="bg-[#5C4033] text-[#FAF6F0] rounded-2xl p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden hover:scale-[1.01] transition-all">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-[#C4A896]/15 rounded-bl-full pointer-events-none" />
-              
-              <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-500/10 text-emerald-300 rounded-xl flex items-center justify-center border border-emerald-500/20 shrink-0">
-                    <CheckCircle size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-white text-sm">The True Attendly Advantage</h3>
-                    <p className="text-[9px] text-emerald-300 font-semibold uppercase tracking-widest mt-0.5">100% Frictionless Capture</p>
-                  </div>
-                </div>
-
-                <p className="text-xs text-[#FAF6F0]/80 leading-relaxed">
-                  One quick billing screen scan logs the lead, delivers an interactive custom invoice, auto-saves the merchant profile details, and legally whitelists the connection with absolute zero monthly subscription traps.
-                </p>
-
-                <ul className="space-y-3 text-xs text-[#FAF6F0]/90 border-t border-[#FAF6F0]/15 pt-4 text-left">
-                  <li className="flex items-center gap-2">
-                    <Check size={12} className="text-emerald-400 shrink-0" />
-                    <span>Zero paper hardware. Turn any smartphone or tablet into a billing term.</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check size={12} className="text-emerald-400 shrink-0" />
-                    <span>Opt-in whitelisting automatically secures the customer profile details.</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check size={12} className="text-emerald-400 shrink-0" />
-                    <span>Tag pipeline saves buyer records under DIGITAL_BILL segment.</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check size={12} className="text-emerald-400 shrink-0" />
-                    <span>No subscription locks. Purchase credits on a flexible pre-paid basis.</span>
-                  </li>
-                </ul>
-              </div>
-              <span className="text-[8.5px] font-bold text-[#C4A896] uppercase tracking-widest pt-6 block border-t border-[#FAF6F0]/15 mt-6 text-left">Next-gen Mobile Billing Onboarding</span>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          SECTION 7 — CONCIERGE & FOOTER
-      ══════════════════════════════════════════════════════════ */}
-      <footer className="bg-[#2D1E17] text-white pt-24 pb-12 font-outfit border-t border-[#5C4033]/40">
-        <div className="max-w-7xl mx-auto px-6">
-          
-          {/* Final Call to Action */}
-          <div className="max-w-3xl mx-auto text-center mb-16 space-y-6">
-            <h2 className="serif-headline text-3xl sm:text-4xl font-light text-[#FAF6F0]">
-              Elevate Your Checkout Flow and Boost Customer Retention.
-            </h2>
-            <p className="text-sm text-[#C4A896] leading-relaxed max-w-xl mx-auto">
-              Start capturing walk-in customer leads, whitelisting contacts automatically, and dispatching premium marketing campaigns today.
-            </p>
-            <div className="flex items-center justify-center gap-4 flex-wrap pt-4">
-              <Link
-                href="/auth/register"
-                className="bg-[#C4A896] hover:bg-[#FAF6F0] hover:text-[#5C4033] text-[#FAF6F0] font-bold uppercase py-3 px-6 text-xs tracking-wider transition-all duration-300"
-              >
-                Create Free Workspace
-              </Link>
-              <Link
-                href="/auth/login"
-                className="border border-[#FAF6F0]/30 hover:border-white hover:bg-white/5 text-white font-bold uppercase py-3 px-6 text-xs tracking-wider transition-all duration-300"
-              >
-                Sign In →
-              </Link>
-            </div>
-          </div>
-
-          {/* Concierge support */}
-          <div className="border-t border-[#5C4033]/30 pt-12 pb-16 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <div className="text-left">
-              <span className="bg-[#5C4033]/50 text-[#C4A896] border border-[#C4A896]/35 text-[9px] font-bold px-3 py-1 uppercase tracking-widest rounded-full mb-3 inline-block">
-                Priority Concierge Support
-              </span>
-              <h3 className="serif-headline text-2xl text-white font-medium mb-3">24/7 Operations Coverage</h3>
-              <p className="text-xs text-[#C4A896]/80 leading-relaxed">
-                Have an urgent broadcast concern or custom template routing configuration query? Our founding operations team is available around the clock to keep your retail campaign channels active.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <a
-                href="mailto:trueattendly@gmail.com"
-                className="flex items-center justify-center gap-2 py-4 bg-[#5C4033]/30 border border-[#5C4033]/60 hover:border-white transition-colors rounded-lg text-xs font-semibold tracking-wider uppercase text-white"
-              >
-                <Mail size={14} className="text-[#C4A896]" />
-                trueattendly@gmail.com
-              </a>
-              <span className="flex items-center justify-center gap-2 py-4 bg-emerald-600 text-white rounded-lg text-xs font-semibold tracking-wider uppercase border border-emerald-500">
-                Counter Portal Support
-              </span>
-            </div>
-          </div>
-
-          {/* Metadata baseline */}
-          <div className="border-t border-[#5C4033]/30 pt-8 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <img 
-                src="/images/logo-dark-v2.png" 
-                alt="True Attendly Logo" 
-                className="h-8 w-8 min-w-[32px] min-h-[32px] object-contain bg-white p-1 rounded-lg mr-2 inline-block transition-transform duration-200"
-              />
-              <span className="text-[10px] text-slate-400 font-mono">True Attendly Broadcast · Retail Growth Suite</span>
-            </div>
-
-            <div className="text-center md:text-right text-[10px] text-[#C4A896]/60 space-y-1 font-mono">
-              <p>Founder: Sharafath</p>
-              <p>Head Office: Aykarapadi, Malappuram, Kerala, India</p>
-              <p>Support Contact: trueattendly@gmail.com</p>
-              <p className="text-slate-500 mt-1">Version Track: {APP_VERSION} · broadcast.trueattendly.online</p>
-            </div>
-          </div>
-
-        </div>
-      </footer>
-
-      {/* ══════════════════════════════════════════════════════════
-          NATIVE HTML MODAL OVERLAY IN PREVIEW (View Bill)
-      ══════════════════════════════════════════════════════════ */}
-      {showBillModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden flex flex-col">
-            
-            {/* Modal header */}
-            <div className="bg-[#5C4033] text-white px-5 py-4 flex items-center justify-between border-b shrink-0">
-              <span className="text-xs font-bold uppercase tracking-widest flex items-center gap-1.5">
-                <FileText size={14} className="text-[#C4A896]" />
-                INV-1002 - Bill Preview
-              </span>
-              <button
-                onClick={() => setShowBillModal(false)}
-                className="text-slate-400 hover:text-white transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Modal bill body */}
-            <div className="p-6 flex-1 overflow-y-auto space-y-6">
-              
-              <div className="flex items-center justify-between p-2 rounded text-[10px] bg-[#FAF6F0] border border-dashed border-[#E5DCD3]">
-                <span className="text-slate-500 font-bold uppercase tracking-wider">Dynamic Theme Config</span>
-                <span className="font-semibold" style={{ color: brandColor }}>{brandColor}</span>
-              </div>
-
-              {/* Invoice Layout */}
-              <div className="border p-6 rounded-lg relative overflow-hidden" style={{ borderColor: brandColor }}>
-                
-                <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: brandColor }} />
-                
-                {/* Logo and Shop Header */}
-                <div className="flex justify-between items-start border-b pb-4 mb-4" style={{ borderBottomColor: `${brandColor}20` }}>
-                  <div>
-                    <h3 className="serif-headline text-base font-bold text-[#5C4033]">True Store</h3>
-                    <p className="text-[9px] text-slate-500 font-mono mt-0.5">GSTIN: 32AABCT8840M1Z3</p>
-                  </div>
-                  <span className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">INV-1002</span>
-                </div>
-
-                {/* Items Table */}
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between font-bold text-slate-500 border-b pb-1.5 mb-1.5" style={{ borderBottomColor: `${brandColor}10` }}>
-                    <span>Description</span>
-                    <span>Total</span>
-                  </div>
-                  {cart.map((item) => (
-                    <div key={item.id} className="flex justify-between text-slate-700">
-                      <span>{item.qty} × {item.name}</span>
-                      <span>₹{item.price * item.qty}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Subtotals & Taxes */}
-                <div className="border-t pt-3 mt-4 space-y-1 text-xs text-slate-600" style={{ borderTopColor: `${brandColor}15` }}>
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>₹{subtotal}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>GST (18%)</span>
-                    <span>₹{gst}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-slate-900 text-sm border-t pt-1.5 mt-1.5" style={{ borderTopColor: `${brandColor}20` }}>
-                    <span>Total Bill</span>
-                    <span>₹{total}</span>
-                  </div>
-                </div>
-
-                {/* Styled Invoice Footer note */}
-                <div className="mt-6 text-center border-t pt-4 text-xs italic" style={{ borderTopColor: `${brandColor}15` }}>
-                  <p className="font-serif font-bold" style={{ color: brandColor }}>
-                    &quot;{invoiceFooterNote}&quot;
-                  </p>
-                  <p className="text-[8px] text-slate-400 mt-2 font-bold uppercase tracking-wider">Powered by True Attendly</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal actions */}
-            <div className="bg-slate-50 p-4 border-t flex justify-end gap-2 shrink-0">
-              <button
-                onClick={() => setShowBillModal(false)}
-                className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 px-4 py-2 rounded text-[10px] font-bold uppercase tracking-widest transition-colors"
-              >
-                Close Preview
-              </button>
-              <button
-                onClick={handleDownloadBill}
-                className="text-white px-4 py-2 rounded text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1.5"
-                style={{ backgroundColor: brandColor }}
-              >
-                <Download size={12} /> Download PDF
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════
-          TRANSACTION SECURITY BARRIER POPUP MODAL (Firewall)
-      ══════════════════════════════════════════════════════════ */}
-      {securityModalOpen && (
-        <div className="fixed inset-0 bg-[#2D1E17]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-[#E5DCD3] shadow-2xl max-w-md w-full overflow-hidden flex flex-col">
-            
-            {/* Header */}
-            <div className="bg-[#B45309] text-white px-5 py-4 flex items-center gap-2 border-b shrink-0">
-              <AlertTriangle size={18} className="text-white" />
-              <span className="text-xs font-bold uppercase tracking-widest">
-                Critical Transaction Security Firewall
-              </span>
-              <button
-                onClick={() => setSecurityModalOpen(false)}
-                className="text-white/60 hover:text-white transition-colors ml-auto"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6 space-y-4 text-left">
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
-                <strong>Attention Required:</strong> You are about to initiate an active Web Push campaign broadcast loop. This will consume wallet credits and dispatch communications instantly to opt-in cohorts.
-              </div>
-
-              <div className="space-y-1.5 text-xs text-slate-700">
-                <div className="flex justify-between border-b pb-1.5">
-                  <span className="text-slate-500 font-semibold">Broadcasting Channel</span>
-                  <span className="font-bold text-slate-800 uppercase">Web Push Broadcast</span>
-                </div>
-                <div className="flex justify-between border-b pb-1.5">
-                  <span className="text-slate-500 font-semibold">Target Cohorts</span>
-                  <span className="font-bold text-slate-800">Flash Offer Subscribers / Registry Contacts</span>
-                </div>
-                <div className="flex justify-between border-b pb-1.5">
-                  <span className="text-slate-500 font-semibold">Recipients Queue Size</span>
-                  <span className="font-bold text-slate-800">1,240 Contacts</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 font-semibold">Wallet Credits Deducted</span>
-                  <span className="font-bold text-amber-700">2.0 Credits per Subscriber</span>
-                </div>
-              </div>
-
-              {/* Progress simulation state */}
-              {dispatchStatus === 'broadcasting' && (
-                <div className="py-4 text-center space-y-2">
-                  <Loader2 size={24} className="text-[#B45309] animate-spin mx-auto" />
-                  <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Dispatching campaign packets...</p>
-                </div>
-              )}
-
-              {dispatchStatus === 'completed' && (
-                <div className="py-4 text-center space-y-1 text-emerald-600">
-                  <CheckCircle size={24} className="mx-auto" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest">Queue Dispatched Successfully</p>
-                  <p className="text-[8px] text-slate-400">Credits deducted from ledger balance.</p>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Actions */}
-            <div className="bg-slate-50 p-4 border-t flex justify-between items-center shrink-0">
-              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
-                Double confirmation required
-              </span>
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setSecurityModalOpen(false)}
-                  disabled={dispatchStatus !== 'idle'}
-                  className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 px-4 py-2 rounded text-[10px] font-bold uppercase tracking-widest transition-colors"
-                >
-                  Cancel
-                </button>
-
-                {dispatchStatus === 'idle' && (
-                  <button
-                    onClick={handleSecurityVerification}
-                    className={`px-4 py-2 rounded text-[10px] font-bold uppercase tracking-widest transition-all ${
-                      securityClickCount === 0 ? 'bg-[#5C4033] text-white hover:bg-[#C4A896]' :
-                      securityClickCount === 1 ? 'bg-red-600 text-white' :
-                      'bg-emerald-600 text-white'
-                    }`}
-                  >
-                    {securityClickCount === 0 ? 'Confirm Broadcast Pipeline' : 'Click to Launch Broadcast'}
-                  </button>
-                )}
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
-
+      <SecurityFirewallModal
+        securityModalOpen={securityModalOpen}
+        setSecurityModalOpen={setSecurityModalOpen}
+        dispatchStatus={dispatchStatus}
+        securityClickCount={securityClickCount}
+        handleSecurityVerification={handleSecurityVerification}
+      />
     </main>
   );
 }

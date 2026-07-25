@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Search,
   MapPin,
@@ -13,6 +14,9 @@ import {
   Store,
   Loader2,
   X,
+  Navigation,
+  Globe,
+  Check,
 } from 'lucide-react';
 import { getDeadStockProducts, getActiveShops, getCategories } from './actions';
 
@@ -20,12 +24,25 @@ import { getDeadStockProducts, getActiveShops, getCategories } from './actions';
 
 type SortOrder = 'LOW_TO_HIGH' | 'HIGH_TO_LOW';
 
-interface FilterState {
-  searchQuery: string;   // raw input (not debounced)
-  debouncedSearch: string;
-  selectedCategory: string;
-  selectedShop: string;
-  sortOrder: SortOrder;
+// ─── Haversine Distance Utility ────────────────────────────────────────────────
+
+function getHaversineDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -39,13 +56,21 @@ function DeadStockDirectory() {
   const [shops, setShops] = useState<{ id: string; shop_name: string; city: string | null }[]>([]);
   const [categories, setCategories] = useState<string[]>(['ALL']);
 
+  // ── Buyer Location & Distance State ─────────────────────────────────────────
+  const [buyerCoords, setBuyerCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [nearMeActive, setNearMeActive] = useState(false);
+  const [maxRadiusKm, setMaxRadiusKm] = useState(15);
+  const [selectedCity, setSelectedCity] = useState('ALL');
+  const [locatingUser, setLocatingUser] = useState(false);
+  const [locationDenied, setLocationDenied] = useState(false);
+
   // ── Products + pagination ────────────────────────────────────────────────────
   const [products, setProducts] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(true);        // initial / reset load
-  const [loadingMore, setLoadingMore] = useState(false); // append load
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // ── Filter state ─────────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,14 +79,43 @@ function DeadStockDirectory() {
   const [selectedShop, setSelectedShop] = useState(initialShopId);
   const [sortOrder, setSortOrder] = useState<SortOrder>('LOW_TO_HIGH');
 
-  // Tracks whether the next fetch is a fresh load (page=1) or an append
   const isFirstPageRef = useRef(true);
-
-  // ── Infinite scroll sentinel ─────────────────────────────────────────────────
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 1. Load reference data once on mount
+  // 1. Auto-trigger Buyer Geolocation on Mount
+  // ─────────────────────────────────────────────────────────────────────────────
+  const requestBuyerLocation = useCallback(() => {
+    if (!('geolocation' in navigator)) {
+      setLocationDenied(true);
+      return;
+    }
+    setLocatingUser(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setBuyerCoords({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        });
+        // Do not force nearMeActive = true on load so all products display by default
+        setLocationDenied(false);
+        setLocatingUser(false);
+      },
+      (err) => {
+        console.warn('Buyer geolocation denied or unavailable:', err);
+        setLocationDenied(true);
+        setLocatingUser(false);
+      },
+      { timeout: 8000, maximumAge: 60000 }
+    );
+  }, []);
+
+  useEffect(() => {
+    requestBuyerLocation();
+  }, [requestBuyerLocation]);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 2. Load reference data once on mount
   // ─────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
@@ -75,7 +129,7 @@ function DeadStockDirectory() {
   }, []);
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 2. Debounce search — 300 ms strict
+  // 3. Debounce search — 300 ms strict
   // ─────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -85,21 +139,18 @@ function DeadStockDirectory() {
   }, [searchQuery]);
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 3. Reset to page 1 whenever a filter or search changes.
-  //    We set a flag on the ref so the fetch effect knows it's a fresh start.
+  // 4. Reset to page 1 whenever a filter or search changes
   // ─────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     isFirstPageRef.current = true;
     setPage(1);
-  }, [debouncedSearch, selectedCategory, selectedShop, sortOrder]);
+  }, [debouncedSearch, selectedCategory, selectedShop, selectedCity, sortOrder]);
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 4. Server-side fetch — triggered by page or filter changes
-  //    All filtering/sorting/pagination delegated entirely to Prisma.
+  // 5. Server-side fetch
   // ─────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
-
     const isFirstPage = isFirstPageRef.current;
 
     async function fetchProducts() {
@@ -107,11 +158,11 @@ function DeadStockDirectory() {
       else setLoadingMore(true);
 
       const result = await getDeadStockProducts(
-        selectedShop === 'ALL' ? null : selectedShop,
-        selectedCategory === 'ALL' ? null : selectedCategory,
-        debouncedSearch || null,
+        selectedShop,
+        selectedCategory,
+        debouncedSearch,
         page,
-        24,
+        12,
         sortOrder
       );
 
@@ -130,19 +181,19 @@ function DeadStockDirectory() {
     }
 
     fetchProducts();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      cancelled = true;
+    };
   }, [page, debouncedSearch, selectedCategory, selectedShop, sortOrder]);
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 5. Infinite Scroll via IntersectionObserver on sentinel div
+  // 6. Infinite scroll observer
   // ─────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!sentinelRef.current) return;
 
     const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
+      ([entry]) => {
         if (entry.isIntersecting && hasMore && !loadingMore && !loading) {
           setPage((p) => p + 1);
         }
@@ -154,81 +205,208 @@ function DeadStockDirectory() {
     return () => observer.disconnect();
   }, [hasMore, loadingMore, loading]);
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 6. Sync URL when shop filter changes
-  // ─────────────────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (selectedShop !== 'ALL') {
-      router.replace(`/broadcast/dead-stock?shopId=${selectedShop}`, { scroll: false });
-    } else if (searchParams.get('shopId')) {
-      router.replace('/broadcast/dead-stock', { scroll: false });
-    }
-  }, [selectedShop, router, searchParams]);
+  // Extract unique cities from shops
+  const uniqueCities = Array.from(
+    new Set(shops.map((s) => s.city).filter(Boolean) as string[])
+  );
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Helpers
-  // ─────────────────────────────────────────────────────────────────────────────
-  const hasActiveFilters =
-    selectedShop !== 'ALL' || selectedCategory !== 'ALL' || debouncedSearch !== '';
+  // Filter products by Distance / Near Me & City Dropdown
+  const processedProducts = products
+    .map((product) => {
+      let distanceKm: number | null = null;
+      if (
+        buyerCoords &&
+        product.shop?.latitude &&
+        product.shop?.longitude
+      ) {
+        distanceKm = getHaversineDistanceKm(
+          buyerCoords.lat,
+          buyerCoords.lng,
+          Number(product.shop.latitude),
+          Number(product.shop.longitude)
+        );
+      }
+      return { ...product, distanceKm };
+    })
+    .filter((product) => {
+      // City Filter
+      if (
+        selectedCity !== 'ALL' &&
+        product.shop?.city?.toLowerCase() !== selectedCity.toLowerCase()
+      ) {
+        return false;
+      }
+      // Near Me Proximity Filter
+      if (nearMeActive) {
+        if (product.distanceKm !== null && product.distanceKm > maxRadiusKm) {
+          return false;
+        }
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (nearMeActive && buyerCoords) {
+        if (a.distanceKm !== null && b.distanceKm !== null) {
+          return a.distanceKm - b.distanceKm;
+        }
+        if (a.distanceKm !== null) return -1;
+        if (b.distanceKm !== null) return 1;
+      }
+      return 0;
+    });
 
   const clearAllFilters = () => {
     setSearchQuery('');
+    setDebouncedSearch('');
     setSelectedCategory('ALL');
     setSelectedShop('ALL');
-    setSortOrder('LOW_TO_HIGH');
+    setSelectedCity('ALL');
+    setNearMeActive(false);
   };
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Render
-  // ─────────────────────────────────────────────────────────────────────────────
+  const hasActiveFilters =
+    debouncedSearch ||
+    selectedCategory !== 'ALL' ||
+    selectedShop !== 'ALL' ||
+    selectedCity !== 'ALL' ||
+    nearMeActive;
+
   return (
-    <main className="min-h-screen bg-[#FAF6F0] font-outfit pb-24">
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="bg-[#5C4033] text-[#FAF6F0] pt-24 pb-16 px-6">
-        <div className="max-w-7xl mx-auto text-center">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-500/20 text-rose-300 text-xs font-bold tracking-widest uppercase rounded-full mb-4 border border-rose-500/30">
-            <AlertTriangle size={14} /> Factory Clearance
-          </span>
-          <h1 className="serif-headline text-4xl md:text-5xl lg:text-6xl mb-6">
-            Hyper-Local Dead Stock
-          </h1>
-          <p className="max-w-2xl mx-auto text-[#C4A896] text-sm md:text-base leading-relaxed">
-            Discover massive discounts on unsold inventory from premium local merchants.
-            No middlemen. No shipping waits. Contact directly via WhatsApp and pick up today.
-          </p>
+    <div className="min-h-screen bg-[#FDFBF7] font-outfit text-[#3E3B36]">
+      {/* ── Header Banner ───────────────────────────────────────────────────── */}
+      <div className="bg-[#3E3B36] text-[#F5F1EA] py-12 px-6 border-b border-[#5C4033]/20 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
+          <div>
+            <span className="text-[10px] font-bold tracking-[0.2em] text-[#C4A896] uppercase bg-[#C4A896]/10 border border-[#C4A896]/20 px-3 py-1 rounded-full">
+              Live Hyperlocal Marketplace
+            </span>
+            <h1 className="serif-headline text-3xl md:text-5xl mt-3 text-white">
+              Dead Stock & Clearance Deals
+            </h1>
+            <p className="text-sm md:text-base text-[#D4C5B9] mt-2 max-w-xl">
+              Discover verified local shop inventory at up to 80% discount near your location.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard/dead-stock"
+              className="bg-[#C4A896] text-[#2A2825] font-bold text-xs uppercase tracking-widest px-6 py-3.5 rounded-xl hover:bg-white transition-all shadow-md"
+            >
+              Merchant Portal →
+            </Link>
+          </div>
         </div>
-      </header>
+      </div>
 
-      {/* ── Control Panel ──────────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-6 -mt-8 relative z-10">
-        <div className="bg-white rounded-2xl shadow-lg border border-[#E5DCD3] p-4 md:p-6 flex flex-col md:flex-row gap-4">
+      {/* ── DYNAMIC BUYER LOCATION & DISTANCE CONTROL BAR ───────────────────── */}
+      <div className="max-w-7xl mx-auto px-6 -mt-6 relative z-20">
+        <div className="bg-white rounded-2xl p-4 border border-[#E5DCD3] shadow-lg flex flex-col lg:flex-row items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+            {/* Toggle Button: Near Me / All Locations */}
+            <button
+              onClick={() => {
+                if (!buyerCoords) requestBuyerLocation();
+                else setNearMeActive((prev) => !prev);
+              }}
+              disabled={locatingUser}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold tracking-wider uppercase flex items-center gap-2 transition-all shadow-sm ${
+                nearMeActive
+                  ? 'bg-amber-600 text-white shadow-amber-600/20'
+                  : 'bg-[#FAF6F0] text-[#5C4033] border border-[#E5DCD3] hover:bg-[#E5DCD3]'
+              }`}
+            >
+              {locatingUser ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : nearMeActive ? (
+                <Navigation size={14} className="text-white fill-white" />
+              ) : (
+                <Globe size={14} />
+              )}
+              {nearMeActive ? `Near Me (<${maxRadiusKm}km)` : 'All Locations'}
+            </button>
 
-          {/* Search Input — debounced 300ms server-side trigger */}
-          <div className="flex-1 relative">
+            {/* Radius Selector (when Near Me active) */}
+            {nearMeActive && (
+              <select
+                value={maxRadiusKm}
+                onChange={(e) => setMaxRadiusKm(Number(e.target.value))}
+                className="px-3 py-2 bg-[#FAF6F0] border border-[#E5DCD3] rounded-xl text-xs font-bold text-[#5C4033] focus:outline-none cursor-pointer"
+              >
+                <option value={5}>Within 5 km</option>
+                <option value={15}>Within 15 km</option>
+                <option value={30}>Within 30 km</option>
+                <option value={50}>Within 50 km</option>
+              </select>
+            )}
+
+            {/* City Fallback Dropdown */}
+            <div className="relative flex-1 sm:w-44">
+              <select
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                className="w-full pl-8 pr-4 py-2.5 bg-[#FAF6F0] border border-[#E5DCD3] rounded-xl text-xs font-bold text-[#5C4033] focus:outline-none cursor-pointer appearance-none"
+              >
+                <option value="ALL">All Cities</option>
+                {uniqueCities.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <MapPin
+                size={14}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              />
+            </div>
+          </div>
+
+          {/* Location Status Alert */}
+          <div className="text-xs text-slate-500 flex items-center gap-2">
+            {buyerCoords ? (
+              <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full font-semibold flex items-center gap-1.5">
+                <Check size={13} /> GPS Location Active
+              </span>
+            ) : locationDenied ? (
+              <span className="text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full font-semibold flex items-center gap-1.5">
+                <MapPin size={13} className="text-amber-600" /> Location unavailable. Using City selection fallback.
+              </span>
+            ) : (
+              <span>Select location to find nearest shop deals</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Main Controls & Search Bar ──────────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto px-6 mt-8">
+        <div className="bg-white rounded-2xl p-4 border border-[#E5DCD3] shadow-sm flex flex-col lg:flex-row gap-4 justify-between items-center">
+          {/* Search Input */}
+          <div className="relative w-full lg:w-96">
             <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
               size={18}
             />
             <input
-              id="dead-stock-search"
+              id="dead-stock-search-input"
               type="text"
-              placeholder="Search products, brands, or keywords..."
+              placeholder="Search items, brands, categories…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-10 py-3 bg-[#FAF6F0] border border-[#E5DCD3] rounded-xl text-sm focus:outline-none focus:border-[#5C4033] focus:ring-1 focus:ring-[#5C4033] transition-all"
+              className="w-full pl-10 pr-10 py-3 bg-[#FAF6F0] border border-[#E5DCD3] rounded-xl text-sm focus:outline-none focus:border-[#5C4033] placeholder:text-slate-400 text-[#3E3B36]"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                aria-label="Clear search"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
                 <X size={16} />
               </button>
             )}
           </div>
 
-          <div className="flex flex-wrap md:flex-nowrap gap-4">
+          {/* Filter Dropdowns */}
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
             {/* Shop Filter */}
             <div className="relative flex-1 md:flex-none md:w-48">
               <Store
@@ -294,6 +472,22 @@ function DeadStockDirectory() {
       {/* ── Active Filter Chips ─────────────────────────────────────────────── */}
       {hasActiveFilters && (
         <div className="max-w-7xl mx-auto px-6 mt-6 flex flex-wrap items-center gap-2">
+          {nearMeActive && (
+            <span className="px-3 py-1 bg-amber-600 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-sm">
+              <Navigation size={12} className="text-white fill-white" /> Proximity &lt;{maxRadiusKm}km Active
+              <button onClick={() => setNearMeActive(false)} className="ml-0.5 opacity-80 hover:opacity-100">
+                <X size={12} />
+              </button>
+            </span>
+          )}
+          {selectedCity !== 'ALL' && (
+            <span className="px-3 py-1 bg-[#5C4033] text-white text-xs font-bold rounded-full flex items-center gap-1.5">
+              City: {selectedCity}
+              <button onClick={() => setSelectedCity('ALL')} className="ml-0.5 opacity-80 hover:opacity-100">
+                <X size={12} />
+              </button>
+            </span>
+          )}
           {debouncedSearch && (
             <span className="px-3 py-1 bg-[#5C4033]/10 text-[#5C4033] text-xs font-bold rounded-full flex items-center gap-1.5 border border-[#5C4033]/20">
               "{debouncedSearch}"
@@ -302,38 +496,18 @@ function DeadStockDirectory() {
               </button>
             </span>
           )}
-          {selectedShop !== 'ALL' && (
-            <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full flex items-center gap-1.5 border border-amber-200">
-              Shop Filter Active
-              <button onClick={() => setSelectedShop('ALL')} className="ml-0.5 opacity-60 hover:opacity-100">
-                <X size={12} />
-              </button>
-            </span>
-          )}
-          {selectedCategory !== 'ALL' && (
-            <span className="px-3 py-1 bg-slate-200 text-slate-700 text-xs font-bold rounded-full flex items-center gap-1.5">
-              {selectedCategory}
-              <button onClick={() => setSelectedCategory('ALL')} className="ml-0.5 opacity-60 hover:opacity-100">
-                <X size={12} />
-              </button>
-            </span>
-          )}
           <button
             onClick={clearAllFilters}
-            className="text-xs text-slate-500 underline underline-offset-2 hover:text-slate-800 transition-colors ml-1"
+            className="text-xs text-rose-600 font-bold hover:underline ml-2"
           >
             Clear all
           </button>
-          <span className="ml-auto text-xs text-slate-400">
-            {totalCount} result{totalCount !== 1 ? 's' : ''}
-          </span>
         </div>
       )}
 
-      {/* ── Product Grid ───────────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-6 mt-12">
-        {loading && page === 1 ? (
-          /* Initial skeleton loader */
+      {/* ── Product Grid ────────────────────────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="bg-white rounded-2xl border border-[#E5DCD3] overflow-hidden animate-pulse">
@@ -346,24 +520,24 @@ function DeadStockDirectory() {
               </div>
             ))}
           </div>
-        ) : products.length === 0 ? (
+        ) : processedProducts.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl border border-[#E5DCD3] shadow-sm">
             <AlertTriangle className="mx-auto text-slate-300 mb-4" size={48} />
-            <h3 className="text-xl font-bold text-slate-700 mb-2">No Dead Stock Found</h3>
-            <p className="text-slate-500">Try adjusting your filters or checking back later.</p>
+            <h3 className="text-xl font-bold text-slate-700 mb-2">No Nearby Clearance Items Found</h3>
+            <p className="text-slate-500">Try expanding your location radius or switching to All Cities.</p>
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
                 className="mt-4 text-sm text-[#5C4033] font-bold underline underline-offset-2"
               >
-                Clear filters
+                Clear all location filters
               </button>
             )}
           </div>
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.map((product) => (
+              {processedProducts.map((product) => (
                 <Link
                   href={`/broadcast/dead-stock/${product.id}`}
                   key={product.id}
@@ -374,13 +548,23 @@ function DeadStockDirectory() {
                     {product.discount_percentage}% OFF
                   </div>
 
+                  {/* Proximity Distance Badge */}
+                  {product.distanceKm !== null && (
+                    <div className="absolute top-3 left-3 z-10 px-2.5 py-1 bg-amber-600 text-white text-[10px] font-bold rounded-lg shadow-md flex items-center gap-1">
+                      <Navigation size={10} className="fill-white" />
+                      {product.distanceKm} km away
+                    </div>
+                  )}
+
                   {/* Image */}
                   <div className="relative aspect-[4/3] bg-slate-100 overflow-hidden">
                     {product.images && product.images.length > 0 ? (
-                      <img
+                      <Image
                         src={product.images[0]}
                         alt={product.product_name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center text-slate-300">
@@ -388,7 +572,7 @@ function DeadStockDirectory() {
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                      <span className="text-white text-xs font-semibold">View Details →</span>
+                      <span className="text-white text-xs font-semibold">View Deal & Directions →</span>
                     </div>
                   </div>
 
@@ -413,16 +597,17 @@ function DeadStockDirectory() {
 
                       <div className="h-px bg-[#E5DCD3] mb-3" />
 
+                      {/* Store & Proximity Badge */}
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-[#FAF6F0] border border-[#E5DCD3] flex items-center justify-center shrink-0">
-                          <MapPin size={10} className="text-[#5C4033]" />
+                          <MapPin size={11} className="text-[#5C4033]" />
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="text-xs font-bold text-[#5C4033] truncate">
                             {product.shop?.shop_name}
                           </p>
-                          <p className="text-[10px] text-slate-500 truncate">
-                            {product.shop?.city}
+                          <p className="text-[10px] font-medium text-slate-500 truncate">
+                            {[product.shop?.city, product.shop?.district].filter(Boolean).join(', ') || 'Local Store'}
                           </p>
                         </div>
                       </div>
@@ -440,7 +625,7 @@ function DeadStockDirectory() {
                   Loading more products…
                 </div>
               )}
-              {!hasMore && products.length > 0 && (
+              {!hasMore && processedProducts.length > 0 && (
                 <p className="text-xs text-slate-400 font-medium tracking-wider uppercase py-4">
                   — All {totalCount} item{totalCount !== 1 ? 's' : ''} loaded —
                 </p>
@@ -449,7 +634,7 @@ function DeadStockDirectory() {
           </>
         )}
       </div>
-    </main>
+    </div>
   );
 }
 
@@ -457,8 +642,8 @@ export default function DeadStockPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center">
-          <div className="w-8 h-8 border-4 border-[#5C4033] border-t-transparent rounded-full animate-spin" />
+        <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
+          <Loader2 className="animate-spin text-[#5C4033]" size={32} />
         </div>
       }
     >

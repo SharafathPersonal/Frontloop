@@ -8,6 +8,29 @@ import { unstable_cache } from 'next/cache';
  * ALL filtering, sorting, and pagination happens here via Prisma.
  * Never returns more rows than `limit`. No client-side filtering.
  */
+function serializeProduct(p: any) {
+  if (!p) return null;
+  const clean = {
+    ...p,
+    original_price: p.original_price != null ? Number(p.original_price) : 0,
+    clearance_price: p.clearance_price != null ? Number(p.clearance_price) : 0,
+    discount_percentage: p.discount_percentage != null ? Number(p.discount_percentage) : 0,
+    created_at: p.created_at instanceof Date ? p.created_at.toISOString() : p.created_at,
+    updated_at: p.updated_at instanceof Date ? p.updated_at.toISOString() : p.updated_at,
+  };
+
+  if (clean.shop) {
+    clean.shop = {
+      ...clean.shop,
+      latitude: clean.shop.latitude != null ? Number(clean.shop.latitude) : null,
+      longitude: clean.shop.longitude != null ? Number(clean.shop.longitude) : null,
+      created_at: clean.shop.created_at instanceof Date ? clean.shop.created_at.toISOString() : clean.shop.created_at,
+    };
+  }
+
+  return JSON.parse(JSON.stringify(clean));
+}
+
 export async function getDeadStockProducts(
   shopId: string | null = null,
   category: string | null = null,
@@ -22,8 +45,8 @@ export async function getDeadStockProducts(
     const whereClause: any = {
       is_cleared: false,
       shop: {
-        marketplace_active: true,
         is_blocked: false,
+        marketplace_active: { not: false },
       },
     };
 
@@ -48,6 +71,9 @@ export async function getDeadStockProducts(
               location_address: true,
               city: true,
               district: true,
+              state: true,
+              latitude: true,
+              longitude: true,
               google_maps_url: true,
             },
           },
@@ -63,11 +89,7 @@ export async function getDeadStockProducts(
     ]);
 
     return {
-      products: products.map((p) => ({
-        ...p,
-        original_price: Number(p.original_price),
-        clearance_price: Number(p.clearance_price),
-      })),
+      products: products.map(serializeProduct),
       totalCount,
       hasMore: skip + limit < totalCount,
     };
@@ -85,7 +107,7 @@ export const getCategories = unstable_cache(
     const products = await prisma.deadStockProduct.findMany({
       where: {
         is_cleared: false,
-        shop: { marketplace_active: true, is_blocked: false },
+        shop: { marketplace_active: { not: false }, is_blocked: false },
       },
       select: { category: true },
       distinct: ['category'],
@@ -104,7 +126,7 @@ export const getActiveShops = unstable_cache(
     try {
       const shops = await prisma.shop.findMany({
         where: {
-          marketplace_active: true,
+          marketplace_active: { not: false },
           is_blocked: false,
           deadStockProducts: { some: { is_cleared: false } },
         },
@@ -133,17 +155,17 @@ export async function getProductDetails(id: string) {
             contact_number: true,
             location_address: true,
             city: true,
+            district: true,
+            state: true,
+            latitude: true,
+            longitude: true,
             google_maps_url: true,
           },
         },
       },
     });
     if (!product) return null;
-    return {
-      ...product,
-      original_price: Number(product.original_price),
-      clearance_price: Number(product.clearance_price),
-    };
+    return serializeProduct(product);
   } catch (error) {
     console.error('Error fetching product details:', error);
     return null;
@@ -161,11 +183,7 @@ export async function getShopProducts(shopId: string, excludeProductId: string) 
       take: 5,
       orderBy: { created_at: 'desc' },
     });
-    return products.map((p) => ({
-      ...p,
-      original_price: Number(p.original_price),
-      clearance_price: Number(p.clearance_price),
-    }));
+    return products.map(serializeProduct);
   } catch (error) {
     console.error('Error fetching shop products:', error);
     return [];

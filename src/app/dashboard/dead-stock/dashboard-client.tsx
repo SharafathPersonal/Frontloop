@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
-  Filter,
   Trash2,
   CheckCircle,
   Pencil,
@@ -12,6 +11,14 @@ import {
   ArrowUpDown,
   Loader2,
   X,
+  Sparkles,
+  Eye,
+  MessageCircle,
+  QrCode,
+  IndianRupee,
+  Share2,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import {
@@ -19,8 +26,10 @@ import {
   toggleProductClearedStatus,
   deleteProduct,
   bulkToggleProductClearedStatus,
+  getMerchantPerformanceMetrics,
 } from './actions';
 import Link from 'next/link';
+import Image from 'next/image';
 import BackButton from '@/components/ui/BackButton';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 import { useToast } from '@/contexts/ToastContext';
@@ -53,6 +62,15 @@ export function DashboardClient() {
   const [loadingMore, setLoadingMore] = useState(false);
   const isFirstPageRef = useRef(true);
 
+  // ── Merchant Metrics ────────────────────────────────────────────────────────
+  const [metrics, setMetrics] = useState({
+    totalViews: 0,
+    whatsappInquiries: 0,
+    qrScans: 0,
+    capitalRecovered: 0,
+  });
+  const [metricsLoading, setMetricsLoading] = useState(true);
+
   // ── Filters ─────────────────────────────────────────────────────────────────
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -78,6 +96,13 @@ export function DashboardClient() {
     onConfirm: () => {},
   });
 
+  // ── AI Status Copy Generator Modal ──────────────────────────────────────────
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [selectedProductForAi, setSelectedProductForAi] = useState<any | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiOptions, setAiOptions] = useState<string[]>([]);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+
   // ── Infinite scroll sentinel ─────────────────────────────────────────────────
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -89,6 +114,18 @@ export function DashboardClient() {
       if (user) setShopId(user.id);
     });
   }, []);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Fetch merchant performance ROI metrics
+  // ─────────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!shopId) return;
+    setMetricsLoading(true);
+    getMerchantPerformanceMetrics(shopId).then((res) => {
+      setMetrics(res);
+      setMetricsLoading(false);
+    });
+  }, [shopId, inventory]);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 300 ms debounce on search input
@@ -144,7 +181,6 @@ export function DashboardClient() {
 
     fetchInventory();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shopId, page, debouncedSearch, statusFilter, sortOrder]);
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -166,6 +202,56 @@ export function DashboardClient() {
   }, [hasMore, loadingMore, loading]);
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // AI Status Generator Handler
+  // ─────────────────────────────────────────────────────────────────────────────
+  const openAiGenerator = async (product?: any) => {
+    const targetProduct = product || inventory[0];
+    if (!targetProduct) {
+      showToast('No items available to generate status copy.', 'error');
+      return;
+    }
+    setSelectedProductForAi(targetProduct);
+    setAiModalOpen(true);
+    setAiLoading(true);
+    setAiOptions([]);
+
+    try {
+      const res = await fetch('/api/ai/status-generator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_name: targetProduct.product_name,
+          category: targetProduct.category,
+          original_price: targetProduct.original_price,
+          clearance_price: targetProduct.clearance_price,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to generate status copy');
+      if (data.options) {
+        setAiOptions(data.options);
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Error generating AI copy', 'error');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const copyToClipboard = (text: string, idx: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIdx(idx);
+    showToast('Copied to clipboard!', 'success');
+    setTimeout(() => setCopiedIdx(null), 2000);
+  };
+
+  const shareToWhatsApp = (text: string) => {
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // Mutations — optimistic UI with rollback
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -179,7 +265,6 @@ export function DashboardClient() {
       confirmText: `MARK AS ${actionName}`,
       onConfirm: async () => {
         setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
-        // Optimistic update
         setInventory((prev) =>
           prev.map((p) => (p.id === productId ? { ...p, is_cleared: newStatus } : p))
         );
@@ -269,7 +354,7 @@ export function DashboardClient() {
   // Render
   // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="w-full font-outfit max-w-7xl mx-auto space-y-6">
+    <div className="w-full font-outfit max-w-7xl mx-auto space-y-6 pb-12">
       <CustomConfirm
         isOpen={confirmConfig.isOpen}
         title={confirmConfig.title}
@@ -294,18 +379,72 @@ export function DashboardClient() {
             </p>
           </div>
         </div>
-        <Link
-          href="/dashboard/dead-stock/manage/new"
-          className="bg-[#3E3B36] text-[#F5F1EA] px-6 py-3 rounded-xl text-xs font-bold tracking-widest uppercase hover:bg-[#2A2825] transition-colors shadow-sm"
-        >
-          + Add New Item
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => openAiGenerator()}
+            className="bg-[#3E3B36] text-[#F5F1EA] px-5 py-3 rounded-xl text-xs font-bold tracking-widest uppercase hover:bg-[#2A2825] transition-all shadow-sm flex items-center gap-2"
+          >
+            AI Status Generator
+          </button>
+          <Link
+            href="/dashboard/dead-stock/manage/new"
+            className="bg-[#3E3B36] text-[#F5F1EA] px-6 py-3 rounded-xl text-xs font-bold tracking-widest uppercase hover:bg-[#2A2825] transition-colors shadow-sm"
+          >
+            + Add New Item
+          </Link>
+        </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-[#E8E3DA] overflow-hidden flex flex-col h-[calc(100vh-220px)] min-h-[600px]">
+      {/* ── MERCHANT ROI & RETENTION METRICS (4 CARDS) ────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Metric 1: Total Clearance Views */}
+        <div className="bg-white p-5 rounded-2xl border border-[#E8E3DA] shadow-sm flex flex-col justify-between">
+          <div>
+            <p className="text-[10px] font-bold tracking-widest text-[#8B8378] uppercase">Clearance Views</p>
+            <p className="text-2xl font-black text-[#3E3B36] mt-1">
+              {metricsLoading ? <Loader2 size={18} className="animate-spin text-slate-400" /> : metrics.totalViews.toLocaleString()}
+            </p>
+          </div>
+          <span className="text-[9px] text-[#8B8378] font-medium mt-2">Total product impressions</span>
+        </div>
+
+        {/* Metric 2: WhatsApp Inquiries */}
+        <div className="bg-white p-5 rounded-2xl border border-[#E8E3DA] shadow-sm flex flex-col justify-between">
+          <div>
+            <p className="text-[10px] font-bold tracking-widest text-[#8B8378] uppercase">WhatsApp Inquiries</p>
+            <p className="text-2xl font-black text-[#3E3B36] mt-1">
+              {metricsLoading ? <Loader2 size={18} className="animate-spin text-slate-400" /> : metrics.whatsappInquiries.toLocaleString()}
+            </p>
+          </div>
+          <span className="text-[9px] text-[#8B8378] font-medium mt-2">Direct chat click-throughs</span>
+        </div>
+
+        {/* Metric 3: Store QR Code Scans */}
+        <div className="bg-white p-5 rounded-2xl border border-[#E8E3DA] shadow-sm flex flex-col justify-between">
+          <div>
+            <p className="text-[10px] font-bold tracking-widest text-[#8B8378] uppercase">Store QR Scans</p>
+            <p className="text-2xl font-black text-[#3E3B36] mt-1">
+              {metricsLoading ? <Loader2 size={18} className="animate-spin text-slate-400" /> : metrics.qrScans.toLocaleString()}
+            </p>
+          </div>
+          <span className="text-[9px] text-[#8B8378] font-medium mt-2">Footfall &amp; QR interactions</span>
+        </div>
+
+        {/* Metric 4: Liquidation Capital Recovered */}
+        <div className="bg-white p-5 rounded-2xl border border-[#E8E3DA] shadow-sm flex flex-col justify-between">
+          <div>
+            <p className="text-[10px] font-bold tracking-widest text-[#8B8378] uppercase">Capital Recovered</p>
+            <p className="text-2xl font-black text-[#3E3B36] mt-1">
+              {metricsLoading ? <Loader2 size={18} className="animate-spin text-slate-400" /> : `₹${metrics.capitalRecovered.toLocaleString('en-IN')}`}
+            </p>
+          </div>
+          <span className="text-[9px] text-[#8B8378] font-medium mt-2">Total liquidated inventory</span>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-[#E8E3DA] overflow-hidden flex flex-col h-[calc(100vh-280px)] min-h-[550px]">
         {/* ── Toolbar ──────────────────────────────────────────────────────── */}
         <div className="p-4 border-b border-[#E8E3DA] flex flex-col sm:flex-row justify-between gap-4 bg-[#FAF9F6] shrink-0">
-          {/* Search — 300ms debounced, server-side */}
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B8378]" size={16} />
             <input
@@ -328,7 +467,6 @@ export function DashboardClient() {
           </div>
 
           <div className="flex gap-2 shrink-0">
-            {/* Status Filter — server-side */}
             <select
               id="dashboard-status-filter"
               value={statusFilter}
@@ -340,7 +478,6 @@ export function DashboardClient() {
               <option value="cleared">Cleared Only</option>
             </select>
 
-            {/* Sort — server-side */}
             <button
               id="dashboard-sort-toggle"
               onClick={() => setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))}
@@ -378,7 +515,7 @@ export function DashboardClient() {
           </div>
         )}
 
-        {/* ── Table with infinite scroll ────────────────────────────────────── */}
+        {/* ── Table ──────────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-auto bg-white">
           <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
             <thead className="bg-[#F5F1EA] text-[#8B8378] font-bold text-[10px] uppercase tracking-[0.2em] sticky top-0 z-10 shadow-sm">
@@ -398,7 +535,6 @@ export function DashboardClient() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E8E3DA]">
-              {/* Loading state (initial) */}
               {loading && (
                 <tr>
                   <td colSpan={5} className="px-6 py-24 text-center">
@@ -412,20 +548,16 @@ export function DashboardClient() {
                 </tr>
               )}
 
-              {/* Empty state */}
               {!loading && inventory.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-24 text-center">
                     <Package size={48} className="mx-auto text-[#E8E3DA] mb-4" />
                     <p className="text-sm font-semibold text-[#3E3B36]">No items found.</p>
-                    <p className="text-xs text-[#8B8378] mt-1">
-                      Adjust your search or add a new item.
-                    </p>
+                    <p className="text-xs text-[#8B8378] mt-1">Adjust your search or add a new item.</p>
                   </td>
                 </tr>
               )}
 
-              {/* Rows */}
               {!loading &&
                 inventory.map((item) => (
                   <tr
@@ -444,12 +576,14 @@ export function DashboardClient() {
                     </td>
                     <td className="px-6 py-4 w-[40%]">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-lg border border-[#E8E3DA] bg-white overflow-hidden shrink-0 flex items-center justify-center">
+                        <div className="relative w-12 h-12 rounded-lg border border-[#E8E3DA] bg-white overflow-hidden shrink-0 flex items-center justify-center">
                           {item.images?.[0] ? (
-                            <img
+                            <Image
                               src={item.images[0]}
                               alt={item.product_name}
-                              className="w-full h-full object-cover"
+                              fill
+                              sizes="48px"
+                              className="object-cover"
                             />
                           ) : (
                             <Package size={20} className="text-[#E8E3DA]" />
@@ -491,6 +625,15 @@ export function DashboardClient() {
                     </td>
                     <td className="px-6 py-4 text-right w-[15%]">
                       <div className="flex items-center justify-end gap-2">
+                        {/* AI Status Generator Button */}
+                        <button
+                          onClick={() => openAiGenerator(item)}
+                          title="Generate AI Status Copy"
+                          className="p-2.5 bg-amber-50 border border-amber-200 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors flex items-center justify-center min-w-[40px]"
+                        >
+                          <Sparkles size={16} />
+                        </button>
+
                         <button
                           onClick={() => confirmToggleCleared(item.id, item.is_cleared)}
                           title={item.is_cleared ? 'Mark as Live' : 'Mark as Cleared'}
@@ -525,7 +668,6 @@ export function DashboardClient() {
             </tbody>
           </table>
 
-          {/* Infinite scroll sentinel — sits inside the scrollable container */}
           <div ref={sentinelRef} className="flex justify-center py-6">
             {loadingMore && (
               <div className="flex items-center gap-2 text-[#8B8378] text-xs font-semibold">
@@ -541,6 +683,73 @@ export function DashboardClient() {
           </div>
         </div>
       </div>
+
+      {/* ── AI WHATSAPP STATUS GENERATOR MODAL ────────────────────────────────── */}
+      {aiModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-[#E5DCD3] relative animate-in fade-in zoom-in duration-200">
+            <button
+              onClick={() => setAiModalOpen(false)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 bg-slate-100 p-1.5 rounded-full"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                <Sparkles size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-[#3E3B36]">AI WhatsApp Status Copy Generator</h3>
+                <p className="text-xs text-slate-500">
+                  Target item: <span className="font-semibold text-amber-800">{selectedProductForAi?.product_name}</span>
+                </p>
+              </div>
+            </div>
+
+            {aiLoading ? (
+              <div className="py-16 text-center space-y-3">
+                <Loader2 size={36} className="animate-spin text-amber-600 mx-auto" />
+                <p className="text-sm font-semibold text-[#3E3B36]">Crafting 3 viral status options…</p>
+                <p className="text-xs text-slate-400">Optimizing emojis, Malayalam/English tone, and discount highlights</p>
+              </div>
+            ) : (
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                {aiOptions.map((option, idx) => (
+                  <div
+                    key={idx}
+                    className="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E5DCD3] hover:border-amber-400 transition-all space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full">
+                        {idx === 0 ? 'English Viral Style' : idx === 1 ? 'Kerala Manglish Mix' : 'Clean Deal Alert'}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => copyToClipboard(option, idx)}
+                          className="px-3 py-1.5 bg-white border border-[#E5DCD3] rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5"
+                        >
+                          {copiedIdx === idx ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
+                          {copiedIdx === idx ? 'Copied' : 'Copy'}
+                        </button>
+                        <button
+                          onClick={() => shareToWhatsApp(option)}
+                          className="px-3 py-1.5 bg-[#25D366] text-white rounded-lg text-xs font-bold hover:bg-[#20b958] flex items-center gap-1.5 shadow-sm"
+                        >
+                          <Share2 size={13} /> Share Status
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-700 whitespace-pre-line leading-relaxed font-sans bg-white p-3 rounded-xl border border-[#E8E3DA]">
+                      {option}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
