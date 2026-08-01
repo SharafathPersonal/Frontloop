@@ -41,6 +41,56 @@ export interface Database {
         Insert: MessageTemplateInsert;
         Update: Partial<MessageTemplateInsert>;
       };
+      message_logs: {
+        Row: { id: string; campaign_id?: string | null; shop_id: string; recipient_phone: string; status: string; created_at: string };
+        Insert: Partial<{ id: string; campaign_id?: string | null; shop_id: string; recipient_phone: string; status: string; created_at: string }>;
+        Update: Partial<{ id: string; campaign_id?: string | null; shop_id: string; recipient_phone: string; status: string; created_at: string }>;
+      };
+      system_logs: {
+        Row: { id: string; event_type: string; payload?: Json | null; created_at: string };
+        Insert: Partial<{ id: string; event_type: string; payload?: Json | null; created_at: string }>;
+        Update: Partial<{ id: string; event_type: string; payload?: Json | null; created_at: string }>;
+      };
+      shop_flash_offers: {
+        Row: FlashOffer;
+        Insert: FlashOfferInsert;
+        Update: FlashOfferUpdate;
+      };
+      push_subscriptions: {
+        Row: { id: string; shop_id: string; endpoint: string; p256dh?: string | null; auth?: string | null; created_at: string };
+        Insert: Partial<{ id: string; shop_id: string; endpoint: string; p256dh?: string | null; auth?: string | null; created_at: string }>;
+        Update: Partial<{ id: string; shop_id: string; endpoint: string; p256dh?: string | null; auth?: string | null; created_at: string }>;
+      };
+      dead_stock_products: {
+        Row: DeadStockProduct;
+        Insert: DeadStockProductInsert;
+        Update: DeadStockProductUpdate;
+      };
+      meta_configs: {
+        Row: { id: string; shop_id: string; meta_access_token?: string | null; meta_phone_number_id?: string | null; meta_business_account_id?: string | null; created_at: string };
+        Insert: Partial<{ id: string; shop_id: string; meta_access_token?: string | null; meta_phone_number_id?: string | null; meta_business_account_id?: string | null; created_at: string }>;
+        Update: Partial<{ id: string; shop_id: string; meta_access_token?: string | null; meta_phone_number_id?: string | null; meta_business_account_id?: string | null; created_at: string }>;
+      };
+      system_settings: {
+        Row: { key: string; value: Json; updated_at?: string };
+        Insert: { key: string; value: Json; updated_at?: string };
+        Update: Partial<{ key: string; value: Json; updated_at?: string }>;
+      };
+      pricing_tiers: {
+        Row: { id: string; tier_name: string; price_per_credit: number; min_credits: number; is_active: boolean; created_at?: string };
+        Insert: Partial<{ id: string; tier_name: string; price_per_credit: number; min_credits: number; is_active: boolean; created_at?: string }>;
+        Update: Partial<{ id: string; tier_name: string; price_per_credit: number; min_credits: number; is_active: boolean; created_at?: string }>;
+      };
+      digital_invoices: {
+        Row: { id: string; shop_id: string; invoice_number: string; customer_name?: string | null; customer_phone?: string | null; total_amount: number; items?: Json; status: string; pdf_url?: string | null; created_at: string };
+        Insert: Partial<{ id: string; shop_id: string; invoice_number: string; customer_name?: string | null; customer_phone?: string | null; total_amount: number; items?: Json; status: string; pdf_url?: string | null; created_at: string }>;
+        Update: Partial<{ id: string; shop_id: string; invoice_number: string; customer_name?: string | null; customer_phone?: string | null; total_amount: number; items?: Json; status: string; pdf_url?: string | null; created_at: string }>;
+      };
+      whatsapp_sessions: {
+        Row: { id: string; phone_number_id?: string; jid?: string; processed_at?: string; created_at: string };
+        Insert: Partial<{ id: string; phone_number_id?: string; jid?: string; processed_at?: string; created_at: string }>;
+        Update: Partial<{ id: string; phone_number_id?: string; jid?: string; processed_at?: string; created_at: string }>;
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -62,7 +112,7 @@ export type CampaignStatus =
   | 'insufficient_credits'
   | 'paused_logout';
 
-export type CustomerTag = 'VIP' | 'Regular' | 'New' | 'DIGITAL_BILL';
+export type CustomerTag = 'VIP' | 'Regular' | 'New' | 'DIGITAL_BILL' | 'IN_STORE_QR_LEAD' | 'MISSED_LEAD' | 'CSV_IMPORT';
 
 export type WhatsAppConnectionMode = 'META_API' | 'QR_EXPRESS' | 'NONE';
 
@@ -125,6 +175,7 @@ export interface Campaign {
   total_delivered: number;
   total_read: number;
   total_failed: number;
+  total_replied?: number;
   failure_reason?: string | null;
   dispatch_mode: WhatsAppConnectionMode;
   created_at: string;

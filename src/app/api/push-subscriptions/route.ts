@@ -30,25 +30,22 @@ export async function POST(req: Request) {
       }
     );
 
-    let resolvedShopId = shop_id;
-    if (!resolvedShopId) {
-      const host = req.headers.get('host') || '';
-      const isLocal = host.includes('localhost') || host.includes('127.0.0.1') || endpoint.includes('mock-endpoint');
-      if (isLocal) {
-        const { data: firstShop } = await supabaseAdmin
-          .from('shops')
-          .select('id')
-          .limit(1)
-          .maybeSingle();
-        if (firstShop) {
-          resolvedShopId = firstShop.id;
-        }
-      }
+    if (!shop_id) {
+      return NextResponse.json({ error: 'Missing shop_id parameter' }, { status: 400 });
     }
 
-    if (!resolvedShopId) {
-      return NextResponse.json({ error: 'Missing shop ID' }, { status: 400 });
+    // Verify shop_id exists
+    const { data: validShop, error: shopErr } = await supabaseAdmin
+      .from('shops')
+      .select('id')
+      .eq('id', shop_id)
+      .maybeSingle();
+
+    if (shopErr || !validShop) {
+      return NextResponse.json({ error: 'Invalid or unauthorized shop ID' }, { status: 400 });
     }
+
+    const resolvedShopId = shop_id;
 
     // Upsert subscription using unique composite key (shop_id, endpoint) conflict resolution
     const { data, error } = await supabaseAdmin

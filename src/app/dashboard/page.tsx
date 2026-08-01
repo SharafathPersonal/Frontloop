@@ -40,17 +40,17 @@ export default function DashboardPage() {
       ] = await Promise.all([
         supabase.from('shops').select('*').eq('id', user.id).maybeSingle(),
         supabase.from('wallets').select('*').eq('shop_id', user.id).maybeSingle(),
-        supabase.from('campaigns').select('*').eq('shop_id', user.id).order('created_at', { ascending: true }),
-        supabase.from('customers_master').select('*').eq('shop_id', user.id).order('created_at', { ascending: true }),
-        supabase.from('digital_invoices').select('*').eq('shop_id', user.id).order('created_at', { ascending: true }),
-        supabase.from('shop_flash_offers').select('id, is_active, views_count, is_deleted').eq('shop_id', user.id).eq('is_deleted', false)
+        supabase.from('campaigns').select('*').eq('shop_id', user.id).order('created_at', { ascending: false }).limit(100),
+        supabase.from('customers_master').select('*').eq('shop_id', user.id).order('created_at', { ascending: false }).limit(100),
+        supabase.from('digital_invoices').select('*').eq('shop_id', user.id).order('created_at', { ascending: false }).limit(100),
+        supabase.from('shop_flash_offers').select('id, is_active, views_count, is_deleted').eq('shop_id', user.id).eq('is_deleted', false).limit(50)
       ]);
 
       if (shopData) setShop(shopData);
       if (walletData) setWallet(walletData);
-      if (waData) setWaCampaigns(waData);
-      if (qrData) setQrLeads(qrData);
-      if (invoicesData) setDigitalInvoices(invoicesData);
+      if (waData) setWaCampaigns(waData.reverse());
+      if (qrData) setQrLeads(qrData.reverse());
+      if (invoicesData) setDigitalInvoices(invoicesData.reverse());
       if (flashOffersData) setFlashOffers(flashOffersData);
 
       setLoading(false);
@@ -72,7 +72,7 @@ export default function DashboardPage() {
       const dateStr = new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
       if (!timeline[dateStr]) timeline[dateStr] = { date: dateStr, read: 0, replied: 0 };
       timeline[dateStr].read += c.total_read ?? 0;
-      timeline[dateStr].replied += Math.floor((c.total_read ?? 0) * 0.15); // Simulated replies for visual curve
+      timeline[dateStr].replied += c.total_replied ?? 0;
     });
 
     return {

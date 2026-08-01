@@ -496,7 +496,7 @@ async function processWebhookPayload(payload: any) {
                   if (metaAccessToken && phoneNumberIdToSend) {
                     try {
                       // Generate dynamic hmac signature for the invoice PDF link
-                      const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+                      const secret = process.env.INVOICE_SIGNING_SECRET || process.env.ADMIN_SECURE_TOKEN || 'invoice_signing_secret_fallback';
                       const signature = crypto.createHmac('sha256', secret).update(invoiceNumber).digest('hex');
                       const signedPdfUrl = `${invoice.pdf_url}?sig=${signature}`;
 
@@ -646,7 +646,7 @@ async function processWebhookPayload(payload: any) {
                   
                   try {
                     await axios.post(
-                      `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
+                      `https://graph.facebook.com/v20.0/${phoneNumberId}/messages`,
                       {
                         messaging_product: "whatsapp",
                         recipient_type: "individual",
@@ -783,7 +783,7 @@ async function processWebhookPayload(payload: any) {
                 
                 try {
                   await axios.post(
-                    `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
+                    `https://graph.facebook.com/v20.0/${phoneNumberId}/messages`,
                     {
                       messaging_product: "whatsapp",
                       recipient_type: "individual",
@@ -802,7 +802,7 @@ async function processWebhookPayload(payload: any) {
                   await new Promise(resolve => setTimeout(resolve, 500));
 
                   await axios.post(
-                    `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
+                    `https://graph.facebook.com/v20.0/${phoneNumberId}/messages`,
                     {
                       messaging_product: "whatsapp",
                       recipient_type: "individual",

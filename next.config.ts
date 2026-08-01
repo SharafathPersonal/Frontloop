@@ -1,16 +1,23 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@whiskeysockets/baileys"],
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**',
+        hostname: '*.supabase.co',
       },
       {
-        protocol: 'http',
-        hostname: '**',
+        protocol: 'https',
+        hostname: 'zjfsouoojhxvsvlcjusm.supabase.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'broadcast.trueattendly.online',
+      },
+      {
+        protocol: 'https',
+        hostname: 'trueattendly.online',
       },
     ],
   },

@@ -171,6 +171,16 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      window.location.reload();
+    }
+  };
+
   const handleInfusion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!infusionShop || typeof infusionAmount !== 'number' || infusionAmount <= 0) return;
@@ -307,7 +317,7 @@ export default function AdminDashboard() {
               <button onClick={() => { setActiveView('logs'); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium tracking-wide transition-colors ${activeView === 'logs' ? 'bg-[#F5F1EA] text-[#3E3B36]' : 'text-[#8E8B85]'}`}> <Shield size={18} /> Security & Audit </button>
             </nav>
             <div className="p-4 border-t border-[#E8E3DA]">
-              <button onClick={() => { document.cookie = "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"; window.location.reload(); }} className="w-full text-center text-[10px] uppercase tracking-wider font-semibold hover:text-black transition-colors">Terminate Link</button>
+              <button onClick={handleLogout} className="w-full text-center text-[10px] uppercase tracking-wider font-semibold hover:text-black transition-colors">Terminate Link</button>
             </div>
           </aside>
         </div>
@@ -364,10 +374,7 @@ export default function AdminDashboard() {
         </nav>
         <div className="p-4 border-t border-[#E8E3DA]">
           <button 
-            onClick={() => {
-              document.cookie = "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-              window.location.reload();
-            }} 
+            onClick={handleLogout} 
             className="w-full text-center text-[10px] uppercase tracking-wider font-semibold hover:text-black transition-colors"
           >
             Terminate Link

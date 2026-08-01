@@ -45,3 +45,15 @@ next-env.d.ts
 service/node_modules/
 service/.env
 service/.env.local
+
+# Scratch scripts & temporary audit logs
+scratch*.ts
+scratch*.mjs
+scratch*.js
+merge_sql.js
+migrate_files.js
+fix-layouts.js
+patch_settings.js
+query_user.js
+error.log
+lint_errors.txt

@@ -215,6 +215,22 @@ export async function POST(req: Request) {
       }
     }
 
+    // Check if an offer with the exact same start_at already exists BEFORE deducting credits
+    const { data: existingOffer } = await supabase
+      .from('shop_flash_offers')
+      .select('id')
+      .eq('shop_id', user.id)
+      .eq('product_name', product_name)
+      .eq('start_at', start.toISOString())
+      .maybeSingle();
+
+    if (existingOffer) {
+      return NextResponse.json(
+        { error: 'An offer for this product with the exact same start time already exists. Use PUT to update existing offers.' },
+        { status: 409 }
+      );
+    }
+
     // Calculate wallet credit deduction
     let creditsRequired = 2; // base cost
     if (broadcast_web_push) {
@@ -233,10 +249,10 @@ export async function POST(req: Request) {
 
     let offer = null;
     try {
-      // Upsert offer
-      const { data: upsertData, error: insertError } = await supabase
+      // Explicit INSERT for new offer creation
+      const { data: insertData, error: insertError } = await supabase
         .from('shop_flash_offers')
-        .upsert({
+        .insert({
           shop_id: user.id,
           product_name,
           original_price: orig,
@@ -250,7 +266,7 @@ export async function POST(req: Request) {
           end_at: end ? end.toISOString() : null,
           status,
           push_sent: false
-        }, { onConflict: 'shop_id,product_name,start_at' })
+        })
         .select()
         .single();
 
@@ -262,7 +278,7 @@ export async function POST(req: Request) {
         });
         return NextResponse.json({ error: insertError.message || 'Failed to save offer' }, { status: 500 });
       }
-      offer = upsertData;
+      offer = insertData;
     } catch (err: any) {
       // Refund credits on exception
       await supabase.rpc('add_credits', {

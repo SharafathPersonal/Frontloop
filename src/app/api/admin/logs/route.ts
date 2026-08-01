@@ -1,13 +1,35 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// FIX CRITICAL #4: The supabase admin client is now created per-request (inside
+// the handler) rather than at module load time. A strict admin_session cookie
+// verification gate now blocks all unauthenticated callers before any DB query.
 
 export async function GET(req: Request) {
   try {
+    // ── STEP 1: Admin session gate ────────────────────────────────────────────
+    const cookieStore = await cookies();
+    const adminSession = cookieStore.get('admin_session');
+    const adminSecret = process.env.ADMIN_SECURE_TOKEN;
+
+    if (!adminSession?.value || !adminSecret || adminSession.value !== adminSecret) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // ── STEP 2: Fail explicitly if service role key is absent ─────────────────
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey) {
+      return NextResponse.json({ error: 'Missing SUPABASE_SERVICE_ROLE_KEY' }, { status: 500 });
+    }
+
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    // ── STEP 3: Serve requested log type ─────────────────────────────────────
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '0', 10);
     const type = searchParams.get('type') || 'activity';
@@ -32,7 +54,7 @@ export async function GET(req: Request) {
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
-      
+
       const hasMore = data ? data.length === limit : false;
       return NextResponse.json({ logs: data || [], hasMore });
     } else {

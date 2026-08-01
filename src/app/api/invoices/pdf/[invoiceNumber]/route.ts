@@ -36,7 +36,7 @@ export async function GET(
     // A. Check signed URL dynamic HMAC token (public access via WhatsApp)
     const { searchParams } = new URL(request.url);
     const sig = searchParams.get('sig');
-    const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    const secret = process.env.INVOICE_SIGNING_SECRET || process.env.ADMIN_SECURE_TOKEN || 'invoice_signing_secret_fallback';
     const expectedSignature = crypto
       .createHmac('sha256', secret)
       .update(invoiceNumber)

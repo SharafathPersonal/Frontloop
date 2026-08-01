@@ -1,11 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+// ─────────────────────────────────────────────────────────────
+// FIX CRITICAL #1: Every mutating handler (POST, PATCH, DELETE)
+// now authenticates the caller via Supabase cookie session and
+// enforces shop_id === user.id before touching any data.
+// ─────────────────────────────────────────────────────────────
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 function createAdminClient() {
   return createClient(supabaseUrl, supabaseServiceKey);
+}
+
+/**
+ * Builds a server-side Supabase client from the incoming request cookies.
+ * Used exclusively to verify the authenticated user session.
+ */
+async function createUserClientFromCookies() {
+  const cookieStore = await cookies();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return createServerClient<any>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll(); },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch { /* noop — response already committed */ }
+        },
+      },
+    }
+  );
 }
 
 function formatSupabaseProduct(p: any) {
@@ -18,6 +51,9 @@ function formatSupabaseProduct(p: any) {
     ...(p.shop ? {
       shop: {
         ...p.shop,
+        owner_phone: p.shop.owner_phone
+          ? `${p.shop.owner_phone.slice(0, 3)}****${p.shop.owner_phone.slice(-4)}`
+          : null, // Mask owner phone (PII protection)
         latitude: p.shop.latitude != null ? Number(p.shop.latitude) : null,
         longitude: p.shop.longitude != null ? Number(p.shop.longitude) : null,
       }
@@ -25,6 +61,7 @@ function formatSupabaseProduct(p: any) {
   };
 }
 
+// ─── GET — public, no auth required ──────────────────────────────────────────
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get('search') || '';
@@ -115,7 +152,6 @@ export async function GET(request: NextRequest) {
     } else if (sortBy === 'price_desc') {
       query = query.order('clearance_price', { ascending: false });
     } else if (sortBy === 'discount_desc') {
-      // Sort by discount percentage (computed as ((original - clearance) / original) * 100)
       query = query.order('discount_percentage', { ascending: false });
     } else {
       // Default: newest first
@@ -141,8 +177,17 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// ─── POST — AUTHENTICATED: create a new dead-stock product ───────────────────
 export async function POST(request: NextRequest) {
   try {
+    // 1. Authenticate caller via session cookie
+    const userClient = await createUserClientFromCookies();
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const supabase = createAdminClient();
     const body = await request.json();
 
@@ -164,12 +209,20 @@ export async function POST(request: NextRequest) {
       google_maps_url,
     } = body;
 
-    if (!shop_id || !product_name || !original_price || !clearance_price || !category) {
+    // 2. Enforce strict ownership: authenticated user must own the shop
+    if (!shop_id) {
+      return NextResponse.json({ error: 'Missing shop_id' }, { status: 400 });
+    }
+    if (shop_id !== user.id) {
+      return NextResponse.json({ error: 'Unauthorized: shop_id does not match your account' }, { status: 403 });
+    }
+
+    if (!product_name || !original_price || !clearance_price || !category) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Optional: Update merchant shop profile location details
-    if (shop_id && (city || location_address || latitude)) {
+    if (city || location_address || latitude) {
       const shopLocationPayload: Record<string, any> = {};
       if (city) shopLocationPayload.city = city;
       if (district) shopLocationPayload.district = district;
@@ -215,8 +268,17 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// ─── PATCH — AUTHENTICATED: update an existing dead-stock product ─────────────
 export async function PATCH(request: NextRequest) {
   try {
+    // 1. Authenticate caller via session cookie
+    const userClient = await createUserClientFromCookies();
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const supabase = createAdminClient();
     const body = await request.json();
     const { id, shop_id, is_cleared, ...updates } = body;
@@ -225,7 +287,12 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Missing product ID or shop ID' }, { status: 400 });
     }
 
-    // Verify ownership
+    // 2. Enforce strict ownership: authenticated user must own the shop
+    if (shop_id !== user.id) {
+      return NextResponse.json({ error: 'Unauthorized: shop_id does not match your account' }, { status: 403 });
+    }
+
+    // 3. Verify product belongs to the authenticated shop (DB-level check)
     const { data: existing, error: findError } = await supabase
       .from('dead_stock_products')
       .select('id, shop_id, original_price, clearance_price')
@@ -271,8 +338,17 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
+// ─── DELETE — AUTHENTICATED: soft/hard delete a dead-stock product ─────────────
 export async function DELETE(request: NextRequest) {
   try {
+    // 1. Authenticate caller via session cookie
+    const userClient = await createUserClientFromCookies();
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -280,6 +356,23 @@ export async function DELETE(request: NextRequest) {
 
     if (!id || !shopId) {
       return NextResponse.json({ error: 'Missing product ID or shop ID' }, { status: 400 });
+    }
+
+    // 2. Enforce strict ownership: authenticated user must own the shop
+    if (shopId !== user.id) {
+      return NextResponse.json({ error: 'Unauthorized: shopId does not match your account' }, { status: 403 });
+    }
+
+    // 3. Verify product belongs to the authenticated shop (DB-level check)
+    const { data: existing, error: findError } = await supabase
+      .from('dead_stock_products')
+      .select('id, shop_id')
+      .eq('id', id)
+      .eq('shop_id', shopId)
+      .single();
+
+    if (findError || !existing) {
+      return NextResponse.json({ error: 'Product not found or unauthorized' }, { status: 404 });
     }
 
     const { error } = await supabase

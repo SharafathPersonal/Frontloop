@@ -30,7 +30,11 @@ export async function GET(req: Request) {
   }
 
   try {
-    const merchantId = searchParams.get('merchantId') || user.id;
+    const requestedMerchantId = searchParams.get('merchantId');
+    if (requestedMerchantId && requestedMerchantId !== user.id) {
+      return NextResponse.json({ error: 'Unauthorized: Cannot export leads belonging to another merchant' }, { status: 403 });
+    }
+    const merchantId = user.id;
 
     // 1. Fetch leads for this merchant
     // (We export all available leads or unexported logic can be handled via frontend state if needed)

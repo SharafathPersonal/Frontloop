@@ -4,14 +4,31 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
+/**
+ * HTML Sanitization Helper to prevent Stored & Reflected XSS
+ * (Fixes CRITICAL #3)
+ */
+function escapeHtml(str: string | null | undefined): string {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const invoiceNumber = searchParams.get('invoiceNumber');
-  const format = searchParams.get('format') || 'a4'; // 'a4' or 'thermal'
+  const invoiceNumberRaw = searchParams.get('invoiceNumber');
+  const formatRaw = searchParams.get('format') || 'a4'; // 'a4' or 'thermal'
 
-  if (!invoiceNumber) {
+  if (!invoiceNumberRaw) {
     return new Response('Missing invoiceNumber parameter', { status: 400 });
   }
+
+  const invoiceNumber = escapeHtml(invoiceNumberRaw);
+  const format = formatRaw === 'thermal' ? 'thermal' : 'a4';
 
   // Initialize Supabase admin client
   const supabase = createClient(
@@ -24,7 +41,7 @@ export async function GET(request: Request) {
     const { data: invoice, error: invoiceErr } = await supabase
       .from('digital_invoices')
       .select('*')
-      .eq('invoice_number', invoiceNumber)
+      .eq('invoice_number', invoiceNumberRaw)
       .maybeSingle();
 
     if (invoiceErr || !invoice) {
@@ -32,12 +49,13 @@ export async function GET(request: Request) {
     }
 
     // 2. Security Validation: HMAC signature OR valid merchant session
+    // (Fixes CRITICAL #5: Uses INVOICE_SIGNING_SECRET instead of SUPABASE_SERVICE_ROLE_KEY)
     let isAuthorized = false;
     const sig = searchParams.get('sig');
-    const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    const secret = process.env.INVOICE_SIGNING_SECRET || process.env.ADMIN_SECURE_TOKEN || 'invoice_signing_secret_fallback';
     const expectedSignature = crypto
       .createHmac('sha256', secret)
-      .update(invoiceNumber)
+      .update(invoiceNumberRaw)
       .digest('hex');
 
     if (sig === expectedSignature) {
@@ -95,16 +113,31 @@ export async function GET(request: Request) {
       return new Response('Failed to load invoice items', { status: 500 });
     }
 
-    const primaryColor = shop.invoice_theme_color || '#5C4033';
-    const storefrontUrl = `https://broadcast.trueattendly.online/offers/${shop.id}`;
+    // Sanitize dynamic shop & invoice fields (Fixes CRITICAL #3)
+    const shopName = escapeHtml(shop.shop_name);
+    const shopAddress = escapeHtml(shop.location_address);
+    const shopCity = escapeHtml(shop.city);
+    const shopState = escapeHtml(shop.state);
+    const shopCountry = escapeHtml(shop.country);
+    const shopGst = escapeHtml(shop.gst_number);
+    const shopLogoUrl = shop.logo_url ? escapeHtml(shop.logo_url) : null;
+    const customerName = escapeHtml(invoice.customer_name || 'Valued Customer');
+    const customerPhone = escapeHtml(invoice.customer_phone ? `+${invoice.customer_phone}` : '');
+    const invoiceFooterNote = escapeHtml(invoice.invoice_footer_note || 'Thank you for your visit!');
+    const sanitizedSig = escapeHtml(sig || '');
+
+    const rawPrimaryColor = shop.invoice_theme_color || '#5C4033';
+    const primaryColor = /^#[0-9A-Fa-f]{6}$/.test(rawPrimaryColor) ? rawPrimaryColor : '#5C4033';
+    
+    const storefrontUrl = `https://broadcast.trueattendly.online/offers/${encodeURIComponent(shop.id)}`;
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(storefrontUrl)}&color=${primaryColor.replace('#', '')}&bgcolor=ffffff`;
 
-    const invoiceDate = new Date(invoice.created_at).toLocaleDateString('en-IN', {
+    const invoiceDate = escapeHtml(new Date(invoice.created_at).toLocaleDateString('en-IN', {
       dateStyle: 'long'
-    });
+    }));
 
     const itemsList = items || [];
-    const subtotal = itemsList.reduce((sum, item) => sum + (item.item_total || 0), 0);
+    const subtotal = itemsList.reduce((sum: number, item: any) => sum + (item.item_total || 0), 0);
     const finalAmount = Number(invoice.total_amount || subtotal);
 
     // HTML Output Builder
@@ -526,7 +559,7 @@ export async function GET(request: Request) {
       True Attendly Print Terminal &middot; Invoice #${invoiceNumber} (${format.toUpperCase()})
     </div>
     <div class="print-toolbar-actions">
-      <a href="?invoiceNumber=${invoiceNumber}&format=${format === 'thermal' ? 'a4' : 'thermal'}&sig=${sig || ''}" class="print-btn-secondary">
+      <a href="?invoiceNumber=${invoiceNumber}&format=${format === 'thermal' ? 'a4' : 'thermal'}&sig=${sanitizedSig}" class="print-btn-secondary">
         Switch to ${format === 'thermal' ? 'A4 Paper' : 'Thermal POS'}
       </a>
       <button onclick="window.print()" class="print-btn">
@@ -541,9 +574,9 @@ export async function GET(request: Request) {
       html += `
   <div class="thermal-container">
     <div class="thermal-center">
-      <div class="thermal-bold thermal-title">${shop.shop_name}</div>
-      ${shop.location_address ? `<div class="thermal-address">${shop.location_address}</div>` : ''}
-      ${shop.city || shop.state ? `<div class="thermal-address">${shop.city || ''} ${shop.state || ''}</div>` : ''}
+      <div class="thermal-bold thermal-title">${shopName}</div>
+      ${shopAddress ? `<div class="thermal-address">${shopAddress}</div>` : ''}
+      ${shopCity || shopState ? `<div class="thermal-address">${shopCity} ${shopState}</div>` : ''}
       <div class="thermal-bold">TAX RECEIPT</div>
     </div>
 
@@ -557,21 +590,21 @@ export async function GET(request: Request) {
       <span>Date:</span>
       <span>${invoiceDate}</span>
     </div>
-    ${shop.gst_number ? `
+    ${shopGst ? `
     <div class="thermal-meta-row">
       <span>GSTIN:</span>
-      <span>${shop.gst_number}</span>
+      <span>${shopGst}</span>
     </div>` : ''}
 
     <div class="thermal-divider"></div>
 
     <div class="thermal-meta-row thermal-bold">
       <span>Billed To:</span>
-      <span>${invoice.customer_name || 'Valued Customer'}</span>
+      <span>${customerName}</span>
     </div>
     <div class="thermal-meta-row">
       <span>Phone:</span>
-      <span>${invoice.customer_phone ? `+${invoice.customer_phone}` : 'Walk-in'}</span>
+      <span>${customerPhone || 'Walk-in'}</span>
     </div>
 
     <div class="thermal-divider"></div>
@@ -591,16 +624,20 @@ export async function GET(request: Request) {
           <td style="text-align: center;">1</td>
           <td style="text-align: right;">₹${finalAmount.toFixed(2)}</td>
         </tr>
-        ` : itemsList.map(item => `
+        ` : itemsList.map((item: any) => {
+          const itemName = escapeHtml(item.product_name);
+          const itemBarcode = escapeHtml(item.barcode_or_serial);
+          return `
         <tr>
           <td>
-            ${item.product_name}
-            ${item.barcode_or_serial ? `<br/><span style="font-size: 9px; opacity: 0.8;">[${item.barcode_or_serial}]</span>` : ''}
+            ${itemName}
+            ${itemBarcode ? `<br/><span style="font-size: 9px; opacity: 0.8;">[${itemBarcode}]</span>` : ''}
           </td>
           <td style="text-align: center;">${item.quantity || 1}</td>
           <td style="text-align: right;">₹${Number(item.item_total).toFixed(2)}</td>
         </tr>
-        `).join('')}
+        `;
+        }).join('')}
       </tbody>
     </table>
 
@@ -620,12 +657,12 @@ export async function GET(request: Request) {
         Scan/Tap for active Flash Offers!
       </a>
       <div style="font-size: 8px; opacity: 0.7; text-align: center; margin-top: 2px;">
-        broadcast.trueattendly.online/offers/${shop.id}
+        broadcast.trueattendly.online/offers/${encodeURIComponent(shop.id)}
       </div>
     </div>
 
     <div class="thermal-footer-note">
-      ${invoice.invoice_footer_note || 'Thank you for your visit!'}
+      ${invoiceFooterNote}
     </div>
 
     <div class="thermal-power-text">
@@ -640,16 +677,16 @@ export async function GET(request: Request) {
     <!-- Top Brand Header -->
     <div class="a4-header">
       <div class="a4-logo-title">
-        ${shop.logo_url ? `<img class="a4-logo" src="${shop.logo_url}" alt="logo" />` : ''}
+        ${shopLogoUrl ? `<img class="a4-logo" src="${shopLogoUrl}" alt="logo" />` : ''}
         <div>
-          <h1 class="a4-title" style="color: ${primaryColor}">${shop.shop_name}</h1>
+          <h1 class="a4-title" style="color: ${primaryColor}">${shopName}</h1>
           <p style="font-size: 10px; text-transform: uppercase; tracking: 1.5px; color: #8B8378; margin-top: 2px;">Tax Invoice</p>
         </div>
       </div>
       <div class="a4-meta">
         <h2 style="color: ${primaryColor}">Invoice No: #${invoiceNumber}</h2>
         <p>Date: ${invoiceDate}</p>
-        ${shop.gst_number ? `<p>GSTIN: ${shop.gst_number}</p>` : ''}
+        ${shopGst ? `<p>GSTIN: ${shopGst}</p>` : ''}
       </div>
     </div>
 
@@ -658,16 +695,16 @@ export async function GET(request: Request) {
       <div class="a4-billing-col">
         <h3 style="color: ${primaryColor}">Billed From</h3>
         <div class="a4-billing-details">
-          <strong>${shop.shop_name}</strong><br/>
-          ${shop.location_address ? `${shop.location_address}<br/>` : ''}
-          ${shop.city || ''} ${shop.state || ''} ${shop.country || ''}
+          <strong>${shopName}</strong><br/>
+          ${shopAddress ? `${shopAddress}<br/>` : ''}
+          ${shopCity} ${shopState} ${shopCountry}
         </div>
       </div>
       <div class="a4-billing-col">
         <h3 style="color: ${primaryColor}">Billed To</h3>
         <div class="a4-billing-details">
-          <strong>${invoice.customer_name || 'Valued Customer'}</strong><br/>
-          ${invoice.customer_phone ? `+${invoice.customer_phone}` : 'Walk-in Customer'}
+          <strong>${customerName}</strong><br/>
+          ${customerPhone || 'Walk-in Customer'}
         </div>
       </div>
     </div>
@@ -692,15 +729,19 @@ export async function GET(request: Request) {
           <td style="text-align: right;">₹${finalAmount.toFixed(2)}</td>
           <td style="text-align: right; font-weight: 700;">₹${finalAmount.toFixed(2)}</td>
         </tr>
-        ` : itemsList.map(item => `
+        ` : itemsList.map((item: any) => {
+          const itemName = escapeHtml(item.product_name);
+          const itemBarcode = escapeHtml(item.barcode_or_serial || '—');
+          return `
         <tr>
-          <td style="font-weight: 500; color: #1a1a1a;">${item.product_name}</td>
-          <td style="font-family: monospace; color: #888;">${item.barcode_or_serial || '—'}</td>
+          <td style="font-weight: 500; color: #1a1a1a;">${itemName}</td>
+          <td style="font-family: monospace; color: #888;">${itemBarcode}</td>
           <td style="text-align: center;">${item.quantity || 1}</td>
           <td style="text-align: right;">₹${Number(item.price).toFixed(2)}</td>
           <td style="text-align: right; font-weight: 700; color: #1a1a1a;">₹${Number(item.item_total).toFixed(2)}</td>
         </tr>
-        `).join('')}
+        `;
+        }).join('')}
       </tbody>
     </table>
 
@@ -713,7 +754,7 @@ export async function GET(request: Request) {
     <!-- Absolute Footer Marketing Hook -->
     <div class="a4-footer">
       <div class="a4-footer-note" style="color: ${primaryColor}cc">
-        ${invoice.invoice_footer_note || 'Thank you for your business!'}
+        ${invoiceFooterNote}
       </div>
 
       <!-- Universal QR and Link Injection Block -->
@@ -723,7 +764,7 @@ export async function GET(request: Request) {
           Scan or Tap to Discover Live Shop Offers!
         </a>
         <div style="font-size: 10px; color: #888; font-family: monospace;">
-          broadcast.trueattendly.online/offers/${shop.id}
+          broadcast.trueattendly.online/offers/${encodeURIComponent(shop.id)}
         </div>
       </div>
 
@@ -758,6 +799,6 @@ export async function GET(request: Request) {
 
   } catch (err: any) {
     console.error('[Print Router Error]', err);
-    return new Response('Internal Server Error: ' + err.message, { status: 500 });
+    return new Response('Internal Server Error: ' + escapeHtml(err.message), { status: 500 });
   }
 }

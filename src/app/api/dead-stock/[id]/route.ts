@@ -8,6 +8,25 @@ function createAdminClient() {
   );
 }
 
+// FIX CRITICAL #2: moved formatSupabaseProduct to module scope (was incorrectly
+// declared inside the try-block, causing a structural/hoisting defect).
+function formatSupabaseProduct(p: any) {
+  if (!p) return null;
+  return {
+    ...p,
+    original_price: Number(p.original_price),
+    clearance_price: Number(p.clearance_price),
+    discount_percentage: Number(p.discount_percentage || 0),
+    ...(p.shop ? {
+      shop: {
+        ...p.shop,
+        latitude: p.shop.latitude != null ? Number(p.shop.latitude) : null,
+        longitude: p.shop.longitude != null ? Number(p.shop.longitude) : null,
+      }
+    } : {})
+  };
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -67,23 +86,6 @@ export async function GET(
       .neq('id', id)
       .or(`shop_id.eq.${data.shop_id},category.eq.${data.category}`)
       .limit(6);
-
-function formatSupabaseProduct(p: any) {
-  if (!p) return null;
-  return {
-    ...p,
-    original_price: Number(p.original_price),
-    clearance_price: Number(p.clearance_price),
-    discount_percentage: Number(p.discount_percentage || 0),
-    ...(p.shop ? {
-      shop: {
-        ...p.shop,
-        latitude: p.shop.latitude != null ? Number(p.shop.latitude) : null,
-        longitude: p.shop.longitude != null ? Number(p.shop.longitude) : null,
-      }
-    } : {})
-  };
-}
 
     // Sort related products so that items from the same shop come first
     const sortedRelated = (related || []).sort((a: any, b: any) => {

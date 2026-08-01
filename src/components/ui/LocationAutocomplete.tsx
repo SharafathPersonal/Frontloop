@@ -20,12 +20,30 @@ interface LocationAutocompleteProps {
   className?: string;
 }
 
+import { useToast } from '@/contexts/ToastContext';
+
 export default function LocationAutocomplete({
   initialAddress = '',
   initialCity = '',
   onLocationSelect,
   className = '',
 }: LocationAutocompleteProps) {
+  let toast: { showToast: (msg: string, type?: 'success' | 'error' | 'info') => void } | null = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    toast = useToast();
+  } catch {
+    toast = null;
+  }
+
+  const notify = (msg: string, type: 'error' | 'info' | 'success' = 'error') => {
+    if (toast) {
+      toast.showToast(msg, type);
+    } else {
+      console.warn('[LocationAutocomplete]', msg);
+    }
+  };
+
   const [query, setQuery] = useState(initialAddress || initialCity || '');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -110,7 +128,7 @@ export default function LocationAutocomplete({
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.');
+      notify('Geolocation is not supported by your browser.', 'error');
       return;
     }
 
@@ -161,7 +179,7 @@ export default function LocationAutocomplete({
       (error) => {
         console.error('Geolocation error:', error);
         setLocating(false);
-        alert('Could not retrieve exact location. Please type your shop address manually.');
+        notify('Could not retrieve exact location. Please type your shop address manually.', 'error');
       },
       { timeout: 10000, enableHighAccuracy: true }
     );

@@ -696,7 +696,7 @@ export async function POST(req: Request) {
             status: 'queued',
             mode: 'META_API',
             campaign_id: campaignId,
-            total_recipients: requiredCredits,
+            total_recipients: recipients.length,
             estimated_time_minutes: 1,
           },
         },
