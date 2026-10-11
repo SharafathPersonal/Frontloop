@@ -3,7 +3,7 @@
 ---
 
 ## 1. CORE VALUE PROPOSITION & SYSTEM OBJECTIVE
-
+## bba bba
 ### The Local Retail Liquidation Imperative
 In the hyper-local retail landscape, inventory velocity is the lifeblood of brick-and-mortar survival. Every day an item sits unsold on a shelf:
 - It locks up precious working capital.
