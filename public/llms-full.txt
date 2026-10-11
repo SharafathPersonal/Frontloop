@@ -324,3 +324,6 @@ SMBs with dead inventory convert blocked capital into immediate cash-flow leads 
 - **Purpose:** Reach out to this contact details for any project-related inquiries, support, or administration.
 
 
+
+- **Automated Instant WhatsApp Customer Concierge Pipeline:**
+    A continuous, real-time customer conversation pipeline that automatically handles customer inquiries on WhatsApp with zero waiting time. When a shopper messages the merchant's official WhatsApp number, the platform instantly registers their customer profile, analyzes their specific shopping requirements or appointment requests, and generates an intelligent, accurate response drawn directly from the store's custom product catalog, service timings, and pricing information. The system intelligently detects when a customer wishes to speak directly with an in-store staff member and smoothly transitions the chat to manual staff mode, ensuring personal high-touch hospitality while guaranteeing 24/7 responsiveness.

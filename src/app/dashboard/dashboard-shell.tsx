@@ -12,6 +12,8 @@ import {
   X,
   HelpCircle,
   AlertTriangle,
+  Users,
+  BookOpen,
 } from 'lucide-react';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 import { ToastProvider } from '@/contexts/ToastContext';
@@ -30,6 +32,8 @@ interface NavLink {
 
 const navLinks: NavLink[] = [
   { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={14} strokeWidth={1.5} /> },
+  { label: 'Leads & Chats', href: '/dashboard/leads', icon: <Users size={14} strokeWidth={1.5} /> },
+  { label: 'Knowledge Base', href: '/dashboard/knowledge', icon: <BookOpen size={14} strokeWidth={1.5} /> },
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings size={14} strokeWidth={1.5} /> },
   { label: 'Support', href: '/dashboard/support', icon: <HelpCircle size={14} strokeWidth={1.5} /> },
 ];

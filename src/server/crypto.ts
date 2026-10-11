@@ -1,5 +1,5 @@
 import 'server-only';
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import { createCipheriv, createDecipheriv, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { getEnv } from './env';
 
 const VERSION = 'v1';
@@ -20,4 +20,58 @@ export function decrypt(blob: string): string {
   const decipher = createDecipheriv('aes-256-gcm', key(), Buffer.from(iv, 'base64'));
   decipher.setAuthTag(Buffer.from(tag, 'base64'));
   return Buffer.concat([decipher.update(Buffer.from(ciphertext, 'base64')), decipher.final()]).toString('utf8');
+}
+
+/**
+ * Validates Meta x-hub-signature-256 header using timing-safe comparison.
+ */
+export function verifyMetaSignature(
+  rawBody: string | Buffer,
+  signatureHeader: string | null | undefined,
+  appSecret: string,
+): boolean {
+  if (!signatureHeader || !appSecret) return false;
+  const prefix = 'sha256=';
+  if (!signatureHeader.startsWith(prefix)) return false;
+
+  const signatureHex = signatureHeader.slice(prefix.length).trim();
+  const expectedSignatureHex = createHmac('sha256', appSecret)
+    .update(typeof rawBody === 'string' ? Buffer.from(rawBody, 'utf8') : rawBody)
+    .digest('hex');
+
+  const sigBuffer = Buffer.from(signatureHex, 'hex');
+  const expectedBuffer = Buffer.from(expectedSignatureHex, 'hex');
+
+  if (sigBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(sigBuffer, expectedBuffer);
+}
+
+/**
+ * Validates Cashfree webhook signature using timing-safe comparison.
+ * Cashfree computes base64(hmacSha256(rawTimestamp + rawBody, secretKey)).
+ */
+export function verifyCashfreeSignature(
+  rawBody: string,
+  timestampHeader: string | null | undefined,
+  signatureHeader: string | null | undefined,
+  secretKey: string,
+): boolean {
+  if (!signatureHeader || !timestampHeader || !secretKey) return false;
+
+  const payloadToSign = `${timestampHeader}${rawBody}`;
+  const expectedSignatureBase64 = createHmac('sha256', secretKey)
+    .update(payloadToSign, 'utf8')
+    .digest('base64');
+
+  const sigBuffer = Buffer.from(signatureHeader.trim(), 'base64');
+  const expectedBuffer = Buffer.from(expectedSignatureBase64, 'base64');
+
+  if (sigBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(sigBuffer, expectedBuffer);
 }

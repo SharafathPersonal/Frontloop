@@ -6,6 +6,9 @@ export const MESSAGE_AUTHORS = ['customer', 'bot', 'agent'] as const;
 export const DELIVERY_STATUSES = ['received', 'sent', 'delivered', 'read', 'failed'] as const;
 export const REPLY_STATES = ['pending', 'processing', 'done', 'skipped', 'failed'] as const;
 
+export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];
+export type ReplyState = (typeof REPLY_STATES)[number];
+
 const MessageSchema = new Schema(
   {
     tenantId: { type: Schema.Types.ObjectId, ref: 'BusinessTenant', required: true },

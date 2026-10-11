@@ -1,526 +1,364 @@
-'use client';
-
-import { useEffect, useRef, useState } from 'react';
-import { DeadStockLandingSection } from '@/components/dead-stock-landing';
-import { LandingHeader } from '@/components/landing/LandingHeader';
-import { HeroSection } from '@/components/landing/HeroSection';
-import { TrinityMatrixSection } from '@/components/landing/TrinityMatrixSection';
-import { WhatsAppStatusSection } from '@/components/landing/WhatsAppStatusSection';
-import { UniversalInvoiceSection } from '@/components/landing/UniversalInvoiceSection';
-import { LedgerSection } from '@/components/landing/LedgerSection';
-import { TechnicalMatrixSection } from '@/components/landing/TechnicalMatrixSection';
-import { RealityCheckSection } from '@/components/landing/RealityCheckSection';
-import { LandingFooter } from '@/components/landing/LandingFooter';
-import { BillPreviewModal } from '@/components/landing/BillPreviewModal';
-import { SecurityFirewallModal } from '@/components/landing/SecurityFirewallModal';
-
+import Link from 'next/link';
 import {
-  BrandPresetColor, CartItem, AudienceMember,
-  LedgerUsage, CashfreeLog, ParsedContact
-} from '@/components/landing/types';
+  MessageSquare,
+  Bot,
+  Clock,
+  CheckCircle2,
+  PhoneCall,
+  Sparkles,
+  ArrowRight,
+  Shield,
+  Zap,
+  Users,
+  Check,
+} from 'lucide-react';
 
 export default function LandingPage() {
-  const heroRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLElement>(null);
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  // 1. BRAND ACCENT PRESET STATE
-  const BRAND_PRESET_COLORS: BrandPresetColor[] = [
-    { name: 'Luxury Chocolate', hex: '#5C4033', bg: 'bg-[#5C4033]' },
-    { name: 'Warm Amber', hex: '#B45309', bg: 'bg-[#B45309]' },
-    { name: 'Emerald Forest', hex: '#047857', bg: 'bg-[#047857]' },
-    { name: 'Imperial Crimson', hex: '#B91C1C', bg: 'bg-[#B91C1C]' },
-    { name: 'Charcoal Noir', hex: '#2D1E17', bg: 'bg-[#2D1E17]' }
-  ];
-
-  const [brandColor, setBrandColor] = useState('#5C4033');
-
-  // 2. HERO CART & INBOX STATE (POS Terminal)
-  const [cart, setCart] = useState<CartItem[]>([
-    { id: 1, name: 'Pure Cotton Summer Shirt', price: 1299, qty: 1 },
-    { id: 2, name: 'Organic Linen Trousers', price: 1899, qty: 1 }
-  ]);
-  const [newItemName, setNewItemName] = useState('');
-  const [newItemPrice, setNewItemPrice] = useState('');
-  const invoiceFooterNote = 'Thank you for visiting. Scan to claim wallet loyalty credits.';
-  const [showBillModal, setShowBillModal] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-  const gst = Math.round(subtotal * 0.18);
-  const total = subtotal + gst;
-
-  const handleAddItem = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newItemName || !newItemPrice) return;
-    const price = parseFloat(newItemPrice);
-    if (isNaN(price) || price <= 0) return;
-
-    const newId = cart.length > 0 ? Math.max(...cart.map(i => i.id)) + 1 : 1;
-    setCart([...cart, { id: newId, name: newItemName, price, qty: 1 }]);
-    setNewItemName('');
-    setNewItemPrice('');
-  };
-
-  const removeItem = (id: number) => {
-    setCart(cart.filter(item => item.id !== id));
-  };
-
-  const handleDownloadBill = () => {
-    setIsDownloading(true);
-    setTimeout(() => {
-      setIsDownloading(false);
-      alert(`INV-1002-BILL.pdf downloaded successfully. (Theme Accent: ${brandColor})`);
-    }, 1200);
-  };
-
-  // 3. FLASH OFFERS STATE (Card 1)
-  const [offerActive, setOfferActive] = useState(true);
-  const [webPushBroadcast, setWebPushBroadcast] = useState(false);
-  const [originalPrice, setOriginalPrice] = useState(500);
-  const [discountPrice, setDiscountPrice] = useState(399);
-  const [offerImageIndex, setOfferImageIndex] = useState(0);
-  const [isOfferUploading, setIsOfferUploading] = useState(false);
-
-  const offerImages = [
-    { name: 'Fresh Organic Avocados', description: 'Grown locally, ripe and ready.' },
-    { name: 'Premium Coffee Beans', description: 'Single origin medium roast Arabica.' },
-    { name: 'Artisan Sourdough Bread', description: 'Freshly baked stone-ground wheat.' }
-  ];
-
-  const computedDiscount = Math.round(((originalPrice - discountPrice) / originalPrice) * 100);
-
-  const cycleOfferImage = () => {
-    setIsOfferUploading(true);
-    setTimeout(() => {
-      setOfferImageIndex((prev) => (prev + 1) % offerImages.length);
-      setIsOfferUploading(false);
-    }, 600);
-  };
-
-  // 4. DIGITAL BILLING BARCODE SCANNER STATE (Card 2)
-  const [scannerActive, setScannerActive] = useState(true);
-  const [scanHistoryLogs, setScanHistoryLogs] = useState<string[]>([
-    '[16:50:12] SCAN SUCCESS: 978020137962 -> Cotton Summer Shirt added'
-  ]);
-  const [justScanned, setJustScanned] = useState(false);
-
-  useEffect(() => {
-    if (!scannerActive) return;
-
-    const barcodes = [
-      { code: '978020137962', name: 'Pure Cotton Summer Shirt', price: 1299 },
-      { code: '978020137963', name: 'Organic Linen Trousers', price: 1899 },
-      { code: '978020137964', name: 'Artisan Leather Belt', price: 899 },
-      { code: '978020137965', name: 'Premium Suede Loafers', price: 3499 }
-    ];
-
-    const interval = setInterval(() => {
-      const randomItem = barcodes[Math.floor(Math.random() * barcodes.length)];
-      const now = new Date();
-      const timeStr = now.toTimeString().split(' ')[0];
-
-      setScanHistoryLogs(prev => [
-        `[${timeStr}] SCAN SUCCESS: ${randomItem.code} -> ${randomItem.name}`,
-        ...prev.slice(0, 5)
-      ]);
-
-      setJustScanned(true);
-      setTimeout(() => setJustScanned(false), 800);
-
-      setCart(prev => {
-        const existing = prev.find(item => item.name === randomItem.name);
-        if (existing) {
-          return prev.map(item => item.name === randomItem.name ? { ...item, qty: item.qty + 1 } : item);
-        } else {
-          const maxId = prev.length > 0 ? Math.max(...prev.map(i => i.id)) + 1 : 1;
-          return [...prev, { id: maxId, name: randomItem.name, price: randomItem.price, qty: 1 }];
-        }
-      });
-    }, 4500);
-
-    return () => clearInterval(interval);
-  }, [scannerActive]);
-
-  // 5. AUDIENCE REGISTRY STATE (Card 3)
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTagFilter, setSelectedTagFilter] = useState('ALL');
-  
-  const audienceList: AudienceMember[] = [
-    { name: 'K. Sharafath', phone: '+91 62825 ••••8', tags: ['DIGITAL_BILL', 'VIP'], visits: 24, spend: 24500, credit: 1200 },
-    { name: 'A. Rahul', phone: '+91 98765 ••••0', tags: ['DIGITAL_BILL'], visits: 8, spend: 7200, credit: 350 },
-    { name: 'M. Priya', phone: '+91 88877 ••••0', tags: ['FLASH_OPT_IN'], visits: 12, spend: 11400, credit: 500 },
-    { name: 'John Doe', phone: '+91 77766 ••••2', tags: ['DIGITAL_BILL', 'FLASH_OPT_IN'], visits: 3, spend: 3100, credit: 150 },
-    { name: 'Fathima R.', phone: '+91 94455 ••••1', tags: ['VIP'], visits: 19, spend: 18500, credit: 900 },
-    { name: 'S. Suresh', phone: '+91 99988 ••••4', tags: ['DIGITAL_BILL'], visits: 5, spend: 4500, credit: 200 }
-  ];
-
-  const filteredAudience = audienceList.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.phone.includes(searchQuery);
-    const matchesTag = selectedTagFilter === 'ALL' || item.tags.includes(selectedTagFilter);
-    return matchesSearch && matchesTag;
-  });
-
-  // 6. DUAL-STATE TRANSACTION LEDGER STATE
-  const [activeLedgerTab, setActiveLedgerTab] = useState<'purchases' | 'usages'>('usages');
-  const [ledgerUsages, setLedgerUsages] = useState<LedgerUsage[]>([
-    { id: 'u-1', type: 'Web Push Broadcast', desc: 'Weekend Flash Sale Launch', date: 'Just now', credits: '2.0 Credits', status: 'delivered' },
-    { id: 'u-2', type: 'Digital Invoice Dispatch', desc: 'INV-1002', date: '12 mins ago', credits: '1.0 Credit', status: 'delivered' },
-    { id: 'u-3', type: 'Web Push Broadcast', desc: 'Rain-Day Special Discount', date: '45 mins ago', credits: '2.0 Credits', status: 'delivered' },
-    { id: 'u-4', type: 'Digital Invoice Dispatch', desc: 'INV-1001', date: '1 hour ago', credits: '1.0 Credit', status: 'delivered' }
-  ]);
-  const [isLoadingMoreUsages, setIsLoadingMoreUsages] = useState(false);
-  const [hasMoreUsages, setHasMoreUsages] = useState(true);
-
-  const handleLoadMoreUsages = () => {
-    if (isLoadingMoreUsages || !hasMoreUsages) return;
-    setIsLoadingMoreUsages(true);
-
-    setTimeout(() => {
-      const nextBatch: LedgerUsage[] = [
-        { id: 'u-5', type: 'Digital Invoice Dispatch', desc: 'INV-1000', date: '1 day ago', credits: '1.0 Credit', status: 'delivered' },
-        { id: 'u-6', type: 'Web Push Broadcast', desc: 'Holiday Collection Announcement', date: '2 days ago', credits: '2.0 Credits', status: 'delivered' }
-      ];
-      setLedgerUsages(prev => [...prev, ...nextBatch]);
-      setIsLoadingMoreUsages(false);
-      setHasMoreUsages(false);
-    }, 1200);
-  };
-
-  const cashfreeLogs: CashfreeLog[] = [
-    { id: 'CF-TXN-90231', date: 'Jul 12, 2026', tokens: '10,000 Tokens', amount: '₹10,000.00', status: 'Success' },
-    { id: 'CF-TXN-88421', date: 'Jun 28, 2026', tokens: '5,000 Tokens', amount: '₹5,000.00', status: 'Success' },
-    { id: 'CF-TXN-85102', date: 'May 15, 2026', tokens: '10,000 Tokens', amount: '₹10,000.00', status: 'Success' }
-  ];
-
-  // 7. SECURITY FIREWALL MODAL STATE
-  const [securityModalOpen, setSecurityModalOpen] = useState(false);
-  const [securityClickCount, setSecurityClickCount] = useState(0);
-  const [dispatchStatus, setDispatchStatus] = useState<'idle' | 'broadcasting' | 'completed'>('idle');
-
-  const triggerSecurityModal = () => {
-    setSecurityModalOpen(true);
-    setSecurityClickCount(0);
-    setDispatchStatus('idle');
-  };
-
-  const handleSecurityVerification = () => {
-    if (securityClickCount === 0) {
-      setSecurityClickCount(1);
-    } else if (securityClickCount === 1) {
-      setSecurityClickCount(2);
-      setDispatchStatus('broadcasting');
-
-      setTimeout(() => {
-        setDispatchStatus('completed');
-        const newRecord: LedgerUsage = {
-          id: `u-new-${Date.now()}`,
-          type: 'Web Push Broadcast',
-          desc: 'Weekend Flash Sale Launch',
-          date: 'Just now',
-          credits: '2.0 Credits',
-          status: 'delivered'
-        };
-        setLedgerUsages(prev => [newRecord, ...prev]);
-        setTimeout(() => {
-          setSecurityModalOpen(false);
-          setSecurityClickCount(0);
-        }, 1500);
-      }, 2000);
-    }
-  };
-
-  // 8. TECHNICAL ARCHITECTURE STATE
-  const [csvStatus, setCsvStatus] = useState<'idle' | 'uploading' | 'parsed'>('idle');
-  const [parsedContacts, setParsedContacts] = useState<ParsedContact[]>([]);
-
-  const handleSimulatedCsvUpload = () => {
-    setCsvStatus('uploading');
-    setTimeout(() => {
-      setCsvStatus('parsed');
-      setParsedContacts([
-        { name: 'K. Sharafath', rawPhone: '916282560928', maskedPhone: '+91 62825 ••••8', status: 'DIGITAL_BILL' },
-        { name: 'A. Rahul', rawPhone: '919876543210', maskedPhone: '+91 98765 ••••0', status: 'DIGITAL_BILL' },
-        { name: 'M. Priya', rawPhone: '918887776660', maskedPhone: '+91 88877 ••••0', status: 'DIGITAL_BILL' },
-        { name: 'John Doe', rawPhone: '917776665552', maskedPhone: '+91 77766 ••••2', status: 'DIGITAL_BILL' }
-      ]);
-    }, 1500);
-  };
-
-  // AI template polisher
-  const [roughText, setRoughText] = useState('hey buyer we got new clothes in our shop 20 percent discount if you visit this sunday');
-  const [polishedOutput, setPolishedOutput] = useState('');
-  const [isPolishing, setIsPolishing] = useState(false);
-
-  const handlePolishText = () => {
-    if (!roughText.trim()) {
-      alert("Error: Input text cannot be empty.");
-      return;
-    }
-    if (roughText.length > 300) {
-      alert("Error: Input exceeds maximum 300 characters.");
-      return;
-    }
-
-    setIsPolishing(true);
-    setPolishedOutput('');
-    setTimeout(() => {
-      setIsPolishing(false);
-      setPolishedOutput(
-        `Hi {{1}}. Exclusive new collections are now available at {{2}}. Enjoy an exclusive 20 percent privilege savings when you visit us this Sunday. View Catalog: {{3}}`
-      );
-    }, 1200);
-  };
-
-  // LENIS & GSAP INTEGRATION
-  useEffect(() => {
-    let lenis: import('lenis').default | null = null;
-
-    async function initAnimations() {
-      const [{ default: Lenis }, { gsap }, { ScrollTrigger }] = await Promise.all([
-        import('lenis'),
-        import('gsap'),
-        import('gsap/ScrollTrigger'),
-      ]);
-
-      gsap.registerPlugin(ScrollTrigger);
-
-      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        lenis = new Lenis({ lerp: 0.08, smoothWheel: true });
-        lenis.on('scroll', ScrollTrigger.update);
-        gsap.ticker.add((time) => lenis?.raf(time * 1000));
-        gsap.ticker.lagSmoothing(0);
-      }
-
-      const header = headerRef.current;
-      if (header) {
-        ScrollTrigger.create({
-          start: 40,
-          onEnter: () => {
-            header.classList.add('header-scrolled');
-            setIsScrolled(true);
-          },
-          onLeaveBack: () => {
-            header.classList.remove('header-scrolled');
-            setIsScrolled(false);
-          },
-        });
-      }
-
-      if (heroRef.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        const heroEls = heroRef.current.querySelectorAll('.hero-animate');
-        gsap.from(heroEls, {
-          opacity: 0,
-          y: 30,
-          duration: 0.8,
-          stagger: 0.1,
-          ease: 'power3.out',
-          delay: 0.1,
-        });
-      }
-
-      const sections = document.querySelectorAll('.scroll-reveal-section');
-      sections.forEach((section) => {
-        const els = section.querySelectorAll('.gsap-reveal');
-        if (els.length === 0) return;
-
-        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-          ScrollTrigger.create({
-            trigger: section,
-            start: 'top 85%',
-            once: true,
-            onEnter: () => {
-              gsap.fromTo(
-                els,
-                { opacity: 0, y: 25 },
-                { opacity: 1, y: 0, duration: 0.7, stagger: 0.08, ease: 'power3.out' }
-              );
-            },
-          });
-        } else {
-          els.forEach((el) => {
-            (el as HTMLElement).style.opacity = '1';
-            (el as HTMLElement).style.transform = 'none';
-          });
-        }
-      });
-    }
-
-    initAnimations();
-
-    return () => {
-      lenis?.destroy();
-    };
-  }, []);
-
-  const selectPresetColor = (hex: string) => {
-    setBrandColor(hex);
-  };
+  const liveDemoWhatsAppNumber = '919876543210';
+  const liveDemoUrl = `https://wa.me/${liveDemoWhatsAppNumber}?text=${encodeURIComponent(
+    'Hi True Attendly, I want to test your 24/7 AI Receptionist demo for my clinic/business.',
+  )}`;
 
   return (
-    <main className="w-full max-w-full min-h-screen overflow-x-hidden relative text-[#2D1E17] antialiased bg-[#FAF6F0]">
-      {/* Global Landing Styles */}
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
-        
-        .font-outfit {
-          font-family: 'Outfit', sans-serif;
-        }
-        
-        .serif-headline {
-          font-family: 'Playfair Display', Georgia, serif;
-          letter-spacing: -0.01em;
-        }
+    <div className="min-h-screen bg-[#FDFBF7] text-[#3E3B36] flex flex-col font-sans">
+      {/* Navigation */}
+      <header className="sticky top-0 z-50 bg-[#FDFBF7]/90 backdrop-blur-md border-b border-[#E8E3DA]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-[#3E3B36] text-[#F5F1EA] flex items-center justify-center font-bold text-sm tracking-wider">
+              TA
+            </div>
+            <span className="font-bold text-base tracking-tight text-[#3E3B36]">
+              True Attendly
+            </span>
+          </div>
 
-        .header-scrolled {
-          background: rgba(250, 246, 240, 0.95) !important;
-          backdrop-filter: blur(12px) !important;
-          box-shadow: 0 1px 0 #E5DCD3 !important;
-        }
-        
-        .header-scrolled .nav-link-light {
-          color: #5C4033 !important;
-        }
-        .header-scrolled .nav-link-light:hover {
-          color: #8C6853 !important;
-        }
-        .header-scrolled .brand-text {
-          color: #5C4033 !important;
-        }
-        .header-scrolled .signin-link {
-          color: #5C4033 !important;
-        }
-        .header-scrolled .signin-link:hover {
-          color: #8C6853 !important;
-        }
+          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold tracking-wider uppercase text-[#8B8378]">
+            <a href="#benefits" className="hover:text-[#3E3B36] transition-colors">
+              Features
+            </a>
+            <a href="#how-it-works" className="hover:text-[#3E3B36] transition-colors">
+              How It Works
+            </a>
+            <a href="#pricing" className="hover:text-[#3E3B36] transition-colors">
+              Pricing
+            </a>
+          </nav>
 
-        @keyframes laser-sweep {
-          0%, 100% {
-            top: 5%;
-          }
-          50% {
-            top: 95%;
-          }
-        }
-        .laser-line {
-          animation: laser-sweep 2.5s infinite linear;
-        }
-      `}</style>
-
-      {/* Floating Header */}
-      <LandingHeader headerRef={headerRef} isScrolled={isScrolled} />
+          <div className="flex items-center gap-3">
+            <Link
+              href="/auth/login"
+              className="text-xs font-semibold text-[#8B8378] hover:text-[#3E3B36] px-3 py-1.5 transition-colors"
+            >
+              Log In
+            </Link>
+            <Link
+              href="/auth/register"
+              className="bg-[#3E3B36] text-[#F5F1EA] px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-[#2B2925] transition-all shadow-sm"
+            >
+              Get Started
+            </Link>
+          </div>
+        </div>
+      </header>
 
       {/* Hero Section */}
-      <HeroSection
-        heroRef={heroRef}
-        cart={cart}
-        newItemName={newItemName}
-        setNewItemName={setNewItemName}
-        newItemPrice={newItemPrice}
-        setNewItemPrice={setNewItemPrice}
-        handleAddItem={handleAddItem}
-        removeItem={removeItem}
-        subtotal={subtotal}
-        gst={gst}
-        total={total}
-        scannerActive={scannerActive}
-        justScanned={justScanned}
-        brandColor={brandColor}
-        invoiceFooterNote={invoiceFooterNote}
-        handleDownloadBill={handleDownloadBill}
-        isDownloading={isDownloading}
-        setShowBillModal={setShowBillModal}
-        brandPresetColors={BRAND_PRESET_COLORS}
-        selectPresetColor={selectPresetColor}
-      />
+      <section className="pt-20 pb-16 sm:pt-28 sm:pb-24 px-4 sm:px-6 max-w-5xl mx-auto text-center">
+        <div className="inline-flex items-center gap-2 bg-[#F5F1EA] border border-[#E8E3DA] px-3 py-1.5 rounded-full text-[11px] font-bold text-[#8B8378] uppercase tracking-wider mb-6">
+          <Sparkles size={12} className="text-[#C4A896]" />
+          Purpose-Built for Clinics, Institutes, Salons &amp; Local SMBs
+        </div>
 
-      {/* Trinity Visual Matrix */}
-      <TrinityMatrixSection
-        offerImages={offerImages}
-        offerImageIndex={offerImageIndex}
-        cycleOfferImage={cycleOfferImage}
-        isOfferUploading={isOfferUploading}
-        originalPrice={originalPrice}
-        setOriginalPrice={setOriginalPrice}
-        discountPrice={discountPrice}
-        setDiscountPrice={setDiscountPrice}
-        computedDiscount={computedDiscount}
-        offerActive={offerActive}
-        setOfferActive={setOfferActive}
-        webPushBroadcast={webPushBroadcast}
-        setWebPushBroadcast={setWebPushBroadcast}
-        scannerActive={scannerActive}
-        setScannerActive={setScannerActive}
-        justScanned={justScanned}
-        scanHistoryLogs={scanHistoryLogs}
-        total={total}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        selectedTagFilter={selectedTagFilter}
-        setSelectedTagFilter={setSelectedTagFilter}
-        filteredAudience={filteredAudience}
-        triggerSecurityModal={triggerSecurityModal}
-      />
+        <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-[#3E3B36] max-w-4xl mx-auto leading-[1.15]">
+          24/7 AI Receptionist &amp; Lead Qualifier for{' '}
+          <span className="text-[#B39380] underline decoration-[#E8E3DA] underline-offset-8">
+            WhatsApp
+          </span>
+        </h1>
 
-      {/* WhatsApp Status Loop */}
-      <WhatsAppStatusSection />
+        <p className="text-sm sm:text-lg text-[#8B8378] max-w-2xl mx-auto mt-6 leading-relaxed">
+          Never miss patient appointments or student inquiries after hours. Instant bilingual responses, zero reception desk overload, and automated qualified lead capture.
+        </p>
 
-      {/* Universal Invoice Cross-Sell */}
-      <UniversalInvoiceSection />
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+          <a
+            href={liveDemoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-600 text-white px-6 py-3.5 rounded-xl text-sm font-bold tracking-wide hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/20"
+          >
+            <MessageSquare size={16} />
+            Try Live WhatsApp Demo
+          </a>
 
-      {/* Account Ledgers */}
-      <LedgerSection
-        activeLedgerTab={activeLedgerTab}
-        setActiveLedgerTab={setActiveLedgerTab}
-        cashfreeLogs={cashfreeLogs}
-        ledgerUsages={ledgerUsages}
-        hasMoreUsages={hasMoreUsages}
-        isLoadingMoreUsages={isLoadingMoreUsages}
-        handleLoadMoreUsages={handleLoadMoreUsages}
-      />
+          <Link
+            href="/auth/register"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#3E3B36] text-[#F5F1EA] px-6 py-3.5 rounded-xl text-sm font-bold tracking-wide hover:bg-[#2B2925] transition-all"
+          >
+            Start Free Trial <ArrowRight size={15} />
+          </Link>
+        </div>
 
-      {/* Technical Ingestion Matrix */}
-      <TechnicalMatrixSection
-        csvStatus={csvStatus}
-        setCsvStatus={setCsvStatus}
-        parsedContacts={parsedContacts}
-        handleSimulatedCsvUpload={handleSimulatedCsvUpload}
-        roughText={roughText}
-        setRoughText={setRoughText}
-        polishedOutput={polishedOutput}
-        isPolishing={isPolishing}
-        handlePolishText={handlePolishText}
-      />
+        {/* Live Conversation Teaser Card */}
+        <div className="mt-14 max-w-2xl mx-auto bg-white border border-[#E8E3DA] rounded-2xl shadow-xl shadow-stone-200/50 p-4 sm:p-6 text-left">
+          <div className="flex items-center justify-between border-b border-[#E8E3DA] pb-3 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs">
+                AI
+              </div>
+              <div>
+                <p className="text-xs font-bold text-[#3E3B36]">Indiranagar Dental &amp; Smile Care</p>
+                <p className="text-[10px] text-emerald-600 font-medium">● Online 24/7 • Official WhatsApp Cloud</p>
+              </div>
+            </div>
+            <span className="text-[10px] text-[#8B8378] font-mono">Simulated WhatsApp Flow</span>
+          </div>
 
-      {/* Dead Stock Marketplace Landing Section */}
-      <DeadStockLandingSection />
+          <div className="space-y-3 text-xs leading-relaxed">
+            <div className="flex justify-end">
+              <div className="bg-[#E8E3DA]/60 text-[#3E3B36] rounded-2xl rounded-tr-none px-3.5 py-2 max-w-[85%]">
+                Hi! Do you have slots for scaling &amp; teeth cleaning tomorrow evening? Also how much does it cost?
+              </div>
+            </div>
 
-      {/* Reality Check Comparison */}
-      <RealityCheckSection />
+            <div className="flex justify-start">
+              <div className="bg-[#3E3B36] text-[#F5F1EA] rounded-2xl rounded-tl-none px-3.5 py-2.5 max-w-[85%]">
+                Hello! Yes, Dr. Sharma has open consultation slots tomorrow between <strong>5:30 PM and 7:00 PM</strong>.<br /><br />
+                Our Ultrasonic Teeth Cleaning &amp; Polishing is <strong>₹1,200</strong> (takes approx. 45 mins).<br /><br />
+                May I know your full name so I can hold a 6:00 PM slot for you?
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <div className="bg-[#E8E3DA]/60 text-[#3E3B36] rounded-2xl rounded-tr-none px-3.5 py-2 max-w-[85%]">
+                Rahul Verma. 6 PM works great!
+              </div>
+            </div>
+
+            <div className="flex justify-start">
+              <div className="bg-[#3E3B36] text-[#F5F1EA] rounded-2xl rounded-tl-none px-3.5 py-2 max-w-[85%]">
+                Booked for Rahul Verma! We have logged your appointment request for tomorrow at 6:00 PM. Our clinic team has also been notified. See you tomorrow!
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Value Pillars */}
+      <section id="benefits" className="py-16 bg-[#F5F1EA]/60 border-y border-[#E8E3DA]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#3E3B36]">
+              Built Specifically for Offline Front Desks
+            </h2>
+            <p className="text-xs sm:text-sm text-[#8B8378] mt-2">
+              Transform your WhatsApp from an unread inbox into an autonomous business agent.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-2xl border border-[#E8E3DA] p-6 shadow-sm space-y-3">
+              <div className="h-10 w-10 rounded-xl bg-[#F5F1EA] flex items-center justify-center text-[#3E3B36]">
+                <Clock size={20} className="text-[#C4A896]" />
+              </div>
+              <h3 className="text-sm font-bold text-[#3E3B36] uppercase tracking-wider">
+                Instant 24/7 Response
+              </h3>
+              <p className="text-xs text-[#8B8378] leading-relaxed">
+                68% of inquiries arrive after 7 PM or on Sundays. The AI responds in under 3 seconds, ensuring prospective clients never call your competitors while your staff is away.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-[#E8E3DA] p-6 shadow-sm space-y-3">
+              <div className="h-10 w-10 rounded-xl bg-[#F5F1EA] flex items-center justify-center text-[#3E3B36]">
+                <Bot size={20} className="text-[#C4A896]" />
+              </div>
+              <h3 className="text-sm font-bold text-[#3E3B36] uppercase tracking-wider">
+                Bilingual &amp; Natural Tone
+              </h3>
+              <p className="text-xs text-[#8B8378] leading-relaxed">
+                Seamlessly understands conversational English and regional phrasing (Manglish, Hinglish). Never feels like a rigid robot, speaking with warmth and clinical empathy.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-[#E8E3DA] p-6 shadow-sm space-y-3">
+              <div className="h-10 w-10 rounded-xl bg-[#F5F1EA] flex items-center justify-center text-[#3E3B36]">
+                <Users size={20} className="text-[#C4A896]" />
+              </div>
+              <h3 className="text-sm font-bold text-[#3E3B36] uppercase tracking-wider">
+                Automated Lead Qualification
+              </h3>
+              <p className="text-xs text-[#8B8378] leading-relaxed">
+                Automatically extracts customer name, primary requirement, and intent (pricing, appointment, admission). Syncs directly into your dashboard with 1-click human takeover.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section id="how-it-works" className="py-20 px-4 sm:px-6 max-w-5xl mx-auto">
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#3E3B36]">
+            Three Steps to 24/7 Autopilot
+          </h2>
+          <p className="text-xs sm:text-sm text-[#8B8378] mt-2">
+            No complex coding or phone line hardware required.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="text-center space-y-3">
+            <div className="h-12 w-12 rounded-2xl bg-[#3E3B36] text-[#F5F1EA] flex items-center justify-center font-bold text-base mx-auto">
+              1
+            </div>
+            <h3 className="text-sm font-bold text-[#3E3B36]">Connect WhatsApp Number</h3>
+            <p className="text-xs text-[#8B8378]">
+              Link your official WhatsApp Business Cloud API in Settings with Meta verification in minutes.
+            </p>
+          </div>
+
+          <div className="text-center space-y-3">
+            <div className="h-12 w-12 rounded-2xl bg-[#3E3B36] text-[#F5F1EA] flex items-center justify-center font-bold text-base mx-auto">
+              2
+            </div>
+            <h3 className="text-sm font-bold text-[#3E3B36]">Input Business Knowledge</h3>
+            <p className="text-xs text-[#8B8378]">
+              Add your clinic timings, service fees, doctor profiles, and FAQs in the Knowledge Base editor.
+            </p>
+          </div>
+
+          <div className="text-center space-y-3">
+            <div className="h-12 w-12 rounded-2xl bg-[#3E3B36] text-[#F5F1EA] flex items-center justify-center font-bold text-base mx-auto">
+              3
+            </div>
+            <h3 className="text-sm font-bold text-[#3E3B36]">Watch Leads Convert</h3>
+            <p className="text-xs text-[#8B8378]">
+              Your AI answers queries, gathers details, and logs leads in your live pipeline with instant takeover.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-16 bg-[#F5F1EA]/60 border-t border-[#E8E3DA]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#3E3B36]">
+              Simple, Transparent Pricing
+            </h2>
+            <p className="text-xs sm:text-sm text-[#8B8378] mt-2">
+              Done-for-you WhatsApp AI automation with zero hidden server maintenance fees.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+            {/* Starter Plan */}
+            <div className="bg-white rounded-2xl border border-[#E8E3DA] p-6 sm:p-8 shadow-sm flex flex-col justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8B8378] bg-[#F5F1EA] px-2.5 py-1 rounded">
+                  Starter Plan
+                </span>
+                <div className="mt-4 flex items-baseline gap-1">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-[#3E3B36]">₹1,499</span>
+                  <span className="text-xs text-[#8B8378]">/ month</span>
+                </div>
+                <p className="text-xs text-[#8B8378] mt-2">
+                  Ideal for single-location clinics, salons, and boutique coaching centers.
+                </p>
+
+                <ul className="mt-6 space-y-2.5 text-xs text-[#3E3B36]">
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-emerald-600" /> Up to 1,000 AI replies/month
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-emerald-600" /> Full Knowledge Base &amp; Services
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-emerald-600" /> Real-time Lead Dashboard
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-emerald-600" /> 1-Click Human Takeover
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-emerald-600" /> CSV Leads Export
+                  </li>
+                </ul>
+              </div>
+
+              <Link
+                href="/auth/register"
+                className="mt-8 block text-center bg-[#F5F1EA] text-[#3E3B36] border border-[#E8E3DA] py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#E8E3DA] transition-colors"
+              >
+                Start 14-Day Free Trial
+              </Link>
+            </div>
+
+            {/* Growth Plan */}
+            <div className="bg-white rounded-2xl border-2 border-[#3E3B36] p-6 sm:p-8 shadow-md flex flex-col justify-between relative">
+              <span className="absolute -top-3 right-6 bg-[#3E3B36] text-[#F5F1EA] text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
+                Most Popular
+              </span>
+
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8B8378] bg-[#F5F1EA] px-2.5 py-1 rounded">
+                  Growth Plan
+                </span>
+                <div className="mt-4 flex items-baseline gap-1">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-[#3E3B36]">₹3,499</span>
+                  <span className="text-xs text-[#8B8378]">/ month</span>
+                </div>
+                <p className="text-xs text-[#8B8378] mt-2">
+                  For busy clinics, multi-specialty centers, and growing training institutes.
+                </p>
+
+                <ul className="mt-6 space-y-2.5 text-xs text-[#3E3B36]">
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-emerald-600" /> Up to 3,000 AI replies/month
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-emerald-600" /> Priority Multi-Tier LLM routing
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-emerald-600" /> Unlimited Services &amp; FAQs
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-emerald-600" /> Automated Intent Classification
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-emerald-600" /> Priority WhatsApp Support
+                  </li>
+                </ul>
+              </div>
+
+              <Link
+                href="/auth/register"
+                className="mt-8 block text-center bg-[#3E3B36] text-[#F5F1EA] py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#2B2925] transition-colors"
+              >
+                Get Started with Growth
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Footer */}
-      <LandingFooter />
-
-      {/* Modals */}
-      <BillPreviewModal
-        showBillModal={showBillModal}
-        setShowBillModal={setShowBillModal}
-        brandColor={brandColor}
-        cart={cart}
-        subtotal={subtotal}
-        gst={gst}
-        total={total}
-        invoiceFooterNote={invoiceFooterNote}
-        handleDownloadBill={handleDownloadBill}
-      />
-
-      <SecurityFirewallModal
-        securityModalOpen={securityModalOpen}
-        setSecurityModalOpen={setSecurityModalOpen}
-        dispatchStatus={dispatchStatus}
-        securityClickCount={securityClickCount}
-        handleSecurityVerification={handleSecurityVerification}
-      />
-    </main>
+      <footer className="mt-auto border-t border-[#E8E3DA] py-8 bg-[#FDFBF7] text-xs text-[#8B8378]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p>© {new Date().getFullYear()} True Attendly. All rights reserved.</p>
+          <div className="flex items-center gap-6">
+            <Link href="/privacy" className="hover:text-[#3E3B36]">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="hover:text-[#3E3B36]">
+              Terms of Service
+            </Link>
+            <Link href="/auth/login" className="hover:text-[#3E3B36]">
+              Merchant Portal
+            </Link>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }

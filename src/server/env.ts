@@ -24,6 +24,11 @@ const EnvSchema = z.object({
   GEMINI_API_KEY: z.string().optional(),
   GROQ_API_KEY: z.string().optional(),
   CEREBRAS_API_KEY: z.string().optional(),
+
+  // Phase 3 — Cashfree Billing
+  CASHFREE_APP_ID: z.string().optional(),
+  CASHFREE_SECRET_KEY: z.string().optional(),
+  CASHFREE_API_VERSION: z.string().default('2023-08-01'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
