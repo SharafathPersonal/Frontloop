@@ -4,7 +4,7 @@ import { forTenant } from '@/server/repos/tenant';
 import LeadConversationClient from './lead-conversation-client';
 
 export const metadata = {
-  title: 'Lead Conversation — True Attendly',
+  title: 'Lead Conversation — FrontLoop',
 };
 
 interface PageProps {
@@ -24,7 +24,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const messages = await repo.getLeadMessages(id, 100);
+  const [messages, tenant] = await Promise.all([repo.getLeadMessages(id, 100), repo.getTenant()]);
 
   const serializedLead = {
     id: String(lead._id),
@@ -48,5 +48,11 @@ export default async function LeadDetailPage({ params }: PageProps) {
     createdAt: m.createdAt ? new Date(m.createdAt).toISOString() : undefined,
   }));
 
-  return <LeadConversationClient lead={serializedLead} messages={serializedMessages} />;
+  return (
+    <LeadConversationClient
+      lead={serializedLead}
+      messages={serializedMessages}
+      timeZone={tenant?.timezone || 'Asia/Kolkata'}
+    />
+  );
 }

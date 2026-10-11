@@ -45,7 +45,7 @@ export const ExceptionScheduleSchema = z.object({
 
 export const HoursInputSchema = z.object({
   weekly: z.array(DayScheduleSchema).default([]),
-  exceptions: z.array(ExceptionScheduleSchema).default([]),
+  exceptions: z.array(ExceptionScheduleSchema).optional(), // omitted = keep stored exceptions
 });
 
 export const BotSettingsInputSchema = z.object({
@@ -67,24 +67,54 @@ export const KnowledgeBaseInputSchema = z.object({
   bot: BotSettingsInputSchema.optional(),
 });
 
-export type KnowledgeBaseInput = z.infer<typeof KnowledgeBaseInputSchema>;
+export type KnowledgeBaseInput = z.input<typeof KnowledgeBaseInputSchema>;
+
+export type SaveKnowledgeBaseResult = { ok: true } | { ok: false; error: string };
+
+const KB_SECTION_LABELS: Record<string, string> = {
+  faqs: 'FAQ',
+  services: 'Service',
+  context: 'Business context',
+  hours: 'Business hours',
+  bot: 'Bot settings',
+};
+
+/** Turns the first zod issue into a field-specific sentence, e.g. "FAQ #2: answer is required". */
+function describeKbIssue(issue: z.core.$ZodIssue): string {
+  const [section, index] = issue.path;
+  const base = KB_SECTION_LABELS[String(section)] ?? 'Knowledge base';
+  const label = typeof index === 'number' && (section === 'faqs' || section === 'services')
+    ? `${base} #${index + 1}`
+    : base;
+  const message = issue.message.charAt(0).toLowerCase() + issue.message.slice(1);
+  return `${label}: ${message}`;
+}
+
+export type LeadCursor = { lastMessageAt: string; _id: string };
+
+/** Cursor is URL-safe: `<epochMs>_<objectId>`. Malformed input yields null (first page). */
+export function encodeLeadCursor(c: LeadCursor): string {
+  return `${new Date(c.lastMessageAt).getTime()}_${c._id}`;
+}
+
+export function decodeLeadCursor(raw: string | undefined): LeadCursor | null {
+  const match = raw?.match(/^(\d{1,15})_([a-f0-9]{24})$/);
+  if (!match) return null;
+  return { lastMessageAt: new Date(Number(match[1])).toISOString(), _id: match[2] };
+}
 
 export interface LeadQueryFilter {
   status?: LeadStatus;
   searchPhone?: string;
-  cursor?: {
-    lastMessageAt?: Date;
-    _id?: string;
-  };
+  cursor?: LeadCursor;
   limit?: number;
 }
 
+const toObjectId = (id: string) => (mongoose.isValidObjectId(id) ? new mongoose.Types.ObjectId(id) : null);
+
 export interface PaginatedLeads {
   leads: Array<LeadDoc & { _id: unknown }>;
-  nextCursor: {
-    lastMessageAt: string;
-    _id: string;
-  } | null;
+  nextCursor: LeadCursor | null;
   totalCount: number;
 }
 
@@ -98,6 +128,66 @@ export function forTenant(tenantId: string) {
     async getTenant() {
       await connectDB();
       return BusinessTenant.findById(tenantObjectId).lean();
+    },
+
+    /** Encrypted token + routing id, for reusing a stored token. Never send to the browser. */
+    async getWhatsAppSecret() {
+      await connectDB();
+      const tenant = await BusinessTenant.findOne({ _id: tenantObjectId })
+        .select('+whatsapp.accessTokenEnc whatsapp.phoneNumberId')
+        .lean<{ whatsapp?: { accessTokenEnc?: string; phoneNumberId?: string } } | null>();
+      return { accessTokenEnc: tenant?.whatsapp?.accessTokenEnc, phoneNumberId: tenant?.whatsapp?.phoneNumberId };
+    },
+
+    /**
+     * Binds a verified WhatsApp number to this tenant. The unique partial index on
+     * `whatsapp.phoneNumberId` turns a number owned by another tenant into E11000.
+     */
+    async connectWhatsApp(config: {
+      phoneNumberId: string;
+      wabaId: string;
+      displayPhoneNumber: string;
+      accessTokenEnc: string;
+    }): Promise<{ ok: true } | { ok: false; reason: 'number_taken' }> {
+      await connectDB();
+      try {
+        await BusinessTenant.updateOne(
+          { _id: tenantObjectId },
+          {
+            $set: {
+              'whatsapp.phoneNumberId': config.phoneNumberId,
+              'whatsapp.wabaId': config.wabaId,
+              'whatsapp.displayPhoneNumber': config.displayPhoneNumber,
+              'whatsapp.accessTokenEnc': config.accessTokenEnc,
+              'whatsapp.status': 'connected',
+              'whatsapp.connectedAt': new Date(),
+              botEnabled: true,
+            },
+            $unset: { 'whatsapp.lastError': '' },
+          },
+        );
+      } catch (err) {
+        if ((err as { code?: number }).code === 11000) return { ok: false, reason: 'number_taken' };
+        throw err;
+      }
+      return { ok: true };
+    },
+
+    /** Drops the token and releases the number so webhooks stop routing here and it can be re-linked. */
+    async disconnectWhatsApp() {
+      await connectDB();
+      await BusinessTenant.updateOne(
+        { _id: tenantObjectId },
+        {
+          $set: { 'whatsapp.status': 'disconnected', botEnabled: false },
+          $unset: {
+            'whatsapp.accessTokenEnc': '',
+            'whatsapp.phoneNumberId': '',
+            'whatsapp.lastError': '',
+            'whatsapp.connectedAt': '',
+          },
+        },
+      );
     },
 
     /**
@@ -115,9 +205,12 @@ export function forTenant(tenantId: string) {
     /**
      * Upserts the KnowledgeBase document with strict Zod validation.
      */
-    async saveKnowledgeBase(input: unknown) {
-      await connectDB();
-      const validated = KnowledgeBaseInputSchema.parse(input);
+    async saveKnowledgeBase(input: unknown): Promise<SaveKnowledgeBaseResult> {
+      const parsed = KnowledgeBaseInputSchema.safeParse(input);
+      if (!parsed.success) {
+        return { ok: false, error: describeKbIssue(parsed.error.issues[0]) };
+      }
+      const validated = parsed.data;
 
       // Verify size limit of KnowledgeBase content
       const size = JSON.stringify({
@@ -127,33 +220,36 @@ export function forTenant(tenantId: string) {
       }).length;
 
       if (size > 60_000) {
-        throw new Error('Knowledge base exceeds maximum 60,000 characters');
+        return { ok: false, error: 'Knowledge base exceeds the maximum of 60,000 characters' };
       }
 
       const updateData: Record<string, unknown> = {
         context: validated.context,
         faqs: validated.faqs,
         services: validated.services,
-        $inc: { version: 1 },
       };
 
+      // Dotted paths so a partial `hours` payload never wipes the sibling field.
       if (validated.hours) {
-        updateData.hours = validated.hours;
+        updateData['hours.weekly'] = validated.hours.weekly;
+        if (validated.hours.exceptions) updateData['hours.exceptions'] = validated.hours.exceptions;
       }
       if (validated.bot) {
         updateData.bot = validated.bot;
       }
 
-      const updated = await KnowledgeBase.findOneAndUpdate(
+      await connectDB();
+      await KnowledgeBase.findOneAndUpdate(
         { tenantId: tenantObjectId },
         {
           $set: updateData,
+          $inc: { version: 1 },
           $setOnInsert: { tenantId: tenantObjectId },
         },
-        { upsert: true, returnDocument: 'after' },
-      ).lean();
+        { upsert: true, runValidators: true },
+      );
 
-      return updated;
+      return { ok: true };
     },
 
     /**
@@ -178,7 +274,10 @@ export function forTenant(tenantId: string) {
         }
       }
 
-      if (filter.cursor?.lastMessageAt && filter.cursor?._id) {
+      // Count before the cursor clause: the total covers every page of this filter.
+      const countQuery = { ...query };
+
+      if (filter.cursor?.lastMessageAt && filter.cursor?._id && mongoose.isValidObjectId(filter.cursor._id)) {
         query.$or = [
           { lastMessageAt: { $lt: new Date(filter.cursor.lastMessageAt) } },
           {
@@ -193,10 +292,7 @@ export function forTenant(tenantId: string) {
           .sort({ lastMessageAt: -1, _id: -1 })
           .limit(limit + 1)
           .lean<Array<LeadDoc & { _id: unknown }>>(),
-        Lead.countDocuments({
-          tenantId: tenantObjectId,
-          ...(filter.status ? { status: filter.status } : {}),
-        }),
+        Lead.countDocuments(countQuery),
       ]);
 
       let nextCursor: PaginatedLeads['nextCursor'] = null;
@@ -220,37 +316,36 @@ export function forTenant(tenantId: string) {
      * Fetches a single lead by ID with strict tenant isolation.
      */
     async getLead(leadId: string) {
+      const _id = toObjectId(leadId);
+      if (!_id) return null;
       await connectDB();
-      return Lead.findOne({
-        _id: new mongoose.Types.ObjectId(leadId),
-        tenantId: tenantObjectId,
-      }).lean<(LeadDoc & { _id: unknown }) | null>();
+      return Lead.findOne({ _id, tenantId: tenantObjectId }).lean<(LeadDoc & { _id: unknown }) | null>();
     },
 
     /**
      * Fetches conversation messages for a lead in chronological order.
      */
     async getLeadMessages(leadId: string, limit = 100) {
+      const leadObjectId = toObjectId(leadId);
+      if (!leadObjectId) return [];
       await connectDB();
-      return Message.find({
-        tenantId: tenantObjectId,
-        leadId: new mongoose.Types.ObjectId(leadId),
-      })
-        .sort({ createdAt: 1 })
+      // Newest `limit` messages, returned oldest-first for the timeline.
+      const docs = await Message.find({ tenantId: tenantObjectId, leadId: leadObjectId })
+        .sort({ createdAt: -1 })
         .limit(limit)
         .lean<Array<MessageDoc & { _id: unknown }>>();
+      return docs.reverse();
     },
 
     /**
      * Toggles botPaused (human takeover) for a lead.
      */
     async toggleBotPaused(leadId: string, botPaused: boolean) {
+      const _id = toObjectId(leadId);
+      if (!_id) return null;
       await connectDB();
       const updated = await Lead.findOneAndUpdate(
-        {
-          _id: new mongoose.Types.ObjectId(leadId),
-          tenantId: tenantObjectId,
-        },
+        { _id, tenantId: tenantObjectId },
         { $set: { botPaused } },
         { returnDocument: 'after' },
       ).lean();
@@ -271,28 +366,29 @@ export function forTenant(tenantId: string) {
         intent?: LeadIntent;
       },
     ) {
+      const _id = toObjectId(leadId);
+      if (!_id) return null;
       await connectDB();
       return Lead.findOneAndUpdate(
-        {
-          _id: new mongoose.Types.ObjectId(leadId),
-          tenantId: tenantObjectId,
-        },
+        { _id, tenantId: tenantObjectId },
         { $set: updates },
-        { returnDocument: 'after' },
+        { returnDocument: 'after', runValidators: true },
       ).lean();
     },
 
     /**
-     * Queries all leads for CSV export.
+     * Streams leads for CSV export without buffering the whole collection.
+     * Rides the `{ tenantId, createdAt: -1 }` index.
      */
-    async getLeadsForExport(filter: { status?: LeadStatus } = {}) {
+    async exportLeadsCursor(filter: { status?: LeadStatus } = {}) {
       await connectDB();
       return Lead.find({
         tenantId: tenantObjectId,
         ...(filter.status ? { status: filter.status } : {}),
       })
         .sort({ createdAt: -1 })
-        .lean<Array<LeadDoc & { _id: unknown }>>();
+        .lean<LeadDoc & { _id: unknown }>()
+        .cursor();
     },
   };
 }

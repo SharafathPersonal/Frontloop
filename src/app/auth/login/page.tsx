@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { APP_VERSION } from '@/lib/config';
 import { Spinner } from '@/components/ui/Spinner';
 
@@ -39,37 +39,35 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F5F1EA] flex items-center justify-center px-4">
+    <main className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
 
         {/* Logo / Brand */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 mb-6">
-            <div className="relative w-8 h-8 flex items-center justify-center">
-              <Image src="/images/logo-dark.png" alt="Attendly Logo" fill sizes="32px" className="object-contain" />
-            </div>
-            <span className="serif-headline text-lg text-[#3E3B36]">Attendly Broadcast</span>
-          </div>
-          <h1 className="serif-headline text-2xl text-[#3E3B36] mb-2">Welcome back</h1>
-          <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase">Sign in to your broadcast workspace</p>
+          <Link href="/" aria-label="FrontLoop home" className="inline-flex items-center mb-6">
+            <BrandLogo size="lg" priority />
+          </Link>
+          <h1 className="serif-headline text-2xl text-[#0F172A] mb-2">Welcome back</h1>
+          <p className="text-xs tracking-[0.15em] text-[#64748B] uppercase">Sign in to your FrontLoop workspace</p>
         </div>
 
         {/* Card */}
-        <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-8">
+        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl p-8">
 
           {error && (
-            <div className="mb-6 p-4 bg-[#3E3B36] rounded-lg">
-              <p className="text-[#F5F1EA] text-xs tracking-[0.1em]">{error}</p>
+            <div role="alert" className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-xl">
+              <p className="text-rose-700 text-xs tracking-[0.1em]">{error}</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
 
             <div>
-              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
+              <label htmlFor="login-email" className="block text-xs tracking-[0.2em] text-[#64748B] uppercase mb-2">
                 Email Address
               </label>
               <input
+                id="login-email"
                 type="email"
                 required
                 autoComplete="email"
@@ -83,14 +81,15 @@ export default function LoginPage() {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase">
+                <label htmlFor="login-password" className="block text-xs tracking-[0.2em] text-[#64748B] uppercase">
                   Password
                 </label>
-                <Link href="/auth/forgot-password" className="text-sm text-amber-700 hover:text-amber-800 dark:text-amber-500 font-medium transition-colors cursor-pointer">
-                  Forgot Password?
+                <Link href="/auth/forgot-password" className="text-xs text-[#64748B] hover:text-[#0F172A] underline underline-offset-2 transition-colors">
+                  Forgot password?
                 </Link>
               </div>
               <input
+                id="login-password"
                 type="password"
                 required
                 autoComplete="current-password"
@@ -111,7 +110,7 @@ export default function LoginPage() {
                 {loading ? (
                   <>
                     <Spinner />
-                    <span>PROCESSING PROFILE...</span>
+                    <span>Signing in...</span>
                   </>
                 ) : (
                   'Sign In'
@@ -121,10 +120,10 @@ export default function LoginPage() {
 
           </form>
 
-          <div className="mt-6 pt-6 border-t border-[#E8E3DA] text-center">
-            <p className="text-xs text-[#8B8378]">
+          <div className="mt-6 pt-6 border-t border-[#E2E8F0] text-center">
+            <p className="text-xs text-[#64748B]">
               Don&apos;t have an account?{' '}
-              <Link href="/auth/register" className="text-[#3E3B36] hover:text-[#C4A896] transition-colors">
+              <Link href="/auth/register" className="text-[#0F172A] hover:text-[#0AAF76] transition-colors">
                 Create workspace →
               </Link>
             </p>
@@ -136,12 +135,12 @@ export default function LoginPage() {
         <div className="text-center mt-6 flex flex-col items-center gap-4">
           <Link
             href="/"
-            className="text-xs tracking-[0.15em] text-[#8B8378] hover:text-[#C4A896] transition-colors uppercase"
+            className="text-xs tracking-[0.15em] text-[#64748B] hover:text-[#0AAF76] transition-colors uppercase"
           >
             ← Back to home
           </Link>
-          <div className="border border-[#E8E3DA]/50 bg-transparent py-1 px-3 rounded-md">
-            <span className="text-[10px] tracking-[0.15em] text-[#C4A896] font-mono">
+          <div className="border border-[#E2E8F0]/50 bg-transparent py-1 px-3 rounded-md">
+            <span className="text-[10px] tracking-[0.15em] text-[#0AAF76] font-mono">
               {APP_VERSION}
             </span>
           </div>

@@ -1,8 +1,8 @@
 import 'server-only';
 import { NextRequest, after } from 'next/server';
 import mongoose from 'mongoose';
-import { getEnv } from '@/server/env';
-import { verifyMetaSignature } from '@/server/crypto';
+import { requireEnv } from '@/server/env';
+import { safeEqual, verifyMetaSignature } from '@/server/crypto';
 import { connectDB } from '@/server/db';
 import { getTenantByPhoneNumberId } from '@/server/tenant-resolver';
 import { Lead } from '@/server/models/Lead';
@@ -20,10 +20,7 @@ export async function GET(req: NextRequest) {
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
 
-  const env = getEnv();
-  const configuredVerifyToken = env.META_VERIFY_TOKEN;
-
-  if (mode === 'subscribe' && token && configuredVerifyToken && token === configuredVerifyToken) {
+  if (mode === 'subscribe' && safeEqual(token, requireEnv('META_VERIFY_TOKEN'))) {
     return new Response(challenge ?? '', {
       status: 200,
       headers: { 'Content-Type': 'text/plain' },
@@ -50,19 +47,15 @@ function normalizePhoneNumber(rawPhone: string): string {
  * POST Webhook Ingestion from Meta
  */
 export async function POST(req: NextRequest) {
-  const env = getEnv();
-  const appSecret = env.META_APP_SECRET;
+  // Fail closed: a missing secret throws (500) rather than accepting unsigned payloads.
+  const appSecret = requireEnv('META_APP_SECRET');
 
   const rawBody = await req.text();
   const signatureHeader = req.headers.get('x-hub-signature-256');
 
-  // Cryptographic verification
-  if (appSecret) {
-    const isValid = verifyMetaSignature(rawBody, signatureHeader, appSecret);
-    if (!isValid) {
-      console.warn('[WhatsApp Webhook] Invalid x-hub-signature-256 HMAC check');
-      return new Response('Unauthorized', { status: 401 });
-    }
+  if (!verifyMetaSignature(rawBody, signatureHeader, appSecret)) {
+    console.warn('[WhatsApp Webhook] Invalid x-hub-signature-256 HMAC check');
+    return new Response('Unauthorized', { status: 401 });
   }
 
   let payload: unknown;
@@ -199,21 +192,17 @@ export async function POST(req: NextRequest) {
             ? new Date(parseInt(msg.timestamp, 10) * 1000)
             : new Date();
 
-          // Upsert Lead
+          // Upsert Lead. $max keeps timestamps monotonic when Meta delivers out of order.
           const leadUpsertDoc = await Lead.findOneAndUpdate(
             { tenantId: tenantObjectId, phone: customerPhone },
             {
-              $set: {
-                lastInboundAt: waTimestamp,
-                lastMessageAt: waTimestamp,
-                ...(profileName ? { profileName } : {}),
-              },
+              $max: { lastInboundAt: waTimestamp, lastMessageAt: waTimestamp },
+              ...(profileName ? { $set: { profileName } } : {}),
               $setOnInsert: {
                 status: 'new',
                 intent: 'enquiry',
                 botPaused: false,
               },
-              $inc: { messageCount: 1 },
             },
             { upsert: true, returnDocument: 'after' },
           ).lean();
@@ -244,6 +233,12 @@ export async function POST(req: NextRequest) {
               waTimestamp,
             });
 
+            // Counted only after the insert succeeds, so Meta retries don't inflate it.
+            await Lead.updateOne(
+              { _id: leadUpsertDoc._id, tenantId: tenantObjectId },
+              { $inc: { messageCount: 1 } },
+            );
+
             pendingInboundMessagesToProcess.push({
               messageId: String(insertedMsg._id),
               tenantId: tenant.id,
@@ -251,16 +246,14 @@ export async function POST(req: NextRequest) {
               phoneNumberId,
             });
           } catch (err: unknown) {
-            // E11000 duplicate key error check
+            // E11000 on waMessageId = Meta redelivery of a message we already hold.
             const isDup =
               typeof err === 'object' &&
               err !== null &&
               'code' in err &&
               (err as { code: number }).code === 11000;
 
-            if (isDup) {
-              console.log(`[WhatsApp Webhook] Duplicate delivery skipped for waMessageId: ${msg.id}`);
-            } else {
+            if (!isDup) {
               console.error('[WhatsApp Webhook] Error inserting inbound message:', err);
             }
           }

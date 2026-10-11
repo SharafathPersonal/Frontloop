@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { X, AlertTriangle, Info } from 'lucide-react';
 
 interface CustomConfirmProps {
@@ -27,30 +27,54 @@ export default function CustomConfirm({
   onCancel,
 }: CustomConfirmProps) {
   const [inputValue, setInputValue] = useState('');
+  const titleId = useId();
+  const messageId = useId();
+  const inputId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const onCancelRef = useRef(onCancel);
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
+    onCancelRef.current = onCancel;
+  }, [onCancel]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    document.body.style.overflow = 'hidden';
+    (inputRef.current ?? confirmRef.current)?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onCancelRef.current();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+
     return () => {
+      document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
+      previouslyFocused?.focus();
     };
   }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3E3B36]/30 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F172A]/30 backdrop-blur-sm p-4">
       <div 
-        className="relative bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-8 max-w-md w-full animate-in fade-in zoom-in-95 duration-200"
+        className="relative bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl p-8 max-w-md w-full animate-in fade-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={messageId}
       >
-        <button 
+        <button
+          type="button"
           onClick={onCancel}
-          className="absolute top-4 right-4 text-[#8B8378] hover:text-[#3E3B36] transition-colors"
+          className="absolute top-4 right-4 text-[#64748B] hover:text-[#0F172A] transition-colors"
           aria-label="Close"
         >
           <X size={16} strokeWidth={1.5} />
@@ -74,10 +98,10 @@ export default function CustomConfirm({
           )}
           
           <div className="flex-1">
-            <h2 className="serif-headline font-normal tracking-tight text-[#3E3B36] text-lg">
+            <h2 id={titleId} className="serif-headline font-normal tracking-tight text-[#0F172A] text-lg">
               {title}
             </h2>
-            <p className="text-sm text-[#8B8378] leading-relaxed mt-2 font-sans">
+            <p id={messageId} className="text-sm text-[#64748B] leading-relaxed mt-2 font-sans">
               {message}
             </p>
           </div>
@@ -85,33 +109,38 @@ export default function CustomConfirm({
 
         {requireInput && (
           <div className="mt-6">
-            <p className="text-[10px] tracking-[0.1em] uppercase text-[#3E3B36] font-semibold mb-2">
+            <label htmlFor={inputId} className="block text-[10px] tracking-[0.1em] uppercase text-[#0F172A] font-semibold mb-2">
               Type &quot;{requireInput}&quot; to confirm
-            </p>
+            </label>
             <input
+              id={inputId}
+              ref={inputRef}
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={requireInput}
-              className="w-full bg-[#F5F1EA] border border-[#E8E3DA] px-4 py-3 text-sm focus:outline-none focus:border-[#C4A896] transition-colors rounded-sm"
+              className="w-full bg-[#F8FAFC] border border-[#E2E8F0] px-4 py-3 text-sm focus:outline-none focus:border-[#0AAF76] transition-colors rounded-sm"
             />
           </div>
         )}
         
         <div className="flex items-center justify-end gap-3 mt-8">
-          <button 
+          <button
+            type="button"
             onClick={onCancel}
-            className="text-[10px] tracking-[0.2em] uppercase text-[#8B8378] hover:text-[#3E3B36] transition-colors py-3 px-4 font-medium cursor-pointer"
+            className="text-[10px] tracking-[0.2em] uppercase text-[#64748B] hover:text-[#0F172A] transition-colors py-3 px-4 font-medium cursor-pointer"
           >
             {cancelText}
           </button>
-          <button 
+          <button
+            ref={confirmRef}
+            type="button"
             onClick={onConfirm}
             disabled={requireInput ? inputValue !== requireInput : false}
             className={`text-[10px] tracking-[0.2em] uppercase py-3 px-6 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
               type === 'danger' 
                 ? 'bg-red-600 hover:bg-red-700 text-white' 
-                : 'bg-[#3E3B36] text-[#FFFFFF] hover:bg-[#C4A896]'
+                : 'bg-[#0AAF76] text-white hover:bg-[#089163]'
             }`}
           >
             {confirmText}

@@ -22,6 +22,7 @@ const MessageSchema = new Schema(
     replyState: { type: String, enum: REPLY_STATES }, // inbound messages only
     replyNote: { type: String },
     claimedAt: { type: Date },
+    replyAttempts: { type: Number, default: 0, min: 0 }, // claims so far; capped by the reply worker
     error: { code: Number, title: String },
     waTimestamp: { type: Date },
   },

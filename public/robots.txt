@@ -3,5 +3,5 @@ Allow: /
 Disallow: /api/
 Disallow: /dashboard/
 
-Sitemap: https://trueattendly.online/sitemap.xml
+Sitemap: https://frontloop.online/sitemap.xml
 

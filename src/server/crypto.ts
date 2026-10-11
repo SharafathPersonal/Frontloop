@@ -1,5 +1,5 @@
 import 'server-only';
-import { createCipheriv, createDecipheriv, createHmac, randomBytes, timingSafeEqual } from 'crypto';
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { getEnv } from './env';
 
 const VERSION = 'v1';
@@ -20,6 +20,16 @@ export function decrypt(blob: string): string {
   const decipher = createDecipheriv('aes-256-gcm', key(), Buffer.from(iv, 'base64'));
   decipher.setAuthTag(Buffer.from(tag, 'base64'));
   return Buffer.concat([decipher.update(Buffer.from(ciphertext, 'base64')), decipher.final()]).toString('utf8');
+}
+
+/**
+ * Constant-time string equality for shared secrets (verify tokens, bearer tokens).
+ * Both sides are hashed first so unequal lengths don't short-circuit.
+ */
+export function safeEqual(a: string | null | undefined, b: string): boolean {
+  if (a == null) return false;
+  const digest = (v: string) => createHash('sha256').update(v, 'utf8').digest();
+  return timingSafeEqual(digest(a), digest(b));
 }
 
 /**

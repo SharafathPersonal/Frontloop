@@ -7,14 +7,11 @@ interface CachedTenant {
   id: string;
   name: string;
   slug: string;
+  category: string;
+  timezone: string;
   botEnabled: boolean;
   phoneNumberId: string;
   accessToken: string;
-  subscription: {
-    status: string;
-    replyQuota: number;
-    repliesUsed: number;
-  };
   cachedAt: number;
 }
 
@@ -65,14 +62,11 @@ export async function getTenantByPhoneNumberId(
     id: String(tenant._id),
     name: tenant.name,
     slug: tenant.slug,
+    category: tenant.category,
+    timezone: tenant.timezone || 'Asia/Kolkata',
     botEnabled: tenant.botEnabled ?? true,
     phoneNumberId: tenant.whatsapp.phoneNumberId,
     accessToken: decryptedToken,
-    subscription: {
-      status: tenant.subscription?.status ?? 'active',
-      replyQuota: tenant.subscription?.replyQuota ?? 300,
-      repliesUsed: tenant.subscription?.repliesUsed ?? 0,
-    },
     cachedAt: now,
   };
 

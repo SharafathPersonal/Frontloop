@@ -1,16 +1,17 @@
 import { requireTenant } from '@/server/auth/dal';
-import { forTenant } from '@/server/repos/tenant';
+import { decodeLeadCursor, encodeLeadCursor, forTenant } from '@/server/repos/tenant';
 import LeadsTableClient from './leads-table-client';
-import type { LeadStatus } from '@/server/models/Lead';
+import { LEAD_STATUSES, type LeadStatus } from '@/server/models/Lead';
 
 export const metadata = {
-  title: 'Customer Leads — True Attendly',
+  title: 'Customer Leads — FrontLoop',
 };
 
 interface PageProps {
   searchParams: Promise<{
     status?: string;
     search?: string;
+    cursor?: string;
   }>;
 }
 
@@ -19,15 +20,20 @@ export default async function LeadsPage({ searchParams }: PageProps) {
   const repo = forTenant(session.tenantId);
 
   const params = await searchParams;
-  const statusFilter =
-    params.status && params.status !== 'all' ? (params.status as LeadStatus) : undefined;
+  const statusFilter = LEAD_STATUSES.includes(params.status as LeadStatus)
+    ? (params.status as LeadStatus)
+    : undefined;
   const searchFilter = params.search?.trim();
 
-  const { leads, totalCount } = await repo.listLeads({
-    status: statusFilter,
-    searchPhone: searchFilter,
-    limit: 50,
-  });
+  const [tenant, { leads, totalCount, nextCursor }] = await Promise.all([
+    repo.getTenant(),
+    repo.listLeads({
+      status: statusFilter,
+      searchPhone: searchFilter,
+      cursor: decodeLeadCursor(params.cursor) ?? undefined,
+      limit: 50,
+    }),
+  ]);
 
   const serializedLeads = leads.map((l) => ({
     id: String(l._id),
@@ -45,10 +51,15 @@ export default async function LeadsPage({ searchParams }: PageProps) {
 
   return (
     <LeadsTableClient
+      // Remount on every filter/page change so client state re-seeds from fresh server data.
+      key={`${statusFilter ?? 'all'}|${searchFilter ?? ''}|${params.cursor ?? ''}`}
       initialLeads={serializedLeads}
       totalCount={totalCount}
-      currentStatus={params.status}
-      currentSearch={params.search}
+      currentStatus={statusFilter ?? 'all'}
+      currentSearch={searchFilter}
+      nextCursor={nextCursor ? encodeLeadCursor(nextCursor) : null}
+      isPaged={Boolean(params.cursor)}
+      timeZone={tenant?.timezone || 'Asia/Kolkata'}
     />
   );
 }

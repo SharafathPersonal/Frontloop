@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { APP_VERSION } from '@/lib/config';
 import { Spinner } from '@/components/ui/Spinner';
 
@@ -69,27 +69,24 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F5F1EA] flex items-center justify-center px-4 py-12">
+    <main className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
 
         {/* Logo / Brand */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 mb-6">
-            <div className="relative w-8 h-8 flex items-center justify-center">
-              <Image src="/images/logo-dark.png" alt="Attendly Logo" fill sizes="32px" className="object-contain" />
-            </div>
-            <span className="serif-headline text-lg text-[#3E3B36]">Attendly</span>
-          </div>
-          <h1 className="serif-headline text-2xl text-[#3E3B36] mb-2">Create your workspace</h1>
-          <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase">Your WhatsApp assistant in minutes</p>
+          <Link href="/" aria-label="FrontLoop home" className="inline-flex items-center mb-6">
+            <BrandLogo size="lg" priority />
+          </Link>
+          <h1 className="serif-headline text-2xl text-[#0F172A] mb-2">Create your workspace</h1>
+          <p className="text-xs tracking-[0.15em] text-[#64748B] uppercase">Your WhatsApp assistant in minutes</p>
         </div>
 
         {/* Card */}
-        <div className="bg-[#FFFFFF] border border-[#E8E3DA] rounded-xl p-8">
+        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl p-8">
 
           {error && (
-            <div className="mb-6 p-4 bg-[#3E3B36] rounded-lg">
-              <p className="text-[#F5F1EA] text-xs tracking-[0.1em]">{error}</p>
+            <div role="alert" className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-xl">
+              <p className="text-rose-700 text-xs tracking-[0.1em]">{error}</p>
             </div>
           )}
 
@@ -97,10 +94,11 @@ export default function RegisterPage() {
 
             {/* Business Name */}
             <div>
-              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
+              <label htmlFor="register-business-name" className="block text-xs tracking-[0.2em] text-[#64748B] uppercase mb-2">
                 Business Name
               </label>
               <input
+                id="register-business-name"
                 type="text"
                 required
                 minLength={2}
@@ -115,10 +113,11 @@ export default function RegisterPage() {
 
             {/* Category */}
             <div>
-              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
+              <label htmlFor="register-category" className="block text-xs tracking-[0.2em] text-[#64748B] uppercase mb-2">
                 Business Type
               </label>
               <select
+                id="register-category"
                 required
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -134,10 +133,11 @@ export default function RegisterPage() {
 
             {/* Email */}
             <div>
-              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
+              <label htmlFor="register-email" className="block text-xs tracking-[0.2em] text-[#64748B] uppercase mb-2">
                 Email Address
               </label>
               <input
+                id="register-email"
                 type="email"
                 required
                 autoComplete="email"
@@ -151,10 +151,11 @@ export default function RegisterPage() {
 
             {/* Password */}
             <div>
-              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
+              <label htmlFor="register-password" className="block text-xs tracking-[0.2em] text-[#64748B] uppercase mb-2">
                 Password
               </label>
               <input
+                id="register-password"
                 type="password"
                 required
                 minLength={8}
@@ -169,10 +170,11 @@ export default function RegisterPage() {
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
+              <label htmlFor="register-confirm-password" className="block text-xs tracking-[0.2em] text-[#64748B] uppercase mb-2">
                 Confirm Password
               </label>
               <input
+                id="register-confirm-password"
                 type="password"
                 required
                 autoComplete="new-password"
@@ -203,10 +205,10 @@ export default function RegisterPage() {
 
           </form>
 
-          <div className="mt-6 pt-6 border-t border-[#E8E3DA] text-center">
-            <p className="text-xs text-[#8B8378]">
+          <div className="mt-6 pt-6 border-t border-[#E2E8F0] text-center">
+            <p className="text-xs text-[#64748B]">
               Already have an account?{' '}
-              <Link href="/auth/login" className="text-[#3E3B36] hover:text-[#C4A896] transition-colors">
+              <Link href="/auth/login" className="text-[#0F172A] hover:text-[#0AAF76] transition-colors">
                 Sign in →
               </Link>
             </p>
@@ -215,14 +217,14 @@ export default function RegisterPage() {
         </div>
 
         {/* Terms note */}
-        <p className="text-center text-xs text-[#8B8378] mt-6 leading-relaxed">
+        <p className="text-center text-xs text-[#64748B] mt-6 leading-relaxed">
           By creating a workspace, you agree to our terms of service.
         </p>
 
         {/* Version Badge */}
         <div className="flex justify-center mt-6 pb-6">
-          <div className="border border-[#E8E3DA]/50 bg-transparent py-1 px-3 rounded-md">
-            <span className="text-[10px] tracking-[0.15em] text-[#C4A896] font-mono">
+          <div className="border border-[#E2E8F0]/50 bg-transparent py-1 px-3 rounded-md">
+            <span className="text-[10px] tracking-[0.15em] text-[#0AAF76] font-mono">
               {APP_VERSION}
             </span>
           </div>

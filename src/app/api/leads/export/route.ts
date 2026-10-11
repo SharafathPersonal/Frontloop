@@ -2,78 +2,91 @@ import 'server-only';
 import { NextRequest } from 'next/server';
 import { requireTenantApi } from '@/server/auth/dal';
 import { forTenant } from '@/server/repos/tenant';
-import type { LeadStatus } from '@/server/models/Lead';
+import { LEAD_STATUSES, type LeadStatus } from '@/server/models/Lead';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * Escapes fields to prevent CSV / formula injection (CWE-1236).
- * Any cell starting with =, +, -, @, \t, or \r has a prepended single quote.
+ * Any cell whose first non-space character is =, +, -, @, \t, or \r gets a
+ * leading single quote so spreadsheet apps treat it as text.
  */
 function sanitizeCsvCell(value: unknown): string {
   if (value == null) return '""';
   let str = String(value);
 
-  // Formula injection check
-  if (/^[=+\-@\t\r]/.test(str)) {
+  if (/^\s*[=+\-@\t\r]/.test(str)) {
     str = `'${str}`;
   }
 
-  // Quote escaping
   return `"${str.replace(/"/g, '""')}"`;
 }
+
+const iso = (d: unknown) => (d ? new Date(d as Date).toISOString() : '');
+
+const HEADERS = [
+  'Lead ID',
+  'Phone',
+  'Customer Name',
+  'Profile Name',
+  'Status',
+  'Intent',
+  'Requirement',
+  'Bot Paused',
+  'Message Count',
+  'Last Inbound',
+  'Last Message At',
+  'Created At',
+];
 
 export async function GET(req: NextRequest) {
   const sessionOrRes = await requireTenantApi(['owner', 'staff']);
   if (sessionOrRes instanceof Response) return sessionOrRes;
 
-  const tenantId = sessionOrRes.tenantId;
-  const repo = forTenant(tenantId);
-
-  const statusParam = req.nextUrl.searchParams.get('status') as LeadStatus | null;
-  const filter = statusParam ? { status: statusParam } : {};
-
-  const leads = await repo.getLeadsForExport(filter);
-
-  const headers = [
-    'Lead ID',
-    'Phone',
-    'Customer Name',
-    'Profile Name',
-    'Status',
-    'Intent',
-    'Requirement',
-    'Bot Paused',
-    'Message Count',
-    'Last Inbound',
-    'Last Message At',
-    'Created At',
-  ];
-
-  const rows: string[] = [headers.join(',')];
-
-  for (const lead of leads) {
-    const row = [
-      sanitizeCsvCell(String(lead._id)),
-      sanitizeCsvCell(lead.phone),
-      sanitizeCsvCell(lead.name || ''),
-      sanitizeCsvCell(lead.profileName || ''),
-      sanitizeCsvCell(lead.status),
-      sanitizeCsvCell(lead.intent || ''),
-      sanitizeCsvCell(lead.requirement || ''),
-      sanitizeCsvCell(lead.botPaused ? 'Yes' : 'No'),
-      sanitizeCsvCell(lead.messageCount ?? 0),
-      sanitizeCsvCell(lead.lastInboundAt ? new Date(lead.lastInboundAt).toISOString() : ''),
-      sanitizeCsvCell(lead.lastMessageAt ? new Date(lead.lastMessageAt).toISOString() : ''),
-      sanitizeCsvCell(lead.createdAt ? new Date(lead.createdAt).toISOString() : ''),
-    ];
-    rows.push(row.join(','));
+  const statusParam = req.nextUrl.searchParams.get('status');
+  if (statusParam && !LEAD_STATUSES.includes(statusParam as LeadStatus)) {
+    return Response.json({ error: 'Invalid status filter' }, { status: 400 });
   }
 
-  const csvContent = rows.join('\r\n');
+  const cursor = await forTenant(sessionOrRes.tenantId).exportLeadsCursor(
+    statusParam ? { status: statusParam as LeadStatus } : {},
+  );
+
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        controller.enqueue(encoder.encode(HEADERS.join(',') + '\r\n'));
+        for await (const lead of cursor) {
+          const row = [
+            String(lead._id),
+            lead.phone,
+            lead.name || '',
+            lead.profileName || '',
+            lead.status,
+            lead.intent || '',
+            lead.requirement || '',
+            lead.botPaused ? 'Yes' : 'No',
+            lead.messageCount ?? 0,
+            iso(lead.lastInboundAt),
+            iso(lead.lastMessageAt),
+            iso(lead.createdAt),
+          ].map(sanitizeCsvCell);
+          controller.enqueue(encoder.encode(row.join(',') + '\r\n'));
+        }
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+    async cancel() {
+      await cursor.close();
+    },
+  });
+
   const filename = `leads_export_${new Date().toISOString().slice(0, 10)}.csv`;
 
-  return new Response(csvContent, {
+  return new Response(stream, {
     status: 200,
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
@@ -82,4 +95,3 @@ export async function GET(req: NextRequest) {
     },
   });
 }
-

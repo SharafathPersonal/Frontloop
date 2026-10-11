@@ -1,110 +1,23 @@
-# True Attendly Broadcast — Premium Multi-Tenant Retail Hyper-Local Engagement Engine
+# FrontLoop
 
-A zero-barrier digital leverage platform purpose-built for traditional brick-and-mortar merchants who need instant customer engagement without onboarding friction.
+> FrontLoop is an autonomous B2B WhatsApp AI lead and business agent for small and medium businesses such as clinics, coaching institutes, salons and local service providers. It answers customer questions 24/7 on the official Meta WhatsApp Cloud API, captures leads into a CRM dashboard, and hands conversations to human staff when needed.
 
----
+FrontLoop acts as an always-on AI front desk. Each business configures its own knowledge base (services, prices, timings, operating hours and FAQs), and the AI answers only from that verified information. Customer name, phone number, intent and requirement are captured into a lead pipeline that staff can filter, search and export to CSV. Staff can pause the bot on any conversation with one click (human takeover).
 
-## What This Product Does
+## Key pages
 
-True Attendly Broadcast empowers physical retail stores — textiles, jewellery, groceries, bakeries, restaurants, salons, pharmacies — to establish a direct, always-on digital connection with every customer who walks through their door.
+- [Home](https://frontloop.online/): product overview, industries, features, pricing and FAQs
+- [Pricing](https://frontloop.online/#pricing): monthly plans in INR
+- [Create a workspace](https://frontloop.online/auth/register): sign up
+- [Privacy Policy](https://frontloop.online/privacy)
+- [Terms of Service](https://frontloop.online/terms)
 
-No customer app downloads. No sign-up forms. No login walls. One scan of a branded in-store display and the customer is instantly inside the shop's premium live showcase.
+## Plans (monthly, INR)
 
----
+- Starter Plan: ₹1,499 per month, 1,000 AI replies
+- Growth Plan: ₹3,499 per month, 3,500 AI replies
+- Pro Plan: ₹7,999 per month, 10,000 AI replies
 
-## Core Business Engines
+## Optional
 
-- **Instant Zero-Friction Storefront Discovery:**
-    A consumer enters a retail location, performs a single scan of a branded display, and instantly unlocks the store's luxury live dynamic showcase. No application downloads, no profile creation, and absolute zero friction. The merchant prints one display code and gains a permanent digital storefront.
-
-- **Autonomous Time-Bound Flash Campaigns:**
-    Merchants pre-schedule high-impact digital promotions by defining simple launch and conclusion windows. The engine self-activates live showcases when the timeline arrives and gracefully hides them when they conclude. Festival sales, weekend deals, lunch specials — all run on autopilot while the merchant focuses on their business.
-
-- **Organic Social Multiplication and Live Analytics:**
-    Customers spread active store invitations via standard communication channels (WhatsApp, Telegram, SMS) with a single tap. Every user arrival and organic referral action increments a live performance index visible instantly on the merchant's management interface. Zero advertising spend, maximum word-of-mouth amplification.
-
-- **Direct VIP Customer Notification Pipeline:**
-    Consumers who voluntarily accept notifications gain direct communication affinity with the shop. The merchant issues immediate promotional announcements straight to mobile device screens globally, keeping the brand active in the consumer's awareness even after they leave the physical premises. One message reaches hundreds of verified interested buyers instantly.
-
-- **Transparent Credit-Based Monetization:**
-    A clear, pay-as-you-go credit system with no monthly subscriptions. Every action has a visible, predictable cost. Merchants purchase credits through secure payment gateways and spend them transparently on promotions and outreach.
-
-- **Frictionless Digital Billing Counter:**
-    A live checkout interface that captures customer details at the physical counter. Generates professional invoices instantly and delivers them directly to the customer's phone, converting every transaction into a future marketing opportunity.
-
-- **Intelligent Customer Audience Registry:**
-    A centralized merchant database that captures and validates customer details from digital checkout transactions and opt-ins. Empowers shop owners to organize and segment contacts (VIP, Regular, New) for highly targeted outreach without administrative overhead.
-
-- **Organic WhatsApp Status Retention Loop:**
-    An automated, zero-ad-spend customer acquisition and retention channel integrated directly into the billing experience. The funnel operates as: Transactional Digital Bill Dispatch -> Automatic Save Contact Prompt -> Free, Organic WhatsApp Status Marketing channel. When a customer receives their digital bill on WhatsApp, the checkout page prompts them to save the merchant's contact number to access their detailed receipt and future deals. Once the contact is saved, the merchant's daily WhatsApp Status updates (catalog promotions, fresh stock, daily specials) automatically appear on the customer's phone. This creates a powerful compounding effect, converting physical in-store footfall directly into a growing, highly active, and permanent broadcast audience without any advertising cost.
-
-- **Universal Invoice Print, Download, & QR Cross-Sell Framework:**
-    A high-performance offline-to-online retention loop that turns standard transactional receipts—printed POS thermal papers, A4 sheets, and WhatsApp PDF invoices—into active storefront repeat-traffic drivers. It dynamically embeds high-resolution storefront QR codes and direct clickable links on all receipt formats, routing buyers back to live shop deals and capturing return traffic loops with zero app friction.
-
-- **Platform Exclusivity:**
-    This platform is exclusively built around in-store dynamic engagement, direct mobile notifications, and WhatsApp business communication. All legacy email marketing and third-party newsletter functionalities have been permanently removed to maintain focus and simplicity.
-
-*True Attendly Broadcast: One scan. One dashboard. Unlimited customer reach.*
-
----
-
-## Design and Interface Principles
-- **Mobile-First Storefront Experience:** The customer-facing product discovery layer and offer showcases are designed with strict mobile-first constraints. No text, image, cards, or interactive elements clip, overflow, or lose structural integrity on smaller smartphone dimensions. Customers enjoy fluid, dynamic digital cards across all device profiles.
-- **In-Store Location Transparency & Modal Discovery:** Every flash offer lifecycle must bind a location context description at creation (e.g., Aisle, Section). The consumer view layer must present this via an on-demand modal interaction triggered by a 'View Details' action, ensuring buyers can instantly navigate to the product's physical location within the retail store.
-
----
-
-## Enterprise Architecture & Core Capabilities
-
-**1. COMPLIANT HIGH-VOLUME WHATSAPP MARKETING ENGINE:**
-True Attendly Broadcast features a state-of-the-art transmission infrastructure exclusively locked to the Meta Official WhatsApp Cloud API. This robust engine is engineered for enterprise-scale communication, seamlessly handling massive throughput capacities exceeding 100,000+ broadcasts per day without latency degradation. It features fully automated official template approval workflows and integrated Green Badge verification mechanisms to establish absolute brand authenticity. The system is fortified with high-velocity data parsers capable of instantly digesting complex Excel (.xlsx) and CSV contact registries, paired with regex-driven phone number verification pipelines that guarantee data sanitization prior to execution. All of this operates on an intelligent, multi-dimensional audience segmentation matrix, deeply integrated with a transparent, pay-as-you-send credit economy ledger that ensures merchants maintain absolute financial control and visibility over their marketing expenditure. Because the engine runs 100% on the Meta Official Cloud API, legacy compliance workarounds like Spintax string variations and randomized transmission delay loops are entirely obsolete, deprecated, and non-operational, allowing for uncapped message delivery velocities.
-
-**2. IN-STORE FLASH OFFER & PHYSICAL LOCATION DISCOVERY ENGINE:**
-At the heart of the consumer experience lies a live, real-time in-store discount engine designed to capture immediate intent. Retail merchants possess the capability to deploy high-conversion flash offers, synchronized with dynamic, precision-timed scheduling mechanisms that autonomously dictate offer visibility. Crucially, this system incorporates a specialized "View Details Modal" architecture (compliant with Rule 15). When consumers scan physical QR codes within the retail environment, the platform instantly summons a responsive, mobile-first overlay. This overlay acts as a highly specific spatial navigator, providing exact physical layout coordinates—such as Aisle, Section, or Row designations—empowering the consumer to discover the discounted item with zero friction, thereby transforming foot traffic into instantaneous transactional velocity.
-
-**3. DYNAMIC STOREFRONT THEME & BRAND CUSTOMIZATION GATEWAY:**
-To ensure absolute brand fidelity across all consumer touchpoints, the platform incorporates a remarkably flexible UI layout engine. This gateway empowers retail brands to dynamically toggle, seamlessly modify, and permanently persist comprehensive storefront themes. Merchants can inject custom color schemes, deploy specialized asset styles, and enforce corporate typography configurations directly onto the consumer-facing broadcast portals. This profound level of customization occurs instantaneously and natively within the application, demanding zero code deployments or engineering intervention. The result is a hyper-personalized, white-labeled consumer portal that flawlessly mirrors the enterprise's corporate identity, cultivating profound brand trust and visual consistency.
-
-**4. BATCH-OPTIMIZED WEB PUSH NOTIFICATION INFRASTRUCTURE:**
-The platform’s outbound communication is fortified by a highly resilient, batch-optimized background notification architecture. This system leverages an autonomous, precision-engineered cron evaluation workflow that tracks and evaluates scheduled offers on a minute-by-minute cadence. Operating in tandem with a high-availability Service Worker configuration (`sw.js`), the engine guarantees delivery persistence even under compromised network conditions. To protect against server socket depletion, memory exhaustion, and dropped delivery payloads during massive outbound blasts, the infrastructure employs sophisticated network safety layers. These layers utilize sequential chunking matrices, strictly capping processing payloads at 500 recipients per execution block, ensuring that high-volume enterprise communications are delivered with absolute reliability and systemic stability.
-
-**5. ADVANCED RETAIL TELEMETRY, RLS SECURITY, & WALLET INTEGRITY:**
-Underpinning the entire platform is an advanced analytical tracking framework that yields hyper-accurate retail telemetry, including unique view count metrics and secure session aggregation layers protected by encrypted tracking endpoints. Multi-tenant data isolation is flawlessly enforced via impenetrable Supabase Row Level Security (RLS) policies, guaranteeing that enterprise data remains completely compartmentalized and sovereign. Furthermore, the platform's financial mechanics are governed by strict, ACID-compliant PostgreSQL Remote Procedure Call (RPC) functions (e.g., `create_flash_offer_with_deduction`). These functions bind wallet balance subtractions and offer provisioning into indivisible, atomic database blocks. This absolute transactional integrity eliminates the possibility of race conditions or negative balance anomalies, ensuring the platform's financial ledger remains pristine and unassailable under extreme concurrency.
-
-**6. UNIVERSAL INVOICE PRINT, DOWNLOAD, & QR CROSS-SELL ENGINE:**
-True Attendly Broadcast is equipped with a high-performance offline-to-online marketing engine that transforms standard transactional receipts into high-yield repeat traffic generators. This universal framework operates seamlessly across all invoice delivery formats: physical POS thermal paper rolls, corporate A4 sheet invoices, and digital WhatsApp PDF receipts. In real time, the engine injects a stylized, high-resolution storefront QR code and an interactive digital hyperlink directly into the absolute footer area of every transaction receipt. When scanned or tapped by consumers, these elements securely and instantly route them to the merchant's live storefront flash offers catalog. This creates an automated repeat-traffic loop that converts one-time buyers into permanent, engaged catalog viewers without the friction of app downloads or registration, driving higher Customer Lifetime Value (LTV) and establishing a continuous, zero-friction retention channel. Additionally, the system supports high-speed native dual-format print execution (A4 sheets and thermal strips) with auto-triggers to optimize checkout counter speeds.
-
-**7. SOCIAL REFERRAL TELEMETRY & VIRAL SHARE ENGINE:**
-True Attendly Broadcast includes an integrated referral tracking framework that logs when customers share scheduled offers through native phone overlays (WhatsApp, SMS, etc.). The engine captures these sharing actions securely and increments individual offer-level metrics in real time. This grants merchants deep visibility into organic, word-of-mouth virality and customer referral patterns, revealing exactly which deals are generating the highest localized engagement.
-
-**8. IN-APP BROWSER LIFECYCLE COMPATIBILITY LAYER:**
-To deliver a flawless shopping experience across all traffic origins, the platform is fortified with an in-app browser compatibility layer. Since a majority of buyers access storefronts directly through links clicked inside WhatsApp, Facebook, or Instagram web-views, the engine implements session state fallbacks that bypass standard cookie or local storage restrictions enforced by social browsers. This architecture prevents catalog lockups or layout crashes, maintaining a fluid, premium checkout and discovery experience on every mobile device.
-
----
-
-**9. HYPER-LOCAL DEAD STOCK & FACTORY CLEARANCE MARKETPLACE (Engine B — 0% Meta Dependency):**
-True Attendly's second core engine is a completely Meta-independent, hyper-local dead stock marketplace. Traditional merchants accumulate unsold inventory that blocks working capital and generates zero return. This engine converts that dead stock into direct, organic WhatsApp buyer leads — with zero ad spend and zero Meta API dependency.
-
-Merchants list clearance products from the `/dashboard/dead-stock` management hub in under 2 minutes: up to 4 drag-and-drop product images (uploaded to Supabase Storage), product name, original price, clearance price (discount % auto-computed), category, description, and condition notes. The listing goes live instantly on the public marketplace at `/broadcast/dead-stock`.
-
-Every product card on the public marketplace shows an explicit "DEAD STOCK" badge and "CLEARANCE SALE" badge — 100% transparent to buyers, no deceptive pricing. Buyers discover listings via real-time search, 12 category filters, city/district proximity input, price range filters, and sort options (Newest, Price Ascending/Descending, Deepest Discount). The grid uses infinite scroll via IntersectionObserver, loading 12 products per page.
-
-The product detail page (`/broadcast/dead-stock/[id]`) features a Flipkart-style CSS image zoom on hover (250% background-size, dynamic backgroundPosition on mousemove), thumbnail strip for multiple images, full price breakdown with savings amount, merchant address and Google Maps link, and a pulsing WhatsApp CTA button pre-filled with: "Hi [Shop Name], I am interested in buying the Dead Stock item: [Product Name] listed on trueattendenly.online." The buyer contacts the merchant directly on WhatsApp — no platform fees, no commission, no intermediary.
-
-When a product is sold, the merchant toggles "Mark as Cleared" from the dashboard. The API atomically sets `is_cleared = true`, instantly removing the listing from all public discovery endpoints. This is the core business logic gate: the public marketplace always filters `WHERE is_cleared = false`.
-
-The technical architecture uses a direct foreign key join: `dead_stock_products.shop_id → public.shops(id)`. No separate merchants table exists. All merchant identity data (shop_name, contact_number, owner_phone, location_address, city, district, state, logo_url, google_maps_url) is sourced from the existing shops table via a single JOIN query. Row Level Security ensures the public anon role can only read uncleared listings, while merchants have full CRUD access only to their own rows.
-
----
-
-## Project Leadership & Support
-
-- **Founder:** Sharafath (from Kerala)
-- **App URL:** https://broadcast.trueattendly.online
-- **Primary Contact:** +91 6282560928
-- **Primary Email:** sharafathabi.personal@gmail.com
-- **Purpose:** Reach out to this contact details for any project-related inquiries, support, or administration.
-
-
-- **Automated Instant WhatsApp Customer Concierge Pipeline:**
-    A continuous, real-time customer conversation pipeline that automatically handles customer inquiries on WhatsApp with zero waiting time. When a shopper messages the merchant's official WhatsApp number, the platform instantly registers their customer profile, analyzes their specific shopping requirements or appointment requests, and generates an intelligent, accurate response drawn directly from the store's custom product catalog, service timings, and pricing information. The system intelligently detects when a customer wishes to speak directly with an in-store staff member and smoothly transitions the chat to manual staff mode, ensuring personal high-touch hospitality while guaranteeing 24/7 responsiveness.
+- [Full product description](https://frontloop.online/llms-full.txt)

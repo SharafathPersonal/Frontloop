@@ -8,8 +8,8 @@ export type SessionClaims = { sub: string; tid: string | null; role: UserRole; s
 export const SESSION_COOKIE = process.env.NODE_ENV === 'production' ? '__Host-session' : 'session';
 export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 
-const ISSUER = 'attendly';
-const AUDIENCE = 'attendly-web';
+const ISSUER = 'frontloop';
+const AUDIENCE = 'frontloop-web';
 
 let cachedKey: Uint8Array | null = null;
 

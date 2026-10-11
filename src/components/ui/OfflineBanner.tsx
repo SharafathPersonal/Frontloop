@@ -1,32 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
+
+const subscribe = (onChange: () => void) => {
+  window.addEventListener('online', onChange);
+  window.addEventListener('offline', onChange);
+  return () => {
+    window.removeEventListener('online', onChange);
+    window.removeEventListener('offline', onChange);
+  };
+};
+
+// The server snapshot is always "online" so SSR and the first client render match.
+const getSnapshot = () => navigator.onLine;
+const getServerSnapshot = () => true;
 
 export function OfflineBanner() {
-  const [isOnline, setIsOnline] = useState(() => (typeof window !== 'undefined' ? navigator.onLine : true));
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const handleOnline = () => setIsOnline(true);
-      const handleOffline = () => setIsOnline(false);
-
-      window.addEventListener('online', handleOnline);
-      window.addEventListener('offline', handleOffline);
-
-      return () => {
-        window.removeEventListener('online', handleOnline);
-        window.removeEventListener('offline', handleOffline);
-      };
-    }
-  }, []);
+  const isOnline = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   if (isOnline) return null;
 
   return (
-    <div className="fixed top-0 left-0 w-full bg-[#3E3B36] z-[100] transition-all duration-300 shadow-md">
+    <div role="status" className="fixed top-0 left-0 w-full bg-[#0F172A] z-[100] transition-all duration-300 shadow-md">
       <div className="flex items-center justify-center py-2.5 px-4 text-center">
         <p className="text-[10px] tracking-[0.2em] text-white uppercase font-medium">
-          Network Connectivity Interrupted. Dispatch queues are safely paused.
+          You&apos;re offline. Changes will be available when you reconnect.
         </p>
       </div>
     </div>

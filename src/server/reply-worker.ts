@@ -7,6 +7,7 @@ import { KnowledgeBase } from './models/KnowledgeBase';
 import { BusinessTenant } from './models/BusinessTenant';
 import { rateLimit } from './rate-limit';
 import { generateAIReply } from './ai-pipeline';
+import { describeBusinessHours } from './business-hours';
 import { sendWhatsAppText } from './meta-graph';
 import { getTenantByPhoneNumberId } from './tenant-resolver';
 
@@ -17,7 +18,12 @@ export interface ProcessPendingMessageParams {
   phoneNumberId: string;
 }
 
-const SERVICE_WINDOW_HOURS = 24;
+const SERVICE_WINDOW_MS = 24 * 60 * 60 * 1000;
+const HISTORY_LIMIT = 20;
+const MAX_REPLY_ATTEMPTS = 3;
+const BILLABLE_STATUSES = ['trialing', 'active'] as const;
+
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * Executes background processing for a pending inbound message.
@@ -33,276 +39,238 @@ export async function processInboundMessageReply(params: ProcessPendingMessagePa
   const messageObjectId = new mongoose.Types.ObjectId(messageId);
 
   // 1. Atomic message claim: replyState 'pending' -> 'processing'
-  // Strictly pass tenantId in filter for tenantGuard compliance.
   const claimedMessage = await Message.findOneAndUpdate(
-    {
-      _id: messageObjectId,
-      tenantId: tenantObjectId,
-      replyState: 'pending',
-    },
-    {
-      $set: {
-        replyState: 'processing',
-        claimedAt: new Date(),
-      },
-    },
+    { _id: messageObjectId, tenantId: tenantObjectId, replyState: 'pending' },
+    { $set: { replyState: 'processing', claimedAt: new Date() }, $inc: { replyAttempts: 1 } },
     { returnDocument: 'after' },
-  ).lean<MessageDoc | null>();
+  ).lean<(MessageDoc & { createdAt: Date }) | null>();
 
-  if (!claimedMessage) {
-    // Already claimed or handled by another worker/invocation
+  if (!claimedMessage) return; // already claimed by another invocation
+
+  const finish = (replyState: 'skipped' | 'failed', reason: string, error?: { code?: number; title?: string }) =>
+    Message.updateOne(
+      { _id: messageObjectId, tenantId: tenantObjectId },
+      { $set: { replyState, replyNote: reason, ...(error ? { error } : {}) } },
+    );
+
+  // A message that keeps crashing the pipeline is retried by the sweeper at most MAX_REPLY_ATTEMPTS times.
+  if ((claimedMessage.replyAttempts ?? 1) > MAX_REPLY_ATTEMPTS) {
+    await finish('failed', `Gave up after ${MAX_REPLY_ATTEMPTS} attempts`);
     return;
   }
 
-  // Helper to mark message skipped or failed
-  const markSkipped = async (reason: string) => {
-    await Message.updateOne(
-      { _id: messageObjectId, tenantId: tenantObjectId },
-      { $set: { replyState: 'skipped', replyNote: reason } },
-    );
-  };
-
-  const markFailed = async (reason: string, errorObj?: { code?: number; title?: string }) => {
-    await Message.updateOne(
-      { _id: messageObjectId, tenantId: tenantObjectId },
-      {
-        $set: {
-          replyState: 'failed',
-          replyNote: reason,
-          ...(errorObj ? { error: errorObj } : {}),
-        },
-      },
-    );
-  };
-
-  // 2. Gate Checks
-  // A. Tenant resolution & botEnabled check
+  // 2. Gates that cost nothing — evaluated before any quota or rate budget is spent.
   const tenant = await getTenantByPhoneNumberId(phoneNumberId);
   if (!tenant || !tenant.accessToken) {
-    await markFailed('Tenant not found or WhatsApp access token missing');
+    await finish('failed', 'Tenant not found or WhatsApp access token missing');
     return;
   }
-
   if (!tenant.botEnabled) {
-    await markSkipped('Tenant bot is disabled');
+    await finish('skipped', 'Tenant bot is disabled');
     return;
   }
 
-  // B. Subscription Quota check
-  if (
-    tenant.subscription.status === 'past_due' ||
-    tenant.subscription.status === 'canceled' ||
-    tenant.subscription.repliesUsed >= tenant.subscription.replyQuota
-  ) {
-    await markSkipped('Subscription quota exceeded or status inactive');
-    return;
-  }
-
-  // C. Rate Limits
-  // 15 replies per minute per lead
-  const leadRateOk = await rateLimit(`reply:lead:${leadId}`, 15, 60);
-  if (!leadRateOk) {
-    await markSkipped('Lead rate limit exceeded (15/min)');
-    return;
-  }
-
-  // 120 replies per minute per tenant
-  const tenantRateOk = await rateLimit(`reply:tenant:${tenantId}`, 120, 60);
-  if (!tenantRateOk) {
-    await markSkipped('Tenant rate limit exceeded (120/min)');
-    return;
-  }
-
-  // D. Fetch Lead (strictly with tenantId)
-  const lead = await Lead.findOne({
-    _id: leadObjectId,
-    tenantId: tenantObjectId,
-  }).lean();
-
+  const lead = await Lead.findOne({ _id: leadObjectId, tenantId: tenantObjectId }).lean();
   if (!lead) {
-    await markFailed('Lead record not found');
+    await finish('failed', 'Lead record not found');
     return;
   }
-
-  // E. Lead botPaused check (human takeover)
   if (lead.botPaused) {
-    await markSkipped('Bot paused for lead (agent takeover)');
+    await finish('skipped', 'Bot paused for lead (agent takeover)');
+    return;
+  }
+  if (lead.lastInboundAt && Date.now() - new Date(lead.lastInboundAt).getTime() > SERVICE_WINDOW_MS) {
+    await finish('skipped', 'Customer 24-hour service window expired');
     return;
   }
 
-  // F. 24-hour customer service window check
-  if (lead.lastInboundAt) {
-    const elapsedMs = Date.now() - new Date(lead.lastInboundAt).getTime();
-    const elapsedHours = elapsedMs / (1000 * 60 * 60);
-    if (elapsedHours > SERVICE_WINDOW_HOURS) {
-      await markSkipped('Customer 24-hour service window expired');
-      return;
-    }
+  // Burst coalescing: when a customer sends several messages in a row, only the
+  // newest gets a reply — it sees the earlier ones in its history.
+  const newerInbound = await Message.exists({
+    tenantId: tenantObjectId,
+    leadId: leadObjectId,
+    direction: 'in',
+    createdAt: { $gt: claimedMessage.createdAt },
+  });
+  if (newerInbound) {
+    await finish('skipped', 'Superseded by a newer customer message');
+    return;
   }
 
-  // 3. Assemble Knowledge Base & Conversation History
   const kb = await KnowledgeBase.findOne({ tenantId: tenantObjectId }).lean();
 
-  // Check handoff keywords if configured
   const incomingText = claimedMessage.body || '';
   const handoffKeywords = kb?.bot?.handoffKeywords || ['human', 'agent', 'call me'];
   const hasHandoffRequest = handoffKeywords.some(
-    (kw) => kw.trim() && incomingText.toLowerCase().includes(kw.toLowerCase().trim()),
+    // Unicode-aware word boundary: `\b` is ASCII-only and never matches Malayalam/Devanagari keywords.
+    (kw) =>
+      kw.trim() &&
+      new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegex(kw.trim())}($|[^\\p{L}\\p{N}])`, 'iu').test(incomingText),
   );
-
   if (hasHandoffRequest) {
-    // Auto-pause bot on lead for human takeover
-    await Lead.updateOne(
-      { _id: leadObjectId, tenantId: tenantObjectId },
-      { $set: { botPaused: true } },
-    );
-    await markSkipped('Handoff keyword matched, bot paused for human agent');
+    await Lead.updateOne({ _id: leadObjectId, tenantId: tenantObjectId }, { $set: { botPaused: true } });
+    await finish('skipped', 'Handoff keyword matched, bot paused for human agent');
     return;
   }
 
-  // Fetch recent conversation history (last 10 messages before current)
-  const recentMessages = await Message.find({
-    tenantId: tenantObjectId,
-    leadId: leadObjectId,
-    _id: { $ne: messageObjectId },
-  })
-    .sort({ createdAt: -1 })
-    .limit(10)
-    .lean();
-
-  recentMessages.reverse(); // chronological order
-
-  const conversationHistory = recentMessages
-    .filter((m) => m.body && m.body.trim())
-    .map((m) => ({
-      role: (m.direction === 'in' ? 'user' : 'assistant') as 'user' | 'assistant',
-      content: m.body!,
-    }));
-
-  // 4. Run AI generation
-  const enabledFaqs = (kb?.faqs || [])
-    .filter((f) => f.enabled !== false)
-    .map((f) => ({ question: f.question, answer: f.answer }));
-
-  const aiResult = await generateAIReply({
-    tenantName: tenant.name,
-    tenantCategory: 'business',
-    kbContext: kb?.context || '',
-    faqs: enabledFaqs,
-    services: (kb?.services || []).map((s) => ({
-      name: s.name,
-      description: s.description || undefined,
-      priceMinor: s.priceMinor || undefined,
-    })),
-    botPersona: kb?.bot?.persona || undefined,
-    botFallbackReply: kb?.bot?.fallbackReply || undefined,
-    botCaptureFields: kb?.bot?.captureFields || ['name', 'requirement'],
-    conversationHistory,
-    latestCustomerMessage: incomingText,
-    customerProfileName: lead.profileName || undefined,
-    customerPhone: lead.phone,
-  });
-
-  const replyBody = aiResult.replyText;
-
-  // 5. Send outbound message via Meta Graph API
-  const metaRes = await sendWhatsAppText(
-    tenant.phoneNumberId,
-    tenant.accessToken,
-    lead.phone,
-    replyBody,
-  );
-
-  if (!metaRes.ok) {
-    // Handle Graph API specific errors
-    const errorCode = metaRes.error?.code || 500;
-    const errorMsg = metaRes.error?.message || 'Meta API error';
-
-    if (errorCode === 131047) {
-      // 24-hour window closed on Meta's side
-      await markSkipped('Meta 131047: Outside 24-hour service window');
-      return;
-    }
-
-    if (errorCode === 190) {
-      // Invalid/expired OAuth token
-      console.error(`[WhatsApp] Invalid access token for tenant ${tenantId}`);
-      await BusinessTenant.updateOne(
-        { _id: tenantObjectId },
-        {
-          $set: {
-            'whatsapp.status': 'error',
-            'whatsapp.lastError': {
-              code: 190,
-              message: 'Access token expired or invalid',
-              at: new Date(),
-            },
-          },
-        },
-      );
-    }
-
-    await markFailed(`Meta send error: ${errorMsg}`, {
-      code: errorCode,
-      title: errorMsg.slice(0, 100),
-    });
+  // 3. Rate limits: 15/min per lead, 120/min per tenant
+  if (!(await rateLimit(`reply:lead:${leadId}`, 15, 60))) {
+    await finish('skipped', 'Lead rate limit exceeded (15/min)');
+    return;
+  }
+  if (!(await rateLimit(`reply:tenant:${tenantId}`, 120, 60))) {
+    await finish('skipped', 'Tenant rate limit exceeded (120/min)');
     return;
   }
 
-  // 6. Persist outbound Message & update Lead & Tenant Quota
-  const outboundWaMessageId = metaRes.messageId;
-
-  // Insert outbound message document
-  await Message.create({
-    tenantId: tenantObjectId,
-    leadId: leadObjectId,
-    direction: 'out',
-    author: 'bot',
-    waMessageId: outboundWaMessageId,
-    type: 'text',
-    body: replyBody,
-    status: 'sent',
-    waTimestamp: new Date(),
-  });
-
-  // Mark inbound message done
-  await Message.updateOne(
-    { _id: messageObjectId, tenantId: tenantObjectId },
+  // 4. Atomic quota reservation — concurrent workers can never overshoot the plan,
+  // and a lapsed paid period stops replies (trials carry no period end).
+  const reservation = await BusinessTenant.updateOne(
     {
-      $set: {
-        replyState: 'done',
-        replyNote: `Replied via ${aiResult.providerUsed}`,
-      },
+      _id: tenantObjectId,
+      'subscription.status': { $in: [...BILLABLE_STATUSES] },
+      $or: [{ 'subscription.currentPeriodEnd': null }, { 'subscription.currentPeriodEnd': { $gt: new Date() } }],
+      $expr: { $lt: ['$subscription.repliesUsed', '$subscription.replyQuota'] },
     },
-  );
-
-  // Update Lead with extracted attributes
-  const leadUpdates: Record<string, unknown> = {
-    $set: {
-      lastMessageAt: new Date(),
-      status: lead.status === 'new' ? 'contacted' : lead.status,
-    },
-    $inc: { messageCount: 1 },
-  };
-
-  const setFields: Record<string, unknown> = (leadUpdates.$set as Record<string, unknown>);
-
-  if (aiResult.extractedName && !lead.name) {
-    setFields.name = aiResult.extractedName;
-  }
-  if (aiResult.extractedRequirement) {
-    setFields.requirement = aiResult.extractedRequirement;
-  }
-  if (aiResult.extractedIntent) {
-    setFields.intent = aiResult.extractedIntent;
-  }
-
-  await Lead.updateOne({ _id: leadObjectId, tenantId: tenantObjectId }, leadUpdates);
-
-  // Increment Tenant reply quota counter
-  await BusinessTenant.updateOne(
-    { _id: tenantObjectId },
     { $inc: { 'subscription.repliesUsed': 1 } },
   );
-}
+  if (reservation.modifiedCount === 0) {
+    await finish('skipped', 'Subscription quota exhausted, expired, or inactive');
+    return;
+  }
 
+  // From here on the reserved reply must be either delivered or handed back exactly once.
+  let quotaHeld = true;
+  const releaseQuota = async () => {
+    if (!quotaHeld) return;
+    quotaHeld = false;
+    await BusinessTenant.updateOne(
+      { _id: tenantObjectId, 'subscription.repliesUsed': { $gt: 0 } },
+      { $inc: { 'subscription.repliesUsed': -1 } },
+    );
+  };
+
+  let delivered = false;
+  const generateAndDeliver = async () => {
+    // 5. Prompt context
+    const recentMessages = await Message.find({
+      tenantId: tenantObjectId,
+      leadId: leadObjectId,
+      _id: { $ne: messageObjectId },
+    })
+      .sort({ createdAt: -1 })
+      .limit(HISTORY_LIMIT)
+      .lean();
+    recentMessages.reverse(); // chronological order
+
+    const conversationHistory = recentMessages
+      .filter((m) => m.body && m.body.trim())
+      .map((m) => ({
+        role: (m.direction === 'in' ? 'user' : 'assistant') as 'user' | 'assistant',
+        content: m.body!,
+      }));
+
+    const aiResult = await generateAIReply({
+      tenantName: tenant.name,
+      tenantCategory: tenant.category,
+      kbContext: kb?.context || '',
+      faqs: (kb?.faqs || []).filter((f) => f.enabled !== false).map((f) => ({ question: f.question, answer: f.answer })),
+      services: (kb?.services || []).map((s) => ({
+        name: s.name,
+        description: s.description || undefined,
+        priceMinor: s.priceMinor ?? undefined,
+        currency: s.currency || 'INR',
+        durationMin: s.durationMin ?? undefined,
+      })),
+      businessHours: describeBusinessHours(kb?.hours, tenant.timezone),
+      botPersona: kb?.bot?.persona || undefined,
+      botFallbackReply: kb?.bot?.fallbackReply || undefined,
+      botCaptureFields: kb?.bot?.captureFields || ['name', 'requirement'],
+      conversationHistory,
+      latestCustomerMessage: incomingText,
+      customerProfileName: lead.profileName || undefined,
+    });
+
+    // 6. Dispatch via Meta Graph API
+    const metaRes = await sendWhatsAppText(tenant.phoneNumberId, tenant.accessToken, lead.phone, aiResult.replyText);
+
+    if (!metaRes.ok) {
+      await releaseQuota();
+      const errorCode = metaRes.error?.code || 500;
+      const errorMsg = metaRes.error?.message || 'Meta API error';
+
+      if (errorCode === 131047) {
+        await finish('skipped', 'Meta 131047: Outside 24-hour service window');
+        return;
+      }
+
+      if (errorCode === 190) {
+        console.error(`[WhatsApp] Invalid access token for tenant ${tenantId}`);
+        await BusinessTenant.updateOne(
+          { _id: tenantObjectId },
+          {
+            $set: {
+              'whatsapp.status': 'error',
+              'whatsapp.lastError': { code: 190, message: 'Access token expired or invalid', at: new Date() },
+            },
+          },
+        );
+      }
+
+      await finish('failed', `Meta send error: ${errorMsg}`, { code: errorCode, title: errorMsg.slice(0, 100) });
+      return;
+    }
+    delivered = true;
+    quotaHeld = false; // the reply was sent; the reservation is now spent
+
+    // 7. Persist. Mark the inbound done first: if we crash after this point the
+    // sweeper must not resend a reply the customer already received.
+    const sentAt = new Date();
+    await Message.updateOne(
+      { _id: messageObjectId, tenantId: tenantObjectId },
+      { $set: { replyState: 'done', replyNote: `Replied via ${aiResult.providerUsed}` } },
+    );
+
+    await Message.create({
+      tenantId: tenantObjectId,
+      leadId: leadObjectId,
+      direction: 'out',
+      author: 'bot',
+      waMessageId: metaRes.messageId,
+      type: 'text',
+      body: aiResult.replyText,
+      status: 'sent',
+      waTimestamp: sentAt,
+    });
+
+    const setFields: Record<string, unknown> = {
+      status: lead.status === 'new' ? 'contacted' : lead.status,
+    };
+    if (aiResult.extractedName && !lead.name) setFields.name = aiResult.extractedName;
+    if (aiResult.extractedRequirement) setFields.requirement = aiResult.extractedRequirement;
+    if (aiResult.extractedIntent) setFields.intent = aiResult.extractedIntent;
+    if (aiResult.handoff) setFields.botPaused = true;
+
+    await Lead.updateOne(
+      { _id: leadObjectId, tenantId: tenantObjectId },
+      { $set: setFields, $max: { lastMessageAt: sentAt }, $inc: { messageCount: 1 } },
+    );
+  };
+
+  try {
+    await generateAndDeliver();
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.error(`[Reply Worker] Message ${messageId} failed: ${reason}`);
+    if (!delivered) {
+      await releaseQuota();
+      await finish('failed', `Reply pipeline error: ${reason.slice(0, 200)}`);
+    } else {
+      // Already delivered to the customer: never let the sweeper send it twice.
+      await Message.updateOne(
+        { _id: messageObjectId, tenantId: tenantObjectId },
+        { $set: { replyState: 'done', replyNote: 'Delivered; post-send bookkeeping failed' } },
+      );
+    }
+  }
+}

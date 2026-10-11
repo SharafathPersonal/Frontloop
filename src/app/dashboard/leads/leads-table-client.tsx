@@ -16,7 +16,6 @@ import {
   Filter,
 } from 'lucide-react';
 import { toggleBotPausedAction } from './actions';
-import type { LeadStatus } from '@/server/models/Lead';
 
 interface SerializedLead {
   id: string;
@@ -37,6 +36,9 @@ interface LeadsTableProps {
   totalCount: number;
   currentStatus?: string;
   currentSearch?: string;
+  nextCursor: string | null;
+  isPaged: boolean;
+  timeZone: string;
 }
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -51,6 +53,9 @@ export default function LeadsTableClient({
   totalCount,
   currentStatus,
   currentSearch,
+  nextCursor,
+  isPaged,
+  timeZone,
 }: LeadsTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -73,6 +78,7 @@ export default function LeadsTableClient({
     } else {
       params.delete('search');
     }
+    params.delete('cursor'); // a new filter always starts from the first page
 
     router.push(`/dashboard/leads?${params.toString()}`);
   };
@@ -102,6 +108,14 @@ export default function LeadsTableClient({
     }
   };
 
+  const pageUrl = (cursor: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (cursor) params.set('cursor', cursor);
+    else params.delete('cursor');
+    const qs = params.toString();
+    return `/dashboard/leads${qs ? `?${qs}` : ''}`;
+  };
+
   const exportUrl = `/api/leads/export${
     selectedStatus && selectedStatus !== 'all' ? `?status=${selectedStatus}` : ''
   }`;
@@ -109,13 +123,13 @@ export default function LeadsTableClient({
   return (
     <div className="space-y-6 max-w-7xl pb-16">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E3DA] pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E2E8F0] pb-5">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#3E3B36] flex items-center gap-2">
-            <Users className="text-[#C4A896]" size={24} />
+          <h1 className="text-xl sm:text-2xl font-bold text-[#0F172A] flex items-center gap-2">
+            <Users className="text-[#0AAF76]" size={24} />
             Customer Leads &amp; Conversations
           </h1>
-          <p className="text-xs sm:text-sm text-[#8B8378] mt-1">
+          <p className="text-xs sm:text-sm text-[#64748B] mt-1">
             Real-time pipeline of captured WhatsApp inquiries, extracted requirements, and live takeover controls.
           </p>
         </div>
@@ -123,44 +137,50 @@ export default function LeadsTableClient({
         <a
           href={exportUrl}
           download
-          className="flex items-center justify-center gap-2 bg-[#FFFFFF] border border-[#E8E3DA] text-[#3E3B36] px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider hover:bg-[#F5F1EA] transition-all shadow-sm w-full sm:w-auto"
+          className="flex items-center justify-center gap-2 bg-[#FFFFFF] border border-[#E2E8F0] text-[#0F172A] px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider hover:bg-[#F8FAFC] transition-all shadow-sm w-full sm:w-auto"
         >
-          <Download size={14} className="text-[#C4A896]" />
+          <Download size={14} className="text-[#0AAF76]" />
           Export CSV
         </a>
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-[#FFFFFF] rounded-2xl border border-[#E8E3DA] p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <div className="bg-[#FFFFFF] rounded-2xl border border-[#E2E8F0] p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Search */}
         <form onSubmit={handleSearchSubmit} className="relative flex-1">
-          <Search className="absolute left-3 top-2.5 text-[#8B8378]" size={15} />
+          <label htmlFor="leads-search" className="sr-only">
+            Search leads by phone number
+          </label>
+          <Search className="absolute left-3 top-2.5 text-[#64748B]" size={15} aria-hidden="true" />
           <input
-            type="text"
+            id="leads-search"
+            type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search phone number digits (e.g. 98765)..."
-            className="w-full bg-[#F5F1EA]/50 border border-[#E8E3DA] rounded-xl pl-9 pr-20 py-2 text-xs sm:text-sm text-[#3E3B36] focus:outline-none focus:border-[#C4A896]"
+            className="w-full bg-[#F8FAFC]/50 border border-[#E2E8F0] rounded-xl pl-9 pr-20 py-2 text-xs sm:text-sm text-[#0F172A] focus:outline-none focus:border-[#0AAF76]"
           />
           <button
             type="submit"
-            className="absolute right-1.5 top-1.5 bg-[#3E3B36] text-[#F5F1EA] px-3 py-1 rounded-lg text-xs font-semibold hover:bg-[#2B2925]"
+            className="absolute right-1.5 top-1.5 bg-[#0AAF76] text-white px-3 py-1 rounded-lg text-xs font-semibold hover:bg-[#089163]"
           >
             Search
           </button>
         </form>
 
         {/* Status Filters */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-          <Filter size={14} className="text-[#8B8378] mr-1 hidden sm:block" />
+        <div role="group" aria-label="Filter leads by status" className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+          <Filter size={14} className="text-[#64748B] mr-1 hidden sm:block" aria-hidden="true" />
           {(['all', 'new', 'contacted', 'converted', 'lost'] as const).map((st) => (
             <button
               key={st}
+              type="button"
+              aria-pressed={selectedStatus === st}
               onClick={() => handleStatusChange(st)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize whitespace-nowrap transition-colors ${
                 selectedStatus === st
-                  ? 'bg-[#3E3B36] text-[#F5F1EA]'
-                  : 'bg-[#F5F1EA] text-[#8B8378] hover:text-[#3E3B36]'
+                  ? 'bg-[#0F172A] text-white'
+                  : 'bg-[#F8FAFC] text-[#64748B] hover:text-[#0F172A]'
               }`}
             >
               {st}
@@ -170,16 +190,16 @@ export default function LeadsTableClient({
       </div>
 
       {/* Total Count Badge */}
-      <div className="text-xs text-[#8B8378] font-medium px-1">
-        Showing <span className="font-bold text-[#3E3B36]">{leads.length}</span> of{' '}
-        <span className="font-bold text-[#3E3B36]">{totalCount}</span> total leads
+      <div className="text-xs text-[#64748B] font-medium px-1">
+        Showing <span className="font-bold text-[#0F172A]">{leads.length}</span>
+        {isPaged ? ' more' : ''} of <span className="font-bold text-[#0F172A]">{totalCount}</span> matching leads
       </div>
 
       {/* Table */}
-      <div className="bg-[#FFFFFF] rounded-2xl border border-[#E8E3DA] shadow-sm overflow-hidden">
+      <div className="bg-[#FFFFFF] rounded-2xl border border-[#E2E8F0] shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#F5F1EA]/60 border-b border-[#E8E3DA] text-[10px] tracking-wider uppercase text-[#8B8378]">
+            <thead className="bg-[#F8FAFC]/60 border-b border-[#E2E8F0] text-[10px] tracking-wider uppercase text-[#64748B]">
               <tr>
                 <th className="py-3 px-4 font-bold">Contact</th>
                 <th className="py-3 px-4 font-bold">Status</th>
@@ -191,10 +211,10 @@ export default function LeadsTableClient({
                 <th className="py-3 px-4 font-bold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E8E3DA]">
+            <tbody className="divide-y divide-[#E2E8F0]">
               {leads.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-[#8B8378] italic">
+                  <td colSpan={8} className="py-12 text-center text-[#64748B] italic">
                     No leads found matching current filter.
                   </td>
                 </tr>
@@ -205,20 +225,20 @@ export default function LeadsTableClient({
                   return (
                     <tr
                       key={lead.id}
-                      className="hover:bg-[#F5F1EA]/30 transition-colors group cursor-pointer"
+                      className="hover:bg-[#F8FAFC]/30 transition-colors group cursor-pointer"
                       onClick={() => router.push(`/dashboard/leads/${lead.id}`)}
                     >
                       {/* Contact */}
-                      <td className="py-3.5 px-4 font-medium text-[#3E3B36]">
+                      <td className="py-3.5 px-4 font-medium text-[#0F172A]">
                         <div className="flex items-center gap-2">
-                          <div className="h-7 w-7 rounded-full bg-[#E8E3DA] flex items-center justify-center text-[10px] font-bold text-[#3E3B36]">
+                          <div className="h-7 w-7 rounded-full bg-[#E2E8F0] flex items-center justify-center text-[10px] font-bold text-[#0F172A]">
                             {(lead.name || lead.profileName || 'L').slice(0, 1).toUpperCase()}
                           </div>
                           <div>
                             <p className="font-bold text-xs truncate max-w-[150px]">
                               {lead.name || lead.profileName || 'Customer'}
                             </p>
-                            <p className="text-[11px] text-[#8B8378] flex items-center gap-1 font-mono">
+                            <p className="text-[11px] text-[#64748B] flex items-center gap-1 font-mono">
                               <Phone size={10} /> +{lead.phone}
                             </p>
                           </div>
@@ -236,19 +256,19 @@ export default function LeadsTableClient({
 
                       {/* Intent */}
                       <td className="py-3.5 px-4">
-                        <span className="capitalize font-medium text-[#3E3B36] bg-[#F5F1EA] px-2 py-0.5 rounded text-[11px]">
+                        <span className="capitalize font-medium text-[#0F172A] bg-[#F8FAFC] px-2 py-0.5 rounded text-[11px]">
                           {lead.intent || 'enquiry'}
                         </span>
                       </td>
 
                       {/* Requirement */}
-                      <td className="py-3.5 px-4 max-w-[200px] truncate text-[#8B8378]" title={lead.requirement}>
+                      <td className="py-3.5 px-4 max-w-[200px] truncate text-[#64748B]" title={lead.requirement}>
                         {lead.requirement || '—'}
                       </td>
 
                       {/* Messages */}
                       <td className="py-3.5 px-4">
-                        <span className="flex items-center gap-1 text-[#8B8378]">
+                        <span className="flex items-center gap-1 text-[#64748B]">
                           <MessageSquare size={12} /> {lead.messageCount}
                         </span>
                       </td>
@@ -256,8 +276,14 @@ export default function LeadsTableClient({
                       {/* Bot Control */}
                       <td className="py-3.5 px-4">
                         <button
+                          type="button"
                           onClick={(e) => handleToggleBot(e, lead.id, lead.botPaused)}
                           disabled={isTogglingId === lead.id}
+                          aria-label={
+                            lead.botPaused
+                              ? `Human takeover active for ${lead.name || lead.profileName || lead.phone}. Resume AI bot`
+                              : `AI bot active for ${lead.name || lead.profileName || lead.phone}. Pause bot for human takeover`
+                          }
                           className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-bold transition-colors ${
                             lead.botPaused
                               ? 'bg-amber-100 text-amber-900 border border-amber-300'
@@ -277,11 +303,12 @@ export default function LeadsTableClient({
                       </td>
 
                       {/* Last Activity */}
-                      <td className="py-3.5 px-4 text-[11px] text-[#8B8378] whitespace-nowrap">
+                      <td className="py-3.5 px-4 text-[11px] text-[#64748B] whitespace-nowrap">
                         <span className="flex items-center gap-1">
                           <Clock size={11} />
                           {lead.lastMessageAt
-                            ? new Date(lead.lastMessageAt).toLocaleDateString(undefined, {
+                            ? new Date(lead.lastMessageAt).toLocaleString('en-IN', {
+                                timeZone,
                                 month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',
@@ -295,7 +322,7 @@ export default function LeadsTableClient({
                       <td className="py-3.5 px-4 text-right">
                         <Link
                           href={`/dashboard/leads/${lead.id}`}
-                          className="inline-flex items-center gap-1 text-[#C4A896] hover:text-[#3E3B36] font-semibold text-xs transition-colors"
+                          className="inline-flex items-center gap-1 text-[#0AAF76] hover:text-[#0F172A] font-semibold text-xs transition-colors"
                         >
                           View <ChevronRight size={14} />
                         </Link>
@@ -308,7 +335,26 @@ export default function LeadsTableClient({
           </table>
         </div>
       </div>
+
+      {(isPaged || nextCursor) && (
+        <div className="flex items-center justify-between text-xs font-semibold">
+          {isPaged ? (
+            <Link href={pageUrl(null)} className="text-[#64748B] hover:text-[#0F172A] transition-colors">
+              &larr; Back to newest
+            </Link>
+          ) : (
+            <span />
+          )}
+          {nextCursor && (
+            <Link
+              href={pageUrl(nextCursor)}
+              className="flex items-center gap-1 bg-[#0AAF76] text-white px-4 py-2 rounded-lg uppercase tracking-wider hover:bg-[#089163] transition-all"
+            >
+              Older leads <ChevronRight size={14} />
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   );
 }
-

@@ -3,7 +3,7 @@ import { forTenant } from '@/server/repos/tenant';
 import KnowledgeBaseClient from './knowledge-client';
 
 export const metadata = {
-  title: 'Business Knowledge Base — True Attendly',
+  title: 'Business Knowledge Base — FrontLoop',
 };
 
 export default async function KnowledgeBasePage() {
@@ -38,6 +38,7 @@ export default async function KnowledgeBasePage() {
           persona: kb.bot?.persona || '',
           fallbackReply: kb.bot?.fallbackReply || '',
           handoffKeywords: kb.bot?.handoffKeywords || ['human', 'agent', 'call me'],
+          languages: kb.bot?.languages || ['en'],
           captureFields: (kb.bot?.captureFields || ['name', 'requirement']) as Array<
             'name' | 'requirement' | 'preferred_time' | 'email'
           >,

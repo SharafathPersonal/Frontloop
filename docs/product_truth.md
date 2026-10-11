@@ -1,7 +1,7 @@
-# Product Truth — True Attendly
+# Product Truth — FrontLoop
 
 ## 1. Product Definition
-**True Attendly** is a **B2B WhatsApp AI Lead & Business Agent** built specifically for Small and Medium Businesses (SMBs)—such as healthcare clinics, educational coaching institutes, salons, restaurants, and local service providers.
+**FrontLoop** is a **B2B WhatsApp AI Lead & Business Agent** built specifically for Small and Medium Businesses (SMBs)—such as healthcare clinics, educational coaching institutes, salons, restaurants, and local service providers.
 
 The platform provides an automated, always-on AI front desk over official WhatsApp channels that:
 - Instantly acknowledges customer inquiries 24/7 with zero waiting time.

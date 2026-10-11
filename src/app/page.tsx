@@ -1,364 +1,345 @@
 import Link from 'next/link';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import {
   MessageSquare,
-  Bot,
-  Clock,
-  CheckCircle2,
-  PhoneCall,
-  Sparkles,
   ArrowRight,
-  Shield,
-  Zap,
+  Sparkles,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  TrendingUp,
+  Bot,
   Users,
-  Check,
 } from 'lucide-react';
+import { IndustryVerticalsSection } from '@/components/landing/IndustryVerticalsSection';
+import { PricingSection } from '@/components/landing/PricingSection';
+import { FaqSection } from '@/components/landing/FaqSection';
+import { GlobalFooter } from '@/components/landing/GlobalFooter';
+import { DEMO_WHATSAPP_NUMBER } from '@/lib/config';
 
 export default function LandingPage() {
-  const liveDemoWhatsAppNumber = '919876543210';
-  const liveDemoUrl = `https://wa.me/${liveDemoWhatsAppNumber}?text=${encodeURIComponent(
-    'Hi True Attendly, I want to test your 24/7 AI Receptionist demo for my clinic/business.',
-  )}`;
+  const liveDemoUrl = DEMO_WHATSAPP_NUMBER
+    ? `https://wa.me/${DEMO_WHATSAPP_NUMBER}?text=${encodeURIComponent(
+        'Hello, I would like to test your AI receptionist demo for my clinic/business.',
+      )}`
+    : null;
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] text-[#3E3B36] flex flex-col font-sans">
-      {/* Navigation */}
-      <header className="sticky top-0 z-50 bg-[#FDFBF7]/90 backdrop-blur-md border-b border-[#E8E3DA]">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans selection:bg-[#0AAF76] selection:text-white">
+      {/* 1. STICKY BRAND HEADER */}
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-[#E2E8F0]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-[#3E3B36] text-[#F5F1EA] flex items-center justify-center font-bold text-sm tracking-wider">
-              TA
-            </div>
-            <span className="font-bold text-base tracking-tight text-[#3E3B36]">
-              True Attendly
-            </span>
-          </div>
+          <Link href="/" aria-label="FrontLoop home" className="flex items-center transition-opacity hover:opacity-90">
+            <BrandLogo size="md" priority />
+          </Link>
 
-          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold tracking-wider uppercase text-[#8B8378]">
-            <a href="#benefits" className="hover:text-[#3E3B36] transition-colors">
+          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold tracking-wider uppercase text-[#64748B]">
+            <a href="#problem" className="hover:text-[#0AAF76] transition-colors">
+              Problem
+            </a>
+            <a href="#verticals" className="hover:text-[#0AAF76] transition-colors">
+              Industries
+            </a>
+            <a href="#features" className="hover:text-[#0AAF76] transition-colors">
               Features
             </a>
-            <a href="#how-it-works" className="hover:text-[#3E3B36] transition-colors">
-              How It Works
-            </a>
-            <a href="#pricing" className="hover:text-[#3E3B36] transition-colors">
+            <a href="#pricing" className="hover:text-[#0AAF76] transition-colors">
               Pricing
+            </a>
+            <a href="#faq" className="hover:text-[#0AAF76] transition-colors">
+              FAQs
             </a>
           </nav>
 
           <div className="flex items-center gap-3">
             <Link
               href="/auth/login"
-              className="text-xs font-semibold text-[#8B8378] hover:text-[#3E3B36] px-3 py-1.5 transition-colors"
+              className="text-xs font-semibold text-[#64748B] hover:text-[#0F172A] px-3 py-1.5 transition-colors"
             >
-              Log In
+              Sign In
             </Link>
             <Link
               href="/auth/register"
-              className="bg-[#3E3B36] text-[#F5F1EA] px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-[#2B2925] transition-all shadow-sm"
+              className="bg-[#0AAF76] hover:bg-[#089163] text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm cursor-pointer"
             >
-              Get Started
+              Start Free Trial
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="pt-20 pb-16 sm:pt-28 sm:pb-24 px-4 sm:px-6 max-w-5xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 bg-[#F5F1EA] border border-[#E8E3DA] px-3 py-1.5 rounded-full text-[11px] font-bold text-[#8B8378] uppercase tracking-wider mb-6">
-          <Sparkles size={12} className="text-[#C4A896]" />
-          Purpose-Built for Clinics, Institutes, Salons &amp; Local SMBs
+      {/* 2. HERO SECTION (Above The Fold) */}
+      <section className="pt-20 pb-20 sm:pt-28 sm:pb-28 px-4 sm:px-6 max-w-6xl mx-auto text-center relative">
+        <div className="inline-flex items-center gap-2 bg-white border border-[#E2E8F0] px-3.5 py-1.5 rounded-full text-[11px] font-bold text-[#64748B] uppercase tracking-widest mb-8 shadow-sm">
+          <Sparkles size={12} className="text-[#0AAF76]" />
+          Autonomous 24/7 WhatsApp AI Receptionist for Local SMBs
         </div>
 
-        <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-[#3E3B36] max-w-4xl mx-auto leading-[1.15]">
-          24/7 AI Receptionist &amp; Lead Qualifier for{' '}
-          <span className="text-[#B39380] underline decoration-[#E8E3DA] underline-offset-8">
-            WhatsApp
+        <h1 className="text-3xl sm:text-6xl md:text-7xl font-bold tracking-tight text-[#0F172A] serif-headline max-w-5xl mx-auto leading-[1.12]">
+          Stop Losing Business to{' '}
+          <span className="text-[#0AAF76] underline decoration-[#0AAF76]/40 underline-offset-8">
+            Unanswered WhatsApp Messages.
           </span>
         </h1>
 
-        <p className="text-sm sm:text-lg text-[#8B8378] max-w-2xl mx-auto mt-6 leading-relaxed">
-          Never miss patient appointments or student inquiries after hours. Instant bilingual responses, zero reception desk overload, and automated qualified lead capture.
+        <p className="text-base sm:text-xl text-[#64748B] max-w-3xl mx-auto mt-6 leading-relaxed">
+          Your 24/7 AI Receptionist that qualifies leads, answers FAQs in English &amp; Manglish, and books appointments directly inside WhatsApp.
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
-          <a
-            href={liveDemoUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-600 text-white px-6 py-3.5 rounded-xl text-sm font-bold tracking-wide hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/20"
-          >
-            <MessageSquare size={16} />
-            Try Live WhatsApp Demo
-          </a>
-
+        {/* Primary & Interactive CTAs */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-9">
           <Link
             href="/auth/register"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#3E3B36] text-[#F5F1EA] px-6 py-3.5 rounded-xl text-sm font-bold tracking-wide hover:bg-[#2B2925] transition-all"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-[#0AAF76] hover:bg-[#089163] text-white px-7 py-4 rounded-xl text-sm font-bold tracking-wide uppercase transition-all shadow-md cursor-pointer"
           >
-            Start Free Trial <ArrowRight size={15} />
+            Start Free Trial <ArrowRight size={16} />
           </Link>
+
+          {liveDemoUrl && (
+            <a
+              href={liveDemoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-white hover:bg-slate-50 text-[#0F172A] border border-[#E2E8F0] px-7 py-4 rounded-xl text-sm font-bold tracking-wide transition-all shadow-sm cursor-pointer"
+            >
+              <MessageSquare size={17} className="text-[#0AAF76]" />
+              Chat with Live Demo Bot
+            </a>
+          )}
         </div>
 
-        {/* Live Conversation Teaser Card */}
-        <div className="mt-14 max-w-2xl mx-auto bg-white border border-[#E8E3DA] rounded-2xl shadow-xl shadow-stone-200/50 p-4 sm:p-6 text-left">
-          <div className="flex items-center justify-between border-b border-[#E8E3DA] pb-3 mb-4">
+        {/* Trust Badges Bar */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-[#64748B]">
+          <span className="flex items-center gap-2">
+            <CheckCircle2 size={15} className="text-[#0AAF76]" /> Zero coding required
+          </span>
+          <span className="flex items-center gap-2">
+            <CheckCircle2 size={15} className="text-[#0AAF76]" /> Official Meta Cloud API
+          </span>
+          <span className="flex items-center gap-2">
+            <CheckCircle2 size={15} className="text-[#0AAF76]" /> 10-minute automated setup
+          </span>
+        </div>
+
+        {/* Interactive Simulated WhatsApp Hero Preview */}
+        <div className="mt-16 max-w-2xl mx-auto bg-white border border-[#E2E8F0] rounded-3xl shadow-xl p-4 sm:p-6 text-left relative overflow-hidden">
+          <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3.5 mb-4">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs">
+              <div className="h-9 w-9 rounded-full bg-[#0AAF76] text-white flex items-center justify-center font-bold text-xs shadow-sm">
                 AI
               </div>
               <div>
-                <p className="text-xs font-bold text-[#3E3B36]">Indiranagar Dental &amp; Smile Care</p>
-                <p className="text-[10px] text-emerald-600 font-medium">● Online 24/7 • Official WhatsApp Cloud</p>
+                <p className="text-xs font-bold text-[#0F172A] flex items-center gap-1.5">
+                  Dr. Sharma Multi-Specialty Clinic
+                  <ShieldCheck size={13} className="text-[#0AAF76]" />
+                </p>
+                <p className="text-[10px] text-[#0AAF76] font-medium">● Active Now • 24/7 AI Receptionist</p>
               </div>
             </div>
-            <span className="text-[10px] text-[#8B8378] font-mono">Simulated WhatsApp Flow</span>
+            <div className="text-right">
+              <span className="text-[10px] text-[#64748B] font-mono block">10:45 PM (After Hours)</span>
+              <span className="text-[9px] text-[#0AAF76] font-bold uppercase tracking-wider">Sub-2s Reply</span>
+            </div>
           </div>
 
-          <div className="space-y-3 text-xs leading-relaxed">
+          <div className="space-y-3.5 text-xs leading-relaxed">
+            {/* Customer Message 1 */}
             <div className="flex justify-end">
-              <div className="bg-[#E8E3DA]/60 text-[#3E3B36] rounded-2xl rounded-tr-none px-3.5 py-2 max-w-[85%]">
-                Hi! Do you have slots for scaling &amp; teeth cleaning tomorrow evening? Also how much does it cost?
+              <div className="bg-[#F1F5F9] text-[#0F172A] rounded-2xl rounded-tr-none px-4 py-3 max-w-[85%] border border-[#E2E8F0] shadow-sm">
+                Hi! Nale evening dermatologist Dr. Priya available aano? Consultation fee ethraya?
+                <div className="text-right text-[9px] text-[#64748B] mt-1">10:45 PM ✓✓</div>
               </div>
             </div>
 
+            {/* Bot Reply 1 */}
             <div className="flex justify-start">
-              <div className="bg-[#3E3B36] text-[#F5F1EA] rounded-2xl rounded-tl-none px-3.5 py-2.5 max-w-[85%]">
-                Hello! Yes, Dr. Sharma has open consultation slots tomorrow between <strong>5:30 PM and 7:00 PM</strong>.<br /><br />
-                Our Ultrasonic Teeth Cleaning &amp; Polishing is <strong>₹1,200</strong> (takes approx. 45 mins).<br /><br />
-                May I know your full name so I can hold a 6:00 PM slot for you?
+              <div className="bg-[#0F172A] text-white rounded-2xl rounded-tl-none px-4 py-3 max-w-[85%] shadow-md">
+                Hello! Yes, Dr. Priya (Dermatologist) has consultation slots tomorrow from <strong>5:00 PM to 8:30 PM</strong>.<br /><br />
+                The consultation fee is <strong>₹600</strong>.<br /><br />
+                May I have your name to hold a 6:00 PM slot for you?
+                <div className="text-left text-[9px] text-[#0AAF76] mt-1.5 font-medium">10:45 PM • Automated Response</div>
               </div>
             </div>
 
+            {/* Customer Message 2 */}
             <div className="flex justify-end">
-              <div className="bg-[#E8E3DA]/60 text-[#3E3B36] rounded-2xl rounded-tr-none px-3.5 py-2 max-w-[85%]">
-                Rahul Verma. 6 PM works great!
+              <div className="bg-[#F1F5F9] text-[#0F172A] rounded-2xl rounded-tr-none px-4 py-3 max-w-[85%] border border-[#E2E8F0] shadow-sm">
+                Name is Anjali Nair. 6:00 PM is perfect!
+                <div className="text-right text-[9px] text-[#64748B] mt-1">10:46 PM ✓✓</div>
               </div>
             </div>
 
+            {/* Bot Reply 2 */}
             <div className="flex justify-start">
-              <div className="bg-[#3E3B36] text-[#F5F1EA] rounded-2xl rounded-tl-none px-3.5 py-2 max-w-[85%]">
-                Booked for Rahul Verma! We have logged your appointment request for tomorrow at 6:00 PM. Our clinic team has also been notified. See you tomorrow!
+              <div className="bg-[#0F172A] text-white rounded-2xl rounded-tl-none px-4 py-3 max-w-[85%] shadow-md">
+                Confirmed for <strong>Anjali Nair</strong>! Your appointment request with Dr. Priya is logged for tomorrow at 6:00 PM. Our clinic staff will confirm upon arrival.<br /><br />
+                📍 Location: 2nd Floor, Indiranagar Hub. See you tomorrow!
+                <div className="text-left text-[9px] text-[#0AAF76] mt-1.5 font-medium">10:46 PM • Lead Captured &amp; Synced</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Value Pillars */}
-      <section id="benefits" className="py-16 bg-[#F5F1EA]/60 border-y border-[#E8E3DA]">
+      {/* 3. PROBLEM VS SOLUTION (Before & After) */}
+      <section id="problem" className="py-24 bg-white border-t border-[#E2E8F0] text-[#0F172A]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#3E3B36]">
-              Built Specifically for Offline Front Desks
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-rose-800 bg-rose-50 px-3.5 py-1.5 rounded-full border border-rose-200">
+              The Reality Of Local Business Inboxes
+            </span>
+            <h2 className="serif-headline text-2xl sm:text-4xl text-[#0F172A] mt-4 tracking-tight">
+              Why Traditional Front Desks Bleed High-Intent Leads
             </h2>
-            <p className="text-xs sm:text-sm text-[#8B8378] mt-2">
-              Transform your WhatsApp from an unread inbox into an autonomous business agent.
+            <p className="text-sm text-[#64748B] mt-3">
+              Your prospects message on WhatsApp when it&apos;s convenient for them, not during your reception desk hours.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-2xl border border-[#E8E3DA] p-6 shadow-sm space-y-3">
-              <div className="h-10 w-10 rounded-xl bg-[#F5F1EA] flex items-center justify-center text-[#3E3B36]">
-                <Clock size={20} className="text-[#C4A896]" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {/* The Old Way */}
+            <div className="bg-[#FFF5F5] border border-rose-200 rounded-3xl p-8 space-y-6 relative overflow-hidden">
+              <div className="flex items-center gap-2 text-rose-700 font-bold text-xs uppercase tracking-wider">
+                <XCircle size={16} />
+                The Old Broken Way
               </div>
-              <h3 className="text-sm font-bold text-[#3E3B36] uppercase tracking-wider">
-                Instant 24/7 Response
+              <h3 className="serif-headline text-xl text-[#0F172A]">
+                Manual Typing &amp; Delayed Responses
               </h3>
-              <p className="text-xs text-[#8B8378] leading-relaxed">
-                68% of inquiries arrive after 7 PM or on Sundays. The AI responds in under 3 seconds, ensuring prospective clients never call your competitors while your staff is away.
-              </p>
+              <ul className="space-y-4 text-xs text-[#64748B]">
+                <li className="flex items-start gap-3">
+                  <span className="text-rose-600 font-bold text-sm shrink-0">✕</span>
+                  <span><strong className="text-[#0F172A]">Inquiries at 9:30 PM go cold:</strong> Patients and parents message at night and book whoever replies first.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-rose-600 font-bold text-sm shrink-0">✕</span>
+                  <span><strong className="text-[#0F172A]">Reception desk fatigue:</strong> Staff endlessly type the same directions, timings, and fees hundreds of times a week.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-rose-600 font-bold text-sm shrink-0">✕</span>
+                  <span><strong className="text-[#0F172A]">Unorganized chats:</strong> Valuable lead numbers get lost deep down in a cluttered single mobile phone inbox.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-rose-600 font-bold text-sm shrink-0">✕</span>
+                  <span><strong className="text-[#0F172A]">Zero tracking:</strong> No pipeline, no exportable database, no visibility into lost conversions.</span>
+                </li>
+              </ul>
             </div>
 
-            <div className="bg-white rounded-2xl border border-[#E8E3DA] p-6 shadow-sm space-y-3">
-              <div className="h-10 w-10 rounded-xl bg-[#F5F1EA] flex items-center justify-center text-[#3E3B36]">
-                <Bot size={20} className="text-[#C4A896]" />
+            {/* The FrontLoop Way */}
+            <div className="bg-white border-2 border-[#0AAF76] rounded-3xl p-8 space-y-6 relative overflow-hidden shadow-xl">
+              <div className="flex items-center gap-2 text-[#0AAF76] font-bold text-xs uppercase tracking-wider">
+                <CheckCircle2 size={16} />
+                The FrontLoop AI Way
               </div>
-              <h3 className="text-sm font-bold text-[#3E3B36] uppercase tracking-wider">
-                Bilingual &amp; Natural Tone
+              <h3 className="serif-headline text-xl text-[#0F172A]">
+                Sub-3s Autonomous Conversational Reception
               </h3>
-              <p className="text-xs text-[#8B8378] leading-relaxed">
-                Seamlessly understands conversational English and regional phrasing (Manglish, Hinglish). Never feels like a rigid robot, speaking with warmth and clinical empathy.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-[#E8E3DA] p-6 shadow-sm space-y-3">
-              <div className="h-10 w-10 rounded-xl bg-[#F5F1EA] flex items-center justify-center text-[#3E3B36]">
-                <Users size={20} className="text-[#C4A896]" />
-              </div>
-              <h3 className="text-sm font-bold text-[#3E3B36] uppercase tracking-wider">
-                Automated Lead Qualification
-              </h3>
-              <p className="text-xs text-[#8B8378] leading-relaxed">
-                Automatically extracts customer name, primary requirement, and intent (pricing, appointment, admission). Syncs directly into your dashboard with 1-click human takeover.
-              </p>
+              <ul className="space-y-4 text-xs text-[#0F172A]">
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Sub-3-second responses 24/7:</strong> Night or Sunday, inquiries receive polite, authoritative business answers in seconds.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Bilingual natural comprehension:</strong> Understands English, Manglish, and colloquial local syntax effortlessly.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Instant 1-Click human takeover:</strong> Your staff can pause the bot and chat directly whenever personal care is needed.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Centralized Lead CRM:</strong> Inquiries automatically extract name, phone, and requirements into your dashboard.</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="py-20 px-4 sm:px-6 max-w-5xl mx-auto">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#3E3B36]">
-            Three Steps to 24/7 Autopilot
-          </h2>
-          <p className="text-xs sm:text-sm text-[#8B8378] mt-2">
-            No complex coding or phone line hardware required.
-          </p>
-        </div>
+      {/* 4. INDUSTRY VERTICALS SECTION (Tabs & Capabilities) */}
+      <IndustryVerticalsSection />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="text-center space-y-3">
-            <div className="h-12 w-12 rounded-2xl bg-[#3E3B36] text-[#F5F1EA] flex items-center justify-center font-bold text-base mx-auto">
-              1
-            </div>
-            <h3 className="text-sm font-bold text-[#3E3B36]">Connect WhatsApp Number</h3>
-            <p className="text-xs text-[#8B8378]">
-              Link your official WhatsApp Business Cloud API in Settings with Meta verification in minutes.
-            </p>
-          </div>
-
-          <div className="text-center space-y-3">
-            <div className="h-12 w-12 rounded-2xl bg-[#3E3B36] text-[#F5F1EA] flex items-center justify-center font-bold text-base mx-auto">
-              2
-            </div>
-            <h3 className="text-sm font-bold text-[#3E3B36]">Input Business Knowledge</h3>
-            <p className="text-xs text-[#8B8378]">
-              Add your clinic timings, service fees, doctor profiles, and FAQs in the Knowledge Base editor.
-            </p>
-          </div>
-
-          <div className="text-center space-y-3">
-            <div className="h-12 w-12 rounded-2xl bg-[#3E3B36] text-[#F5F1EA] flex items-center justify-center font-bold text-base mx-auto">
-              3
-            </div>
-            <h3 className="text-sm font-bold text-[#3E3B36]">Watch Leads Convert</h3>
-            <p className="text-xs text-[#8B8378]">
-              Your AI answers queries, gathers details, and logs leads in your live pipeline with instant takeover.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-16 bg-[#F5F1EA]/60 border-t border-[#E8E3DA]">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#3E3B36]">
-              Simple, Transparent Pricing
+      {/* 5. COMPETITIVE MOATS & FEATURES */}
+      <section id="features" className="py-24 bg-[#F8FAFC] border-t border-[#E2E8F0] text-[#0F172A]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-[#0AAF76] bg-[#ECFDF5] px-3.5 py-1.5 rounded-full border border-[#0AAF76]/30">
+              Enterprise Technology Simplified
+            </span>
+            <h2 className="serif-headline text-2xl sm:text-4xl text-[#0F172A] mt-4 tracking-tight">
+              Why Leading SMBs Switch To FrontLoop
             </h2>
-            <p className="text-xs sm:text-sm text-[#8B8378] mt-2">
-              Done-for-you WhatsApp AI automation with zero hidden server maintenance fees.
+            <p className="text-sm text-[#64748B] mt-3">
+              Engineered specifically for high-intent customer conversations, not generic chatbot nonsense.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-            {/* Starter Plan */}
-            <div className="bg-white rounded-2xl border border-[#E8E3DA] p-6 sm:p-8 shadow-sm flex flex-col justify-between">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8B8378] bg-[#F5F1EA] px-2.5 py-1 rounded">
-                  Starter Plan
-                </span>
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-3xl sm:text-4xl font-extrabold text-[#3E3B36]">₹1,499</span>
-                  <span className="text-xs text-[#8B8378]">/ month</span>
-                </div>
-                <p className="text-xs text-[#8B8378] mt-2">
-                  Ideal for single-location clinics, salons, and boutique coaching centers.
-                </p>
-
-                <ul className="mt-6 space-y-2.5 text-xs text-[#3E3B36]">
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="text-emerald-600" /> Up to 1,000 AI replies/month
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="text-emerald-600" /> Full Knowledge Base &amp; Services
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="text-emerald-600" /> Real-time Lead Dashboard
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="text-emerald-600" /> 1-Click Human Takeover
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="text-emerald-600" /> CSV Leads Export
-                  </li>
-                </ul>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Feature 1 */}
+            <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 space-y-3.5 hover:border-[#0AAF76] transition-all shadow-sm">
+              <div className="h-10 w-10 rounded-xl bg-[#ECFDF5] text-[#0AAF76] flex items-center justify-center">
+                <Bot size={20} className="text-[#0AAF76]" />
               </div>
-
-              <Link
-                href="/auth/register"
-                className="mt-8 block text-center bg-[#F5F1EA] text-[#3E3B36] border border-[#E8E3DA] py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#E8E3DA] transition-colors"
-              >
-                Start 14-Day Free Trial
-              </Link>
+              <h3 className="text-sm font-bold text-[#0F172A] uppercase tracking-wider">
+                Manglish &amp; Regional Fluency
+              </h3>
+              <p className="text-xs text-[#64748B] leading-relaxed">
+                Trained to interpret conversational syntax like &ldquo;Fee ethraya?&rdquo;, &ldquo;Dr. Priya evideya?&rdquo;, and English-Malayalam hybrid phrasing naturally.
+              </p>
             </div>
 
-            {/* Growth Plan */}
-            <div className="bg-white rounded-2xl border-2 border-[#3E3B36] p-6 sm:p-8 shadow-md flex flex-col justify-between relative">
-              <span className="absolute -top-3 right-6 bg-[#3E3B36] text-[#F5F1EA] text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
-                Most Popular
-              </span>
-
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8B8378] bg-[#F5F1EA] px-2.5 py-1 rounded">
-                  Growth Plan
-                </span>
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-3xl sm:text-4xl font-extrabold text-[#3E3B36]">₹3,499</span>
-                  <span className="text-xs text-[#8B8378]">/ month</span>
-                </div>
-                <p className="text-xs text-[#8B8378] mt-2">
-                  For busy clinics, multi-specialty centers, and growing training institutes.
-                </p>
-
-                <ul className="mt-6 space-y-2.5 text-xs text-[#3E3B36]">
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="text-emerald-600" /> Up to 3,000 AI replies/month
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="text-emerald-600" /> Priority Multi-Tier LLM routing
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="text-emerald-600" /> Unlimited Services &amp; FAQs
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="text-emerald-600" /> Automated Intent Classification
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="text-emerald-600" /> Priority WhatsApp Support
-                  </li>
-                </ul>
+            {/* Feature 2 */}
+            <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 space-y-3.5 hover:border-[#0AAF76] transition-all shadow-sm">
+              <div className="h-10 w-10 rounded-xl bg-[#ECFDF5] text-[#0AAF76] flex items-center justify-center">
+                <Users size={20} className="text-[#0AAF76]" />
               </div>
+              <h3 className="text-sm font-bold text-[#0F172A] uppercase tracking-wider">
+                1-Click Human Takeover
+              </h3>
+              <p className="text-xs text-[#64748B] leading-relaxed">
+                Staff can toggle &ldquo;botPaused&rdquo; with one click. The AI immediately suspends automated replies so your staff can chat freely.
+              </p>
+            </div>
 
-              <Link
-                href="/auth/register"
-                className="mt-8 block text-center bg-[#3E3B36] text-[#F5F1EA] py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#2B2925] transition-colors"
-              >
-                Get Started with Growth
-              </Link>
+            {/* Feature 3 */}
+            <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 space-y-3.5 hover:border-[#0AAF76] transition-all shadow-sm">
+              <div className="h-10 w-10 rounded-xl bg-[#ECFDF5] text-[#0AAF76] flex items-center justify-center">
+                <ShieldCheck size={20} className="text-[#0AAF76]" />
+              </div>
+              <h3 className="text-sm font-bold text-[#0F172A] uppercase tracking-wider">
+                Anti-Hallucination Guardrails
+              </h3>
+              <p className="text-xs text-[#64748B] leading-relaxed">
+                Strict ground truth policy. Answers are only synthesized from your verified Knowledge Base. The bot never hallucinates fake fees or doctors.
+              </p>
+            </div>
+
+            {/* Feature 4 */}
+            <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 space-y-3.5 hover:border-[#0AAF76] transition-all shadow-sm">
+              <div className="h-10 w-10 rounded-xl bg-[#ECFDF5] text-[#0AAF76] flex items-center justify-center">
+                <TrendingUp size={20} className="text-[#0AAF76]" />
+              </div>
+              <h3 className="text-sm font-bold text-[#0F172A] uppercase tracking-wider">
+                Exportable Leads Pipeline
+              </h3>
+              <p className="text-xs text-[#64748B] leading-relaxed">
+                Every captured lead is organized by intent and date. Filter by status, search by phone, and export to CSV with 1 click anytime.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="mt-auto border-t border-[#E8E3DA] py-8 bg-[#FDFBF7] text-xs text-[#8B8378]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} True Attendly. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            <Link href="/privacy" className="hover:text-[#3E3B36]">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="hover:text-[#3E3B36]">
-              Terms of Service
-            </Link>
-            <Link href="/auth/login" className="hover:text-[#3E3B36]">
-              Merchant Portal
-            </Link>
-          </div>
-        </div>
-      </footer>
+      {/* 6. TRANSPARENT DONE-FOR-YOU PRICING */}
+      <PricingSection />
+
+      {/* 7. FREQUENTLY ASKED QUESTIONS */}
+      <FaqSection />
+
+      {/* 8. GLOBAL FOOTER */}
+      <GlobalFooter />
     </div>
   );
 }

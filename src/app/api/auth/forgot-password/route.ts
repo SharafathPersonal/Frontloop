@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   }
 
   return Response.json(
-    { error: 'Password reset is temporarily disabled. Please contact support@trueattendly.online' },
+    { error: 'Password reset is temporarily disabled. Please contact support@frontloop.online' },
     { status: 501 },
   );
 }

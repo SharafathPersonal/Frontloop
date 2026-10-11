@@ -1,11 +1,11 @@
 # AGENTS.md — Universal Repository Guidelines & Operational Invariants
 
-This file defines the non-negotiable architectural invariants, security rules, and engineering guidelines for the True Attendly codebase. Every agent and developer must comply with these standards without exception.
+This file defines the non-negotiable architectural invariants, security rules, and engineering guidelines for the FrontLoop codebase. Every agent and developer must comply with these standards without exception.
 
 ---
 
 ## 1. Product Truth & Scope
-- **Domain**: True Attendly is an autonomous **B2B WhatsApp AI Lead & Business Agent for SMBs** (clinics, institutes, salons, local businesses).
+- **Domain**: FrontLoop is an autonomous **B2B WhatsApp AI Lead & Business Agent for SMBs** (clinics, institutes, salons, local businesses).
 - **Architecture**: Next.js App Router (Full-Stack) + MongoDB (Mongoose) + Meta WhatsApp Cloud API.
 - **Out of Scope / Deprecated**: Do NOT reintroduce dead-stock, flash offers, digital billing/thermal invoices, mass broadcast spam, or Spintax delay loops. Reference `docs/product_truth.md` for current boundaries.
 

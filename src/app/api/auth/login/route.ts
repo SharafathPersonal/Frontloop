@@ -23,7 +23,14 @@ export async function POST(req: NextRequest) {
 
   await connectDB();
 
-  if (!(await rateLimit(`login:${clientIp(req)}:${email}`, 5, 15 * 60))) {
+  // Independent buckets: per-IP caps credential stuffing across many accounts,
+  // per-email caps distributed brute force against one account. Both always count.
+  const window = 15 * 60;
+  const [ipOk, emailOk] = await Promise.all([
+    rateLimit(`login:ip:${clientIp(req)}`, 30, window),
+    rateLimit(`login:email:${email}`, 5, window),
+  ]);
+  if (!ipOk || !emailOk) {
     return jsonError('Too many sign-in attempts. Try again in 15 minutes.', 429);
   }
 

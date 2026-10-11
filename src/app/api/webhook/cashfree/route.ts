@@ -1,90 +1,87 @@
 import 'server-only';
 import { NextRequest } from 'next/server';
-import { getEnv } from '@/server/env';
+import { z } from 'zod';
 import { verifyCashfreeSignature } from '@/server/crypto';
-import { connectDB } from '@/server/db';
-import { BusinessTenant } from '@/server/models/BusinessTenant';
-import { PLAN_CONFIG, type PlanKey } from '@/app/api/checkout/route';
+import { OrderTagsSchema, fulfilPaidOrder, getCashfreeConfig, type CashfreeConfig } from '@/server/billing';
 
 export const dynamic = 'force-dynamic';
 
+const MAX_WEBHOOK_AGE_MS = 5 * 60 * 1000;
+
+const PaymentSuccessEvent = z.object({
+  type: z.literal('PAYMENT_SUCCESS_WEBHOOK'),
+  data: z.object({
+    order: z.object({
+      order_id: z.string(),
+      order_amount: z.number(),
+      order_currency: z.string(),
+      order_tags: OrderTagsSchema,
+    }),
+    payment: z.object({
+      payment_status: z.literal('SUCCESS'),
+    }),
+  }),
+});
+
+/** Cashfree sends epoch milliseconds; tolerate seconds so a format change can't open a replay window. */
+function isFresh(timestampHeader: string | null): boolean {
+  const raw = Number(timestampHeader);
+  if (!Number.isFinite(raw) || raw <= 0) return false;
+  const ms = raw < 1e12 ? raw * 1000 : raw;
+  return Math.abs(Date.now() - ms) <= MAX_WEBHOOK_AGE_MS;
+}
+
+const json = (body: unknown, status = 200) => Response.json(body, { status });
+
 /**
- * Signature-verified Cashfree Webhook Handler
- * Updates BusinessTenant.subscription upon PAYMENT_SUCCESS_WEBHOOK
+ * Signature-verified, replay-protected, idempotent Cashfree webhook.
+ * Fails closed: no billing configuration means no request is ever processed.
  */
 export async function POST(req: NextRequest) {
-  const env = getEnv();
-  const secretKey = env.CASHFREE_SECRET_KEY;
+  let config: CashfreeConfig;
+  try {
+    config = getCashfreeConfig();
+  } catch {
+    return json({ error: 'Billing is not configured' }, 503);
+  }
 
   const rawBody = await req.text();
   const timestampHeader = req.headers.get('x-webhook-timestamp');
   const signatureHeader = req.headers.get('x-webhook-signature');
 
-  // Constant-time signature verification
-  if (secretKey) {
-    const isValid = verifyCashfreeSignature(rawBody, timestampHeader, signatureHeader, secretKey);
-    if (!isValid) {
-      console.warn('[Cashfree Webhook] Invalid signature verification');
-      return new Response('Unauthorized', { status: 401 });
-    }
+  if (!verifyCashfreeSignature(rawBody, timestampHeader, signatureHeader, config.secretKey)) {
+    return json({ error: 'Unauthorized' }, 401);
+  }
+  if (!isFresh(timestampHeader)) {
+    return json({ error: 'Stale webhook' }, 401);
   }
 
-  let event: {
-    type?: string;
-    data?: {
-      order?: {
-        order_id?: string;
-        order_amount?: number;
-        order_tags?: {
-          tenantId?: string;
-          plan?: string;
-          replyQuota?: string;
-        };
-      };
-      payment?: {
-        payment_status?: string;
-      };
-    };
-  };
-
+  let payload: unknown;
   try {
-    event = JSON.parse(rawBody);
+    payload = JSON.parse(rawBody);
   } catch {
-    return new Response('Bad Request', { status: 400 });
+    return json({ error: 'Bad Request' }, 400);
   }
 
-  // Idempotently process PAYMENT_SUCCESS_WEBHOOK
-  if (
-    event.type === 'PAYMENT_SUCCESS_WEBHOOK' ||
-    event.data?.payment?.payment_status === 'SUCCESS'
-  ) {
-    const orderTags = event.data?.order?.order_tags;
-    const tenantId = orderTags?.tenantId;
-    const plan = (orderTags?.plan as PlanKey) || 'starter';
+  // Other event types (failed, dropped, refunds) are acknowledged so Cashfree stops retrying.
+  const event = PaymentSuccessEvent.safeParse(payload);
+  if (!event.success) return json({ ok: true, ignored: true });
 
-    if (tenantId) {
-      await connectDB();
-      const planInfo = PLAN_CONFIG[plan] || PLAN_CONFIG.starter;
-      const periodEnd = new Date();
-      periodEnd.setDate(periodEnd.getDate() + 30);
-
-      await BusinessTenant.updateOne(
-        { _id: tenantId },
-        {
-          $set: {
-            'subscription.plan': plan,
-            'subscription.status': 'active',
-            'subscription.currentPeriodEnd': periodEnd,
-            'subscription.replyQuota': planInfo.replyQuota,
-          },
-        },
-      );
-      console.log(`[Cashfree Webhook] Activated ${plan} subscription for tenant ${tenantId}`);
-    }
-  }
-
-  return new Response(JSON.stringify({ ok: true }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
+  const { order } = event.data.data;
+  const result = await fulfilPaidOrder({
+    orderId: order.order_id,
+    tenantId: order.order_tags.tenantId,
+    plan: order.order_tags.plan,
+    amount: order.order_amount,
+    currency: order.order_currency,
+    source: 'webhook',
   });
+
+  if (result.status === 'rejected') {
+    // Permanent failure: 2xx so Cashfree does not retry an order that can never be applied.
+    console.error(`[Cashfree Webhook] Rejected order ${order.order_id}: ${result.reason}`);
+    return json({ ok: false, error: 'Order rejected' });
+  }
+
+  return json({ ok: true, status: result.status });
 }

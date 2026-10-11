@@ -48,7 +48,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 ? 'border-green-100 text-green-800'
                 : toast.type === 'error'
                 ? 'border-red-100 text-red-800'
-                : 'border-[#E8E3DA] text-[#3E3B36]'
+                : 'border-[#E2E8F0] text-[#0F172A]'
             }`}
           >
             {toast.type === 'success' && (
@@ -65,7 +65,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
             <button
               onClick={() => removeToast(toast.id)}
-              className="text-[#8B8378] hover:text-[#3E3B36] transition-colors flex-shrink-0 cursor-pointer"
+              className="text-[#64748B] hover:text-[#0F172A] transition-colors flex-shrink-0 cursor-pointer"
             >
               <X size={14} />
             </button>
