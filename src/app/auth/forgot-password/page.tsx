@@ -3,7 +3,6 @@
 import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabaseClient';
 import { Spinner } from '@/components/ui/Spinner';
 import { useToast } from '@/contexts/ToastContext';
 import { Key } from 'lucide-react';
@@ -20,15 +19,18 @@ export default function ForgotPasswordPage() {
     setError(null);
     setLoading(true);
 
-    const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
-    });
+    const res = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    }).catch(() => null);
 
     setLoading(false);
 
-    if (authError) {
-      setError(authError.message);
-      showToast(authError.message, 'error');
+    if (!res?.ok) {
+      const message = (await res?.json().catch(() => null))?.error ?? 'Unable to send recovery link.';
+      setError(message);
+      showToast(message, 'error');
       return;
     }
 

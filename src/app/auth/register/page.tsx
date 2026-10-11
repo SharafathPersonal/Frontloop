@@ -5,39 +5,26 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { APP_VERSION } from '@/lib/config';
-import { supabase } from '@/lib/supabaseClient';
-import type { RegisterFormValues } from '@/types/broadcast';
 import { Spinner } from '@/components/ui/Spinner';
 
-const INDUSTRY_TYPES = [
-  'Fashion & Apparel',
-  'Food & Beverage',
-  'Electronics & Tech',
-  'Health & Wellness',
-  'Home & Furniture',
-  'Beauty & Cosmetics',
-  'Jewellery & Accessories',
-  'Automotive',
-  'Sports & Outdoors',
-  'Education',
-  'Other Retail',
-];
+// Mirrors TENANT_CATEGORIES in src/server/models/BusinessTenant.ts
+const CATEGORIES = [
+  { value: 'clinic', label: 'Clinic / Healthcare' },
+  { value: 'institute', label: 'Educational Institute' },
+  { value: 'restaurant', label: 'Restaurant / Café' },
+  { value: 'salon', label: 'Salon / Spa' },
+  { value: 'retail', label: 'Retail Store' },
+  { value: 'other', label: 'Other Business' },
+] as const;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [form, setForm] = useState<RegisterFormValues>({
+  const [form, setForm] = useState({
+    businessName: '',
+    category: '',
     email: '',
     password: '',
     confirmPassword: '',
-    shop_name: '',
-    owner_phone: '',
-    contact_number: '',
-    location_address: '',
-    city: '',
-    district: '',
-    state: '',
-    country: '',
-    industry_type: '',
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -58,35 +45,25 @@ export default function RegisterPage() {
 
     setLoading(true);
 
-    // 1. Create auth user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-      options: {
-        data: {
-          shop_name: form.shop_name,
-          owner_phone: form.owner_phone,
-          contact_number: form.contact_number,
-          location_address: form.location_address,
-          city: form.city,
-          district: form.district,
-          state: form.state,
-          country: form.country,
-          industry_type: form.industry_type,
-        }
-      }
-    });
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        businessName: form.businessName,
+        category: form.category,
+        email: form.email,
+        password: form.password,
+      }),
+    }).catch(() => null);
 
-    if (authError || !authData.user) {
-      setError(authError?.message ?? 'Failed to create account.');
-      setLoading(false);
+    setLoading(false);
+
+    if (!res?.ok) {
+      const body = await res?.json().catch(() => null);
+      setError(body?.error ?? 'Failed to create account.');
       return;
     }
 
-    // Note: The secondary writes to `public.shops` and `public.wallets` 
-    // are now handled atomically by a PostgreSQL trigger on `auth.users` insert!
-    
-    setLoading(false);
     router.push('/dashboard');
     router.refresh();
   };
@@ -101,10 +78,10 @@ export default function RegisterPage() {
             <div className="relative w-8 h-8 flex items-center justify-center">
               <Image src="/images/logo-dark.png" alt="Attendly Logo" fill sizes="32px" className="object-contain" />
             </div>
-            <span className="serif-headline text-lg text-[#3E3B36]">Attendly Broadcast</span>
+            <span className="serif-headline text-lg text-[#3E3B36]">Attendly</span>
           </div>
           <h1 className="serif-headline text-2xl text-[#3E3B36] mb-2">Create your workspace</h1>
-          <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase">Start broadcasting in minutes</p>
+          <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase">Your WhatsApp assistant in minutes</p>
         </div>
 
         {/* Card */}
@@ -118,116 +95,41 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
 
-            {/* Shop Name */}
+            {/* Business Name */}
             <div>
               <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
-                Shop / Brand Name
+                Business Name
               </label>
               <input
                 type="text"
                 required
-                value={form.shop_name}
-                onChange={(e) => setForm({ ...form, shop_name: e.target.value })}
+                minLength={2}
+                maxLength={120}
+                value={form.businessName}
+                onChange={(e) => setForm({ ...form, businessName: e.target.value })}
                 className="input-editorial disabled:opacity-50"
-                placeholder="e.g. Noor Fashion House"
+                placeholder="e.g. Sunrise Dental Clinic"
                 disabled={loading}
               />
             </div>
 
-            {/* Industry */}
+            {/* Category */}
             <div>
               <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
-                Industry Type
+                Business Type
               </label>
               <select
                 required
-                value={form.industry_type}
-                onChange={(e) => setForm({ ...form, industry_type: e.target.value })}
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
                 className="input-editorial disabled:opacity-50"
                 disabled={loading}
               >
-                <option value="" disabled>Select your industry</option>
-                {INDUSTRY_TYPES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                <option value="" disabled>Select your business type</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
               </select>
-            </div>
-
-            {/* Owner Phone */}
-            <div>
-              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
-                Owner WhatsApp Number
-              </label>
-              <input
-                type="tel"
-                required
-                value={form.owner_phone}
-                onChange={(e) => setForm({ ...form, owner_phone: e.target.value })}
-                className="input-editorial disabled:opacity-50"
-                placeholder="+91 98765 43210"
-                disabled={loading}
-              />
-            </div>
-
-            {/* Official Contact Number */}
-            <div>
-              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
-                Official Contact Number
-              </label>
-              <input
-                type="tel"
-                value={form.contact_number || ''}
-                onChange={(e) => setForm({ ...form, contact_number: e.target.value })}
-                className="input-editorial disabled:opacity-50"
-                placeholder="Voice / Landline (Optional)"
-                disabled={loading}
-              />
-            </div>
-
-            {/* Geographical Location */}
-            <div className="space-y-4">
-              <label className="block text-xs tracking-[0.2em] text-[#8B8378] uppercase mb-2">
-                Physical Store Location
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  value={form.city || ''}
-                  onChange={(e) => setForm({ ...form, city: e.target.value })}
-                  className="input-editorial disabled:opacity-50"
-                  placeholder="City / Locality"
-                  disabled={loading}
-                />
-                <input
-                  type="text"
-                  value={form.district || ''}
-                  onChange={(e) => setForm({ ...form, district: e.target.value })}
-                  className="input-editorial disabled:opacity-50"
-                  placeholder="District"
-                  disabled={loading}
-                />
-                <input
-                  type="text"
-                  value={form.state || ''}
-                  onChange={(e) => setForm({ ...form, state: e.target.value })}
-                  className="input-editorial disabled:opacity-50"
-                  placeholder="State"
-                  disabled={loading}
-                />
-                <input
-                  type="text"
-                  value={form.country || ''}
-                  onChange={(e) => setForm({ ...form, country: e.target.value })}
-                  className="input-editorial disabled:opacity-50"
-                  placeholder="Country"
-                  disabled={loading}
-                />
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="border-t border-[#E8E3DA] pt-4">
-              <p className="text-xs tracking-[0.15em] text-[#8B8378] uppercase mb-4">Account Credentials</p>
             </div>
 
             {/* Email */}
@@ -255,6 +157,7 @@ export default function RegisterPage() {
               <input
                 type="password"
                 required
+                minLength={8}
                 autoComplete="new-password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -276,7 +179,7 @@ export default function RegisterPage() {
                 value={form.confirmPassword}
                 onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
                 className="input-editorial disabled:opacity-50"
-                placeholder="Repeat your password"
+                placeholder="••••••••"
                 disabled={loading}
               />
             </div>
@@ -290,7 +193,7 @@ export default function RegisterPage() {
                 {loading ? (
                   <>
                     <Spinner />
-                    <span>PROCESSING PROFILE...</span>
+                    <span>CREATING WORKSPACE...</span>
                   </>
                 ) : (
                   'Create Workspace'
@@ -313,8 +216,7 @@ export default function RegisterPage() {
 
         {/* Terms note */}
         <p className="text-center text-xs text-[#8B8378] mt-6 leading-relaxed">
-          By creating a workspace, you agree to our terms of service.<br />
-          1 credit = 1 WhatsApp message delivered.
+          By creating a workspace, you agree to our terms of service.
         </p>
 
         {/* Version Badge */}

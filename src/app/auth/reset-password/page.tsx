@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabaseClient';
 import { Spinner } from '@/components/ui/Spinner';
 import { useToast } from '@/contexts/ToastContext';
 
@@ -16,20 +15,6 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const { showToast } = useToast();
 
-  useEffect(() => {
-    // Optional: We can check if there is an active session or hash fragment
-    // Supabase will automatically parse the access_token from the URL hash
-    // and establish the session when the user lands on this page via the recovery link.
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        // If there is no session right away, they might not have clicked a valid link
-        // However, Supabase sometimes takes a tick to process the hash fragment
-      }
-    };
-    checkSession();
-  }, []);
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -39,30 +24,30 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
 
     setLoading(true);
 
-    const { error: updateError } = await supabase.auth.updateUser({
-      password: password
-    });
+    const token = new URLSearchParams(window.location.search).get('token');
+    const res = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password }),
+    }).catch(() => null);
 
     setLoading(false);
 
-    if (updateError) {
-      setError(updateError.message);
-      showToast(updateError.message, 'error');
+    if (!res?.ok) {
+      const message = (await res?.json().catch(() => null))?.error ?? 'Unable to update password.';
+      setError(message);
+      showToast(message, 'error');
       return;
     }
 
     showToast('Password updated successfully. You can now sign in.', 'success');
-    
-    // Sign out to force re-authentication with new credentials
-    await supabase.auth.signOut();
-    
     router.push('/auth/login');
   };
 

@@ -5,14 +5,6 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '*.supabase.co',
-      },
-      {
-        protocol: 'https',
-        hostname: 'zjfsouoojhxvsvlcjusm.supabase.co',
-      },
-      {
-        protocol: 'https',
         hostname: 'broadcast.trueattendly.online',
       },
       {

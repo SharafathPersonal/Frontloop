@@ -5,13 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { APP_VERSION } from '@/lib/config';
-import { supabase } from '@/lib/supabaseClient';
-import type { LoginFormValues } from '@/types/broadcast';
 import { Spinner } from '@/components/ui/Spinner';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [form, setForm] = useState<LoginFormValues>({ email: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -20,31 +18,23 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email: form.email,
-      password: form.password,
-    });
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: form.email, password: form.password }),
+    }).catch(() => null);
 
     setLoading(false);
 
-    if (authError) {
-      setError(authError.message);
+    if (!res?.ok) {
+      const body = await res?.json().catch(() => null);
+      setError(body?.error ?? 'Unable to sign in. Please try again.');
       return;
     }
 
-    if (data.user) {
-      await fetch('/api/auth/log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          shop_id: data.user.id,
-          account_email: data.user.email,
-          action_type: 'LOGIN'
-        })
-      });
-    }
-
-    router.push('/dashboard');
+    // Only same-app dashboard paths: never an open redirect.
+    const next = new URLSearchParams(window.location.search).get('next');
+    router.push(next && /^\/dashboard(\/|$)/.test(next) ? next : '/dashboard');
     router.refresh();
   };
 
