@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 /* ============================================================
-   FRONTLOOP — Global Design System Tokens
+   FRONTLOOP: Global Design System Tokens
    ============================================================ */
 
 @theme {
@@ -15,10 +15,10 @@
   --brand-white: #FFFFFF;
   --brand-charcoal: #0F172A;
   --brand-muted: #64748B;
-  --brand-accent: #0AAF76;
-  --brand-accent-hover: #089163;
-  --hero-glow-mauve: #0AAF76;
-  --whatsapp-green: #0AAF76;
+  --brand-accent: #047857;
+  --brand-accent-hover: #065F46;
+  --hero-glow-mauve: #047857;
+  --whatsapp-green: #047857;
 }
 
 /* ============================================================
@@ -124,4 +124,17 @@
   .btn-primary:hover {
     background-color: var(--brand-accent-hover);
   }
+}
+
+@keyframes chat-pop {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-pop {
+  animation: chat-pop 0.3s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-pop { animation: none; }
 }

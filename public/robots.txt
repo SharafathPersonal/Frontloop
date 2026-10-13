@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
-Disallow: /api/
 Disallow: /dashboard/
+Disallow: /api/
+Disallow: /admin/
 
 Sitemap: https://frontloop.online/sitemap.xml
-

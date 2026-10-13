@@ -6,18 +6,24 @@ import { connectDB } from '@/server/db';
 import { Message, type MessageDoc } from '@/server/models/Message';
 import { BusinessTenant } from '@/server/models/BusinessTenant';
 import { processInboundMessageReply } from '@/server/reply-worker';
+import { SERVICE_WINDOW_MS } from '@/lib/whatsapp-window';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
+// Stop claiming new work with headroom for one in-flight reply (~40s worst case
+// across three LLM tiers and the Meta send) before the platform kills the function.
+const WALL_TIME_BUDGET_MS = 45 * 1000;
+const BATCH_SIZE = 15;
 const STALLED_PROCESSING_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 const ORPHAN_PENDING_TIMEOUT_MS = 10 * 1000; // 10 seconds
-const SERVICE_WINDOW_MS = 24 * 60 * 60 * 1000; // replies are impossible past Meta's 24h window
 
 /**
  * Sweeper cron route to self-heal stalled processing or orphan pending messages.
  * Protected by Bearer CRON_SECRET header.
  */
 export async function GET(req: NextRequest) {
+  const deadline = Date.now() + WALL_TIME_BUDGET_MS;
   const cronSecret = requireEnv('CRON_SECRET');
 
   if (!safeEqual(req.headers.get('authorization'), `Bearer ${cronSecret}`)) {
@@ -60,15 +66,21 @@ export async function GET(req: NextRequest) {
     createdAt: { $lt: pendingCutoff, $gt: windowCutoff },
   })
     .sort({ createdAt: 1 })
-    .limit(50)
+    .limit(BATCH_SIZE)
     .setOptions({ crossTenant: true })
     .lean<Array<MessageDoc & { _id: unknown }>>();
 
   const processedCount = pendingMessages.length;
   let replayedCount = 0;
   let errorCount = 0;
+  let deferredCount = 0;
 
-  for (const msg of pendingMessages) {
+  for (const [index, msg] of pendingMessages.entries()) {
+    if (Date.now() > deadline) {
+      // Left `pending`; the next sweep picks them up.
+      deferredCount = pendingMessages.length - index;
+      break;
+    }
     try {
       // Find the tenant to obtain its phoneNumberId
       const tenant = await BusinessTenant.findById(msg.tenantId).lean();
@@ -112,6 +124,7 @@ export async function GET(req: NextRequest) {
     pendingFoundCount: processedCount,
     replayedCount,
     errorCount,
+    deferredCount,
     timestamp: now.toISOString(),
   });
 }

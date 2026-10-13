@@ -2,9 +2,10 @@ import { notFound } from 'next/navigation';
 import { requireTenant } from '@/server/auth/dal';
 import { forTenant } from '@/server/repos/tenant';
 import LeadConversationClient from './lead-conversation-client';
+import { isWithinServiceWindow } from '@/lib/whatsapp-window';
 
 export const metadata = {
-  title: 'Lead Conversation — FrontLoop',
+  title: 'Lead Conversation | FrontLoop',
 };
 
 interface PageProps {
@@ -53,6 +54,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
       lead={serializedLead}
       messages={serializedMessages}
       timeZone={tenant?.timezone || 'Asia/Kolkata'}
+      serviceWindowOpen={isWithinServiceWindow(lead.lastInboundAt)}
     />
   );
 }

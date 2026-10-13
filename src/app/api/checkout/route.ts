@@ -6,7 +6,13 @@ import { connectDB } from '@/server/db';
 import { isSameOrigin, jsonError } from '@/server/http';
 import { forTenant } from '@/server/repos/tenant';
 import { User } from '@/server/models/User';
-import { getCashfreeConfig, newOrderId, type CashfreeConfig } from '@/server/billing';
+import {
+  createPendingOrder,
+  discardPendingOrder,
+  getCashfreeConfig,
+  newOrderId,
+  type CashfreeConfig,
+} from '@/server/billing';
 import { PLAN_CONFIG, isPlanKey } from '@/lib/plans';
 
 export const dynamic = 'force-dynamic';
@@ -59,6 +65,8 @@ export async function POST(req: NextRequest) {
     order_tags: { tenantId, plan },
   };
 
+  await createPendingOrder(orderId, tenantId, plan);
+
   try {
     const cfRes = await fetch(config.ordersUrl, {
       method: 'POST',
@@ -75,6 +83,7 @@ export async function POST(req: NextRequest) {
     const cfData = await cfRes.json().catch(() => null);
     if (!cfRes.ok || !cfData?.payment_session_id) {
       console.error('[Cashfree Checkout] Order creation failed', cfRes.status, cfData?.message);
+      await discardPendingOrder(orderId, tenantId);
       return jsonError('Failed to create payment order', 502);
     }
 
@@ -85,6 +94,7 @@ export async function POST(req: NextRequest) {
       mode: config.mode,
     });
   } catch (err: unknown) {
+    // A timeout may still have created the order upstream; keep the snapshot so a payment can be honoured.
     console.error('[Cashfree Checkout] Network failure', err instanceof Error ? err.message : err);
     return jsonError('Payment gateway communication timed out', 504);
   }

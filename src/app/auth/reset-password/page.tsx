@@ -24,8 +24,8 @@ export default function ResetPasswordPage() {
           </p>
           <p className="text-sm text-[#64748B] leading-relaxed">
             Contact the FrontLoop team at{' '}
-            <a href="mailto:support@frontloop.online" className="text-[#0F172A] underline underline-offset-2">
-              support@frontloop.online
+            <a href="mailto:trueattendly@gmail.com" className="text-[#0F172A] underline underline-offset-2">
+              trueattendly@gmail.com
             </a>{' '}
             from your registered email address to reset your password.
           </p>
@@ -34,7 +34,7 @@ export default function ResetPasswordPage() {
         <div className="text-center mt-6">
           <Link
             href="/auth/login"
-            className="text-xs tracking-[0.15em] text-[#64748B] hover:text-[#0AAF76] transition-colors uppercase"
+            className="text-xs tracking-[0.15em] text-[#64748B] hover:text-[#047857] transition-colors uppercase"
           >
             ← Back to sign in
           </Link>

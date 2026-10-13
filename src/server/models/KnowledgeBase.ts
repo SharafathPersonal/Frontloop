@@ -1,5 +1,6 @@
 import { Schema, model, models, type InferSchemaType, type Model } from 'mongoose';
 import { tenantGuard } from './plugins/tenant-guard';
+import { DEFAULT_HANDOFF_KEYWORDS } from '../../lib/bot-defaults';
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const MAX_KB_CHARS = 60_000; // full-KB prompt injection budget (~15k tokens)
@@ -16,7 +17,7 @@ const SlotSchema = new Schema(
 
 const KnowledgeBaseSchema = new Schema(
   {
-    tenantId: { type: Schema.Types.ObjectId, ref: 'BusinessTenant', required: true },
+    tenantId: { type: Schema.Types.ObjectId, ref: 'BusinessTenant', required: true, immutable: true },
 
     faqs: [
       {
@@ -68,7 +69,7 @@ const KnowledgeBaseSchema = new Schema(
         maxlength: 500,
         default: 'Thanks for reaching out! Our team will get back to you shortly.',
       },
-      handoffKeywords: { type: [String], default: ['human', 'agent', 'call me'] },
+      handoffKeywords: { type: [String], default: () => [...DEFAULT_HANDOFF_KEYWORDS] },
       captureFields: { type: [String], enum: CAPTURE_FIELDS, default: ['name', 'requirement'] },
     },
 

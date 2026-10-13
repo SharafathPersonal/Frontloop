@@ -10,6 +10,8 @@ import { generateAIReply } from './ai-pipeline';
 import { describeBusinessHours } from './business-hours';
 import { sendWhatsAppText } from './meta-graph';
 import { getTenantByPhoneNumberId } from './tenant-resolver';
+import { resolveHandoffKeywords } from '@/lib/bot-defaults';
+import { isWithinServiceWindow } from '@/lib/whatsapp-window';
 
 export interface ProcessPendingMessageParams {
   messageId: string; // Message._id (Mongo string)
@@ -18,7 +20,6 @@ export interface ProcessPendingMessageParams {
   phoneNumberId: string;
 }
 
-const SERVICE_WINDOW_MS = 24 * 60 * 60 * 1000;
 const HISTORY_LIMIT = 20;
 const MAX_REPLY_ATTEMPTS = 3;
 const BILLABLE_STATUSES = ['trialing', 'active'] as const;
@@ -59,7 +60,7 @@ export async function processInboundMessageReply(params: ProcessPendingMessagePa
     return;
   }
 
-  // 2. Gates that cost nothing — evaluated before any quota or rate budget is spent.
+  // 2. Gates that cost nothing, evaluated before any quota or rate budget is spent.
   const tenant = await getTenantByPhoneNumberId(phoneNumberId);
   if (!tenant || !tenant.accessToken) {
     await finish('failed', 'Tenant not found or WhatsApp access token missing');
@@ -79,13 +80,13 @@ export async function processInboundMessageReply(params: ProcessPendingMessagePa
     await finish('skipped', 'Bot paused for lead (agent takeover)');
     return;
   }
-  if (lead.lastInboundAt && Date.now() - new Date(lead.lastInboundAt).getTime() > SERVICE_WINDOW_MS) {
+  if (lead.lastInboundAt && !isWithinServiceWindow(lead.lastInboundAt)) {
     await finish('skipped', 'Customer 24-hour service window expired');
     return;
   }
 
   // Burst coalescing: when a customer sends several messages in a row, only the
-  // newest gets a reply — it sees the earlier ones in its history.
+  // newest gets a reply; it sees the earlier ones in its history.
   const newerInbound = await Message.exists({
     tenantId: tenantObjectId,
     leadId: leadObjectId,
@@ -100,12 +101,10 @@ export async function processInboundMessageReply(params: ProcessPendingMessagePa
   const kb = await KnowledgeBase.findOne({ tenantId: tenantObjectId }).lean();
 
   const incomingText = claimedMessage.body || '';
-  const handoffKeywords = kb?.bot?.handoffKeywords || ['human', 'agent', 'call me'];
+  const handoffKeywords = resolveHandoffKeywords(kb?.bot?.handoffKeywords);
   const hasHandoffRequest = handoffKeywords.some(
     // Unicode-aware word boundary: `\b` is ASCII-only and never matches Malayalam/Devanagari keywords.
-    (kw) =>
-      kw.trim() &&
-      new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegex(kw.trim())}($|[^\\p{L}\\p{N}])`, 'iu').test(incomingText),
+    (kw) => new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegex(kw)}($|[^\\p{L}\\p{N}])`, 'iu').test(incomingText),
   );
   if (hasHandoffRequest) {
     await Lead.updateOne({ _id: leadObjectId, tenantId: tenantObjectId }, { $set: { botPaused: true } });
@@ -123,7 +122,7 @@ export async function processInboundMessageReply(params: ProcessPendingMessagePa
     return;
   }
 
-  // 4. Atomic quota reservation — concurrent workers can never overshoot the plan,
+  // 4. Atomic quota reservation: concurrent workers can never overshoot the plan,
   // and a lapsed paid period stops replies (trials carry no period end).
   const reservation = await BusinessTenant.updateOne(
     {
@@ -221,14 +220,26 @@ export async function processInboundMessageReply(params: ProcessPendingMessagePa
       return;
     }
     delivered = true;
-    quotaHeld = false; // the reply was sent; the reservation is now spent
+    const usedFallback = aiResult.providerUsed === 'fallback';
+    if (usedFallback) {
+      // Every LLM tier failed and the canned reply went out: never bill the tenant for it.
+      console.error(`[AI_DOWN] Fallback triggered across all LLM tiers (tenant ${tenantId}, message ${messageId})`);
+      await releaseQuota();
+    } else {
+      quotaHeld = false; // the AI reply was sent; the reservation is now spent
+    }
 
     // 7. Persist. Mark the inbound done first: if we crash after this point the
     // sweeper must not resend a reply the customer already received.
     const sentAt = new Date();
     await Message.updateOne(
       { _id: messageObjectId, tenantId: tenantObjectId },
-      { $set: { replyState: 'done', replyNote: `Replied via ${aiResult.providerUsed}` } },
+      {
+        $set: {
+          replyState: 'done',
+          replyNote: usedFallback ? 'AI provider unavailable: fallback sent' : `Replied via ${aiResult.providerUsed}`,
+        },
+      },
     );
 
     await Message.create({

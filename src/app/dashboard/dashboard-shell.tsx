@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { BrandLogo } from '@/components/ui/BrandLogo';
@@ -52,6 +52,18 @@ export default function DashboardShell({ tenant, children }: { tenant: ShellTena
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const closeMenuRef = useRef<HTMLButtonElement>(null);
+
+  // Open drawer: move focus into it and let Escape close it.
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    closeMenuRef.current?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSidebarOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [sidebarOpen]);
 
   const handleSignOut = async () => {
     setIsLogoutConfirmOpen(false);
@@ -91,8 +103,8 @@ export default function DashboardShell({ tenant, children }: { tenant: ShellTena
               onClick={() => setSidebarOpen(false)}
               className={`flex items-center gap-3 py-2.5 px-3 rounded-lg transition-all text-xs tracking-[0.15em] uppercase min-w-0 ${
                 active
-                  ? 'bg-[#ECFDF5] text-[#089163] font-semibold'
-                  : 'text-[#64748B] hover:text-[#0AAF76]'
+                  ? 'bg-[#ECFDF5] text-[#065F46] font-semibold'
+                  : 'text-[#64748B] hover:text-[#047857]'
               }`}
             >
               {link.icon}
@@ -102,14 +114,14 @@ export default function DashboardShell({ tenant, children }: { tenant: ShellTena
         })}
       </nav>
 
-      {/* Footer — Sign Out */}
+      {/* Footer: Sign Out */}
       <div className="px-4 py-5 border-t border-[#E2E8F0] flex-shrink-0">
         <p className="text-[10px] tracking-[0.15em] text-[#64748B] uppercase mb-3 px-2 truncate">
           {tenant.category}
         </p>
         <button
           onClick={() => setIsLogoutConfirmOpen(true)}
-          className="flex items-center gap-3 w-full py-2.5 px-3 rounded-lg text-xs tracking-[0.15em] uppercase text-[#64748B] hover:text-[#0AAF76] transition-colors mb-4"
+          className="flex items-center gap-3 w-full py-2.5 px-3 rounded-lg text-xs tracking-[0.15em] uppercase text-[#64748B] hover:text-[#047857] transition-colors mb-4"
         >
           <LogOut size={14} strokeWidth={1.5} />
           Sign Out
@@ -137,17 +149,27 @@ export default function DashboardShell({ tenant, children }: { tenant: ShellTena
         </aside>
 
         {/* Mobile Sidebar Overlay */}
-        <div className={`fixed inset-0 z-50 lg:hidden transition-opacity duration-300 ${sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        {/* `inert` while closed: the invisible drawer's links must not be reachable by Tab or screen readers. */}
+        <div
+          inert={!sidebarOpen}
+          className={`fixed inset-0 z-50 lg:hidden transition-opacity duration-300 ${sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        >
           <div
             className={`absolute inset-0 bg-[#0F172A]/40 backdrop-blur-sm transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}
             onClick={() => setSidebarOpen(false)}
           />
-          <aside className={`absolute left-0 top-0 bottom-0 w-80 max-w-[280px] sm:max-w-xs bg-[#FFFFFF] border-r border-[#E2E8F0] overflow-y-auto z-10 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <aside
+            id="mobile-navigation"
+            aria-label="Navigation menu"
+            className={`absolute left-0 top-0 bottom-0 w-80 max-w-[280px] sm:max-w-xs bg-[#FFFFFF] border-r border-[#E2E8F0] overflow-y-auto z-10 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
             <button
+              ref={closeMenuRef}
+              type="button"
               onClick={() => setSidebarOpen(false)}
-              className="absolute top-4 right-4 text-[#64748B] hover:text-[#0AAF76] transition-colors p-1.5"
+              aria-label="Close menu"
+              className="absolute top-4 right-4 text-[#64748B] hover:text-[#047857] transition-colors p-1.5"
             >
-              <X size={18} />
+              <X size={18} aria-hidden="true" />
             </button>
             {sidebarJsx}
           </aside>
@@ -169,6 +191,8 @@ export default function DashboardShell({ tenant, children }: { tenant: ShellTena
               onClick={() => setSidebarOpen(true)}
               className="p-1.5 text-[#64748B] hover:text-[#0F172A] hover:bg-[#0F172A]/5 rounded-md transition-all shrink-0"
               aria-label="Open navigation menu"
+              aria-expanded={sidebarOpen}
+              aria-controls="mobile-navigation"
             >
               <Menu size={20} />
             </button>

@@ -9,7 +9,7 @@ export type LeadIntent = (typeof LEAD_INTENTS)[number];
 
 const LeadSchema = new Schema(
   {
-    tenantId: { type: Schema.Types.ObjectId, ref: 'BusinessTenant', required: true },
+    tenantId: { type: Schema.Types.ObjectId, ref: 'BusinessTenant', required: true, immutable: true },
     phone: { type: String, required: true, match: /^\d{8,15}$/ }, // E.164 digits, no '+'
     profileName: { type: String, trim: true, maxlength: 120 }, // WhatsApp contacts[].profile.name
     name: { type: String, trim: true, maxlength: 120 }, // AI-extracted or agent-edited
@@ -30,6 +30,7 @@ LeadSchema.index({ tenantId: 1, phone: 1 }, { unique: true }); // upsert key + p
 LeadSchema.index({ tenantId: 1, status: 1, lastMessageAt: -1, _id: -1 }); // filtered dashboard + cursor
 LeadSchema.index({ tenantId: 1, lastMessageAt: -1, _id: -1 }); // unfiltered dashboard + cursor
 LeadSchema.index({ tenantId: 1, createdAt: -1 }); // CSV export by date range
+LeadSchema.index({ tenantId: 1, botPaused: 1, lastInboundAt: -1, _id: -1 }); // "Needs Human" queue + cursor
 
 LeadSchema.plugin(tenantGuard);
 

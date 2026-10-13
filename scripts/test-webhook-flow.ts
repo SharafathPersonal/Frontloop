@@ -1,6 +1,6 @@
 /**
  * End-to-end harness for the WhatsApp ingestion + reply pipeline against a
- * running app (`npm run dev` or `npm start`) — no Meta, no ngrok.
+ * running app (`npm run dev` or `npm start`), no Meta, no ngrok.
  *
  *   npm run db:seed && npm run test:webhook
  *   npm run test:webhook -- --cleanup     # delete the synthetic lead afterwards
@@ -27,7 +27,7 @@ const TERMINAL_STATES = ['done', 'skipped', 'failed'];
 let failures = 0;
 function check(ok: boolean, label: string, detail: string | null = '') {
   if (!ok) failures++;
-  console.log(`  ${ok ? '✓' : '✗'} ${label}${detail ? ` — ${detail}` : ''}`);
+  console.log(`  ${ok ? '✓' : '✗'} ${label}${detail ? `: ${detail}` : ''}`);
 }
 
 const sign = (body: string, secret: string) => `sha256=${createHmac('sha256', secret).update(body).digest('hex')}`;
@@ -83,7 +83,7 @@ async function main() {
   const tenant = await BusinessTenant.findOne({ slug: SEED_TENANT_SLUG }).lean();
   const phoneNumberId = tenant?.whatsapp?.phoneNumberId;
   if (!tenant || !phoneNumberId) {
-    throw new Error(`Tenant "${SEED_TENANT_SLUG}" with a phone_number_id not found — run \`npm run db:seed\` first.`);
+    throw new Error(`Tenant "${SEED_TENANT_SLUG}" with a phone_number_id not found; run \`npm run db:seed\` first.`);
   }
 
   // Fresh synthetic customer per run so "new lead" assertions are deterministic.
@@ -150,7 +150,7 @@ async function main() {
   check(
     Boolean(state && TERMINAL_STATES.includes(state)),
     'worker reached a terminal state (no tenantGuard or runtime crash)',
-    state === 'processing' ? 'stuck in "processing" — check server logs' : state,
+    state === 'processing' ? 'stuck in "processing"; check server logs' : state,
   );
   check(state === 'done', 'replyState "done"', state === 'done' ? final?.replyNote ?? '' : `${state}: ${final?.replyNote ?? 'no note'}`);
 
@@ -172,7 +172,7 @@ async function main() {
     console.log('\nCleaned up synthetic lead and messages.');
   }
 
-  console.log(`\n${failures === 0 ? 'PASS' : `FAIL — ${failures} check(s) failed`}`);
+  console.log(`\n${failures === 0 ? 'PASS' : `FAIL: ${failures} check(s) failed`}`);
   process.exitCode = failures === 0 ? 0 : 1;
 }
 

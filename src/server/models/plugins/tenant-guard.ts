@@ -1,4 +1,4 @@
-import type { Aggregate, Query, Schema } from 'mongoose';
+import { Types, type Aggregate, type Query, type Schema } from 'mongoose';
 
 type CrossTenantOpt = { crossTenant?: boolean };
 
@@ -17,11 +17,23 @@ const QUERY_OPS = [
   'distinct',
 ] as const;
 
-const hasTenant = (obj: unknown) => (obj as { tenantId?: unknown } | null | undefined)?.tenantId != null;
+const OBJECT_ID_HEX = /^[a-f0-9]{24}$/i;
+
+/**
+ * True only for a concrete tenant id. Operator objects such as `{ $ne: null }` or
+ * `{ $exists: true }` are non-null but match every tenant, so they are rejected.
+ */
+const hasTenant = (obj: unknown) => {
+  const tenantId = (obj as { tenantId?: unknown } | null | undefined)?.tenantId;
+  return tenantId instanceof Types.ObjectId || (typeof tenantId === 'string' && OBJECT_ID_HEX.test(tenantId));
+};
+
+// Stages that read another collection, bypassing the first-stage tenant $match.
+const CROSS_COLLECTION_STAGES = ['$lookup', '$unionWith', '$graphLookup'];
 
 /**
  * Rejects any query on a tenant-owned model whose filter lacks `tenantId`.
- * `findById(id)` therefore throws — callers must use `findOne({ _id, tenantId })`,
+ * `findById(id)` therefore throws; callers must use `findOne({ _id, tenantId })`,
  * which closes IDOR by construction.
  *
  * Cross-tenant system jobs (sweepers, billing) opt out explicitly and greppably:
@@ -38,9 +50,13 @@ export function tenantGuard(schema: Schema) {
 
   schema.pre('aggregate', function (this: Aggregate<unknown>) {
     if ((this.options as CrossTenantOpt).crossTenant) return;
-    const first = this.pipeline()[0] as { $match?: unknown } | undefined;
-    if (!hasTenant(first?.$match)) {
+    const pipeline = this.pipeline() as unknown as Array<Record<string, unknown>>;
+    if (!hasTenant(pipeline[0]?.$match)) {
       throw new Error('tenantGuard: aggregate pipeline must start with { $match: { tenantId } }');
+    }
+    const crossStage = pipeline.find((stage) => CROSS_COLLECTION_STAGES.some((op) => op in stage));
+    if (crossStage) {
+      throw new Error(`tenantGuard: ${Object.keys(crossStage)[0]} requires { crossTenant: true }`);
     }
   });
 

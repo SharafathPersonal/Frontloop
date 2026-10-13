@@ -8,13 +8,13 @@ const base64Key32 = z
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
-  // Phase 0 — required
+  // Phase 0: required
   MONGODB_URI: z.string().regex(/^mongodb(\+srv)?:\/\//, 'must be a mongodb:// or mongodb+srv:// URI'),
   MONGODB_DB: z.string().min(1).default('frontloop'),
   AUTH_SECRET: z.string().min(32, 'must be at least 32 characters'),
   TOKEN_ENC_KEY: base64Key32,
 
-  // Phase 1+ — becomes required when the webhook / AI pipeline lands
+  // Phase 1+: becomes required when the webhook / AI pipeline lands
   META_APP_ID: z.string().optional(),
   META_APP_SECRET: z.string().optional(),
   META_VERIFY_TOKEN: z.string().min(24).optional(),
@@ -25,7 +25,7 @@ const EnvSchema = z.object({
   GROQ_API_KEY: z.string().optional(),
   CEREBRAS_API_KEY: z.string().optional(),
 
-  // Phase 3 — Cashfree Billing
+  // Phase 3: Cashfree Billing
   CASHFREE_APP_ID: z.string().optional(),
   CASHFREE_SECRET_KEY: z.string().optional(),
   CASHFREE_API_VERSION: z.string().default('2023-08-01'),
@@ -40,7 +40,7 @@ let cached: Env | null = null;
 /**
  * Validated on first access rather than at import time, so `next build` can
  * evaluate modules without production secrets present. Any missing or malformed
- * variable throws — there are no fallback defaults for secrets.
+ * variable throws; there are no fallback defaults for secrets.
  */
 export function getEnv(): Env {
   if (cached) return cached;

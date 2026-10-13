@@ -113,7 +113,7 @@ const GRAPH_TIMEOUT_MS = 10000;
 function describeGraphError(error: MetaGraphError | undefined, status: number): string {
   switch (error?.code) {
     case 190:
-      return 'Meta rejected the access token. It is invalid or expired — generate a permanent System User token and try again.';
+      return 'Meta rejected the access token. It is invalid or expired. Generate a permanent System User token and try again.';
     case 10:
     case 200:
       return 'The access token is missing WhatsApp permissions. Grant whatsapp_business_messaging and whatsapp_business_management to the System User.';

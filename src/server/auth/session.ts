@@ -13,6 +13,16 @@ export async function setSessionCookie(claims: SessionClaims) {
   });
 }
 
+/**
+ * Overwrites rather than `cookies().delete()`: delete() omits `Secure`, and browsers
+ * ignore any `__Host-` Set-Cookie without it, so the session would survive logout.
+ */
 export async function clearSessionCookie() {
-  (await cookies()).delete(SESSION_COOKIE);
+  (await cookies()).set(SESSION_COOKIE, '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  });
 }

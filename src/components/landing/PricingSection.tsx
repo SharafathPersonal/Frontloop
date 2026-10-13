@@ -1,159 +1,103 @@
 import Link from 'next/link';
 import { Check, ArrowRight, ShieldCheck } from 'lucide-react';
-import { PLAN_CONFIG } from '@/lib/plans';
+import { PLAN_CONFIG, PLAN_FEATURES, PLAN_KEYS, TRIAL_CONFIG } from '@/lib/plans';
 
 const formatINR = (value: number) => value.toLocaleString('en-IN');
 
 export function PricingSection() {
-  const { starter, growth } = PLAN_CONFIG;
-
   return (
     <section id="pricing" className="py-24 bg-[#F8FAFC] border-t border-[#E2E8F0] text-[#0F172A] relative">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <span className="text-[11px] font-bold uppercase tracking-widest text-[#64748B] bg-[#F8FAFC] px-3.5 py-1.5 rounded-full border border-[#E2E8F0]">
-            Transparent Done-For-You Pricing
+            Transparent Monthly Pricing
           </span>
           <h2 className="serif-headline text-2xl sm:text-4xl text-[#0F172A] mt-4 tracking-tight">
             Stop Paying Salary For After-Hours Inquiries
           </h2>
           <p className="text-sm text-[#64748B] mt-3">
-            Predictable flat-fee automation with zero per-message markups or surprise setup fees.
+            Flat monthly plans in INR with no setup fees. Every plan includes the full product; plans differ by how many
+            AI replies you need. Start with a {TRIAL_CONFIG.days}-day free trial ({formatINR(TRIAL_CONFIG.replyQuota)}{' '}
+            AI replies), no card required.
           </p>
         </div>
 
-        {/* Pricing Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto items-stretch">
-          {/* Starter Plan */}
-          <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-3xl p-8 flex flex-col justify-between hover:border-[#0AAF76] transition-all shadow-sm">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#64748B] bg-[#F8FAFC] px-3 py-1 rounded-lg border border-[#E2E8F0]">
-                  {starter.name}
-                </span>
-                <span className="text-xs text-[#64748B] font-medium">Boutique &amp; Single Clinic</span>
-              </div>
-
-              <div className="mt-6 flex items-baseline gap-1.5">
-                <span className="text-4xl sm:text-5xl font-extrabold text-[#0F172A]">
-                  ₹{formatINR(starter.priceINR)}
-                </span>
-                <span className="text-xs text-[#64748B]">/ month</span>
-              </div>
-
-              <p className="text-xs text-[#64748B] mt-2">
-                Ideal for solo doctors, boutique salons, and neighborhood academies starting with WhatsApp automation.
-              </p>
-
-              <div className="mt-8 space-y-3.5 text-xs text-[#0F172A]">
-                <div className="flex items-center gap-2.5">
-                  <Check size={16} className="text-emerald-600 shrink-0" />
-                  <span><strong>1 Connected WhatsApp Business Number</strong></span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Check size={16} className="text-emerald-600 shrink-0" />
-                  <span><strong>{formatINR(starter.replyQuota)} AI Conversations</strong> per month</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Check size={16} className="text-emerald-600 shrink-0" />
-                  <span>Complete Custom Knowledge Base (Services &amp; FAQs)</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Check size={16} className="text-emerald-600 shrink-0" />
-                  <span>Bilingual Conversational Understanding (English &amp; Manglish)</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Check size={16} className="text-emerald-600 shrink-0" />
-                  <span>1-Click Human Agent Takeover Mode</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Check size={16} className="text-emerald-600 shrink-0" />
-                  <span>Lead Pipeline Dashboard &amp; CSV Export</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8 pt-6 border-t border-[#E2E8F0]">
-              <Link
-                href="/auth/register"
-                className="w-full inline-flex items-center justify-center gap-2 bg-[#F8FAFC] hover:bg-[#E2E8F0] text-[#0F172A] py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border border-[#E2E8F0]"
+        <ul className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
+          {PLAN_KEYS.map((key) => {
+            const plan = PLAN_CONFIG[key];
+            return (
+              <li
+                key={key}
+                className={`bg-[#FFFFFF] rounded-3xl p-7 flex flex-col justify-between relative ${
+                  plan.featured
+                    ? 'border-2 border-[#0F172A] shadow-md'
+                    : 'border border-[#E2E8F0] hover:border-[#047857] transition-all shadow-sm'
+                }`}
               >
-                Start 14-Day Free Evaluation
-              </Link>
-              <p className="text-[10px] text-[#64748B] text-center mt-2">No credit card required to start trial</p>
-            </div>
-          </div>
+                {plan.featured && (
+                  <span className="absolute -top-3.5 right-8 bg-[#0F172A] text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">
+                    Most Popular
+                  </span>
+                )}
 
-          {/* Growth Plan (Featured) */}
-          <div className="bg-[#FFFFFF] border-2 border-[#0F172A] rounded-3xl p-8 flex flex-col justify-between relative shadow-md">
-            <span className="absolute -top-3.5 right-8 bg-[#0F172A] text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">
-              Most Popular
-            </span>
+                <div>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#0F172A] bg-[#F8FAFC] px-3 py-1 rounded-lg border border-[#E2E8F0]">
+                      {plan.name}
+                    </h3>
+                    <span className="text-xs text-[#64748B] font-medium">{plan.audience}</span>
+                  </div>
 
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#0F172A] bg-[#F8FAFC] px-3 py-1 rounded-lg border border-[#E2E8F0]">
-                  {growth.name}
-                </span>
-                <span className="text-xs text-[#64748B] font-medium">Multi-Doctor &amp; Busy Centers</span>
-              </div>
+                  <p className="mt-6 flex items-baseline gap-1.5">
+                    <span className="text-4xl font-extrabold text-[#0F172A]">₹{formatINR(plan.priceINR)}</span>
+                    <span className="text-xs text-[#64748B]">/ month</span>
+                  </p>
 
-              <div className="mt-6 flex items-baseline gap-1.5">
-                <span className="text-4xl sm:text-5xl font-extrabold text-[#0F172A]">
-                  ₹{formatINR(growth.priceINR)}
-                </span>
-                <span className="text-xs text-[#64748B]">/ month</span>
-              </div>
+                  <p className="text-xs text-[#64748B] mt-2">{plan.tagline}</p>
 
-              <p className="text-xs text-[#64748B] mt-2">
-                For busy clinics, popular training institutes, and multi-chair studios handling heavy daily inquiry volumes.
-              </p>
+                  <ul className="mt-8 space-y-3.5 text-xs text-[#0F172A]">
+                    <li className="flex items-start gap-2.5">
+                      <Check size={16} className="text-[#047857] shrink-0" aria-hidden="true" />
+                      <span>
+                        <strong>{formatINR(plan.replyQuota)} AI Replies</strong> per month
+                      </span>
+                    </li>
+                    {[...PLAN_FEATURES, ...plan.extras].map((feature) => (
+                      <li key={feature} className="flex items-start gap-2.5">
+                        <Check size={16} className="text-[#047857] shrink-0" aria-hidden="true" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-              <div className="mt-8 space-y-3.5 text-xs text-[#0F172A]">
-                <div className="flex items-center gap-2.5">
-                  <Check size={16} className="text-emerald-600 shrink-0" />
-                  <span><strong>1 Connected WhatsApp Business Number</strong></span>
+                <div className="mt-8 pt-6 border-t border-[#E2E8F0]">
+                  <Link
+                    href="/auth/register"
+                    className={`w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                      plan.featured
+                        ? 'bg-[#047857] hover:bg-[#065F46] text-white shadow-sm'
+                        : 'bg-[#F8FAFC] hover:bg-[#E2E8F0] text-[#0F172A] border border-[#E2E8F0]'
+                    }`}
+                  >
+                    Start {TRIAL_CONFIG.days}-Day Free Trial {plan.featured && <ArrowRight size={14} aria-hidden="true" />}
+                  </Link>
+                  <p className="text-[10px] text-[#64748B] text-center mt-2">
+                    Choose {plan.name} from Settings whenever you are ready
+                  </p>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <Check size={16} className="text-emerald-600 shrink-0" />
-                  <span><strong>{formatINR(growth.replyQuota)} AI Conversations</strong> per month</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Check size={16} className="text-emerald-600 shrink-0" />
-                  <span>Priority Multi-Tier Engine (Gemini 1.5 + Groq LLaMA)</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Check size={16} className="text-emerald-600 shrink-0" />
-                  <span>Automated Intent Classification (Booking / Pricing / Query)</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Check size={16} className="text-emerald-600 shrink-0" />
-                  <span>Custom Brand Persona &amp; Tone Engineering</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Check size={16} className="text-emerald-600 shrink-0" />
-                  <span>Dedicated WhatsApp Onboarding &amp; Catalog Import Support</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8 pt-6 border-t border-[#E2E8F0]">
-              <Link
-                href="/auth/register"
-                className="w-full inline-flex items-center justify-center gap-2 bg-[#0AAF76] hover:bg-[#089163] text-white py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm"
-              >
-                Get Started With Growth <ArrowRight size={14} />
-              </Link>
-              <p className="text-[10px] text-[#64748B] text-center mt-2">Done-for-you catalog setup included</p>
-            </div>
-          </div>
-        </div>
+              </li>
+            );
+          })}
+        </ul>
 
         {/* Meta Cost Policy Disclosure */}
         <div className="mt-12 max-w-3xl mx-auto bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-4 flex items-center gap-3 text-xs text-[#64748B] shadow-sm">
-          <ShieldCheck size={20} className="text-emerald-600 shrink-0" />
+          <ShieldCheck size={20} className="text-[#047857] shrink-0" aria-hidden="true" />
           <span>
-            <strong>Official Meta WhatsApp Cloud API Compliant:</strong> Replies within standard 24-hour customer service windows are included in your subscription. Zero hidden markups per inbound response.
+            <strong>Official Meta WhatsApp Cloud API:</strong> Replies within WhatsApp&apos;s standard 24-hour customer
+            service window are included in your subscription. Each automated AI reply counts once against your monthly
+            allowance; staff replies from the dashboard do not.
           </span>
         </div>
       </div>

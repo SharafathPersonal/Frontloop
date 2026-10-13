@@ -3,7 +3,9 @@
 > FrontLoop is an autonomous B2B WhatsApp AI lead and business agent for small and medium businesses (SMBs): healthcare clinics, coaching and educational institutes, salons, restaurants and local service providers. It provides an always-on AI front desk over the official Meta WhatsApp Cloud API.
 
 Website: https://frontloop.online
-Support: support@frontloop.online
+Support: trueattendly@gmail.com
+WhatsApp & phone: +91 9400160928
+Location: Calicut, Kerala, India
 
 ---
 
@@ -12,8 +14,8 @@ Support: support@frontloop.online
 Customers message local businesses on WhatsApp at any hour, often after the front desk has closed. FrontLoop replies on the business's behalf, around the clock:
 
 - **Instant 24/7 replies.** Every inquiry is acknowledged and answered immediately, including nights, weekends and holidays.
-- **Answers from the business's own knowledge base.** The AI answers questions about services, doctor or trainer timings, course fees, prices, operating hours and appointments using only the information the business has configured.
-- **Lead capture.** Customer name, phone number, intent and requirement (for example a preferred slot or the service they want) are extracted into a structured lead pipeline.
+- **Answers from the business's own knowledge base.** The AI answers questions about services, doctor or trainer timings, course fees, prices and operating hours using only the information the business has configured. It does not book appointments; it captures the request for staff to confirm.
+- **Lead capture.** Customer name, phone number, intent and requirement (for example the service they want) are captured into a structured lead pipeline.
 - **Human handoff.** When a customer asks for a person, or the conversation needs personal attention, staff can take over. A one-click "human takeover" control pauses the bot on that conversation so staff can handle it.
 - **Bilingual understanding.** The assistant understands conversational English and mixed regional phrasing such as Manglish (English-Malayalam).
 
@@ -43,7 +45,7 @@ Answers are generated only from the business's verified knowledge base. If a que
 - Staff can add internal notes to each lead and review the full conversation timeline.
 
 ### Human takeover
-Each conversation has a bot on/off control. While the bot is paused, FrontLoop stops sending automated replies for that customer.
+Each conversation has a bot on/off control. While the bot is paused, FrontLoop stops sending automated replies for that customer, and staff reply from the dashboard within WhatsApp's 24-hour customer service window. Paused chats are grouped under a Needs Human filter.
 
 ### Reply quota
 Each plan includes a monthly allowance of AI replies. The dashboard shows replies used against the plan quota for the current cycle.
@@ -76,5 +78,5 @@ Replies within WhatsApp's standard 24-hour customer service window are included 
 
 1. Create a workspace at https://frontloop.online/auth/register.
 2. Add services, prices, operating hours and FAQs to the knowledge base.
-3. Connect the business's WhatsApp Business number (contact support@frontloop.online for onboarding help).
+3. Connect the business's WhatsApp Business number (contact trueattendly@gmail.com for onboarding help).
 4. Review captured leads and conversations in the dashboard, and take over any conversation when needed.

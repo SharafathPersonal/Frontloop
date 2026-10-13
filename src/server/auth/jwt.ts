@@ -32,7 +32,7 @@ export function signJwt(claims: SessionClaims): Promise<string> {
     .sign(secretKey());
 }
 
-/** Signature + expiry check only. Returns null on any failure — never throws for bad tokens. */
+/** Signature + expiry check only. Returns null on any failure; never throws for bad tokens. */
 export async function verifyJwt(token: string | undefined): Promise<SessionClaims | null> {
   if (!token) return null;
   try {

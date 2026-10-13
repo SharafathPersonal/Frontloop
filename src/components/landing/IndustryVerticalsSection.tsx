@@ -16,8 +16,8 @@ interface Vertical {
   icon: typeof Stethoscope;
   headline: string;
   description: string;
-  roiStat: string;
-  roiLabel: string;
+  highlight: string;
+  highlightLabel: string;
   capabilities: string[];
   mockChat: {
     customer: string;
@@ -25,26 +25,28 @@ interface Vertical {
   };
 }
 
+// Capabilities describe what the bot does from the business's own knowledge base:
+// it answers, qualifies and captures. It does not book, lock slots, or take payments.
 const VERTICALS: Vertical[] = [
   {
     id: 'healthcare',
     name: 'Clinics & Doctors',
     badge: 'Healthcare & Dental',
     icon: Stethoscope,
-    headline: 'Book Patient Slots While The Reception Sleeps',
+    headline: 'Answer Patient Questions While The Reception Is Closed',
     description:
-      'Patients message late at night after work when symptoms peak. FrontLoop answers doctor specialties, checks schedule availability, quotes consultation fees, and captures patient phone & reason.',
-    roiStat: '74%',
-    roiLabel: 'After-hours inquiries converted into morning clinic appointments',
+      'Patients often message late at night after work. FrontLoop answers doctor timings and consultation fees from your knowledge base, captures the patient\'s name and reason for visit, and leaves the confirmation to your front desk.',
+    highlight: '24/7',
+    highlightLabel: 'Doctor timings and consultation fees answered, even after the clinic closes',
     capabilities: [
-      'Doctors roster & duty timings lookup',
-      'Consultation fees & scan price quotes',
-      'Direct clinic address & location pin dispatch',
-      'Emergency escalation to on-call duty doctor',
+      'Doctor timings & duty hours from your schedule',
+      'Consultation and scan fees from your price list',
+      'Clinic address & directions shared as text',
+      'Urgent or complex requests handed to your staff',
     ],
     mockChat: {
       customer: 'Hi doctor, Dr. Ananya available tomorrow evening for pediatric checkup? What is the fee?',
-      bot: 'Hello! Yes, Dr. Ananya is at the clinic tomorrow from 5:30 PM to 8:30 PM. The consultation fee is ₹500.\n\nWould you like me to reserve a 6:15 PM slot for your child?',
+      bot: 'Hello! Dr. Ananya sees patients tomorrow from 5:30 PM to 8:30 PM. The consultation fee is ₹500.\n\nMay I have your child\'s name and a preferred time? Our front desk will confirm the slot with you.',
     },
   },
   {
@@ -52,20 +54,20 @@ const VERTICALS: Vertical[] = [
     name: 'Coaching & Institutes',
     badge: 'EdTech & Tuition',
     icon: GraduationCap,
-    headline: 'Qualify Student Leads & Dispatch Course Syllabi Instantly',
+    headline: 'Qualify Student Leads & Answer Course Questions Instantly',
     description:
-      'Students and parents comparing coaching academies demand immediate answers. FrontLoop delivers batch schedules, fee breakdowns, and syllabus brochures in seconds before they call rivals.',
-    roiStat: '3.4x',
-    roiLabel: 'Faster brochure delivery and higher demo class attendance',
+      'Students and parents comparing coaching academies want answers before they call a rival. FrontLoop shares batch timings and fee details from your knowledge base and captures each student\'s course interest for your counsellors.',
+    highlight: 'Seconds',
+    highlightLabel: 'Batch timings and fee questions answered while parents are still comparing',
     capabilities: [
-      'Batch start dates & entrance exam streams (NEET/JEE/Civil)',
-      'Automated syllabus & fee structure breakdown',
-      'Scholarship test registration capture',
-      'Instant parent counseling call request routing',
+      'Batch start dates & exam streams (NEET/JEE/Civil)',
+      'Course fee breakdowns from your fee list',
+      'Demo class and counselling interest captured',
+      'Parent call-back requests handed to your team',
     ],
     mockChat: {
       customer: 'What are the batch timings for JEE Crash Course 2026? Nale demo class undo?',
-      bot: 'Hello! Yes, our JEE 2026 Crash Course has morning (8 AM - 1 PM) and evening batches. Demo classes are scheduled for tomorrow at 10:00 AM!\n\nCan I have your name and school to register your free demo pass?',
+      bot: 'Hello! Our JEE 2026 Crash Course has a morning batch (8 AM - 1 PM) and an evening batch. Demo classes are held on Saturdays at 10:00 AM.\n\nCan I have your name and school? Our counsellor will call you to confirm a demo seat.',
     },
   },
   {
@@ -73,20 +75,20 @@ const VERTICALS: Vertical[] = [
     name: 'Salons & Wellness',
     badge: 'Beauty & Spas',
     icon: Sparkles,
-    headline: 'Fill Appointment Books Without Interrupting Stylists',
+    headline: 'Answer Service & Price Questions Without Interrupting Stylists',
     description:
-      'Staff with scissors or hair dye in hand cannot answer the phone. FrontLoop shares bridal packages, haircut menus, and confirms stylist availability effortlessly.',
-    roiStat: '22 hrs',
-    roiLabel: 'Front-desk phone reception time saved per stylist each month',
+      'Staff with scissors or hair dye in hand cannot answer the phone. FrontLoop shares your service menu and package prices, then captures the customer\'s preferred day so your team can confirm the appointment.',
+    highlight: 'Hands-free',
+    highlightLabel: 'Service menu and price questions handled without pulling a stylist off a client',
     capabilities: [
-      'Service menu, styling packages & seasonal offers',
-      'Stylist-specific availability & slot locking',
-      'Post-treatment care FAQs (Keratin, Botox, Facials)',
-      'Deposit payment & confirmation reminders',
+      'Service menu & package prices',
+      'Opening hours from your weekly schedule',
+      'Post-treatment care FAQs (Keratin, Facials)',
+      'Preferred day and service captured for your team',
     ],
     mockChat: {
       customer: 'How much is bridal trial package? Can I book for Sunday 11 AM?',
-      bot: 'Hey! Our Bridal Glow Trial is ₹2,800 (includes hair trial, skin prep & consultation, ~90 mins). Sunday at 11:00 AM is available with our senior artist Shilpa!\n\nShall I lock in this slot for you?',
+      bot: 'Hey! Our Bridal Glow Trial is ₹2,800 (hair trial, skin prep & consultation, about 90 mins). We are open Sundays from 10 AM.\n\nMay I have your name? Our team will confirm the 11 AM slot with you shortly.',
     },
   },
   {
@@ -94,20 +96,20 @@ const VERTICALS: Vertical[] = [
     name: 'Local Services & Retail',
     badge: 'Home Services & Auto',
     icon: Wrench,
-    headline: 'Quote Pricing & Collect Service Addresses on Autopilot',
+    headline: 'Quote Published Rates & Capture Job Details on Autopilot',
     description:
-      'Whether plumbing, vehicle servicing, or home AC repair, customers want quick estimates and service guarantees. FrontLoop logs location, vehicle model, and repair scope instantly.',
-    roiStat: '100%',
-    roiLabel: 'Inquiries recorded into dashboard with zero missed callbacks',
+      'Whether plumbing, vehicle servicing, or home AC repair, customers want quick estimates. FrontLoop quotes the rates you have published and captures the location, vehicle, and job details for your team.',
+    highlight: 'Every chat',
+    highlightLabel: 'Inquiries logged in your dashboard with the customer\'s requirement attached',
     capabilities: [
-      'Standard inspection rate card & warranty policies',
-      'Pickup & drop coordination for vehicle servicing',
-      'Emergency service zone validation',
-      'Automated lead export directly into CSV for field techs',
+      'Standard rate card & warranty policies',
+      'Service areas you cover',
+      'Job details captured into the lead pipeline',
+      'Lead export to CSV for field teams',
     ],
     mockChat: {
       customer: 'Do you provide doorstep car wash in Kakkanad? What is the cost for Swift?',
-      bot: 'Yes! We cover Kakkanad daily. Complete interior vacuum + foam wash for hatchback (Swift) is ₹799.\n\nWe have slots open tomorrow at 9:30 AM or 2:00 PM. Which works best?',
+      bot: 'Yes, we cover Kakkanad. A complete interior vacuum + foam wash for a hatchback like the Swift is ₹799.\n\nWhich day suits you? Our team will call to confirm a time.',
     },
   },
 ];
@@ -121,14 +123,14 @@ export function IndustryVerticalsSection() {
     <section id="verticals" className="py-24 bg-white border-t border-[#E2E8F0] text-[#0F172A] relative overflow-hidden">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
         <div className="text-center max-w-2xl mx-auto mb-12">
-          <span className="text-[11px] font-bold uppercase tracking-widest text-[#0AAF76] bg-[#ECFDF5] px-3.5 py-1.5 rounded-full border border-[#0AAF76]/30">
+          <span className="text-[11px] font-bold uppercase tracking-widest text-[#047857] bg-[#ECFDF5] px-3.5 py-1.5 rounded-full border border-[#047857]/30">
             Tailored Industry Workflows
           </span>
           <h2 className="serif-headline text-2xl sm:text-4xl text-[#0F172A] mt-4 tracking-tight">
             Built For Offline Local Businesses That Cannot Afford Missed Inquiries
           </h2>
           <p className="text-sm text-[#64748B] mt-3">
-            Every vertical comes pre-configured with industry-specific conversational intelligence and guardrails.
+            Each workspace answers from your own knowledge base: your services, prices, hours, and FAQs.
           </p>
         </div>
 
@@ -143,8 +145,8 @@ export function IndustryVerticalsSection() {
                 onClick={() => setActiveTab(vert.id)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   isActive
-                    ? 'bg-[#0AAF76] text-white shadow-md'
-                    : 'bg-white text-[#64748B] hover:text-[#0AAF76] hover:bg-slate-50 border border-[#E2E8F0]'
+                    ? 'bg-[#047857] text-white shadow-md'
+                    : 'bg-white text-[#64748B] hover:text-[#047857] hover:bg-slate-50 border border-[#E2E8F0]'
                 }`}
               >
                 <TabIcon size={14} className={isActive ? 'text-white' : 'text-[#64748B]'} />
@@ -160,7 +162,7 @@ export function IndustryVerticalsSection() {
             {/* Left Column: Vertical Copy & Metrics */}
             <div className="lg:col-span-7 space-y-6">
               <div className="inline-flex items-center gap-2 bg-white text-[#0F172A] text-xs font-semibold px-3 py-1 rounded-lg border border-[#E2E8F0] shadow-xs">
-                <Icon size={14} className="text-[#0AAF76]" />
+                <Icon size={14} className="text-[#047857]" />
                 {activeVertical.badge}
               </div>
 
@@ -176,19 +178,19 @@ export function IndustryVerticalsSection() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 {activeVertical.capabilities.map((cap, i) => (
                   <div key={i} className="flex items-start gap-2.5 text-xs text-[#0F172A]">
-                    <CheckCircle2 size={15} className="text-[#0AAF76] shrink-0 mt-0.5" />
+                    <CheckCircle2 size={15} className="text-[#047857] shrink-0 mt-0.5" />
                     <span>{cap}</span>
                   </div>
                 ))}
               </div>
 
-              {/* ROI Callout */}
+              {/* Highlight Callout */}
               <div className="pt-4 border-t border-[#E2E8F0] flex items-center gap-4">
-                <div className="text-3xl sm:text-4xl font-extrabold text-[#0AAF76] font-mono">
-                  {activeVertical.roiStat}
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#047857]">
+                  {activeVertical.highlight}
                 </div>
                 <div className="text-xs text-[#64748B] max-w-xs leading-snug">
-                  {activeVertical.roiLabel}
+                  {activeVertical.highlightLabel}
                 </div>
               </div>
             </div>
@@ -197,12 +199,12 @@ export function IndustryVerticalsSection() {
             <div className="lg:col-span-5 bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm">
               <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3 mb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="h-7 w-7 rounded-full bg-[#0AAF76] text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                  <div className="h-7 w-7 rounded-full bg-[#047857] text-white flex items-center justify-center font-bold text-xs shadow-xs">
                     AI
                   </div>
                   <div>
                     <p className="text-xs font-bold text-[#0F172A]">{activeVertical.name} Desk</p>
-                    <p className="text-[10px] text-[#0AAF76] font-medium">● Verified Cloud WhatsApp</p>
+                    <p className="text-[10px] text-[#047857] font-medium">● Illustrative example chat</p>
                   </div>
                 </div>
                 <span className="text-[10px] text-[#64748B] font-mono">10:48 PM</span>

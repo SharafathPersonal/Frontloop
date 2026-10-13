@@ -48,9 +48,11 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: 'Invalid status filter' }, { status: 400 });
   }
 
-  const cursor = await forTenant(sessionOrRes.tenantId).exportLeadsCursor(
-    statusParam ? { status: statusParam as LeadStatus } : {},
-  );
+  const needsHuman = req.nextUrl.searchParams.get('needsHuman') === '1';
+  const cursor = await forTenant(sessionOrRes.tenantId).exportLeadsCursor({
+    ...(statusParam ? { status: statusParam as LeadStatus } : {}),
+    needsHuman,
+  });
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({

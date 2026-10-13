@@ -9,7 +9,7 @@ export const verifyPassword = (plain: string, hash: string) => bcrypt.compare(pl
 
 // Same cost as real hashes, so a login for an unknown email takes as long as a
 // wrong password for a real one (no user enumeration via timing). Computed once
-// per instance; the value itself is irrelevant — nothing can match it.
+// per instance; the value itself is irrelevant; nothing can match it.
 let dummyHash: Promise<string> | null = null;
 
 /** Compare against the user's hash, or a dummy of equal cost when no user exists. */

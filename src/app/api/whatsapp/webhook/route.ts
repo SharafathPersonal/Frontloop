@@ -262,18 +262,15 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Next.js after() background processing trigger
-  if (pendingInboundMessagesToProcess.length > 0) {
+  // One after() per message so a burst runs concurrently instead of serially
+  // outliving the function's max duration. Claims are atomic, and burst coalescing
+  // in the worker still answers only the newest message per lead.
+  for (const item of pendingInboundMessagesToProcess) {
     after(async () => {
-      for (const item of pendingInboundMessagesToProcess) {
-        try {
-          await processInboundMessageReply(item);
-        } catch (bgErr) {
-          console.error(
-            `[WhatsApp Background Reply] Failed processing message ${item.messageId}:`,
-            bgErr,
-          );
-        }
+      try {
+        await processInboundMessageReply(item);
+      } catch (bgErr) {
+        console.error(`[WhatsApp Background Reply] Failed processing message ${item.messageId}:`, bgErr);
       }
     });
   }

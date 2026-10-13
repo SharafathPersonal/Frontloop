@@ -11,11 +11,11 @@ export type ReplyState = (typeof REPLY_STATES)[number];
 
 const MessageSchema = new Schema(
   {
-    tenantId: { type: Schema.Types.ObjectId, ref: 'BusinessTenant', required: true },
+    tenantId: { type: Schema.Types.ObjectId, ref: 'BusinessTenant', required: true, immutable: true },
     leadId: { type: Schema.Types.ObjectId, ref: 'Lead', required: true },
     direction: { type: String, enum: MESSAGE_DIRECTIONS, required: true },
     author: { type: String, enum: MESSAGE_AUTHORS, required: true },
-    waMessageId: { type: String }, // Meta wamid — globally unique, the idempotency key
+    waMessageId: { type: String }, // Meta wamid: globally unique, the idempotency key
     type: { type: String, default: 'text' },
     body: { type: String, maxlength: 4096 },
     status: { type: String, enum: DELIVERY_STATUSES },

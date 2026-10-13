@@ -14,7 +14,7 @@ export default function NotFound() {
         <div className="pt-4">
           <Link
             href="/"
-            className="inline-flex items-center justify-center rounded-xl bg-[#0AAF76] text-white px-8 py-3 text-sm font-bold tracking-widest uppercase hover:bg-[#089163] transition-colors"
+            className="inline-flex items-center justify-center rounded-xl bg-[#047857] text-white px-8 py-3 text-sm font-bold tracking-widest uppercase hover:bg-[#065F46] transition-colors"
           >
             Return Home
           </Link>

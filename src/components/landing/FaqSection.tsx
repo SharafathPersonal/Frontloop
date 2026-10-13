@@ -17,27 +17,27 @@ const FAQS: FaqItem[] = [
   {
     question: 'Will this risk getting my business WhatsApp number banned?',
     answer:
-      'Never. Unlike unofficial QR-code web scraping tools that breach WhatsApp terms, FrontLoop integrates exclusively via the Official Meta Cloud API (Graph API). Your brand operates with 100% platform compliance, zero account ban risk, and direct Meta infrastructure backing.',
+      'FrontLoop connects only through Meta’s official WhatsApp Cloud API, not unofficial QR-code or WhatsApp Web automation, which is what usually gets numbers banned. It replies only to customers who message you first and never sends bulk broadcasts. Like any WhatsApp Business account, your number must still follow Meta’s WhatsApp Business Policy.',
   },
   {
     question: 'Can my human staff step in and reply manually when needed?',
     answer:
-      'Yes, instantly. Every conversation in your dashboard features an instant 1-click "Human Takeover" toggle (botPaused). The moment staff steps in or a customer asks for a person, the AI gracefully steps aside so your team has complete manual control.',
+      'Yes. Every conversation has a one-click Human Takeover switch, and staff can reply directly from the dashboard. When a customer asks for a person, the AI pauses itself and the chat appears under Needs Human. Meta allows these free-form replies within 24 hours of the customer’s last message.',
   },
   {
     question: 'How do I add my clinic, institute, or salon details?',
     answer:
-      'You can configure your business knowledge base in under 10 minutes directly inside your dashboard. Add doctor timings, service price cards, weekly operating hours, and custom FAQs. Whenever your schedule or prices change, update the dashboard and your AI agent knows instantly.',
+      'You configure your knowledge base directly inside your dashboard: business context, services with prices, weekly operating hours, and custom FAQs. Whenever your schedule or prices change, update the dashboard and the next reply uses the new information.',
   },
   {
     question: 'How does the AI handle regional language phrasing like Manglish or Hinglish?',
     answer:
-      'Our AI pipeline understands conversational mixed English and regional colloquialisms (such as "Nale doctor undo?", "Fee ethraya?", or "Do you have slots evening?"). It extracts the user’s core intent and replies with accurate, polite business answers.',
+      'The AI understands conversational mixed English and regional phrasing (such as "Nale doctor undo?", "Fee ethraya?", or "Do you have slots evening?"), identifies the customer’s intent, and replies in the language they wrote in.',
   },
   {
     question: 'What happens if a customer asks a question not in my knowledge base?',
     answer:
-      'The AI enforces strict anti-hallucination guardrails. If a query is outside your configured information, it never fabricates prices or policies. Instead, it politely informs the customer and notifies your team for follow-up.',
+      'The AI is instructed to answer only from your knowledge base. If a question is outside your configured information, it tells the customer your team will confirm rather than guessing prices or policies, and the full conversation stays in your dashboard for follow-up.',
   },
 ];
 

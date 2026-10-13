@@ -27,7 +27,7 @@ const STATUS_BADGE: Record<WhatsAppStatus, { label: string; className: string }>
 const mask = (id: string) => (id.length > 4 ? `…${id.slice(-4)}` : id);
 
 const inputClass =
-  'w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-3 py-2 text-xs font-mono text-[#0F172A] focus:outline-none focus:border-[#0AAF76] focus:ring-1 focus:ring-[#0AAF76] disabled:opacity-60';
+  'w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-3 py-2 text-xs font-mono text-[#0F172A] focus:outline-none focus:border-[#047857] focus:ring-1 focus:ring-[#047857] disabled:opacity-60';
 const labelClass = 'block text-[11px] font-bold uppercase tracking-wider text-[#0F172A] mb-1';
 const hintClass = 'text-[10px] text-[#64748B] mt-1 leading-relaxed';
 
@@ -105,7 +105,7 @@ export default function WhatsAppSettingsClient({
     <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-sm space-y-4">
       <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
         <h2 className="text-xs font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
-          <Phone size={15} className="text-[#0AAF76]" aria-hidden="true" />
+          <Phone size={15} className="text-[#047857]" aria-hidden="true" />
           WhatsApp Cloud Connectivity
         </h2>
         <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${badge.className}`}>
@@ -126,17 +126,17 @@ export default function WhatsAppSettingsClient({
         <dl className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-1 xl:grid-cols-3 gap-3 text-xs">
           <div className="bg-[#F8FAFC] rounded-lg p-2.5">
             <dt className="text-[10px] uppercase tracking-wider text-[#64748B] font-bold">Phone number</dt>
-            <dd className="font-mono font-semibold text-[#0F172A] mt-0.5 break-all">{displayPhoneNumber || '—'}</dd>
+            <dd className="font-mono font-semibold text-[#0F172A] mt-0.5 break-all">{displayPhoneNumber || '-'}</dd>
           </div>
           <div className="bg-[#F8FAFC] rounded-lg p-2.5">
             <dt className="text-[10px] uppercase tracking-wider text-[#64748B] font-bold">Phone Number ID</dt>
             <dd className="font-mono font-semibold text-[#0F172A] mt-0.5" title="Masked for privacy">
-              {phoneNumberId ? mask(phoneNumberId) : '—'}
+              {phoneNumberId ? mask(phoneNumberId) : '-'}
             </dd>
           </div>
           <div className="bg-[#F8FAFC] rounded-lg p-2.5">
             <dt className="text-[10px] uppercase tracking-wider text-[#64748B] font-bold">WABA ID</dt>
-            <dd className="font-mono font-semibold text-[#0F172A] mt-0.5 break-all">{wabaId || '—'}</dd>
+            <dd className="font-mono font-semibold text-[#0F172A] mt-0.5 break-all">{wabaId || '-'}</dd>
           </div>
         </dl>
       )}

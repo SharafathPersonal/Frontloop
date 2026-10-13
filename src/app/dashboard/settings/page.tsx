@@ -3,9 +3,10 @@ import { forTenant } from '@/server/repos/tenant';
 import { Settings } from 'lucide-react';
 import BillingSettingsClient from './billing-settings-client';
 import WhatsAppSettingsClient from './whatsapp-settings-client';
+import { TRIAL_CONFIG } from '@/lib/plans';
 
 export const metadata = {
-  title: 'Settings & Subscription — FrontLoop',
+  title: 'Settings & Subscription | FrontLoop',
 };
 
 /** Outside the component so render stays pure; evaluated once per request. */
@@ -37,9 +38,12 @@ export default async function SettingsPage({
     month: 'short',
     year: 'numeric',
   });
+  const isTrial = currentPlan === 'trial';
   const periodLabel = periodEndLabel
-    ? `${isLapsed ? 'Period ended' : 'Current period ends'} ${periodEndLabel}`
-    : '14-day free evaluation';
+    ? isTrial
+      ? `Free trial ${isLapsed ? 'ended' : 'ends'} ${periodEndLabel}`
+      : `${isLapsed ? 'Period ended' : 'Current period ends'} ${periodEndLabel}`
+    : 'Free trial';
 
   const whatsapp = tenant?.whatsapp;
 
@@ -47,7 +51,7 @@ export default async function SettingsPage({
     <div className="space-y-8 max-w-5xl pb-16">
       <div className="border-b border-[#E2E8F0] pb-4">
         <h1 className="text-xl sm:text-2xl font-bold text-[#0F172A] flex items-center gap-2">
-          <Settings className="text-[#0AAF76]" size={24} aria-hidden="true" />
+          <Settings className="text-[#047857]" size={24} aria-hidden="true" />
           Business Settings &amp; Subscription
         </h1>
         <p className="text-xs sm:text-sm text-[#64748B] mt-1">
@@ -60,7 +64,7 @@ export default async function SettingsPage({
           currentPlan={currentPlan}
           status={subscription?.status || 'trialing'}
           repliesUsed={subscription?.repliesUsed ?? 0}
-          replyQuota={subscription?.replyQuota ?? 300}
+          replyQuota={subscription?.replyQuota ?? TRIAL_CONFIG.replyQuota}
           periodLabel={periodLabel}
           isLapsed={isLapsed}
           canManageBilling={isOwner}

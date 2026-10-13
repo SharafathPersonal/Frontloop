@@ -2,9 +2,10 @@ import { requireTenant } from '@/server/auth/dal';
 import { decodeLeadCursor, encodeLeadCursor, forTenant } from '@/server/repos/tenant';
 import LeadsTableClient from './leads-table-client';
 import { LEAD_STATUSES, type LeadStatus } from '@/server/models/Lead';
+import { NEEDS_HUMAN_FILTER } from './filters';
 
 export const metadata = {
-  title: 'Customer Leads — FrontLoop',
+  title: 'Customer Leads | FrontLoop',
 };
 
 interface PageProps {
@@ -20,6 +21,7 @@ export default async function LeadsPage({ searchParams }: PageProps) {
   const repo = forTenant(session.tenantId);
 
   const params = await searchParams;
+  const needsHuman = params.status === NEEDS_HUMAN_FILTER;
   const statusFilter = LEAD_STATUSES.includes(params.status as LeadStatus)
     ? (params.status as LeadStatus)
     : undefined;
@@ -29,6 +31,7 @@ export default async function LeadsPage({ searchParams }: PageProps) {
     repo.getTenant(),
     repo.listLeads({
       status: statusFilter,
+      needsHuman,
       searchPhone: searchFilter,
       cursor: decodeLeadCursor(params.cursor) ?? undefined,
       limit: 50,
@@ -52,10 +55,10 @@ export default async function LeadsPage({ searchParams }: PageProps) {
   return (
     <LeadsTableClient
       // Remount on every filter/page change so client state re-seeds from fresh server data.
-      key={`${statusFilter ?? 'all'}|${searchFilter ?? ''}|${params.cursor ?? ''}`}
+      key={`${needsHuman ? NEEDS_HUMAN_FILTER : (statusFilter ?? 'all')}|${searchFilter ?? ''}|${params.cursor ?? ''}`}
       initialLeads={serializedLeads}
       totalCount={totalCount}
-      currentStatus={statusFilter ?? 'all'}
+      currentStatus={needsHuman ? NEEDS_HUMAN_FILTER : (statusFilter ?? 'all')}
       currentSearch={searchFilter}
       nextCursor={nextCursor ? encodeLeadCursor(nextCursor) : null}
       isPaged={Boolean(params.cursor)}

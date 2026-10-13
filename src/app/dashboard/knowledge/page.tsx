@@ -1,9 +1,10 @@
 import { requireTenant } from '@/server/auth/dal';
 import { forTenant } from '@/server/repos/tenant';
 import KnowledgeBaseClient from './knowledge-client';
+import { resolveHandoffKeywords } from '@/lib/bot-defaults';
 
 export const metadata = {
-  title: 'Business Knowledge Base — FrontLoop',
+  title: 'Business Knowledge Base | FrontLoop',
 };
 
 export default async function KnowledgeBasePage() {
@@ -37,7 +38,7 @@ export default async function KnowledgeBasePage() {
         bot: {
           persona: kb.bot?.persona || '',
           fallbackReply: kb.bot?.fallbackReply || '',
-          handoffKeywords: kb.bot?.handoffKeywords || ['human', 'agent', 'call me'],
+          handoffKeywords: resolveHandoffKeywords(kb.bot?.handoffKeywords),
           languages: kb.bot?.languages || ['en'],
           captureFields: (kb.bot?.captureFields || ['name', 'requirement']) as Array<
             'name' | 'requirement' | 'preferred_time' | 'email'

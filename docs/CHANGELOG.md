@@ -7,6 +7,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Human Takeover Replies & Needs Human Queue (audit C1)
+- **Staff replies from the dashboard** (`sendAgentReplyAction` in `src/app/dashboard/leads/actions.ts`, `sendAgentReply` in `src/server/repos/tenant.ts`): owners and staff send WhatsApp replies through the tenant's own number. Text is zod-validated (trimmed, 1 to 4,096 chars). Sends are refused outside Meta's 24-hour customer-service window (also on Meta error 131047), and Meta error 190 flags the connection as `error`. Messages are stored with `author: 'agent'`. Agent replies never touch `subscription.repliesUsed`. Sending also pauses the bot on that lead so the AI cannot answer over a human.
+- **Conversation composer** (`lead-conversation-client.tsx`): textarea and Send button with spinner, Enter to send, Shift+Enter for a new line (IME-safe), inline errors, and auto-scroll to the newest message on load and after each send. When the 24-hour window is closed (computed on the server), the composer is replaced with an explanation of Meta's rule.
+- **Needs Human filter** (`src/app/dashboard/leads/filters.ts`, leads page, table and CSV export): lists bot-paused leads sorted by `lastInboundAt` descending, with cursor pagination. The lead cursor is now `{ at, _id }` so it works for either sort field. New index `{ tenantId, botPaused, lastInboundAt: -1, _id: -1 }`: run `npm run db:indexes` on deploy.
+- **Shared 24-hour window helper** (`src/lib/whatsapp-window.ts`) now used by the reply worker, sweeper, repo and lead page.
+
+### Changed - Handoff Keyword Hygiene
+- Default handoff keywords are now multi-word phrases (`talk to a human`, `speak to a person`, `human agent`, `call me back`) in `src/lib/bot-defaults.ts`. The old single-word defaults (`human`, `agent`, `call me`) paused the bot on ordinary sentences. Knowledge bases still holding the untouched legacy default are upgraded at read time by `resolveHandoffKeywords()`; customised lists are kept.
+- Keywords are validated: 4 to 40 characters each, at most 20. `languages` is bounded too (2 to 20 characters, at most 10).
+
+### Security - Logout & Session Revocation (audit H1)
+- `clearSessionCookie()` overwrites the cookie with `maxAge: 0` and `Secure` instead of calling `cookies().delete()`, which omitted `Secure`; browsers ignore a `__Host-` cookie set without it, so logout never cleared the session in production.
+- `POST /api/auth/logout` now bumps the user's `sessionVersion`, revoking every JWT already issued to that user (all devices).
+
+### Fixed - Billing Snapshots, Atomic Fulfilment & Renewals (audit H2, H3, M11)
+- **Pending-order snapshot**: `POST /api/checkout` writes a `Payment` row (`status: 'pending'`, plan, `amountINR`, `replyQuota`) before creating the Cashfree order, and removes it if Cashfree rejects the order. Fulfilment validates the paid amount and plan against this snapshot, never the live `PLAN_CONFIG`, so a price change can no longer reject an order the customer already paid. Orders created before this release (no snapshot) fall back to the live-price check.
+- **Transactional fulfilment** (`src/server/billing.ts`): the `Payment` flip to `applied` and the tenant upgrade commit in one MongoDB transaction, so a crash between them rolls both back and a retry re-applies instead of reporting a false "duplicate". Concurrent webhook and verify calls write-conflict and the loser resolves to `duplicate`. **Requires a replica set** (Atlas, or local `mongod --replSet rs0`; see `.env.local.example`).
+- `OrderTagsSchema.plan` is format-checked only; the snapshot is the authority, so a plan retired mid-payment is still recognised.
+- **Same-plan early renewal** extends from the current period end (`nextPeriodEnd()` in `src/lib/plans.ts`); plan switches, lapsed plans and trial upgrades start a fresh 30-day period. Settings, Terms and the refund policy describe this.
+- `Payment` gained `status`, `replyQuota`, `appliedAt`; `source` and `periodEnd` are now set at fulfilment. Legacy rows without `status` are treated as applied.
+
+### Fixed - Reply Engine Fairness & Background Execution (audit H6, H7)
+- When every LLM tier fails and the canned fallback is sent, the reserved reply is released (no quota charged), the message is noted `AI provider unavailable: fallback sent`, and `[AI_DOWN]` is logged with `console.error` for log-drain alerting.
+- The WhatsApp webhook schedules one `after()` per inbound message instead of one serial loop, so a burst no longer outlives the function's max duration.
+- The reply sweeper exports `maxDuration = 60`, stops claiming work after a 45-second budget (reporting `deferredCount`), and processes at most 15 messages per run.
+- `.env.local.example` documents that the sweeper must be scheduled externally (cron-job.org or Upstash QStash, every 1 to 2 minutes), since `vercel.json` cron was removed.
+
+### Fixed - Trial Enforcement & Plan Single Source of Truth (audit M1, M9, M10)
+- Registration sets `subscription.currentPeriodEnd` to 14 days out, so the existing quota reservation stops trial replies when the trial ends. Settings shows "Free trial ends <date>". Trials created before this release have no end date and are unaffected.
+- `src/lib/plans.ts` now holds `TRIAL_CONFIG` (14 days, 300 replies), `BILLING_PERIOD_DAYS`, `PLAN_KEYS`, shared `PLAN_FEATURES` and per-plan audience, tagline and extras. `SUBSCRIPTION_PLANS` and the trial quota default derive from it.
+- The landing pricing section maps over every plan, so Pro (₹7,999) is now shown. Cards say "AI Replies per month" (the quota counts replies, not conversations) and list only features the product has; every plan has the same features and differs by reply allowance and onboarding help.
+
+### Security - Tenant Guard Hardening (audit M8)
+- `tenantGuard` accepts only an ObjectId or a 24-hex string as `tenantId`; operator filters such as `{ $ne: null }` or `{ $exists: true }` are rejected. Aggregations containing `$lookup`, `$unionWith` or `$graphLookup` require `{ crossTenant: true }`.
+- `tenantId` is `immutable: true` on `Lead`, `Message`, `KnowledgeBase` and `Payment`.
+
+### Changed - Marketing Copy Grounded in Product Truth (audit H4)
+- Landing hero, trust strip, problem/solution and feature cards: removed the unsourced "40% of inquiries" headline, "books appointments", "Zero Hallucinations", "Meta Cloud API v21", "real time" and the internal `botPaused` identifier. The copy now describes answering from the knowledge base, intent qualification, lead capture and human handoff.
+- Industry verticals: removed fabricated ROI statistics (74%, 3.4x, 22 hrs, 100%), slot locking, deposit payments, reminders and brochure or location-pin dispatch; mock chats capture the request for staff to confirm, and the panel is labelled as an illustrative example.
+- FAQ: no "zero ban risk" or "notifies your team" claims; describes the dashboard reply flow and the 24-hour window.
+- WhatsApp demo simulator: the bot notes the request for the front desk to confirm instead of confirming a booking.
+- `llms.txt` and `llms-full.txt`: no preferred-slot extraction or appointment booking claims; human takeover describes dashboard replies.
+- Root meta description and dashboard welcome text updated to match.
+
+### Changed - Legal Pages (audit H5)
+- **Privacy Policy** rewritten for the DPDP Act 2023: fiduciary and processor roles, data collected, the end-customer message flow, purposes, a processor table (MongoDB Atlas, Vercel, Meta, Google Gemini, Groq, Cerebras, Cashfree), retention, security, rights, and a grievance contact.
+- **Terms of Service** rewritten: trial, 30-day prepaid plans, reply counting, renewals, WhatsApp Business Policy acceptable use, AI response disclaimer, liability cap, termination, governing law (Kozhikode courts). Removed the legacy broadcast, credits and `is_blocked` text.
+- The register page links the Terms and Privacy Policy.
+
+### Changed - Accessibility, Loading & Error States (audit M4, M6, M12)
+- Brand green `#0AAF76` (2.84:1 against white) replaced with `#047857` (5.48:1) across `src`, and its hover `#089163` with `#065F46`. The dashboard WhatsApp button uses dark text on `#25D366`.
+- Mobile navigation drawer is `inert` while closed, closes on Escape, moves focus to a labelled "Close menu" button when opened, and the menu button exposes `aria-expanded`/`aria-controls`.
+- New `src/app/dashboard/loading.tsx` skeleton and `src/app/global-error.tsx`. `src/app/error.tsx` no longer prints raw error messages; it shows only the opaque digest as a support reference.
+
+### Added - Landing Conversion, PWA & SEO/GEO Layer
+- **Landing hero and copy** (`src/app/page.tsx`): new hook headline, subheadline and trust strip (Zero Hallucinations, Strict Data Isolation, Meta Cloud API v21, Live Human Handover). The primary CTA "Experience Live WhatsApp Demo" opens `wa.me/919400160928`; the secondary CTA is "Start Free Trial". Rewrote the problem/solution section as "The Cost of Slow Replies" and added a dark live-demo banner. Fixed a 360px horizontal overflow: the hero section now has `w-full`.
+- **Interactive WhatsApp simulator** (`src/components/landing/WhatsAppDemoSimulator.tsx`): the chat replays message by message with a typing indicator and a Replay button. The full conversation is server-rendered for crawlers, and the replay is skipped under `prefers-reduced-motion`.
+- **Central contact config** (`src/lib/config.ts`): `SITE_URL`, `CONTACT` (trueattendly@gmail.com, +91 9400160928, Calicut, Kerala, India, Mon - Sat 9:00 AM - 7:00 PM IST), `whatsappLink()` and `LIVE_DEMO_URL`. This replaces the env-gated `NEXT_PUBLIC_DEMO_WHATSAPP_NUMBER`, so the demo CTA is always shown.
+- **Footer** (`src/components/landing/GlobalFooter.tsx`): 4 columns (About, Product & Solutions, Contact & Support, Legal & Trust) with the "Engineered in Calicut, Kerala" badge. Removed the fabricated "99.98% Gateway Uptime" / "All Systems Operational" status bar.
+- **Public pages**: `/support` (contact channels, hours, location, status reporting) and `/refund-policy` (prepaid 30-day Cashfree periods, no auto-renewal, refund requests by email).
+- **PWA**: `src/app/manifest.ts` (standalone, `start_url: /dashboard`, 192/512/maskable icons in `public/icons/`). `public/sw.js` caches only `/_next/static`, `/icons` and `/images`, never caches `/api/*` or page/dashboard responses, and serves `public/offline.html` for offline navigations. It is registered after load in production by `ServiceWorkerRegistrar`, and `/sw.js` is served with `Cache-Control: no-cache`.
+- **SEO / GEO / AEO**: new root metadata (title, description, keywords, `en_IN` OpenGraph and Twitter cards with `og-image.png`, theme colour `#047857`). Per-page canonicals: home, support, privacy, terms and refund-policy each declare their own. Added `Organization` + `SoftwareApplication` JSON-LD with the Calicut address, contact point and an INR price range derived from `PLAN_CONFIG`. Added `src/app/sitemap.ts`. `robots.txt` now also disallows `/admin/`.
+
+### Changed
+- `public/llm.txt` renamed to `public/llms.txt` and rewritten (contact details, architecture: Next.js 16, Meta Cloud API v21.0, MongoDB, `after()` + sweeper pipeline). `llms-full.txt` contact lines updated.
+- Dashboard support page: new phone, WhatsApp and email buttons, and support hours. Removed the TODO stub and the "24/7 concierge" claim.
+- Support email `support@frontloop.online` → `trueattendly@gmail.com` (forgot/reset password pages and API message). Privacy policy no longer references PostgreSQL.
+
 ### Security - Audit Remediation (P0/P1, see `audit.md`)
 - **Cashfree webhook fails closed** (`src/app/api/webhook/cashfree/route.ts`): returns 503 when billing env is missing and 401 on a bad signature; signature verification is never skipped. Rejects webhooks whose `x-webhook-timestamp` is more than 5 minutes off (replay window). The payload is zod-validated, `order_tags.tenantId` must be a 24-char hex ObjectId and the plan a known `PLAN_CONFIG` key. Non-success event types are acknowledged and ignored.
 - **Idempotent, amount-checked fulfilment** (`src/server/billing.ts`, new `Payment` model): the webhook and `/api/checkout/verify` share one path. A `Payment` row keyed by the Cashfree `order_id` is inserted first, so a duplicate delivery or replayed verify hits E11000 and grants nothing. `order_amount` and currency must equal the plan's `PLAN_CONFIG` price in INR. Activation resets `subscription.repliesUsed` to 0 and sets a fresh 30-day `currentPeriodEnd`.
@@ -63,8 +131,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added - Phase 4: Production Setup, Operational Tooling, and End-to-End Verification
 - `.env.local.example` documenting every variable validated by `src/server/env.ts`, with generation commands and rotation notes (`.gitignore` now un-ignores it).
-- `npm run db:seed` (`scripts/seed-tenant.ts`): idempotent seeder for the "Al-Shifa Family Health Clinic" demo tenant — owner login (bcrypt cost 12), active Starter plan (1,000 replies), and a full knowledge base (4 FAQs, 3 services priced in paise, Mon–Sat 09:00–13:00 + 16:30–20:30 split shifts, English/Manglish persona). Re-runs reuse existing records, `--reset-kb` restores the baseline KB, `SEED_WA_ACCESS_TOKEN` attaches an encrypted token, and it refuses to plant the default password when `NODE_ENV=production`.
-- `npm run test:webhook` (`scripts/test-webhook-flow.ts`): end-to-end harness against a running app — verify-token handshake, forged-signature rejection, signed ingestion latency budget, Lead/Message persistence, redelivery idempotency, and background worker completion including the outbound reply.
+- `npm run db:seed` (`scripts/seed-tenant.ts`): idempotent seeder for the "Al-Shifa Family Health Clinic" demo tenant: owner login (bcrypt cost 12), active Starter plan (1,000 replies), and a full knowledge base (4 FAQs, 3 services priced in paise, Mon–Sat 09:00–13:00 + 16:30–20:30 split shifts, English/Manglish persona). Re-runs reuse existing records, `--reset-kb` restores the baseline KB, `SEED_WA_ACCESS_TOKEN` attaches an encrypted token, and it refuses to plant the default password when `NODE_ENV=production`.
+- `npm run test:webhook` (`scripts/test-webhook-flow.ts`): end-to-end harness against a running app: verify-token handshake, forged-signature rejection, signed ingestion latency budget, Lead/Message persistence, redelivery idempotency, and background worker completion including the outbound reply.
 - `src/server/business-hours.ts`: renders weekly hours plus a code-computed OPEN/CLOSED verdict and next opening (tenant timezone via `Intl.DateTimeFormat`, date exceptions honoured) for the AI prompt and the "Test Your Bot" sandbox.
 - Cursor pagination on `/dashboard/leads` (URL-safe `?cursor=`), "AI Replies This Cycle" quota card on `/dashboard`, and a split-shift editor (up to 4 slots/day, overlap and ordering validation) on `/dashboard/knowledge`.
 - `src/lib/plans.ts`: single plan catalogue shared by checkout, payment verification, the Cashfree webhook, and Settings.

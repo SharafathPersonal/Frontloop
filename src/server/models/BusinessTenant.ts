@@ -1,7 +1,9 @@
 import { Schema, model, models, type InferSchemaType, type Model } from 'mongoose';
+import { PLAN_KEYS, TRIAL_CONFIG } from '../../lib/plans';
 
 export const TENANT_CATEGORIES = ['clinic', 'institute', 'restaurant', 'salon', 'retail', 'other'] as const;
-export const SUBSCRIPTION_PLANS = ['trial', 'starter', 'growth', 'pro'] as const;
+// Derived so a new PLAN_CONFIG key can never be written as an off-enum value.
+export const SUBSCRIPTION_PLANS = ['trial', ...PLAN_KEYS];
 export const SUBSCRIPTION_STATUSES = ['trialing', 'active', 'past_due', 'canceled'] as const;
 export const WHATSAPP_STATUSES = ['disconnected', 'connected', 'error'] as const;
 
@@ -30,7 +32,7 @@ const BusinessTenantSchema = new Schema(
       plan: { type: String, enum: SUBSCRIPTION_PLANS, default: 'trial' },
       status: { type: String, enum: SUBSCRIPTION_STATUSES, default: 'trialing' },
       currentPeriodEnd: { type: Date },
-      replyQuota: { type: Number, default: 300, min: 0 },
+      replyQuota: { type: Number, default: TRIAL_CONFIG.replyQuota, min: 0 },
       repliesUsed: { type: Number, default: 0, min: 0 },
       cashfreeCustomerId: { type: String },
     },

@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 export const metadata = {
-  title: 'Dashboard — FrontLoop',
+  title: 'Dashboard | FrontLoop',
 };
 
 export default async function DashboardPage() {
@@ -46,14 +46,14 @@ export default async function DashboardPage() {
             Welcome back, {tenant?.name}
           </h1>
           <p className="text-xs sm:text-sm text-[#64748B] mt-1 max-w-xl">
-            Your WhatsApp Business AI agent is monitoring customer inquiries 24/7, capturing leads, and answering appointments in real-time.
+            Your WhatsApp AI front desk answers customer inquiries 24/7 from your knowledge base and captures every lead.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <Link
             href="/dashboard/leads"
-            className="flex items-center gap-2 bg-[#0AAF76] text-white px-4 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider hover:bg-[#089163] transition-all"
+            className="flex items-center gap-2 bg-[#047857] text-white px-4 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider hover:bg-[#065F46] transition-all"
           >
             <Users size={14} /> View Leads
           </Link>
@@ -72,7 +72,7 @@ export default async function DashboardPage() {
         <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-[#64748B]">
             <span className="text-xs font-bold uppercase tracking-wider">Total Customer Leads</span>
-            <Users size={16} className="text-[#0AAF76]" />
+            <Users size={16} className="text-[#047857]" />
           </div>
           <p className="text-2xl sm:text-3xl font-bold text-[#0F172A]">{totalLeadsCount}</p>
           <p className="text-[11px] text-[#64748B] flex items-center gap-1">
@@ -84,7 +84,7 @@ export default async function DashboardPage() {
         <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-[#64748B]">
             <span className="text-xs font-bold uppercase tracking-wider">Services In Catalog</span>
-            <Sparkles size={16} className="text-[#0AAF76]" />
+            <Sparkles size={16} className="text-[#047857]" />
           </div>
           <p className="text-2xl sm:text-3xl font-bold text-[#0F172A]">{servicesCount}</p>
           <p className="text-[11px] text-[#64748B]">
@@ -96,7 +96,7 @@ export default async function DashboardPage() {
         <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-[#64748B]">
             <span className="text-xs font-bold uppercase tracking-wider">Active FAQs</span>
-            <BookOpen size={16} className="text-[#0AAF76]" />
+            <BookOpen size={16} className="text-[#047857]" />
           </div>
           <p className="text-2xl sm:text-3xl font-bold text-[#0F172A]">{faqsCount}</p>
           <p className="text-[11px] text-[#64748B]">
@@ -107,11 +107,11 @@ export default async function DashboardPage() {
         {/* Card 4 */}
         <Link
           href="/dashboard/settings"
-          className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-5 shadow-sm space-y-2 hover:border-[#0AAF76] transition-colors"
+          className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-5 shadow-sm space-y-2 hover:border-[#047857] transition-colors"
         >
           <div className="flex items-center justify-between text-[#64748B]">
             <span className="text-xs font-bold uppercase tracking-wider">AI Replies This Cycle</span>
-            <Gauge size={16} className="text-[#0AAF76]" />
+            <Gauge size={16} className="text-[#047857]" />
           </div>
           <p className="text-2xl sm:text-3xl font-bold text-[#0F172A]">
             {repliesUsed.toLocaleString('en-IN')}
@@ -126,7 +126,7 @@ export default async function DashboardPage() {
             aria-label="Reply quota used"
           >
             <div
-              className={`h-full rounded-full ${quotaPercent > 90 ? 'bg-rose-500' : 'bg-[#0AAF76]'}`}
+              className={`h-full rounded-full ${quotaPercent > 90 ? 'bg-rose-500' : 'bg-[#047857]'}`}
               style={{ width: `${quotaPercent}%` }}
             />
           </div>
@@ -137,12 +137,12 @@ export default async function DashboardPage() {
       <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
           <h2 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
-            <MessageSquare size={16} className="text-[#0AAF76]" />
+            <MessageSquare size={16} className="text-[#047857]" />
             Recent Inquiries
           </h2>
           <Link
             href="/dashboard/leads"
-            className="text-xs font-semibold text-[#0AAF76] hover:text-[#0F172A] flex items-center gap-1 transition-colors"
+            className="text-xs font-semibold text-[#047857] hover:text-[#0F172A] flex items-center gap-1 transition-colors"
           >
             All Leads <ArrowRight size={13} />
           </Link>
@@ -186,7 +186,7 @@ export default async function DashboardPage() {
                   </span>
                   <Link
                     href={`/dashboard/leads/${lead._id}`}
-                    className="text-xs font-semibold text-[#0AAF76] hover:text-[#0F172A]"
+                    className="text-xs font-semibold text-[#047857] hover:text-[#0F172A]"
                   >
                     Open Chat &rarr;
                   </Link>

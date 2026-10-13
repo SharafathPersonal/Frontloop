@@ -6,6 +6,10 @@ import { KnowledgeBase, type KnowledgeBaseDoc } from '@/server/models/KnowledgeB
 import { Lead, type LeadDoc, type LeadStatus, type LeadIntent } from '@/server/models/Lead';
 import { Message, type MessageDoc } from '@/server/models/Message';
 import { BusinessTenant } from '@/server/models/BusinessTenant';
+import { DEFAULT_HANDOFF_KEYWORDS, MIN_HANDOFF_KEYWORD_LENGTH } from '@/lib/bot-defaults';
+import { isWithinServiceWindow } from '@/lib/whatsapp-window';
+import { sendWhatsAppText } from '@/server/meta-graph';
+import { getTenantByPhoneNumberId } from '@/server/tenant-resolver';
 
 const HHMM_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -50,12 +54,21 @@ export const HoursInputSchema = z.object({
 
 export const BotSettingsInputSchema = z.object({
   persona: z.string().max(500, 'Max 500 characters').optional().default(''),
-  languages: z.array(z.string()).default(['en']),
+  languages: z.array(z.string().trim().min(2).max(20)).max(10).default(['en']),
   fallbackReply: z
     .string()
     .max(500, 'Max 500 characters')
     .default('Thanks for reaching out! Our team will get back to you shortly.'),
-  handoffKeywords: z.array(z.string()).default(['human', 'agent', 'call me']),
+  handoffKeywords: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(MIN_HANDOFF_KEYWORD_LENGTH, `Handoff keywords must be at least ${MIN_HANDOFF_KEYWORD_LENGTH} characters`)
+        .max(40, 'Handoff keywords can be at most 40 characters'),
+    )
+    .max(20, 'At most 20 handoff keywords')
+    .default([...DEFAULT_HANDOFF_KEYWORDS]),
   captureFields: z.array(z.enum(['name', 'requirement', 'preferred_time', 'email'])).default(['name', 'requirement']),
 });
 
@@ -90,25 +103,34 @@ function describeKbIssue(issue: z.core.$ZodIssue): string {
   return `${label}: ${message}`;
 }
 
-export type LeadCursor = { lastMessageAt: string; _id: string };
+/** `at` is the sort-field value of the last row on the previous page (lastMessageAt, or lastInboundAt for Needs Human). */
+export type LeadCursor = { at: string; _id: string };
 
 /** Cursor is URL-safe: `<epochMs>_<objectId>`. Malformed input yields null (first page). */
 export function encodeLeadCursor(c: LeadCursor): string {
-  return `${new Date(c.lastMessageAt).getTime()}_${c._id}`;
+  return `${new Date(c.at).getTime()}_${c._id}`;
 }
 
 export function decodeLeadCursor(raw: string | undefined): LeadCursor | null {
   const match = raw?.match(/^(\d{1,15})_([a-f0-9]{24})$/);
   if (!match) return null;
-  return { lastMessageAt: new Date(Number(match[1])).toISOString(), _id: match[2] };
+  return { at: new Date(Number(match[1])).toISOString(), _id: match[2] };
 }
 
 export interface LeadQueryFilter {
   status?: LeadStatus;
+  /** Bot-paused leads only, most recent customer message first. */
+  needsHuman?: boolean;
   searchPhone?: string;
   cursor?: LeadCursor;
   limit?: number;
 }
+
+export type AgentReplyResult =
+  | { ok: true; message: { id: string; createdAt: string } }
+  | { ok: false; error: string };
+
+export const SERVICE_WINDOW_EXPIRED_ERROR = 'WhatsApp 24-hour service window expired. Customer must message first.';
 
 const toObjectId = (id: string) => (mongoose.isValidObjectId(id) ? new mongoose.Types.ObjectId(id) : null);
 
@@ -259,12 +281,16 @@ export function forTenant(tenantId: string) {
       await connectDB();
 
       const limit = Math.min(Math.max(filter.limit ?? 25, 1), 100);
+      const sortField = filter.needsHuman ? 'lastInboundAt' : 'lastMessageAt';
       const query: Record<string, unknown> = {
         tenantId: tenantObjectId,
       };
 
       if (filter.status) {
         query.status = filter.status;
+      }
+      if (filter.needsHuman) {
+        query.botPaused = true;
       }
 
       if (filter.searchPhone) {
@@ -277,19 +303,17 @@ export function forTenant(tenantId: string) {
       // Count before the cursor clause: the total covers every page of this filter.
       const countQuery = { ...query };
 
-      if (filter.cursor?.lastMessageAt && filter.cursor?._id && mongoose.isValidObjectId(filter.cursor._id)) {
+      if (filter.cursor?.at && filter.cursor?._id && mongoose.isValidObjectId(filter.cursor._id)) {
+        const at = new Date(filter.cursor.at);
         query.$or = [
-          { lastMessageAt: { $lt: new Date(filter.cursor.lastMessageAt) } },
-          {
-            lastMessageAt: new Date(filter.cursor.lastMessageAt),
-            _id: { $lt: new mongoose.Types.ObjectId(filter.cursor._id) },
-          },
+          { [sortField]: { $lt: at } },
+          { [sortField]: at, _id: { $lt: new mongoose.Types.ObjectId(filter.cursor._id) } },
         ];
       }
 
       const [docs, totalCount] = await Promise.all([
         Lead.find(query)
-          .sort({ lastMessageAt: -1, _id: -1 })
+          .sort({ [sortField]: -1, _id: -1 })
           .limit(limit + 1)
           .lean<Array<LeadDoc & { _id: unknown }>>(),
         Lead.countDocuments(countQuery),
@@ -301,11 +325,9 @@ export function forTenant(tenantId: string) {
       if (docs.length > limit) {
         leads = docs.slice(0, limit);
         const lastItem = leads[leads.length - 1];
-        if (lastItem && lastItem.lastMessageAt) {
-          nextCursor = {
-            lastMessageAt: new Date(lastItem.lastMessageAt).toISOString(),
-            _id: String(lastItem._id),
-          };
+        const lastValue = lastItem?.[sortField];
+        if (lastItem && lastValue) {
+          nextCursor = { at: new Date(lastValue).toISOString(), _id: String(lastItem._id) };
         }
       }
 
@@ -377,14 +399,81 @@ export function forTenant(tenantId: string) {
     },
 
     /**
+     * Sends a staff-written WhatsApp reply. Never touches the AI reply quota.
+     * Replying by hand also pauses the bot for this lead, so the AI cannot answer
+     * over the human in the same conversation.
+     */
+    async sendAgentReply(leadId: string, text: string): Promise<AgentReplyResult> {
+      const _id = toObjectId(leadId);
+      if (!_id) return { ok: false, error: 'Lead not found' };
+      await connectDB();
+
+      const lead = await Lead.findOne({ _id, tenantId: tenantObjectId }).select('phone status lastInboundAt').lean();
+      if (!lead) return { ok: false, error: 'Lead not found' };
+      if (!isWithinServiceWindow(lead.lastInboundAt)) return { ok: false, error: SERVICE_WINDOW_EXPIRED_ERROR };
+
+      const tenantDoc = await BusinessTenant.findOne({ _id: tenantObjectId }).select('whatsapp.phoneNumberId').lean();
+      const phoneNumberId = tenantDoc?.whatsapp?.phoneNumberId;
+      if (!phoneNumberId) return { ok: false, error: 'Connect your WhatsApp number in Settings before replying.' };
+
+      const tenant = await getTenantByPhoneNumberId(phoneNumberId);
+      if (!tenant || tenant.id !== tenantId || !tenant.accessToken) {
+        return { ok: false, error: 'Your WhatsApp credentials are unavailable. Reconnect WhatsApp in Settings.' };
+      }
+
+      const sent = await sendWhatsAppText(phoneNumberId, tenant.accessToken, lead.phone, text);
+      if (!sent.ok) {
+        const code = sent.error?.code;
+        if (code === 131047) return { ok: false, error: SERVICE_WINDOW_EXPIRED_ERROR };
+        if (code === 190) {
+          await BusinessTenant.updateOne(
+            { _id: tenantObjectId },
+            {
+              $set: {
+                'whatsapp.status': 'error',
+                'whatsapp.lastError': { code: 190, message: 'Access token expired or invalid', at: new Date() },
+              },
+            },
+          );
+          return { ok: false, error: 'Meta rejected your access token. Reconnect WhatsApp in Settings.' };
+        }
+        return { ok: false, error: 'WhatsApp did not accept the message. Please try again.' };
+      }
+
+      const sentAt = new Date();
+      const message = await Message.create({
+        tenantId: tenantObjectId,
+        leadId: _id,
+        direction: 'out',
+        author: 'agent',
+        waMessageId: sent.messageId,
+        type: 'text',
+        body: text,
+        status: 'sent',
+        waTimestamp: sentAt,
+      });
+      await Lead.updateOne(
+        { _id, tenantId: tenantObjectId },
+        {
+          $set: { botPaused: true, status: lead.status === 'new' ? 'contacted' : lead.status },
+          $max: { lastMessageAt: sentAt },
+          $inc: { messageCount: 1 },
+        },
+      );
+
+      return { ok: true, message: { id: String(message._id), createdAt: sentAt.toISOString() } };
+    },
+
+    /**
      * Streams leads for CSV export without buffering the whole collection.
      * Rides the `{ tenantId, createdAt: -1 }` index.
      */
-    async exportLeadsCursor(filter: { status?: LeadStatus } = {}) {
+    async exportLeadsCursor(filter: { status?: LeadStatus; needsHuman?: boolean } = {}) {
       await connectDB();
       return Lead.find({
         tenantId: tenantObjectId,
         ...(filter.status ? { status: filter.status } : {}),
+        ...(filter.needsHuman ? { botPaused: true } : {}),
       })
         .sort({ createdAt: -1 })
         .lean<LeadDoc & { _id: unknown }>()

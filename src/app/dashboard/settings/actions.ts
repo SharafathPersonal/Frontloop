@@ -27,7 +27,7 @@ const WhatsAppConfigSchema = z.object({
   accessToken: z
     .string()
     .trim()
-    .refine((v) => v === '' || v.length >= 50, 'Access token looks too short — paste the full permanent token')
+    .refine((v) => v === '' || v.length >= 50, 'Access token looks too short. Paste the full permanent token')
     .refine((v) => !/\s/.test(v), 'Access token must not contain spaces')
     .optional()
     .default(''),

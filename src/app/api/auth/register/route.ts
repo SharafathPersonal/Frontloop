@@ -10,6 +10,7 @@ import { hashPassword } from '@/server/auth/password';
 import { setSessionCookie } from '@/server/auth/session';
 import { rateLimit } from '@/server/rate-limit';
 import { clientIp, isSameOrigin, jsonError } from '@/server/http';
+import { TRIAL_CONFIG, trialEndsAt } from '@/lib/plans';
 
 export const runtime = 'nodejs';
 
@@ -45,7 +46,15 @@ export async function POST(req: NextRequest) {
   const passwordHash = await hashPassword(password);
 
   try {
-    await BusinessTenant.create({ _id: tenantId, name: businessName, slug: slugify(businessName), category, ownerId: userId });
+    await BusinessTenant.create({
+      _id: tenantId,
+      name: businessName,
+      slug: slugify(businessName),
+      category,
+      ownerId: userId,
+      // The reply worker's quota reservation stops replies once this date passes.
+      subscription: { plan: 'trial', status: 'trialing', replyQuota: TRIAL_CONFIG.replyQuota, currentPeriodEnd: trialEndsAt() },
+    });
     await User.create({ _id: userId, email, passwordHash, role: 'owner', tenantId });
     await KnowledgeBase.create({ tenantId });
   } catch (err) {

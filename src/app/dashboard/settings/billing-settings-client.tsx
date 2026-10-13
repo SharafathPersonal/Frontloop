@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, CreditCard, Info, RotateCw } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
-import { PLAN_CONFIG, isPlanKey, type PlanKey } from '@/lib/plans';
+import { BILLING_PERIOD_DAYS, PLAN_CONFIG, PLAN_KEYS, isPlanKey, type PlanKey } from '@/lib/plans';
 
 type CashfreeMode = 'sandbox' | 'production';
 
@@ -30,7 +30,6 @@ declare global {
 
 const CASHFREE_SDK_URL = 'https://sdk.cashfree.com/js/v3/cashfree.js';
 const SUPPORT_MESSAGE = 'Online billing is not available yet. Contact support to upgrade.';
-const PLAN_KEYS = Object.keys(PLAN_CONFIG) as PlanKey[];
 const SHARED_FEATURES = [
   '1 WhatsApp Business number',
   'Knowledge base: services, FAQs & hours',
@@ -221,7 +220,7 @@ export default function BillingSettingsClient({
     <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-sm space-y-5">
       <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
         <h2 className="text-xs font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
-          <CreditCard size={15} className="text-[#0AAF76]" aria-hidden="true" />
+          <CreditCard size={15} className="text-[#047857]" aria-hidden="true" />
           Plan &amp; Usage
         </h2>
         <span
@@ -267,7 +266,7 @@ export default function BillingSettingsClient({
         >
           <div
             className={`h-full rounded-full transition-all ${
-              percentUsed >= 90 ? 'bg-rose-500' : percentUsed >= 75 ? 'bg-amber-500' : 'bg-[#0AAF76]'
+              percentUsed >= 90 ? 'bg-rose-500' : percentUsed >= 75 ? 'bg-amber-500' : 'bg-[#047857]'
             }`}
             style={{ width: `${percentUsed}%` }}
           />
@@ -345,7 +344,9 @@ export default function BillingSettingsClient({
         </ul>
 
         <p className="text-[10px] text-[#64748B] leading-relaxed">
-          Plans are prepaid for 30 days. A new payment starts a fresh 30-day period immediately and resets your reply count; unused replies do not carry over.
+          Plans are prepaid for {BILLING_PERIOD_DAYS} days and never renew automatically. Renewing your current plan
+          before it ends adds {BILLING_PERIOD_DAYS} days to the current end date; switching plans starts a fresh
+          period immediately. Every payment resets your reply count, and unused replies do not carry over.
         </p>
 
         {!canManageBilling && (

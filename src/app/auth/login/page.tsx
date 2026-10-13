@@ -123,7 +123,7 @@ export default function LoginPage() {
           <div className="mt-6 pt-6 border-t border-[#E2E8F0] text-center">
             <p className="text-xs text-[#64748B]">
               Don&apos;t have an account?{' '}
-              <Link href="/auth/register" className="text-[#0F172A] hover:text-[#0AAF76] transition-colors">
+              <Link href="/auth/register" className="text-[#0F172A] hover:text-[#047857] transition-colors">
                 Create workspace →
               </Link>
             </p>
@@ -135,12 +135,12 @@ export default function LoginPage() {
         <div className="text-center mt-6 flex flex-col items-center gap-4">
           <Link
             href="/"
-            className="text-xs tracking-[0.15em] text-[#64748B] hover:text-[#0AAF76] transition-colors uppercase"
+            className="text-xs tracking-[0.15em] text-[#64748B] hover:text-[#047857] transition-colors uppercase"
           >
             ← Back to home
           </Link>
           <div className="border border-[#E2E8F0]/50 bg-transparent py-1 px-3 rounded-md">
-            <span className="text-[10px] tracking-[0.15em] text-[#0AAF76] font-mono">
+            <span className="text-[10px] tracking-[0.15em] text-[#047857] font-mono">
               {APP_VERSION}
             </span>
           </div>

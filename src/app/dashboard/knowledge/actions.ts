@@ -41,7 +41,7 @@ export async function testBotSimulationAction(
   }
   // Each simulation is a paid LLM call; cap it like any other public endpoint.
   if (!(await rateLimit(`sandbox:${session.tenantId}`, 20, 60))) {
-    return { ok: false, error: 'Too many test messages — wait a minute and try again.' };
+    return { ok: false, error: 'Too many test messages. Wait a minute and try again.' };
   }
 
   try {

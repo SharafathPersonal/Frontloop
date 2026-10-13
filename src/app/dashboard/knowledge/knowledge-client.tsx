@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { saveKnowledgeBaseAction, testBotSimulationAction } from './actions';
 import type { AIPipelineOutput } from '@/server/ai-pipeline';
+import { DEFAULT_HANDOFF_KEYWORDS, MIN_HANDOFF_KEYWORD_LENGTH } from '@/lib/bot-defaults';
 
 interface Slot {
   open: string;
@@ -168,7 +169,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
       'Thanks for reaching out! Our team will get back to you shortly.',
   );
   const [handoffKeywordsStr, setHandoffKeywordsStr] = useState(
-    (initialData?.bot?.handoffKeywords || ['human', 'agent', 'call me']).join(', '),
+    (initialData?.bot?.handoffKeywords ?? DEFAULT_HANDOFF_KEYWORDS).join(', '),
   );
 
   // Status & Notifications
@@ -257,7 +258,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
         persona,
         fallbackReply,
         handoffKeywords,
-        // Not editable here yet — round-trip the stored values instead of resetting them.
+        // Not editable here yet; round-trip the stored values instead of resetting them.
         languages: initialData?.bot?.languages ?? ['en'],
         captureFields: initialData?.bot?.captureFields ?? ['name', 'requirement'],
       },
@@ -297,7 +298,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E2E8F0] pb-5">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#0F172A] flex items-center gap-2">
-            <BookOpen className="text-[#0AAF76]" size={24} />
+            <BookOpen className="text-[#047857]" size={24} />
             Business Knowledge Base
           </h1>
           <p className="text-xs sm:text-sm text-[#64748B] mt-1">
@@ -309,7 +310,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
           type="button"
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center justify-center gap-2 bg-[#0AAF76] text-white px-5 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider hover:bg-[#089163] transition-all disabled:opacity-50"
+          className="flex items-center justify-center gap-2 bg-[#047857] text-white px-5 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider hover:bg-[#065F46] transition-all disabled:opacity-50"
         >
           {isSaving ? <RotateCw className="animate-spin" size={14} /> : <Save size={14} />}
           {isSaving ? 'Saving...' : 'Save Knowledge Base'}
@@ -343,7 +344,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
           {/* Business Context */}
           <div className="bg-[#FFFFFF] rounded-2xl border border-[#E2E8F0] p-5 sm:p-6 shadow-sm">
             <h2 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] mb-2 flex items-center gap-2">
-              <Sparkles size={16} className="text-[#0AAF76]" />
+              <Sparkles size={16} className="text-[#047857]" />
               Business Context & Overview
             </h2>
             <p className="text-xs text-[#64748B] mb-4">
@@ -358,7 +359,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
               maxLength={8000}
               rows={6}
               placeholder="e.g. Dr. Sharma's Dental Care is a premier cosmetic dentistry clinic located in Indiranagar, Bangalore. We specialize in painless implants, root canal treatments, and teeth whitening..."
-              className="w-full bg-[#F8FAFC]/50 border border-[#E2E8F0] rounded-xl p-3 text-xs sm:text-sm text-[#0F172A] focus:outline-none focus:border-[#0AAF76] resize-y"
+              className="w-full bg-[#F8FAFC]/50 border border-[#E2E8F0] rounded-xl p-3 text-xs sm:text-sm text-[#0F172A] focus:outline-none focus:border-[#047857] resize-y"
             />
             <div className="text-right text-[10px] text-[#64748B] mt-1 font-mono">
               {context.length} / 8,000 characters
@@ -368,7 +369,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
           {/* Bot Persona & Fallback */}
           <div className="bg-[#FFFFFF] rounded-2xl border border-[#E2E8F0] p-5 sm:p-6 shadow-sm space-y-4">
             <h2 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
-              <Bot size={16} className="text-[#0AAF76]" />
+              <Bot size={16} className="text-[#047857]" />
               Bot Tone & Handoff Settings
             </h2>
 
@@ -381,7 +382,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
                 onChange={(e) => setPersona(e.target.value)}
                 maxLength={500}
                 placeholder="e.g. Compassionate and calm clinical assistant speaking in simple, professional English."
-                className="w-full bg-[#F8FAFC]/50 border border-[#E2E8F0] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#0F172A] focus:outline-none focus:border-[#0AAF76]"
+                className="w-full bg-[#F8FAFC]/50 border border-[#E2E8F0] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#0F172A] focus:outline-none focus:border-[#047857]"
               />
             </div>
 
@@ -393,7 +394,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
                 value={fallbackReply}
                 onChange={(e) => setFallbackReply(e.target.value)}
                 maxLength={500}
-                className="w-full bg-[#F8FAFC]/50 border border-[#E2E8F0] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#0F172A] focus:outline-none focus:border-[#0AAF76]"
+                className="w-full bg-[#F8FAFC]/50 border border-[#E2E8F0] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#0F172A] focus:outline-none focus:border-[#047857]"
               />
             </div>
 
@@ -405,10 +406,10 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
                 type="text"
                 value={handoffKeywordsStr}
                 onChange={(e) => setHandoffKeywordsStr(e.target.value)}
-                placeholder="human, agent, talk to doctor, receptionist"
-                className="w-full bg-[#F8FAFC]/50 border border-[#E2E8F0] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#0F172A] focus:outline-none focus:border-[#0AAF76]"
+                placeholder="talk to a human, speak to the doctor, call me back"
+                className="w-full bg-[#F8FAFC]/50 border border-[#E2E8F0] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#0F172A] focus:outline-none focus:border-[#047857]"
               />
-              <p id={`${uid}-handoff-hint`} className="text-[10px] text-[#64748B]">When a customer types these words, the bot automatically pauses for human takeover.</p>
+              <p id={`${uid}-handoff-hint`} className="text-[10px] text-[#64748B]">When a customer types one of these phrases, the bot pauses and the chat appears under Needs Human. Use phrases of {MIN_HANDOFF_KEYWORD_LENGTH}+ characters; single common words cause false pauses.</p>
             </div>
           </div>
         </div>
@@ -416,7 +417,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
         {/* Right Column (1 col): Test Sandbox */}
         <div className="bg-[#FFFFFF] rounded-2xl border border-[#E2E8F0] p-5 sm:p-6 shadow-sm flex flex-col h-full">
           <div className="flex items-center gap-2 mb-2">
-            <MessageSquare size={16} className="text-[#0AAF76]" />
+            <MessageSquare size={16} className="text-[#047857]" />
             <h2 className="text-sm font-bold uppercase tracking-wider text-[#0F172A]">
               Test Your Bot Sandbox
             </h2>
@@ -432,7 +433,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
               value={testPrompt}
               onChange={(e) => setTestPrompt(e.target.value)}
               rows={3}
-              className="w-full bg-[#F8FAFC]/50 border border-[#E2E8F0] rounded-xl p-2.5 text-xs text-[#0F172A] focus:outline-none focus:border-[#0AAF76]"
+              className="w-full bg-[#F8FAFC]/50 border border-[#E2E8F0] rounded-xl p-2.5 text-xs text-[#0F172A] focus:outline-none focus:border-[#047857]"
             />
           </div>
 
@@ -440,7 +441,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
             type="button"
             onClick={handleSimulate}
             disabled={isSimulating || !testPrompt.trim()}
-            className="flex items-center justify-center gap-2 w-full bg-[#0AAF76] text-white py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-[#089163] transition-colors disabled:opacity-50 mb-4"
+            className="flex items-center justify-center gap-2 w-full bg-[#047857] text-white py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-[#065F46] transition-colors disabled:opacity-50 mb-4"
           >
             {isSimulating ? <RotateCw className="animate-spin" size={14} /> : <Play size={14} />}
             {isSimulating ? 'Simulating...' : 'Test Bot Response'}
@@ -480,7 +481,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
 
                 {simOutput.handoff && (
                   <p className="text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">
-                    Handoff requested — on WhatsApp the bot would pause for your staff.
+                    Handoff requested. On WhatsApp the bot would pause for your staff.
                   </p>
                 )}
 
@@ -506,7 +507,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
-              <Briefcase size={16} className="text-[#0AAF76]" />
+              <Briefcase size={16} className="text-[#047857]" />
               Services, Treatments & Catalogue
             </h2>
             <p className="text-xs text-[#64748B] mt-0.5">
@@ -624,7 +625,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
-              <HelpCircle size={16} className="text-[#0AAF76]" />
+              <HelpCircle size={16} className="text-[#047857]" />
               Structured FAQs
             </h2>
             <p className="text-xs text-[#64748B] mt-0.5">
@@ -725,7 +726,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
       <div className="bg-[#FFFFFF] rounded-2xl border border-[#E2E8F0] p-5 sm:p-6 shadow-sm space-y-4">
         <div>
           <h2 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
-            <Clock size={16} className="text-[#0AAF76]" />
+            <Clock size={16} className="text-[#047857]" />
             Weekly Operating Schedule
           </h2>
           <p className="text-xs text-[#64748B] mt-0.5">
@@ -818,7 +819,7 @@ export default function KnowledgeBaseClient({ initialData }: KnowledgeClientProp
                             return { ...d, slots: [...d.slots, next] };
                           })
                         }
-                        className="flex items-center gap-1 text-[10px] font-semibold text-[#0AAF76] hover:text-[#0F172A]"
+                        className="flex items-center gap-1 text-[10px] font-semibold text-[#047857] hover:text-[#0F172A]"
                       >
                         <Plus size={11} /> Add split shift
                       </button>

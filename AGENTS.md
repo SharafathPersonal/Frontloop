@@ -1,4 +1,4 @@
-# AGENTS.md — Universal Repository Guidelines & Operational Invariants
+# AGENTS.md: Universal Repository Guidelines & Operational Invariants
 
 This file defines the non-negotiable architectural invariants, security rules, and engineering guidelines for the FrontLoop codebase. Every agent and developer must comply with these standards without exception.
 
@@ -41,6 +41,7 @@ This file defines the non-negotiable architectural invariants, security rules, a
 ## 5. Clean Code & Dead Weight Policy
 - **Zero Dead Weight**: No unused variables, commented-out dead code blocks, or dangling `console.log` statements in production routes.
 - **Type Safety**: Strictly preserve zero TypeScript warnings or errors. Always verify with `npx tsc --noEmit && npm run build`.
+- **No Em Dashes (Strict)**: Never use the em dash character (U+2014, the long dash) anywhere: UI copy, metadata, code strings, comments, docs, `llms.txt`, commit messages, or PR descriptions. Use a comma, colon, semicolon, full stop, or parentheses instead; for page titles use `Page | FrontLoop`, and for empty table cells use `-`. Verify with `npm run check:em-dash` (must print nothing and exit 0).
 
 ---
 

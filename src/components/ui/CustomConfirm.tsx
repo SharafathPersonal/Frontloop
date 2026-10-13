@@ -119,7 +119,7 @@ export default function CustomConfirm({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={requireInput}
-              className="w-full bg-[#F8FAFC] border border-[#E2E8F0] px-4 py-3 text-sm focus:outline-none focus:border-[#0AAF76] transition-colors rounded-sm"
+              className="w-full bg-[#F8FAFC] border border-[#E2E8F0] px-4 py-3 text-sm focus:outline-none focus:border-[#047857] transition-colors rounded-sm"
             />
           </div>
         )}
@@ -140,7 +140,7 @@ export default function CustomConfirm({
             className={`text-[10px] tracking-[0.2em] uppercase py-3 px-6 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
               type === 'danger' 
                 ? 'bg-red-600 hover:bg-red-700 text-white' 
-                : 'bg-[#0AAF76] text-white hover:bg-[#089163]'
+                : 'bg-[#047857] text-white hover:bg-[#065F46]'
             }`}
           >
             {confirmText}

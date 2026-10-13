@@ -1,6 +1,6 @@
 /**
  * Idempotent local seeder: one clinic tenant, its owner login, and a complete
- * knowledge base. Safe to re-run — existing records are reused, never duplicated.
+ * knowledge base. Safe to re-run: existing records are reused, never duplicated.
  *
  *   npm run db:seed                 # create whatever is missing
  *   npm run db:seed -- --reset-kb   # also overwrite the KB with the baseline below
@@ -21,9 +21,9 @@ const DEFAULT_PASSWORD = 'Password123!';
 const KNOWLEDGE_BASE = {
   context: [
     'Al-Shifa Family Health Clinic is a family practice in Edappally, Kochi, serving families since 2012.',
-    'Doctors: Dr. Rahul Menon (MBBS, MD — General Medicine) sees patients Monday to Saturday in both shifts.',
-    'Dr. Priya Nair (MD — Pediatrics) is available Monday, Wednesday and Friday mornings only.',
-    'Dr. Aisha Rahman (BDS — Dental) is available Tuesday, Thursday and Saturday evenings only.',
+    'Doctors: Dr. Rahul Menon (MBBS, MD, General Medicine) sees patients Monday to Saturday in both shifts.',
+    'Dr. Priya Nair (MD, Pediatrics) is available Monday, Wednesday and Friday mornings only.',
+    'Dr. Aisha Rahman (BDS, Dental) is available Tuesday, Thursday and Saturday evenings only.',
     'Walk-ins are welcome; booked appointments are seen first. Payment by cash, UPI, or card.',
     'In-house lab for blood tests, X-ray referrals to Lakeshore Diagnostics. Free parking behind the building.',
   ].join('\n'),
@@ -119,7 +119,7 @@ async function main() {
     throw new Error(`${email} already belongs to a different tenant (${user.tenantId}). Use SEED_OWNER_EMAIL.`);
   }
 
-  // A phone number can only route to one tenant (partial unique index) — check
+  // A phone number can only route to one tenant (partial unique index), so check
   // up front so a re-run reports a clear conflict instead of an E11000.
   const numberHolder = await BusinessTenant.findOne({
     'whatsapp.phoneNumberId': SEED_PHONE_NUMBER_ID,
@@ -205,9 +205,9 @@ async function main() {
     ? process.env.SEED_OWNER_PASSWORD
       ? '(from SEED_OWNER_PASSWORD)'
       : password
-    : '(unchanged — existing account)';
+    : '(unchanged, existing account)';
 
-  console.log(created.length ? `Seeded: ${created.join(', ')}` : 'Already seeded — nothing to do.');
+  console.log(created.length ? `Seeded: ${created.join(', ')}` : 'Already seeded, nothing to do.');
   console.log(`
   Login            http://localhost:3000/auth/login
   Email            ${email}
@@ -215,7 +215,7 @@ async function main() {
   Tenant ID        ${tenant._id}
   Tenant slug      ${tenant.slug}
   phone_number_id  ${tenant.whatsapp?.phoneNumberId}
-  WhatsApp token   ${tenant.whatsapp?.status === 'connected' ? 'stored (encrypted)' : 'none — set SEED_WA_ACCESS_TOKEN to send real replies'}
+  WhatsApp token   ${tenant.whatsapp?.status === 'connected' ? 'stored (encrypted)' : 'none; set SEED_WA_ACCESS_TOKEN to send real replies'}
 `);
 }
 

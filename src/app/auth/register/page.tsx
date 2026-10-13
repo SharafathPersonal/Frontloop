@@ -208,7 +208,7 @@ export default function RegisterPage() {
           <div className="mt-6 pt-6 border-t border-[#E2E8F0] text-center">
             <p className="text-xs text-[#64748B]">
               Already have an account?{' '}
-              <Link href="/auth/login" className="text-[#0F172A] hover:text-[#0AAF76] transition-colors">
+              <Link href="/auth/login" className="text-[#0F172A] hover:text-[#047857] transition-colors">
                 Sign in →
               </Link>
             </p>
@@ -218,13 +218,21 @@ export default function RegisterPage() {
 
         {/* Terms note */}
         <p className="text-center text-xs text-[#64748B] mt-6 leading-relaxed">
-          By creating a workspace, you agree to our terms of service.
+          By creating a workspace, you agree to our{' '}
+          <Link href="/terms" className="underline underline-offset-2 hover:text-[#0F172A]">
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link href="/privacy" className="underline underline-offset-2 hover:text-[#0F172A]">
+            Privacy Policy
+          </Link>
+          .
         </p>
 
         {/* Version Badge */}
         <div className="flex justify-center mt-6 pb-6">
           <div className="border border-[#E2E8F0]/50 bg-transparent py-1 px-3 rounded-md">
-            <span className="text-[10px] tracking-[0.15em] text-[#0AAF76] font-mono">
+            <span className="text-[10px] tracking-[0.15em] text-[#047857] font-mono">
               {APP_VERSION}
             </span>
           </div>
