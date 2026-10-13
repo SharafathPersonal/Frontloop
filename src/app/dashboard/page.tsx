@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { requireTenant } from '@/server/auth/dal';
 import { forTenant } from '@/server/repos/tenant';
+import { SITE_URL } from '@/lib/config';
+import { FrontDeskLinkCard } from '@/components/front-desk/qr-kit';
 import {
   Users,
   MessageSquare,
@@ -10,6 +12,7 @@ import {
   Clock,
   Sparkles,
   Gauge,
+  QrCode,
 } from 'lucide-react';
 
 export const metadata = {
@@ -130,6 +133,23 @@ export default async function DashboardPage() {
               style={{ width: `${quotaPercent}%` }}
             />
           </div>
+        </Link>
+      </div>
+
+      {/* Front Desk Link */}
+      <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="min-w-0 space-y-3">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
+            <QrCode size={16} className="text-[#047857]" aria-hidden="true" />
+            Your Front Desk Link
+          </h2>
+          <FrontDeskLinkCard hubUrl={`${SITE_URL}/d/${session.tenantId}`} />
+        </div>
+        <Link
+          href="/dashboard/qr"
+          className="shrink-0 inline-flex items-center justify-center gap-2 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#0F172A] hover:bg-[#E2E8F0] transition-all"
+        >
+          QR Kit &amp; Printable Card <ArrowRight size={13} aria-hidden="true" />
         </Link>
       </div>
 

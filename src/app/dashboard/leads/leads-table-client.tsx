@@ -27,6 +27,7 @@ interface SerializedLead {
   intent?: string;
   status: string;
   botPaused: boolean;
+  source: string;
   messageCount: number;
   lastMessageAt?: string;
   createdAt?: string;
@@ -246,8 +247,13 @@ export default function LeadsTableClient({
                             {(lead.name || lead.profileName || 'L').slice(0, 1).toUpperCase()}
                           </div>
                           <div>
-                            <p className="font-bold text-xs truncate max-w-[150px]">
-                              {lead.name || lead.profileName || 'Customer'}
+                            <p className="font-bold text-xs truncate max-w-[150px] flex items-center gap-1.5">
+                              <span className="truncate">{lead.name || lead.profileName || 'Customer'}</span>
+                              {lead.source === 'web_widget' && (
+                                <span className="shrink-0 rounded bg-sky-50 border border-sky-200 px-1.5 py-px text-[9px] font-bold uppercase text-sky-800">
+                                  Web
+                                </span>
+                              )}
                             </p>
                             <p className="text-[11px] text-[#64748B] flex items-center gap-1 font-mono">
                               <Phone size={10} /> +{lead.phone}

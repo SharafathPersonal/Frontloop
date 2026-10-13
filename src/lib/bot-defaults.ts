@@ -22,3 +22,9 @@ export function resolveHandoffKeywords(stored: readonly string[] | null | undefi
   if (isLegacyDefault) return [...DEFAULT_HANDOFF_KEYWORDS];
   return stored.map((kw) => kw.trim()).filter((kw) => kw.length >= MIN_HANDOFF_KEYWORD_LENGTH);
 }
+
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Whole-phrase match. Unicode-aware boundary: `\b` is ASCII-only and never matches Malayalam/Devanagari keywords. */
+export const matchesHandoffKeyword = (text: string, keywords: readonly string[]) =>
+  keywords.some((kw) => new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegex(kw)}($|[^\\p{L}\\p{N}])`, 'iu').test(text));

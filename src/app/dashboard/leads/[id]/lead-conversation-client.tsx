@@ -31,6 +31,7 @@ interface SerializedMessage {
   author: 'customer' | 'bot' | 'agent';
   body?: string;
   status?: string;
+  channel: string;
   createdAt?: string;
 }
 
@@ -95,7 +96,7 @@ export default function LeadConversationClient({
     }
     setMessages((prev) => [
       ...prev,
-      { id: res.message.id, direction: 'out', author: 'agent', body: text, status: 'sent', createdAt: res.message.createdAt },
+      { id: res.message.id, direction: 'out', author: 'agent', body: text, status: 'sent', channel: 'whatsapp', createdAt: res.message.createdAt },
     ]);
     setLead((prev) => ({ ...prev, botPaused: true }));
     setDraft('');
@@ -223,11 +224,11 @@ export default function LeadConversationClient({
                       <div className="flex items-center gap-1 text-[10px] opacity-75 mb-1 font-bold uppercase tracking-wider">
                         {isCustomer ? (
                           <>
-                            <User size={10} /> Customer
+                            <User size={10} /> Customer{m.channel === 'web' ? ' · Web chat' : ''}
                           </>
                         ) : isBot ? (
                           <>
-                            <Bot size={10} /> AI Agent
+                            <Bot size={10} /> AI Agent{m.channel === 'web' ? ' · Web chat' : ''}
                           </>
                         ) : (
                           <>
@@ -286,7 +287,7 @@ export default function LeadConversationClient({
                     aria-label="Send WhatsApp reply"
                     className="inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl bg-[#047857] hover:bg-[#065F46] text-white text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isSending ? <Spinner /> : <Send size={14} aria-hidden="true" />}
+                    {isSending ? <Spinner tone="light" /> : <Send size={14} aria-hidden="true" />}
                     <span className="hidden sm:inline">{isSending ? 'Sending' : 'Send'}</span>
                   </button>
                 </div>
@@ -305,7 +306,12 @@ export default function LeadConversationClient({
                 <Lock size={14} className="shrink-0 mt-0.5" aria-hidden="true" />
                 <p>
                   {sendError ?? 'Replies are locked.'} Meta only allows free-form WhatsApp replies within 24 hours of
-                  the customer&apos;s last message. The composer reopens as soon as this customer messages again.
+                  the customer&apos;s last WhatsApp message. The composer reopens as soon as this customer messages again.
+                  Web chat customers can be reached on{' '}
+                  <a href={`tel:+${lead.phone}`} className="font-semibold underline underline-offset-2">
+                    +{lead.phone}
+                  </a>
+                  .
                 </p>
               </div>
             )}

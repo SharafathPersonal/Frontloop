@@ -47,5 +47,5 @@ export async function POST(req: NextRequest) {
   });
   await User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } });
 
-  return Response.json({ ok: true });
+  return Response.json({ ok: true, redirect: user.role === 'platform_admin' ? '/admin' : '/dashboard' });
 }

@@ -7,6 +7,97 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Digital Front-Desk Hub, Web Chat & QR Kit
+- **Public hub `/d/[tenantId]`**:
+  - mobile-first landing with the business name, category and a "24/7 AI Receptionist" badge;
+  - "Chat on WhatsApp" (`wa.me/<number>?text=Hi`), shown only while the tenant's number is connected;
+  - "Chat on Web", plus a native share button that falls back to copying the link;
+  - unknown tenants render a "Front Desk Offline" state. `noindex`.
+- **Web chat `/d/[tenantId]/chat`** (`/chat/[tenantId]` redirects here):
+  - **Lead gate:** name (2 to 50 characters) and a 10-digit Indian mobile number, normalised to `91XXXXXXXXXX` by `src/lib/phone.ts`.
+  - **Chat screen:** pinned to `100dvh` with a sticky header and composer, safe-area padding, and `viewport-fit=cover` plus `interactive-widget=resizes-content` for the Android keyboard.
+  - **Feed:** stays pinned to the newest message when the keyboard resizes it.
+  - **Composer:** auto-growing textarea; Enter sends on desktop (IME-safe) while touch keyboards keep Enter as a newline; typing indicator.
+  - **Messages and controls:** optimistic bubbles, "Talk to a person" and "End chat".
+  - **Timestamps:** shown in the tenant's time zone via `src/lib/clock.ts`, so server and browser render identically (no hydration mismatch).
+  - An existing session resumes on the server with no loading flash. Web chat is offline when the trial or plan has lapsed; it does not depend on WhatsApp being connected.
+- **Guest sessions** (`src/server/auth/guest-session.ts`): HS256 JWT `{ sub: leadId, tid, sid, role: 'web_guest' }` with a separate audience, so it can never pass as a staff session (verified). 24-hour TTL in an HttpOnly, per-tenant cookie (`__Host-flchat_<tenantId>` in production). The token never touches page JavaScript or `sessionStorage`.
+- **APIs:**
+  - `POST /api/chat/session`: same-origin check, 10 sessions per IP per hour, upserts the lead with `source: 'web_widget'`.
+  - `DELETE /api/chat/session`: ends the session.
+  - `POST /api/chat/message`: guest JWT, `z.string().trim().min(1).max(2000)`, 60 messages per IP per 10 minutes, `maxDuration = 60`.
+- **Web chat engine** (`src/server/web-chat.ts`): the same rules as WhatsApp:
+  - shares the per-lead and per-tenant rate-limit buckets;
+  - reserves and releases quota through the extracted `reserveReplyQuota()` / `releaseReplyQuota()` (`src/server/quota.ts`, now also used by the reply worker); no charge for canned fallbacks, `[AI_DOWN]` logging;
+  - applies the same handoff keywords and the `generateAIReply()` pipeline with the shared `knowledgeContext()` (`src/server/ai-context.ts`).
+  A handoff or "Talk to a person" sets `botPaused` and shows "Our team will contact you on your phone shortly."
+- **Privacy: the typed phone number is unverified.** If it matches an existing WhatsApp lead the records merge, but:
+  - web history and AI context are scoped to the random per-session `webSessionId`, never the whole lead, so a visitor typing someone else's number sees nothing of that person's WhatsApp chat or earlier web sessions (verified);
+  - an existing lead's name is never overwritten;
+  - web messages never set `lastInboundAt`, so they cannot open a WhatsApp reply window;
+  - the WhatsApp worker and sweeper ignore `channel: 'web'` rows, which are never `pending` and so can never be sent over WhatsApp.
+- **Models:** `Message.channel` (`whatsapp` | `web`; absent means WhatsApp) and `Message.webSessionId`; `Lead.source` (`whatsapp` | `web_widget`).
+- **Dashboard QR kit `/dashboard/qr`** (new nav item "Front Desk & QR"):
+  - QR code via `qrcode.react` (zero dependencies), copy link, native share, "Share via WhatsApp", open page;
+  - downloads: a 4 x 6 inch printable card as PNG (1200 x 1800, 300 dpi) or SVG, and QR-only SVG, all generated in the browser;
+  - status of the WhatsApp button and of web chat.
+- **Dashboard overview card:** front-desk link, QR preview and copy button.
+- **Leads:** a Web tag in the table, and "Web chat" labels on messages in the conversation view. The locked composer offers a call link for web-only leads.
+- `Spinner` takes a `tone` prop instead of conflicting border classes.
+- Verified on a local test stack:
+  - 26 API, privacy and quota checks;
+  - 11 headless-Chrome checks at 360px: no horizontal overflow on the hub, gate, chat, dashboard and QR kit; composer pinned; keyboard emulation at 360 x 400 keeps the header, composer and newest message visible; textarea auto-grows; 16px inputs;
+  - PNG, SVG and QR exports produce valid files.
+
+### Added - Email OTP Engine (nodemailer)
+- **SMTP transport** (`src/server/email/mailer.ts`): `nodemailer` 10 singleton with implicit TLS on port 465 and required STARTTLS on other ports, plus 10 to 15 s connection, greeting and socket timeouts. Fails closed: `requireEnv` throws when `SMTP_HOST`, `SMTP_USER` or `SMTP_PASS` is missing, and routes return 503 before doing any work.
+- New env vars in `src/server/env.ts` and `.env.local.example`: `SMTP_HOST`, `SMTP_PORT` (default 587), `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` (default `FrontLoop <trueattendly@gmail.com>`). Removed the unused `RESEND_API_KEY`.
+- **Email templates** (`src/server/email/templates.ts`): text and table-based HTML for signup verification and password reset, with the 10-minute expiry and an "if you did not request this, ignore this email" disclaimer.
+- **`OtpToken` model**: one live code per (email, purpose), unique index on `{ email, purpose }`, TTL index on `expiresAt`. Codes are stored only as an HMAC-SHA256 keyed from `AUTH_SECRET` and bound to email and purpose; pending signup details are AES-256-GCM encrypted. Run `npm run db:indexes` so the TTL index exists in production.
+- **`generateAndSendOtp` / `verifyOtp`** (`src/server/auth/otp.ts`):
+  - codes come from `crypto.randomInt(100000, 1000000)`, last 10 minutes, and can be resent only after 60 s, enforced atomically by the upsert;
+  - an SMTP failure deletes the code and throws;
+  - verification spends one attempt atomically before comparing in constant time, so even parallel guesses cannot exceed 5 per code; the fifth failure deletes the code;
+  - a correct code is consumed by a hash-conditioned delete, so of two simultaneous submissions only one succeeds.
+  Verified against a local MongoDB: storage, cooldown, single use, lockout, parallel guessing, double submit, expiry and SMTP failure.
+- **Password policy** (`src/lib/password-policy.ts`): at least 8 characters with an uppercase letter, a lowercase letter and a number, shared by the registration and reset forms and APIs.
+
+### Changed - Two-Step Email-Verified Registration
+- `POST /api/auth/register/send-otp`:
+  - validates business name, category, email, password and confirmation, and refuses already-registered emails;
+  - rate limits per IP (5/hour) and per email (3/15 min);
+  - bcrypt-hashes the password (it is never stored in plaintext, even encrypted) and emails a code.
+- `POST /api/auth/register/verify-otp`: verifies the code (IP limit 20/15 min), re-validates the decrypted pending signup, creates the tenant on a 14-day trial with an enforced `currentPeriodEnd`, the owner and the knowledge base (via the new `src/server/auth/workspace.ts`), signs the user in and returns `{ ok: true, redirect: '/dashboard' }`.
+- **Removed `POST /api/auth/register`**, which created accounts without email verification.
+- Register page is a two-step flow: details, then a 6-digit code entry. The new `OtpInput` component auto-advances, supports Backspace, arrow keys and pasting the full code, offers `one-time-code` autofill and submits automatically on the sixth digit. A 60-second resend countdown (`useCountdown`) and a "Change email" option are included. The page has server metadata and `noindex`.
+
+### Changed - Password Reset Lifecycle
+- `POST /api/auth/forgot-password` replaces the 501 stub:
+  - enumeration-safe: always returns "If an account exists with this email, an OTP has been sent.";
+  - does identical work for known and unknown emails before responding, and sends the email in `after()` so SMTP latency cannot reveal whether an account exists;
+  - rate limits per IP (10/hour) and per email (3/15 min).
+- `POST /api/auth/reset-password` replaces the 501 stub:
+  - verifies the code and the password policy, then sets the bcrypt hash (cost 12) and bumps `sessionVersion` in one atomic update, revoking every existing session on every device;
+  - clears the caller's session cookie and lifts that email's sign-in lockout.
+- `/auth/forgot-password` is a two-step form: email, then code plus new password. On success it goes to `/auth/login?reset=1`, which shows a confirmation. `/auth/reset-password` now redirects there.
+
+### Added - Platform Admin
+- `/admin` overview (`src/app/admin`, `src/server/repos/platform.ts`):
+  - tenants: total, active and ended trials, paying tenants by plan;
+  - WhatsApp connection states;
+  - messages: total, inbound, AI and staff replies, and failures in the last 24 hours, plus current pending and processing counts;
+  - MongoDB ping latency;
+  - reply-sweeper health, derived from the oldest pending reply and replies stuck in `processing`;
+  - the newest workspaces.
+  Cross-tenant message counts opt out of `tenantGuard` explicitly and use index-backed `_id` and `replyState` ranges.
+- Guards:
+  - **proxy:** `/admin` without a session goes to `/auth/login?redirect=/admin`, and a signed-in owner or staff member goes to `/dashboard`;
+  - **admin layout:** `requirePlatformAdmin()` re-checks the role and `sessionVersion` against the database;
+  - **dashboard:** `requireTenant()` sends platform admins to `/admin`.
+  The proxy does not redirect `/dashboard` on the JWT role, to avoid loops on stale tokens.
+- Login returns a role-based `redirect`, and the login page honours `?redirect=` (or the legacy `?next=`) only inside the area that role can use.
+- `npm run db:admin` (`scripts/create-admin.ts`) creates or resets a platform admin from `ADMIN_EMAIL` / `ADMIN_PASSWORD` (at least 12 characters plus the password policy). It refuses to promote tenant accounts and revokes the admin's existing sessions on reset. No web route can grant the role.
+
 ### Added - Human Takeover Replies & Needs Human Queue (audit C1)
 - **Staff replies from the dashboard** (`sendAgentReplyAction` in `src/app/dashboard/leads/actions.ts`, `sendAgentReply` in `src/server/repos/tenant.ts`): owners and staff send WhatsApp replies through the tenant's own number. Text is zod-validated (trimmed, 1 to 4,096 chars). Sends are refused outside Meta's 24-hour customer-service window (also on Meta error 131047), and Meta error 190 flags the connection as `error`. Messages are stored with `author: 'agent'`. Agent replies never touch `subscription.repliesUsed`. Sending also pauses the bot on that lead so the AI cannot answer over a human.
 - **Conversation composer** (`lead-conversation-client.tsx`): textarea and Send button with spinner, Enter to send, Shift+Enter for a new line (IME-safe), inline errors, and auto-scroll to the newest message on load and after each send. When the 24-hour window is closed (computed on the server), the composer is replaced with an explanation of Meta's rule.

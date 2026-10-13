@@ -5,3 +5,4 @@ export { Lead } from './Lead';
 export { Message } from './Message';
 export { RateLimit } from './RateLimit';
 export { Payment } from './Payment';
+export { OtpToken } from './OtpToken';

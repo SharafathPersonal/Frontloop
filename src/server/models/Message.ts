@@ -5,6 +5,7 @@ export const MESSAGE_DIRECTIONS = ['in', 'out'] as const;
 export const MESSAGE_AUTHORS = ['customer', 'bot', 'agent'] as const;
 export const DELIVERY_STATUSES = ['received', 'sent', 'delivered', 'read', 'failed'] as const;
 export const REPLY_STATES = ['pending', 'processing', 'done', 'skipped', 'failed'] as const;
+export const MESSAGE_CHANNELS = ['whatsapp', 'web'] as const;
 
 export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];
 export type ReplyState = (typeof REPLY_STATES)[number];
@@ -25,6 +26,12 @@ const MessageSchema = new Schema(
     replyAttempts: { type: Number, default: 0, min: 0 }, // claims so far; capped by the reply worker
     error: { code: Number, title: String },
     waTimestamp: { type: Date },
+    // Absent on rows written before web chat existed; absent means WhatsApp.
+    channel: { type: String, enum: MESSAGE_CHANNELS },
+    // Web chat only: the guest session that wrote it. The phone number a web
+    // guest types is unverified, so web history and AI context are scoped to
+    // this id, never to the whole lead.
+    webSessionId: { type: String },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
 );

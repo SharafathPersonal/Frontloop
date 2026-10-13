@@ -47,6 +47,7 @@ export default async function LeadsPage({ searchParams }: PageProps) {
     intent: l.intent ?? undefined,
     status: l.status || 'new',
     botPaused: !!l.botPaused,
+    source: l.source ?? 'whatsapp',
     messageCount: l.messageCount ?? 0,
     lastMessageAt: l.lastMessageAt ? new Date(l.lastMessageAt).toISOString() : undefined,
     createdAt: l.createdAt ? new Date(l.createdAt).toISOString() : undefined,

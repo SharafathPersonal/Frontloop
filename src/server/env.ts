@@ -20,7 +20,22 @@ const EnvSchema = z.object({
   META_VERIFY_TOKEN: z.string().min(24).optional(),
   GRAPH_API_VERSION: z.string().regex(/^v\d+\.\d+$/).default('v21.0'),
   CRON_SECRET: z.string().min(24).optional(),
-  RESEND_API_KEY: z.string().optional(),
+
+  // Transactional email (signup verification and password reset OTPs)
+  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+  SMTP_USER: z.string().min(1).optional(),
+  SMTP_PASS: z.string().min(1).optional(),
+  EMAIL_FROM: z.string().min(3).default('FrontLoop <trueattendly@gmail.com>'),
+
+  // Google OAuth 2.0 client (Google Cloud Console → APIs & Services → Credentials)
+  GOOGLE_CLIENT_ID: z
+    .string()
+    .regex(/^[\w-]+\.apps\.googleusercontent\.com$/, 'must be a Google OAuth client ID ending in .apps.googleusercontent.com')
+    .optional(),
+  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+
+  // AI fallback engine (tried in order)
   GEMINI_API_KEY: z.string().optional(),
   GROQ_API_KEY: z.string().optional(),
   CEREBRAS_API_KEY: z.string().optional(),
@@ -44,7 +59,10 @@ let cached: Env | null = null;
  */
 export function getEnv(): Env {
   if (cached) return cached;
-  const parsed = EnvSchema.safeParse(process.env);
+  // `KEY=` lines in an env file load as '', which would fail min-length rules on
+  // optional variables; blank means unset, exactly as requireEnv() treats it.
+  const raw = Object.fromEntries(Object.entries(process.env).map(([k, v]) => [k, v === '' ? undefined : v]));
+  const parsed = EnvSchema.safeParse(raw);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `  ${i.path.join('.')}: ${i.message}`).join('\n');
     throw new Error(`Invalid environment configuration:\n${issues}`);

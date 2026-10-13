@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Users,
   BookOpen,
+  QrCode,
 } from 'lucide-react';
 import CustomConfirm from '@/components/ui/CustomConfirm';
 import { ToastProvider } from '@/contexts/ToastContext';
@@ -34,6 +35,7 @@ const navLinks: NavLink[] = [
   { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={14} strokeWidth={1.5} /> },
   { label: 'Leads & Chats', href: '/dashboard/leads', icon: <Users size={14} strokeWidth={1.5} /> },
   { label: 'Knowledge Base', href: '/dashboard/knowledge', icon: <BookOpen size={14} strokeWidth={1.5} /> },
+  { label: 'Front Desk & QR', href: '/dashboard/qr', icon: <QrCode size={14} strokeWidth={1.5} /> },
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings size={14} strokeWidth={1.5} /> },
   { label: 'Support', href: '/dashboard/support', icon: <HelpCircle size={14} strokeWidth={1.5} /> },
 ];

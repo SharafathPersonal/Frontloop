@@ -446,6 +446,7 @@ export function forTenant(tenantId: string) {
         leadId: _id,
         direction: 'out',
         author: 'agent',
+        channel: 'whatsapp',
         waMessageId: sent.messageId,
         type: 'text',
         body: text,

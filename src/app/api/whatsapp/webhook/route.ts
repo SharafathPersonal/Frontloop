@@ -225,6 +225,7 @@ export async function POST(req: NextRequest) {
               leadId: leadUpsertDoc._id,
               direction: 'in',
               author: 'customer',
+              channel: 'whatsapp',
               waMessageId: msg.id,
               type: msgType,
               body: messageBody.slice(0, 4096),

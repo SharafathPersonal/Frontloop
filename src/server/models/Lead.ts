@@ -2,6 +2,7 @@ import { Schema, model, models, type InferSchemaType, type Model } from 'mongoos
 import { tenantGuard } from './plugins/tenant-guard';
 
 export const LEAD_STATUSES = ['new', 'contacted', 'converted', 'lost'] as const;
+export const LEAD_SOURCES = ['whatsapp', 'web_widget'] as const;
 export const LEAD_INTENTS = ['enquiry', 'booking', 'pricing', 'admission', 'complaint', 'other'] as const;
 
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
@@ -22,6 +23,7 @@ const LeadSchema = new Schema(
     messageCount: { type: Number, default: 0, min: 0 },
     notes: { type: String, maxlength: 2000 },
     assignedTo: { type: Schema.Types.ObjectId, ref: 'User' },
+    source: { type: String, enum: LEAD_SOURCES, default: 'whatsapp' }, // channel of first contact
   },
   { timestamps: true },
 );

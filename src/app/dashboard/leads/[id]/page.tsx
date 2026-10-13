@@ -46,6 +46,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
     author: m.author,
     body: m.body ?? undefined,
     status: m.status ?? undefined,
+    channel: m.channel ?? 'whatsapp',
     createdAt: m.createdAt ? new Date(m.createdAt).toISOString() : undefined,
   }));
 

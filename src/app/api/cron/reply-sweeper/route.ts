@@ -62,6 +62,7 @@ export async function GET(req: NextRequest) {
   // 3. Find orphan pending inbound messages (cross-tenant system job)
   const pendingMessages = await Message.find({
     direction: 'in',
+    channel: { $ne: 'web' as const }, // web chat replies synchronously and must never go out over WhatsApp
     replyState: 'pending',
     createdAt: { $lt: pendingCutoff, $gt: windowCutoff },
   })

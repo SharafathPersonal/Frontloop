@@ -85,3 +85,21 @@ export function verifyCashfreeSignature(
 
   return timingSafeEqual(sigBuffer, expectedBuffer);
 }
+
+/**
+ * Keyed hash for one-time codes. A 6-digit code has only 10^6 values, so an
+ * unkeyed hash would be reversible by brute force from a database leak; the key
+ * (derived from AUTH_SECRET) makes stored hashes useless without the secret.
+ * Email and purpose are bound in, so a code issued for one flow cannot be replayed in another.
+ */
+export function hashOtp(code: string, email: string, purpose: string): string {
+  const key = createHash('sha256').update(`frontloop:otp:${getEnv().AUTH_SECRET}`, 'utf8').digest();
+  return createHmac('sha256', key).update(`${purpose}:${email}:${code}`, 'utf8').digest('hex');
+}
+
+/** Constant-time comparison of two equal-format hex digests. */
+export function hexDigestsEqual(a: string, b: string): boolean {
+  const left = Buffer.from(a, 'hex');
+  const right = Buffer.from(b, 'hex');
+  return left.length === right.length && left.length > 0 && timingSafeEqual(left, right);
+}

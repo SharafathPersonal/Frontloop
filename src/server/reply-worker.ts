@@ -7,10 +7,11 @@ import { KnowledgeBase } from './models/KnowledgeBase';
 import { BusinessTenant } from './models/BusinessTenant';
 import { rateLimit } from './rate-limit';
 import { generateAIReply } from './ai-pipeline';
-import { describeBusinessHours } from './business-hours';
+import { knowledgeContext } from './ai-context';
 import { sendWhatsAppText } from './meta-graph';
 import { getTenantByPhoneNumberId } from './tenant-resolver';
-import { resolveHandoffKeywords } from '@/lib/bot-defaults';
+import { releaseReplyQuota, reserveReplyQuota } from './quota';
+import { matchesHandoffKeyword, resolveHandoffKeywords } from '@/lib/bot-defaults';
 import { isWithinServiceWindow } from '@/lib/whatsapp-window';
 
 export interface ProcessPendingMessageParams {
@@ -22,9 +23,9 @@ export interface ProcessPendingMessageParams {
 
 const HISTORY_LIMIT = 20;
 const MAX_REPLY_ATTEMPTS = 3;
-const BILLABLE_STATUSES = ['trialing', 'active'] as const;
-
-const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Web chat rows share the lead but are a separate, unverified channel: never let
+// them coalesce, suppress, or appear in a WhatsApp conversation.
+const WHATSAPP_ONLY = { channel: { $ne: 'web' as const } };
 
 /**
  * Executes background processing for a pending inbound message.
@@ -90,6 +91,7 @@ export async function processInboundMessageReply(params: ProcessPendingMessagePa
   const newerInbound = await Message.exists({
     tenantId: tenantObjectId,
     leadId: leadObjectId,
+    ...WHATSAPP_ONLY,
     direction: 'in',
     createdAt: { $gt: claimedMessage.createdAt },
   });
@@ -101,12 +103,7 @@ export async function processInboundMessageReply(params: ProcessPendingMessagePa
   const kb = await KnowledgeBase.findOne({ tenantId: tenantObjectId }).lean();
 
   const incomingText = claimedMessage.body || '';
-  const handoffKeywords = resolveHandoffKeywords(kb?.bot?.handoffKeywords);
-  const hasHandoffRequest = handoffKeywords.some(
-    // Unicode-aware word boundary: `\b` is ASCII-only and never matches Malayalam/Devanagari keywords.
-    (kw) => new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegex(kw)}($|[^\\p{L}\\p{N}])`, 'iu').test(incomingText),
-  );
-  if (hasHandoffRequest) {
+  if (matchesHandoffKeyword(incomingText, resolveHandoffKeywords(kb?.bot?.handoffKeywords))) {
     await Lead.updateOne({ _id: leadObjectId, tenantId: tenantObjectId }, { $set: { botPaused: true } });
     await finish('skipped', 'Handoff keyword matched, bot paused for human agent');
     return;
@@ -122,18 +119,9 @@ export async function processInboundMessageReply(params: ProcessPendingMessagePa
     return;
   }
 
-  // 4. Atomic quota reservation: concurrent workers can never overshoot the plan,
-  // and a lapsed paid period stops replies (trials carry no period end).
-  const reservation = await BusinessTenant.updateOne(
-    {
-      _id: tenantObjectId,
-      'subscription.status': { $in: [...BILLABLE_STATUSES] },
-      $or: [{ 'subscription.currentPeriodEnd': null }, { 'subscription.currentPeriodEnd': { $gt: new Date() } }],
-      $expr: { $lt: ['$subscription.repliesUsed', '$subscription.replyQuota'] },
-    },
-    { $inc: { 'subscription.repliesUsed': 1 } },
-  );
-  if (reservation.modifiedCount === 0) {
+  // 4. Atomic quota reservation (shared with web chat): concurrent workers can
+  // never overshoot the plan, and a lapsed period reserves nothing.
+  if (!(await reserveReplyQuota(tenantObjectId))) {
     await finish('skipped', 'Subscription quota exhausted, expired, or inactive');
     return;
   }
@@ -143,10 +131,7 @@ export async function processInboundMessageReply(params: ProcessPendingMessagePa
   const releaseQuota = async () => {
     if (!quotaHeld) return;
     quotaHeld = false;
-    await BusinessTenant.updateOne(
-      { _id: tenantObjectId, 'subscription.repliesUsed': { $gt: 0 } },
-      { $inc: { 'subscription.repliesUsed': -1 } },
-    );
+    await releaseReplyQuota(tenantObjectId);
   };
 
   let delivered = false;
@@ -155,6 +140,7 @@ export async function processInboundMessageReply(params: ProcessPendingMessagePa
     const recentMessages = await Message.find({
       tenantId: tenantObjectId,
       leadId: leadObjectId,
+      ...WHATSAPP_ONLY,
       _id: { $ne: messageObjectId },
     })
       .sort({ createdAt: -1 })
@@ -170,21 +156,7 @@ export async function processInboundMessageReply(params: ProcessPendingMessagePa
       }));
 
     const aiResult = await generateAIReply({
-      tenantName: tenant.name,
-      tenantCategory: tenant.category,
-      kbContext: kb?.context || '',
-      faqs: (kb?.faqs || []).filter((f) => f.enabled !== false).map((f) => ({ question: f.question, answer: f.answer })),
-      services: (kb?.services || []).map((s) => ({
-        name: s.name,
-        description: s.description || undefined,
-        priceMinor: s.priceMinor ?? undefined,
-        currency: s.currency || 'INR',
-        durationMin: s.durationMin ?? undefined,
-      })),
-      businessHours: describeBusinessHours(kb?.hours, tenant.timezone),
-      botPersona: kb?.bot?.persona || undefined,
-      botFallbackReply: kb?.bot?.fallbackReply || undefined,
-      botCaptureFields: kb?.bot?.captureFields || ['name', 'requirement'],
+      ...knowledgeContext(tenant, kb),
       conversationHistory,
       latestCustomerMessage: incomingText,
       customerProfileName: lead.profileName || undefined,
@@ -247,6 +219,7 @@ export async function processInboundMessageReply(params: ProcessPendingMessagePa
       leadId: leadObjectId,
       direction: 'out',
       author: 'bot',
+      channel: 'whatsapp',
       waMessageId: metaRes.messageId,
       type: 'text',
       body: aiResult.replyText,

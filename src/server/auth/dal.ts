@@ -34,6 +34,7 @@ const TENANT_ROLES: UserRole[] = ['owner', 'staff'];
 /** Server Components / Server Actions: redirects to login when unauthorised. */
 export async function requireTenant(roles: UserRole[] = TENANT_ROLES): Promise<TenantSession> {
   const session = await getSession();
+  if (session?.role === 'platform_admin') redirect('/admin');
   if (!session?.tenantId || !roles.includes(session.role)) redirect('/auth/login');
   return session as TenantSession;
 }
@@ -47,8 +48,10 @@ export async function requireTenantApi(roles: UserRole[] = TENANT_ROLES): Promis
   return session as TenantSession;
 }
 
+/** Admin layout/pages: unauthenticated -> login (returning to /admin); tenant users -> their dashboard. */
 export async function requirePlatformAdmin(): Promise<Session> {
   const session = await getSession();
-  if (session?.role !== 'platform_admin') redirect('/auth/login');
+  if (!session) redirect('/auth/login?redirect=/admin');
+  if (session.role !== 'platform_admin') redirect('/dashboard');
   return session;
 }
