@@ -36,6 +36,7 @@ export const PLAN_FEATURES = [
   'English & Manglish understanding',
   'Automatic intent tagging & lead capture',
   'Human takeover with in-dashboard replies',
+  'Web chat link & printable QR card',
   'Lead pipeline dashboard & CSV export',
 ] as const;
 

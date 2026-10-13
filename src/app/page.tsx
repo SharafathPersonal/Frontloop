@@ -67,6 +67,10 @@ const FRONTLOOP_WAY = [
     title: 'Dashboard CRM stays up to date:',
     body: 'Every chat lands in your lead pipeline. Staff can pause the AI and reply from the dashboard in one click.',
   },
+  {
+    title: 'One link for WhatsApp and web:',
+    body: 'Share a link or print the ready-made QR card. Customers pick WhatsApp or chat in their browser, no app needed.',
+  },
 ];
 
 export default function LandingPage() {
@@ -131,7 +135,7 @@ export default function LandingPage() {
         <p className="text-base sm:text-xl text-[#475569] max-w-3xl mx-auto mt-6 leading-relaxed">
           An AI WhatsApp front desk that answers patient and client inquiries 24/7, qualifies intent, captures lead
           requirements, quotes only the prices you have published, and hands conversations to your staff when they
-          need a person, on your own business number.
+          need a person, on your own business number. Customers without WhatsApp can chat from a web link or QR code.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-9">

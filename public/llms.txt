@@ -17,6 +17,7 @@
 - Understands English, Malayalam context and mixed English-Malayalam (Manglish) phrasing.
 - Captures the customer's name, phone, intent and requirement into a lead pipeline with New, Contacted, Converted and Lost stages, filtering, search and CSV export.
 - One-click human takeover pauses the bot on any conversation, and staff reply to the customer from the dashboard (within WhatsApp's 24-hour service window). Chats where the customer asked for a person are grouped under Needs Human.
+- Web chat and QR front desk: each business gets a public link (frontloop.online/d/<workspace>) and a printable QR card. Customers choose WhatsApp or chat in the browser, no app needed; web chats use the same knowledge base and land in the same lead pipeline.
 - Inbound-first: replies to customers who message the business. It does not send bulk or unsolicited broadcasts.
 
 ## Architecture

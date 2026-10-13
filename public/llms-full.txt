@@ -44,6 +44,9 @@ Answers are generated only from the business's verified knowledge base. If a que
 - Filter by status, search by phone number and export to CSV.
 - Staff can add internal notes to each lead and review the full conversation timeline.
 
+### Web chat and QR front desk
+Each business gets a public front-desk link and a printable QR card for reception desks and shop windows. Customers who scan it choose WhatsApp or chat directly in their browser after sharing their name and mobile number. Web chats are answered from the same knowledge base, count against the same monthly AI reply allowance, and appear in the dashboard tagged as Web.
+
 ### Human takeover
 Each conversation has a bot on/off control. While the bot is paused, FrontLoop stops sending automated replies for that customer, and staff reply from the dashboard within WhatsApp's 24-hour customer service window. Paused chats are grouped under a Needs Human filter.
 

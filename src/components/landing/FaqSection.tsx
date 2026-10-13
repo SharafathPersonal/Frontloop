@@ -35,6 +35,11 @@ const FAQS: FaqItem[] = [
       'The AI understands conversational mixed English and regional phrasing (such as "Nale doctor undo?", "Fee ethraya?", or "Do you have slots evening?"), identifies the customer’s intent, and replies in the language they wrote in.',
   },
   {
+    question: 'What if some of my customers do not use WhatsApp?',
+    answer:
+      'Every workspace gets a front-desk link and a printable QR card for your reception desk. Customers who scan it choose WhatsApp or chat right in their browser after sharing their name and mobile number. Web chats use the same knowledge base and appear in your dashboard alongside WhatsApp leads.',
+  },
+  {
     question: 'What happens if a customer asks a question not in my knowledge base?',
     answer:
       'The AI is instructed to answer only from your knowledge base. If a question is outside your configured information, it tells the customer your team will confirm rather than guessing prices or policies, and the full conversation stays in your dashboard for follow-up.',

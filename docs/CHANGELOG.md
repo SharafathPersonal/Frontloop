@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dashboard overview card:** front-desk link, QR preview and copy button.
 - **Leads:** a Web tag in the table, and "Web chat" labels on messages in the conversation view. The locked composer offers a call link for web-only leads.
 - `Spinner` takes a `tone` prop instead of conflicting border classes.
+- Landing page, pricing and AI-crawler files now describe the feature: a hero line, a "One link for WhatsApp and web" point under With FrontLoop, a "Web chat link & printable QR card" item in every plan (`PLAN_FEATURES`), a new FAQ ("What if some of my customers do not use WhatsApp?"), and matching sections in `llms.txt` and `llms-full.txt`.
 - Verified on a local test stack:
   - 26 API, privacy and quota checks;
   - 11 headless-Chrome checks at 360px: no horizontal overflow on the hub, gate, chat, dashboard and QR kit; composer pinned; keyboard emulation at 360 x 400 keeps the header, composer and newest message visible; textarea auto-grows; 16px inputs;
