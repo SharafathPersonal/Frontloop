@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed - Reply Engine Stability
 - Reply worker (`src/server/reply-worker.ts`): any exception after the quota reservation now releases the reserved reply exactly once and marks the message `failed`. An exception after a successful WhatsApp send marks it `done`, so the sweeper never sends a reply twice. New `Message.replyAttempts` counter: a message that keeps crashing is given up after 3 claims.
 - Quota reservation now also requires `subscription.currentPeriodEnd` to be unset (trials) or in the future, so lapsed paid plans stop sending automated replies.
-- Added `vercel.json` scheduling `/api/cron/reply-sweeper` every 5 minutes (auth unchanged: constant-time `Bearer CRON_SECRET`). Sub-daily crons need a Vercel Pro plan.
+- Removed `vercel.json` to prevent Vercel Hobby tier deployment failure (`Hobby tier allows daily cron jobs only`). The sweeper endpoint (`/api/cron/reply-sweeper`) remains fully intact with constant-time `Bearer CRON_SECRET` validation for external cron triggers (e.g., cron-job.org).
 
 ### Added - Self-Serve WhatsApp Cloud API Connection
 - Settings → WhatsApp Cloud Connectivity (`src/app/dashboard/settings/whatsapp-settings-client.tsx`): owners enter the Phone Number ID, WABA ID, display number and a permanent System User token, then click "Test & Connect". When connected, the card shows the number, the masked Phone Number ID and the WABA ID, with "Update credentials" (token optional, the stored token is reused) and "Disconnect" (`CustomConfirm`). An `error` status shows Meta's last error and a reconnect form. Staff see a read-only card.
